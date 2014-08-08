@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using libtestutil;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Language.Flow;
 
@@ -30,21 +32,18 @@ namespace ItzWarty.Test
 
          var type = this.GetType();
          var fields = type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
-         foreach (var field in fields)
-         {
-            Console.WriteLine(field.Name);
+         foreach (var field in fields) {
             var mockAttribute = field.GetCustomAttribute<MockAttribute>();
-            if (mockAttribute != null)
-            {
+            if (mockAttribute != null) {
                var fieldType = field.FieldType;
                var mockType = typeof(Mock<>).MakeGenericType(fieldType);
                var mock = Activator.CreateInstance(mockType);
                //foreach (var property in mockType.GetProperties())
                //   Console.WriteLine(property.Name + " " + property.PropertyType);
                var mockObjectProperty = (from property in mockType.GetProperties()
-                                         where property.Name == "Object"
-                                         where property.PropertyType == fieldType
-                                         select property).First();
+                  where property.Name == "Object"
+                  where property.PropertyType == fieldType
+                  select property).First();
                var mockObject = mockObjectProperty.GetValue(mock);
                mocksByObject.Add(mockObject, mock);
                field.SetValue(this, mockObject);
@@ -84,21 +83,15 @@ namespace ItzWarty.Test
                   Expression.Parameter(typeof(TMockInterface), "___param___"),
                   method,
                   arguments
-               ), Expression.Parameter(typeof(TMockInterface), "___param___")
-            ), times
-         );
+                  ), Expression.Parameter(typeof(TMockInterface), "___param___")
+               ), times
+            );
       }
 
       internal Mock<T> GetMockFromObject<T>(T obj)
-         where T : class
-      {
-         return (Mock<T>)mocksByObject[obj];
-      }
+         where T : class { return (Mock<T>)mocksByObject[obj]; }
 
-      internal Mock GetMockFromObject(object obj)
-      {
-         return (Mock)mocksByObject[obj];
-      }
+      internal Mock GetMockFromObject(object obj) { return (Mock)mocksByObject[obj]; }
 
       public WhenContext<TResult> when<TResult>(Expression<Func<TResult>> expression)
       {
@@ -107,10 +100,22 @@ namespace ItzWarty.Test
          return new WhenContext<TResult>(this, expression);
       }
 
-      public Type GetInterfaceFromMock(Mock mock)
-      {
-         return this.interfaceByMock[mock];
-      }
+      public Type GetInterfaceFromMock(Mock mock) { return this.interfaceByMock[mock]; }
+
+      [DebuggerHidden]
+      public void assertEquals<T>(T expected, T actual) { Assert.AreEqual(expected, actual); }
+
+      [DebuggerHidden]
+      public void assertNull<T>(T value) { Assert.IsNull(value); }
+
+      [DebuggerHidden]
+      public void assertNotNull<T>(T value) { Assert.IsNotNull(value); }
+
+      [DebuggerHidden]
+      public void assertTrue(bool value) { Assert.IsTrue(value); }
+
+      [DebuggerHidden]
+      public void assertFalse(bool value) { Assert.IsFalse(value); }
    }
 
    public class WhenContext<TResult>
