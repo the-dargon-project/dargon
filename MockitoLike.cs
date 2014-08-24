@@ -70,6 +70,23 @@ namespace ItzWarty.Test
          helper.Invoke(this, new object[] { mock, method, args, times == null ? Times.Once() : times.Value });
       }
 
+      public void verify<T1>(Expression<Func<T1>> expression, Times? times = null)
+      {
+         var lambda = (LambdaExpression)expression;
+         var call = (MethodCallExpression)lambda.Body;
+         var mockObject = Expression.Lambda<Func<object>>(call.Object).Compile()();
+         var method = call.Method;
+         var args = call.Arguments;
+
+         var mock = this.GetMockFromObject(mockObject);
+         var mockType = mock.GetType();
+
+         var mockObjectInterface = this.GetInterfaceFromMock(mock);
+         var helperDefinition = this.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).First((m) => m.Name.StartsWith("VerifyHelper"));
+         var helper = helperDefinition.MakeGenericMethod(mockObjectInterface);
+         helper.Invoke(this, new object[] { mock, method, args, times == null ? Times.Once() : times.Value });
+      }
+
       internal void VerifyHelper<TMockInterface>(
          Mock<TMockInterface> mock,
          MethodInfo method,
