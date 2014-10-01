@@ -90,6 +90,16 @@ namespace ItzWarty.Test
          return delta;
       }
 
+      public void VerifyNoMoreInteractions() 
+      {
+         foreach (var kvp in invocationCountsByInvocation)
+         {
+            if (kvp.Value != 0) {
+               throw new VerificationTimesMismatchException(0, kvp.Value);
+            }
+         }
+      }
+
       private object GetDefaultValue(Type type)
       {
          if (type == typeof(void)) return null;

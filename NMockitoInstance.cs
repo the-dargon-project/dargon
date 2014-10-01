@@ -15,8 +15,6 @@ namespace ItzWarty.Test
          return new ReturnableWhenResult<T>();
       }
 
-      public T Verify<T>(T mock, NMockitoTimes times = null) where T : class { return NMockitoStatic.Verify(mock, times); }
-
       public T Any<T>() { return NMockitoAnys.CreateAny<T>(); }
 
       public NMockitoTimes Times(int count)
@@ -24,6 +22,11 @@ namespace ItzWarty.Test
          var result = new NMockitoTimes(count); 
          return result;
       }
+
+      public T Verify<T>(T mock, NMockitoTimes times = null) where T : class { return NMockitoStatic.Verify(mock, times); }
+
+      public void VerifyNoMoreInteractions() { NMockitoStatic.VerifyNoMoreInteractions(); }
+      public void VerifyNoMoreInteractions<T>(T mock) { NMockitoStatic.VerifyNoMoreInteractions(mock); }
 
       #region Assertions
       [DebuggerHidden]
