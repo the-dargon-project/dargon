@@ -1,16 +1,13 @@
-﻿using System;
+﻿using libtestutil;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using libtestutil;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-using Moq.Language.Flow;
 
 namespace ItzWarty.Test
 {
@@ -37,7 +34,7 @@ namespace ItzWarty.Test
             if (mockAttribute != null) {
                var fieldType = field.FieldType;
                var mockType = typeof(Mock<>).MakeGenericType(fieldType);
-               var mock = Activator.CreateInstance(mockType);
+               var mock = Activator.CreateInstance(mockType, new object[]{ MockBehavior.Loose });
                //foreach (var property in mockType.GetProperties())
                //   Console.WriteLine(property.Name + " " + property.PropertyType);
                var mockObjectProperty = (from property in mockType.GetProperties()
@@ -94,6 +91,9 @@ namespace ItzWarty.Test
          Times times)
          where TMockInterface : class
       {
+         // Console.WriteLine("VerifyHelper got generic parameter " + typeof(TMockInterface).Name + " and mock " + mock + " and method " + method);
+         // Console.WriteLine("METHOD CLASS " + method.DeclaringType);
+         // Console.WriteLine("Arguments are " + string.Join(", ", arguments.Select(a => a.GetType().Name + ": " + a)));
          mock.Verify(
             Expression.Lambda<Action<TMockInterface>>(
                Expression.Call(
@@ -133,6 +133,56 @@ namespace ItzWarty.Test
 
       [DebuggerHidden]
       public void assertFalse(bool value) { Assert.IsFalse(value); }
+
+      [DebuggerHidden]
+      public object anyInvocation(Type type)
+      {
+         var isAny = typeof(It).GetMethod("IsAny", BindingFlags.Static | BindingFlags.Public);
+         var isAnyGeneric = isAny.MakeGenericMethod(type);
+         return Expression.Call(
+            isAnyGeneric
+            );
+      }
+
+      public void verifyNoMoreInteractions()
+      {
+         foreach (var mock in interfaceByMock.Keys) {
+            var interfaceType = mock.GetType().GetGenericArguments()[0];
+
+            var method = (from candidate in typeof(MockitoLike).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                          where candidate.IsGenericMethod
+                          where candidate.Name.StartsWith("verifyNoMoreInteractions")
+                          select candidate).First();
+            var genericMethod = method.MakeGenericMethod(interfaceType);
+            genericMethod.Invoke(this, new[] { mock });
+         }
+      }
+
+      public void verifyNoMoreInteractions<T>(T mockObject)
+         where T : class
+      {
+         var mock = (Mock<T>)mocksByObject[mockObject];
+         verifyNoMoreInteractions(mock);
+      }
+
+      private void verifyNoMoreInteractions<T>(Mock<T> mock)
+         where T : class
+      {
+         T mockObject = mock.Object;
+         var originalInterface = interfaceByMock[mock];
+         foreach (var method in originalInterface.GetMethods(BindingFlags.Public | BindingFlags.Instance)) {
+            if (!method.IsGenericMethod) {
+               var arguments = method.GetParameters().Select(parameter => (Expression)anyInvocation(parameter.ParameterType)).ToList().AsReadOnly();
+               VerifyHelper(
+                  mock,
+                  method,
+                  arguments,
+                  Times.Never()
+                  );
+            }
+         }
+         // It.IsAny<int>()
+      }
    }
 
    public class WhenContext<TResult>
