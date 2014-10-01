@@ -31,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Castle.Core">
+      <HintPath>..\the-dargon-project\packages\Castle.Core.3.3.1\lib\net45\Castle.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Moq">
       <HintPath>..\the-dargon-project\packages\Moq.4.2.1409.1722\lib\net40\Moq.dll</HintPath>
@@ -44,11 +47,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IInvocationResult.cs" />
+    <Compile Include="InvocationResultTracker.cs" />
     <Compile Include="MockAttribute.cs" />
     <Compile Include="MockInitializationProcessor.cs" />
+    <Compile Include="MockState.cs" />
+    <Compile Include="NMockitoAnys.cs" />
+    <Compile Include="NMockitoAttributes.cs" />
+    <Compile Include="NMockitoGlobals.cs" />
+    <Compile Include="NMockitoInstance.cs" />
+    <Compile Include="NMockitoStatic.cs" />
     <Compile Include="MoqHelper.cs" />
+    <Compile Include="NMockitoWhens.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MockitoLike.cs" />
+    <Compile Include="ReturnableWhenResult.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
