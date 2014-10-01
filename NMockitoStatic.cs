@@ -36,19 +36,36 @@ namespace ItzWarty.Test
          return mock;
       }
 
-      public static T Verify<T>(T mock) 
-      { 
-         return mock; 
+      public static T Verify<T>(T mock, NMockitoTimes times = null)
+         where T : class
+      {
+         var state = statesByMock[mock];
+         var interceptor = new MockVerifyInterceptor(state, times);
+         var proxy = proxyGenerator.CreateInterfaceProxyWithoutTarget<T>(interceptor);
+         return proxy;
       }
 
 
       private class MockInvocationInterceptor : IInterceptor
       {
          private MockState state;
-
          public MockInvocationInterceptor(MockState state) { this.state = state; }
-
          public void Intercept(IInvocation invocation) { state.HandleMockInvocation(invocation); }
+      }
+
+
+      private class MockVerifyInterceptor : IInterceptor
+      {
+         private readonly MockState state;
+         private readonly NMockitoTimes times;
+
+         public MockVerifyInterceptor(MockState state, NMockitoTimes times)
+         {
+            this.state = state;
+            this.times = times;
+         }
+
+         public void Intercept(IInvocation invocation) { state.HandleMockVerification(invocation, times); }
       }
    }
 }

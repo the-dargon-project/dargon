@@ -12,7 +12,8 @@ namespace ItzWarty.Test
 
       public static void HandleWhenInvocation() 
       { 
-         invocationAndMockState = NMockitoGlobals.GetLastInvocationAndMockState(); 
+         invocationAndMockState = NMockitoGlobals.GetLastInvocationAndMockState();
+         invocationAndMockState.State.HandleMockWhenning(invocationAndMockState.Invocation);
       }
 
       public static void HandleInvocationResult(IInvocationResult result)

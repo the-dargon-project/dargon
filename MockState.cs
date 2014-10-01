@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security;
 using Castle.DynamicProxy;
 using ItzWarty.Collections;
 
@@ -11,6 +12,7 @@ namespace ItzWarty.Test
    {
       private readonly Type interfaceType;
       private readonly IDictionary<Tuple<MethodInfo, Type[], object[]>, InvocationResultTracker> trackerByArguments = new ListDictionary<Tuple<MethodInfo, Type[], object[]>, InvocationResultTracker>();
+      private readonly IDictionary<Tuple<MethodInfo, Type[], object[]>, int> invocationCountsByInvocation = new Dictionary<Tuple<MethodInfo, Type[], object[]>, int>();
       private IInvocation lastInvocation;
 
       public MockState(Type interfaceType)
@@ -26,9 +28,22 @@ namespace ItzWarty.Test
       public void HandleMockInvocation(IInvocation invocation)
       {
          this.lastInvocation = invocation;
+         AddToInvocationCount(invocation, 1);
          invocation.ReturnValue = GetInvocationResultTracker(invocation).NextResult().GetValueOrThrow();
          NMockitoGlobals.SetLastInvocationAndMockState(invocation, this);
       }
+      
+      public void HandleMockVerification(IInvocation invocation, NMockitoTimes times) 
+      { 
+         invocation.ReturnValue = GetDefaultValue(invocation.Method.ReturnType);
+
+         var actualInvocations = AddToInvocationCount(invocation, -times.Value) + times.Value;
+         if (actualInvocations != times.Value) {
+            throw new VerificationTimesMismatchException(times.Value, actualInvocations);
+         }
+      }
+
+      public void HandleMockWhenning(IInvocation invocation) { AddToInvocationCount(invocation, -1); }
 
       private InvocationResultTracker GetInvocationResultTracker(IInvocation invocation)
       {
@@ -52,6 +67,27 @@ namespace ItzWarty.Test
          } else {
          }
          return tracker;
+      }
+
+      private int AddToInvocationCount(IInvocation invocation, int delta)
+      {
+         var key = new Tuple<MethodInfo, Type[], object[]>(invocation.Method, invocation.GenericArguments, invocation.Arguments);
+         foreach (var kvp in invocationCountsByInvocation)
+         {
+            if (key.Item1 == kvp.Key.Item1 &&
+                ((key.Item2 == null && kvp.Key.Item2 == null) || Enumerable.SequenceEqual(key.Item2, kvp.Key.Item2)) &&
+                ((key.Item3 == null && kvp.Key.Item3 == null) || Enumerable.SequenceEqual(key.Item3, kvp.Key.Item3)))
+            {
+               var count = kvp.Value;
+               var nextCount = count + delta;
+               invocationCountsByInvocation.Remove(kvp);
+               invocationCountsByInvocation.Add(key, nextCount);
+               return nextCount;
+            }
+         }
+
+         invocationCountsByInvocation.Add(key, delta);
+         return delta;
       }
 
       private object GetDefaultValue(Type type)

@@ -1,5 +1,7 @@
+using System;
 using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 namespace ItzWarty.Test
 {
@@ -13,9 +15,15 @@ namespace ItzWarty.Test
          return new ReturnableWhenResult<T>();
       }
 
-      public T Verify<T>(T mock) { return NMockitoStatic.Verify(mock); }
+      public T Verify<T>(T mock, NMockitoTimes times = null) where T : class { return NMockitoStatic.Verify(mock, times); }
 
       public T Any<T>() { return NMockitoAnys.CreateAny<T>(); }
+
+      public NMockitoTimes Times(int count)
+      {
+         var result = new NMockitoTimes(count); 
+         return result;
+      }
 
       #region Assertions
       [DebuggerHidden]
