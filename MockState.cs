@@ -32,15 +32,14 @@ namespace ItzWarty.Test
          invocation.ReturnValue = GetInvocationResultTracker(invocation).NextResult().GetValueOrThrow();
          NMockitoGlobals.SetLastInvocationAndMockState(invocation, this);
       }
-      
-      public void HandleMockVerification(IInvocation invocation, NMockitoTimes times) 
+
+      public void HandleMockVerification(IInvocation invocation, INMockitoTimesMatcher times) 
       { 
          invocation.ReturnValue = GetDefaultValue(invocation.Method.ReturnType);
 
-         var actualInvocations = AddToInvocationCount(invocation, -times.Value) + times.Value;
-         if (actualInvocations != times.Value) {
-            throw new VerificationTimesMismatchException(times.Value, actualInvocations);
-         }
+         var actualInvocations = AddToInvocationCount(invocation, 0);
+         times.MatchOrThrow(actualInvocations);
+         AddToInvocationCount(invocation, -actualInvocations);
       }
 
       public void HandleMockWhenning(IInvocation invocation) { AddToInvocationCount(invocation, -1); }

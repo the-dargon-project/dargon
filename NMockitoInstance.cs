@@ -17,13 +17,10 @@ namespace ItzWarty.Test
 
       public T Any<T>() { return NMockitoAnys.CreateAny<T>(); }
 
-      public NMockitoTimes Times(int count)
-      {
-         var result = new NMockitoTimes(count); 
-         return result;
-      }
+      public INMockitoTimesMatcher Times(int count) { return new NMockitoTimesEqualMatcher(count); }
+      public INMockitoTimesMatcher AnyTimes() { return new NMockitoTimesAnyMatcher(); }
 
-      public T Verify<T>(T mock, NMockitoTimes times = null) where T : class { return NMockitoStatic.Verify(mock, times); }
+      public T Verify<T>(T mock, INMockitoTimesMatcher times = null) where T : class { return NMockitoStatic.Verify(mock, times); }
 
       public void VerifyNoMoreInteractions() { NMockitoStatic.VerifyNoMoreInteractions(); }
       public void VerifyNoMoreInteractions<T>(T mock) { NMockitoStatic.VerifyNoMoreInteractions(mock); }

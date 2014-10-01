@@ -36,9 +36,11 @@ namespace ItzWarty.Test
          return mock;
       }
 
-      public static T Verify<T>(T mock, NMockitoTimes times = null)
+      public static T Verify<T>(T mock, INMockitoTimesMatcher times = null)
          where T : class
       {
+         times = times ?? new NMockitoTimesAnyMatcher();
+
          var state = statesByMock[mock];
          var interceptor = new MockVerifyInterceptor(state, times);
          var proxy = proxyGenerator.CreateInterfaceProxyWithoutTarget<T>(interceptor);
@@ -66,9 +68,9 @@ namespace ItzWarty.Test
       private class MockVerifyInterceptor : IInterceptor
       {
          private readonly MockState state;
-         private readonly NMockitoTimes times;
+         private readonly INMockitoTimesMatcher times;
 
-         public MockVerifyInterceptor(MockState state, NMockitoTimes times)
+         public MockVerifyInterceptor(MockState state, INMockitoTimesMatcher times)
          {
             this.state = state;
             this.times = times;

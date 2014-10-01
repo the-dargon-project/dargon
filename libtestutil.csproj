@@ -58,7 +58,7 @@
     <Compile Include="NMockitoInstance.cs" />
     <Compile Include="NMockitoStatic.cs" />
     <Compile Include="MoqHelper.cs" />
-    <Compile Include="NMockitoTimes.cs" />
+    <Compile Include="INMockitoTimesMatcher.cs" />
     <Compile Include="NMockitoWhens.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MockitoLike.cs" />
