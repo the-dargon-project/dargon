@@ -68,9 +68,12 @@ namespace ItzWarty.Test
          return tracker;
       }
 
-      private int AddToInvocationCount(IInvocation invocation, int delta)
+
+      private int AddToInvocationCount(IInvocation invocation, int delta) { return AddToInvocationCount(invocation.Method, invocation.GenericArguments, invocation.Arguments, delta); }
+
+      private int AddToInvocationCount(MethodInfo methodInfo, Type[] genericArguments, object[] arguments, int delta)
       {
-         var key = new Tuple<MethodInfo, Type[], object[]>(invocation.Method, invocation.GenericArguments, invocation.Arguments);
+         var key = new Tuple<MethodInfo, Type[], object[]>(methodInfo, genericArguments, arguments);
          foreach (var kvp in invocationCountsByInvocation)
          {
             if (key.Item1 == kvp.Key.Item1 &&
