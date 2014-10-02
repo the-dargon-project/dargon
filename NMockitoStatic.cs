@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Reflection;
 using Castle.DynamicProxy;
@@ -62,7 +63,14 @@ namespace NMockito
          }
       }
 
-      public static void ClearInteractions<T>(T mock) { statesByMock[mock].ClearInteractions(); }
+      public static void ClearInteractions<T>(T mock)
+      {
+         MockState state;
+         if (statesByMock.TryGetValue(mock, out state)) 
+            state.ClearInteractions();
+      }
+
+      public static void ClearInteractions<T>(T mock, int expectedCount) { statesByMock[mock].ClearInteractions(expectedCount); }
 
       private class MockInvocationInterceptor : IInterceptor
       {

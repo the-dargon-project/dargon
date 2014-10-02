@@ -157,6 +157,20 @@ namespace NMockito
 
       public void ClearInteractions() { invocationCountsByInvocation.Clear(); }
 
+      public void ClearInteractions(int expectedCount)
+      {
+         foreach (var kvp in invocationCountsByInvocation)
+         {
+            Console.WriteLine(kvp.Value.Count);
+         }
+         var actualCount = invocationCountsByInvocation.Sum(kvp => kvp.Value.Count);
+         if (expectedCount != actualCount) {
+            throw new VerificationTimesMismatchException(expectedCount, actualCount);
+         } else {
+            invocationCountsByInvocation.Clear();
+         }
+      }
+
       private object GetDefaultValue(Type type)
       {
          if (type == typeof(void)) return null;

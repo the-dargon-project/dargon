@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace NMockito
 {
@@ -6,9 +7,9 @@ namespace NMockito
    {
       private static readonly List<INMockitoSmartParameter> smartParameters = new List<INMockitoSmartParameter>();
 
-      public static T Any<T>()
+      public static T Any<T>(Func<T, bool> test = null)
       {
-         smartParameters.Add(new NMockitoAny(typeof(T)));
+         smartParameters.Add(new NMockitoAny<T>(test));
          return default(T);
       }
 

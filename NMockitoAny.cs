@@ -2,10 +2,10 @@
 
 namespace NMockito
 {
-   public class NMockitoAny : INMockitoSmartParameter
+   public class NMockitoAny<T> : INMockitoSmartParameter
    {
-      private readonly Type type;
-      public NMockitoAny(Type type) { this.type = type; }
-      public bool Test(object value) { return type.IsAssignableFrom(value == null ? typeof(object) : value.GetType()); }
+      private readonly Func<T, bool> test;
+      public NMockitoAny(Func<T, bool> test) { this.test = test ?? (t => true); }
+      public bool Test(object value) { return typeof(T).IsAssignableFrom(value == null ? typeof(object) : value.GetType()) && test((T)value); }
    }
 }

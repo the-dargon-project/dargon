@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -6,6 +7,9 @@ namespace NMockito
    public class NMockitoInstance
    {
       public void InitializeMocks() { NMockitoAttributes.InitializeMocks(this); }
+
+      public T CreateMock<T>() where T : class { return NMockitoStatic.CreateMock<T>(); }
+      public object CreateMock(Type type) { return NMockitoStatic.CreateMock(type); }
 
       public WhenContext<T> When<T>(T value)
       {
@@ -22,6 +26,7 @@ namespace NMockito
 
       public void ClearInteractions() { NMockitoStatic.ClearInteractions(); }
       public void ClearInteractions<T>(T mock) { NMockitoStatic.ClearInteractions(mock); }
+      public void ClearInteractions<T>(T mock, int expectedCount) { NMockitoStatic.ClearInteractions(mock, expectedCount); }
 
       #region Assertions
       [DebuggerHidden]
@@ -42,7 +47,7 @@ namespace NMockito
 
       #region Smart Parameters
       public T Eq<T>(T value) { return NMockitoSmartParameters.Eq(value); }
-      public T Any<T>() { return NMockitoSmartParameters.Any<T>(); }
+      public T Any<T>(Func<T, bool> test = null) { return NMockitoSmartParameters.Any<T>(test); }
       #endregion
    }
 }
