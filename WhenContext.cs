@@ -1,20 +1,20 @@
 ﻿using System;
 
-namespace ItzWarty.Test
+namespace NMockito
 {
-   public class ReturnableWhenResult<T>
+   public class WhenContext<T>
    {
       private NMockitoGlobals.InvocationAndMockState invocationAndMockState;
       private INMockitoSmartParameter[] smartParameters;
 
-      public ReturnableWhenResult()
+      public WhenContext()
       {
          invocationAndMockState = NMockitoGlobals.GetLastInvocationAndMockState();
          invocationAndMockState.State.DecrementInvocationCounter(invocationAndMockState.Invocation);
          smartParameters = NMockitoSmartParameters.CopyAndClearSmartParameters();
       }
 
-      public ReturnableWhenResult<T> ThenReturn(params T[] values)
+      public WhenContext<T> ThenReturn(params T[] values)
       {
          foreach (var result in values) {
             invocationAndMockState.State.SetInvocationResult(invocationAndMockState.Invocation, smartParameters, new InvocationReturnResult(result));
@@ -22,7 +22,7 @@ namespace ItzWarty.Test
          return this;
       }
 
-      public ReturnableWhenResult<T> ThenThrow(params Exception[] exceptions)
+      public WhenContext<T> ThenThrow(params Exception[] exceptions)
       {
          foreach (var exception in exceptions) {
             invocationAndMockState.State.SetInvocationResult(invocationAndMockState.Invocation, smartParameters, new InvocationThrowResult(exception));

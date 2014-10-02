@@ -1,17 +1,15 @@
-using System;
 using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 
-namespace ItzWarty.Test
+namespace NMockito
 {
    public class NMockitoInstance
    {
       public void InitializeMocks() { NMockitoAttributes.InitializeMocks(this); }
 
-      public ReturnableWhenResult<T> When<T>(T value)
+      public WhenContext<T> When<T>(T value)
       {
-         return new ReturnableWhenResult<T>();
+         return new WhenContext<T>();
       }
 
       public INMockitoTimesMatcher Times(int count) { return new NMockitoTimesEqualMatcher(count); }

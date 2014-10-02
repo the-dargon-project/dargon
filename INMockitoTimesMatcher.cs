@@ -1,5 +1,5 @@
 ﻿
-namespace ItzWarty.Test
+namespace NMockito
 {
    public interface INMockitoTimesMatcher
    {

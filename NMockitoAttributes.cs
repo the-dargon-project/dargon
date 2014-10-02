@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace ItzWarty.Test
+namespace NMockito
 {
    public static class NMockitoAttributes
    {

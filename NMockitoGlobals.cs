@@ -1,6 +1,6 @@
 using Castle.DynamicProxy;
 
-namespace ItzWarty.Test
+namespace NMockito
 {
    internal static class NMockitoGlobals
    {

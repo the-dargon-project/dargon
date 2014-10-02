@@ -1,4 +1,4 @@
-﻿namespace ItzWarty.Test
+﻿namespace NMockito
 {
    internal interface INMockitoSmartParameter
    {

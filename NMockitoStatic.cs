@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Castle.DynamicProxy;
-using Moq;
 
-namespace ItzWarty.Test
+namespace NMockito
 {
    public static class NMockitoStatic
    {

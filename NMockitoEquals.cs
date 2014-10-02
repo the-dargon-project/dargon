@@ -1,4 +1,4 @@
-﻿namespace ItzWarty.Test
+﻿namespace NMockito
 {
    public class NMockitoEquals : INMockitoSmartParameter
    {

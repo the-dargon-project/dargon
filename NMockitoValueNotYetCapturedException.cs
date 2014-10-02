@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ItzWarty.Test
+namespace NMockito
 {
    public class NMockitoValueNotYetCapturedException : Exception
    {

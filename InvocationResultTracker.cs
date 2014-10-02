@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ItzWarty.Test
+namespace NMockito
 {
    internal class InvocationResultTracker
    {

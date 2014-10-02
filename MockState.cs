@@ -2,20 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Security;
 using Castle.DynamicProxy;
-using ItzWarty.Collections;
+using ItzWarty;
 
-using TrackerByArgumentsKey = System.Tuple<System.Reflection.MethodInfo, System.Type[], ItzWarty.Test.INMockitoSmartParameter[]>;
-using CountersByInvocationKey = System.Tuple<System.Reflection.MethodInfo, System.Type[], object[]>;
-
-namespace ItzWarty.Test
+namespace NMockito
 {
    internal class MockState
    {
       private readonly Type interfaceType;
-      private readonly List<KeyValuePair<TrackerByArgumentsKey, InvocationResultTracker>> trackerByArguments = new List<KeyValuePair<TrackerByArgumentsKey, InvocationResultTracker>>();
-      private readonly List<KeyValuePair<CountersByInvocationKey, Counter>> invocationCountsByInvocation = new List<KeyValuePair<CountersByInvocationKey, Counter>>();
+      private readonly List<KeyValuePair<Tuple<MethodInfo, Type[], INMockitoSmartParameter[]>, InvocationResultTracker>> trackerByArguments = new List<KeyValuePair<Tuple<MethodInfo, Type[], INMockitoSmartParameter[]>, InvocationResultTracker>>();
+      private readonly List<KeyValuePair<Tuple<MethodInfo, Type[], object[]>, Counter>> invocationCountsByInvocation = new List<KeyValuePair<Tuple<MethodInfo, Type[], object[]>, Counter>>();
       private IInvocation lastInvocation;
 
       public MockState(Type interfaceType)
@@ -35,8 +31,8 @@ namespace ItzWarty.Test
          var tracker = trackerByArguments.FirstOrDefault(kvp => kvp.Key.Item1 == method && kvp.Key.Item2 == genericArguments && SmartParametersEqual(kvp.Key.Item3, parameters)).Value;
          if (tracker == null) {
             tracker = new InvocationResultTracker(GetDefaultValue(method.ReturnType));
-            var key = new TrackerByArgumentsKey(method, genericArguments, parameters);
-            trackerByArguments.Add(new KeyValuePair<TrackerByArgumentsKey, InvocationResultTracker>(key, tracker));
+            var key = new Tuple<MethodInfo, Type[], INMockitoSmartParameter[]>(method, genericArguments, parameters);
+            trackerByArguments.Add(new KeyValuePair<Tuple<MethodInfo, Type[], INMockitoSmartParameter[]>, InvocationResultTracker>(key, tracker));
          }
          tracker.AddResult(result);
       }
@@ -127,7 +123,7 @@ namespace ItzWarty.Test
          }
 
          var counter = new Counter();
-         invocationCountsByInvocation.Add(new KeyValuePair<CountersByInvocationKey, Counter>(new CountersByInvocationKey(invocation.Method, invocation.GenericArguments, invocation.Arguments), counter));
+         invocationCountsByInvocation.Add(new KeyValuePair<Tuple<MethodInfo, Type[], object[]>, Counter>(new Tuple<MethodInfo, Type[], object[]>(invocation.Method, invocation.GenericArguments, invocation.Arguments), counter));
          return counter;
       }
 

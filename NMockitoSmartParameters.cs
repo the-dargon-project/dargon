@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ItzWarty.Test
+namespace NMockito
 {
    public static class NMockitoSmartParameters
    {
