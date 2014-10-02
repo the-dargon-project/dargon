@@ -6,13 +6,16 @@ using System.Security;
 using Castle.DynamicProxy;
 using ItzWarty.Collections;
 
+using TrackerByArgumentsKey = System.Tuple<System.Reflection.MethodInfo, System.Type[], ItzWarty.Test.INMockitoSmartParameter[]>;
+using CountersByInvocationKey = System.Tuple<System.Reflection.MethodInfo, System.Type[], object[]>;
+
 namespace ItzWarty.Test
 {
    internal class MockState
    {
       private readonly Type interfaceType;
-      private readonly IDictionary<Tuple<MethodInfo, Type[], object[]>, InvocationResultTracker> trackerByArguments = new ListDictionary<Tuple<MethodInfo, Type[], object[]>, InvocationResultTracker>();
-      private readonly IDictionary<Tuple<MethodInfo, Type[], object[]>, int> invocationCountsByInvocation = new Dictionary<Tuple<MethodInfo, Type[], object[]>, int>();
+      private readonly List<KeyValuePair<TrackerByArgumentsKey, InvocationResultTracker>> trackerByArguments = new List<KeyValuePair<TrackerByArgumentsKey, InvocationResultTracker>>();
+      private readonly List<KeyValuePair<CountersByInvocationKey, Counter>> invocationCountsByInvocation = new List<KeyValuePair<CountersByInvocationKey, Counter>>();
       private IInvocation lastInvocation;
 
       public MockState(Type interfaceType)
@@ -20,83 +23,138 @@ namespace ItzWarty.Test
          this.interfaceType = interfaceType;
       }
 
-      public void SetInvocationResult(IInvocation invocation, IInvocationResult result)
+      public void SetInvocationResult(IInvocation invocation, INMockitoSmartParameter[] smartParameters, IInvocationResult result)
       {
-         GetInvocationResultTracker(invocation).AddResult(result);
+         var method = invocation.Method;
+         var genericArguments = invocation.GenericArguments;
+         var parameters = smartParameters;
+
+         if (parameters.Length != invocation.Arguments.Length)
+            parameters = ConvertInvocationArgumentsToEqualityParameters(invocation.Arguments);
+
+         var tracker = trackerByArguments.FirstOrDefault(kvp => kvp.Key.Item1 == method && kvp.Key.Item2 == genericArguments && SmartParametersEqual(kvp.Key.Item3, parameters)).Value;
+         if (tracker == null) {
+            tracker = new InvocationResultTracker(GetDefaultValue(method.ReturnType));
+            var key = new TrackerByArgumentsKey(method, genericArguments, parameters);
+            trackerByArguments.Add(new KeyValuePair<TrackerByArgumentsKey, InvocationResultTracker>(key, tracker));
+         }
+         tracker.AddResult(result);
+      }
+
+      private bool SmartParametersEqual(INMockitoSmartParameter[] a, INMockitoSmartParameter[] b) {
+         if (a.Length != b.Length) {
+            return false;
+         }
+         for (var i = 0; i < a.Length; i++) {
+            if (!a[i].Equals(b[i])) {
+               return false;
+            }
+         }
+         return true;
       }
 
       public void HandleMockInvocation(IInvocation invocation)
       {
          this.lastInvocation = invocation;
-         AddToInvocationCount(invocation, 1);
-         invocation.ReturnValue = GetInvocationResultTracker(invocation).NextResult().GetValueOrThrow();
+         GetInvocationCounter(invocation).Count++;
+         invocation.ReturnValue = GetInvocationResult(invocation);
          NMockitoGlobals.SetLastInvocationAndMockState(invocation, this);
+      }
+
+      public void DecrementInvocationCounter(IInvocation whenBodyInvocation) 
+      { 
+         // Rollback when(mock.Method(params)) invocation (mock.Method(params))
+         GetInvocationCounter(whenBodyInvocation).Count--; 
       }
 
       public void HandleMockVerification(IInvocation invocation, INMockitoTimesMatcher times) 
       { 
          invocation.ReturnValue = GetDefaultValue(invocation.Method.ReturnType);
 
-         var actualInvocations = AddToInvocationCount(invocation, 0);
-         times.MatchOrThrow(actualInvocations);
-         AddToInvocationCount(invocation, -actualInvocations);
+         var smartParameters = NMockitoSmartParameters.CopyAndClearSmartParameters().ToArray();
+         if (smartParameters.Length == 0) {
+            smartParameters = ConvertInvocationArgumentsToEqualityParameters(invocation.Arguments);
+         }
+         if (smartParameters.Length != invocation.Arguments.Length) {
+            throw new NMockitoNotEnoughSmartParameters();
+         }
+
+         var counters = FindMatchingInvocationCounters(invocation.Method, invocation.GenericArguments, smartParameters);
+         times.MatchOrThrow(counters.Sum(counter => counter.Count));
+         foreach (var counter in counters) {
+            counter.Count = 0;
+         }
       }
 
-      public void HandleMockWhenning(IInvocation invocation) { AddToInvocationCount(invocation, -1); }
-
-      private InvocationResultTracker GetInvocationResultTracker(IInvocation invocation)
+      private object GetInvocationResult(IInvocation invocation)
       {
-         var key = new Tuple<MethodInfo, Type[], object[]>(invocation.Method, invocation.GenericArguments, invocation.Arguments);
-
          // Try to find our invocation result tracker... can't use dictionary comparers
          InvocationResultTracker tracker = null;
          foreach (var kvp in trackerByArguments)
          {
-            if (key.Item1 == kvp.Key.Item1 &&
-                ((key.Item2 == null && kvp.Key.Item2 == null) || Enumerable.SequenceEqual(key.Item2, kvp.Key.Item2)) &&
-                ((key.Item3 == null && kvp.Key.Item3 == null) || Enumerable.SequenceEqual(key.Item3, kvp.Key.Item3))) {
+            if (invocation.Method == kvp.Key.Item1 &&
+                ((invocation.GenericArguments == null && kvp.Key.Item2 == null) || Enumerable.SequenceEqual(invocation.GenericArguments, kvp.Key.Item2)) &&
+                ((invocation.Arguments == null && kvp.Key.Item3 == null) || invocation.Arguments.Length == kvp.Key.Item3.Length))
+            {
+               bool invocationMatching = true;
+               for (var i = 0; i < invocation.Arguments.Length && invocationMatching; i++) {
+                  invocationMatching &= kvp.Key.Item3[i].Test(invocation.Arguments[i]);
+               }
                tracker = kvp.Value;
                break;
             }
          }
-
-         if (tracker == null) {
-            var defaultValue = GetDefaultValue(invocation.Method.ReturnType);
-            trackerByArguments.Add(key, tracker = new InvocationResultTracker(defaultValue));
+         if (tracker != null) {
+            return tracker.NextResult().GetValueOrThrow();
          } else {
+            return GetDefaultValue(invocation.Method.ReturnType);
          }
-         return tracker;
       }
 
-
-      private int AddToInvocationCount(IInvocation invocation, int delta) { return AddToInvocationCount(invocation.Method, invocation.GenericArguments, invocation.Arguments, delta); }
-
-      private int AddToInvocationCount(MethodInfo methodInfo, Type[] genericArguments, object[] arguments, int delta)
+      private INMockitoSmartParameter[] ConvertInvocationArgumentsToEqualityParameters(object[] arguments)
       {
-         var key = new Tuple<MethodInfo, Type[], object[]>(methodInfo, genericArguments, arguments);
-         foreach (var kvp in invocationCountsByInvocation)
-         {
-            if (key.Item1 == kvp.Key.Item1 &&
-                ((key.Item2 == null && kvp.Key.Item2 == null) || Enumerable.SequenceEqual(key.Item2, kvp.Key.Item2)) &&
-                ((key.Item3 == null && kvp.Key.Item3 == null) || Enumerable.SequenceEqual(key.Item3, kvp.Key.Item3)))
-            {
-               var count = kvp.Value;
-               var nextCount = count + delta;
-               invocationCountsByInvocation.Remove(kvp);
-               invocationCountsByInvocation.Add(key, nextCount);
-               return nextCount;
+         return Util.Generate(arguments.Length, i => (INMockitoSmartParameter)new NMockitoEquals(arguments[i]));
+      }
+
+      private Counter GetInvocationCounter(IInvocation invocation)
+      {
+         foreach (var kvp in invocationCountsByInvocation) {
+            if (invocation.Method == kvp.Key.Item1 &&
+                ((invocation.GenericArguments == null && kvp.Key.Item2 == null) || invocation.GenericArguments.SequenceEqual(kvp.Key.Item2)) &&
+                invocation.Arguments.SequenceEqual(kvp.Key.Item3)) {
+               return kvp.Value;
             }
          }
 
-         invocationCountsByInvocation.Add(key, delta);
-         return delta;
+         var counter = new Counter();
+         invocationCountsByInvocation.Add(new KeyValuePair<CountersByInvocationKey, Counter>(new CountersByInvocationKey(invocation.Method, invocation.GenericArguments, invocation.Arguments), counter));
+         return counter;
+      }
+
+      private List<Counter> FindMatchingInvocationCounters(MethodInfo method, Type[] genericArguments, INMockitoSmartParameter[] smartParameters)
+      {
+         var results = new List<Counter>();
+         foreach (var kvp in invocationCountsByInvocation) {
+            if (method == kvp.Key.Item1 &&
+                ((genericArguments == null && kvp.Key.Item2 == null) || genericArguments.SequenceEqual(kvp.Key.Item2)) &&
+                smartParameters.Length == kvp.Key.Item3.Length) {
+               bool matching = true;
+               for (var i = 0; i < smartParameters.Length && matching; i++) {
+                  matching &= smartParameters[i].Test(kvp.Key.Item3[i]);
+               }
+               if (matching) {
+                  results.Add(kvp.Value);
+               }
+            }
+         }
+         return results;
       }
 
       public void VerifyNoMoreInteractions()
       {
          foreach (var kvp in invocationCountsByInvocation) {
-            if (kvp.Value != 0) {
-               throw new VerificationTimesMismatchException(0, kvp.Value);
+            if (kvp.Value.Count != 0) {
+               throw new VerificationTimesMismatchException(0, kvp.Value.Count);
             }
          }
       }
@@ -107,6 +165,12 @@ namespace ItzWarty.Test
       {
          if (type == typeof(void)) return null;
          return type.IsValueType ? Activator.CreateInstance(type) : null;
+      }
+
+      private class Counter
+      {
+         public Counter(int count = 0) { this.Count = count; }
+         public int Count { get; set; }
       }
    }
 }

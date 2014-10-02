@@ -4,10 +4,20 @@ namespace ItzWarty.Test
 {
    public class ReturnableWhenResult<T>
    {
+      private NMockitoGlobals.InvocationAndMockState invocationAndMockState;
+      private INMockitoSmartParameter[] smartParameters;
+
+      public ReturnableWhenResult()
+      {
+         invocationAndMockState = NMockitoGlobals.GetLastInvocationAndMockState();
+         invocationAndMockState.State.DecrementInvocationCounter(invocationAndMockState.Invocation);
+         smartParameters = NMockitoSmartParameters.CopyAndClearSmartParameters();
+      }
+
       public ReturnableWhenResult<T> ThenReturn(params T[] values)
       {
          foreach (var result in values) {
-            NMockitoWhens.HandleInvocationResult(new InvocationReturnResult(result));
+            invocationAndMockState.State.SetInvocationResult(invocationAndMockState.Invocation, smartParameters, new InvocationReturnResult(result));
          }
          return this;
       }
@@ -15,7 +25,7 @@ namespace ItzWarty.Test
       public ReturnableWhenResult<T> ThenThrow(params Exception[] exceptions)
       {
          foreach (var exception in exceptions) {
-            NMockitoWhens.HandleInvocationResult(new InvocationThrowResult(exception));
+            invocationAndMockState.State.SetInvocationResult(invocationAndMockState.Invocation, smartParameters, new InvocationThrowResult(exception));
          }
          return this;
       }

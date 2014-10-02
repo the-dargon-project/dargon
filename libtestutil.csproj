@@ -47,19 +47,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArgumentCaptor.cs" />
     <Compile Include="IInvocationResult.cs" />
+    <Compile Include="INMockitoSmartParameter.cs" />
     <Compile Include="InvocationResultTracker.cs" />
     <Compile Include="MockAttribute.cs" />
     <Compile Include="MockInitializationProcessor.cs" />
     <Compile Include="MockState.cs" />
-    <Compile Include="NMockitoAnys.cs" />
+    <Compile Include="NMockitoAny.cs" />
+    <Compile Include="NMockitoEquals.cs" />
+    <Compile Include="NMockitoNotEnoughSmartParameters.cs" />
+    <Compile Include="NMockitoSmartParameters.cs" />
     <Compile Include="NMockitoAttributes.cs" />
     <Compile Include="NMockitoGlobals.cs" />
     <Compile Include="NMockitoInstance.cs" />
     <Compile Include="NMockitoStatic.cs" />
     <Compile Include="MoqHelper.cs" />
     <Compile Include="INMockitoTimesMatcher.cs" />
-    <Compile Include="NMockitoWhens.cs" />
+    <Compile Include="NMockitoValueNotYetCapturedException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MockitoLike.cs" />
     <Compile Include="ReturnableWhenResult.cs" />

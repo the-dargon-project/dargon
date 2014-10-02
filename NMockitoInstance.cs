@@ -11,11 +11,8 @@ namespace ItzWarty.Test
 
       public ReturnableWhenResult<T> When<T>(T value)
       {
-         NMockitoWhens.HandleWhenInvocation();
          return new ReturnableWhenResult<T>();
       }
-
-      public T Any<T>() { return NMockitoAnys.CreateAny<T>(); }
 
       public INMockitoTimesMatcher Times(int count) { return new NMockitoTimesEqualMatcher(count); }
       public INMockitoTimesMatcher AnyTimes() { return new NMockitoTimesAnyMatcher(); }
@@ -43,6 +40,11 @@ namespace ItzWarty.Test
 
       [DebuggerHidden]
       public void AssertFalse(bool value) { Assert.IsFalse(value); }
+      #endregion
+
+      #region Smart Parameters
+      public T Eq<T>(T value) { return NMockitoSmartParameters.Eq(value); }
+      public T Any<T>() { return NMockitoSmartParameters.Any<T>(); }
       #endregion
    }
 }
