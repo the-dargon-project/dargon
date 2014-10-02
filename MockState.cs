@@ -89,15 +89,16 @@ namespace ItzWarty.Test
          return delta;
       }
 
-      public void VerifyNoMoreInteractions() 
+      public void VerifyNoMoreInteractions()
       {
-         foreach (var kvp in invocationCountsByInvocation)
-         {
+         foreach (var kvp in invocationCountsByInvocation) {
             if (kvp.Value != 0) {
                throw new VerificationTimesMismatchException(0, kvp.Value);
             }
          }
       }
+
+      public void ClearInteractions() { invocationCountsByInvocation.Clear(); }
 
       private object GetDefaultValue(Type type)
       {

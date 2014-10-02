@@ -47,8 +47,6 @@ namespace ItzWarty.Test
          return proxy;
       }
 
-      public static void VerifyNoMoreInteractions<T>(T mock) { statesByMock[mock].VerifyNoMoreInteractions(); }
-
       public static void VerifyNoMoreInteractions()
       {
          foreach (var state in statesByMock.Values) {
@@ -56,6 +54,16 @@ namespace ItzWarty.Test
          }
       }
 
+      public static void VerifyNoMoreInteractions<T>(T mock) { statesByMock[mock].VerifyNoMoreInteractions(); }
+
+      public static void ClearInteractions()
+      {
+         foreach (var state in statesByMock.Values) {
+            state.ClearInteractions();
+         }
+      }
+
+      public static void ClearInteractions<T>(T mock) { statesByMock[mock].ClearInteractions(); }
 
       private class MockInvocationInterceptor : IInterceptor
       {

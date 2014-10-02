@@ -25,6 +25,9 @@ namespace ItzWarty.Test
       public void VerifyNoMoreInteractions() { NMockitoStatic.VerifyNoMoreInteractions(); }
       public void VerifyNoMoreInteractions<T>(T mock) { NMockitoStatic.VerifyNoMoreInteractions(mock); }
 
+      public void ClearInteractions() { NMockitoStatic.ClearInteractions(); }
+      public void ClearInteractions<T>(T mock) { NMockitoStatic.ClearInteractions(mock); }
+
       #region Assertions
       [DebuggerHidden]
       public void AssertEquals<T>(T expected, T actual) { Assert.AreEqual(expected, actual); }
