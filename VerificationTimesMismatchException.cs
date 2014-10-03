@@ -4,8 +4,8 @@ namespace NMockito
 {
    internal class VerificationTimesMismatchException : Exception
    {
-      public VerificationTimesMismatchException(int expected, int actual)
-         : base("Expected " + expected + " invocations but found " + actual + " invocations") { }
+      public VerificationTimesMismatchException(int expected, int actual, Exception innerException = null, string explanation = null)
+         : base(("Expected " + expected + " invocations but found " + actual + " invocations") + (explanation == null ? "" : "; " + explanation), innerException) { }
    }
 
    internal class VerificationNotInvokedException : Exception

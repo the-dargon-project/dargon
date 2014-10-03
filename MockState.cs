@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Configuration;
 using System.Reflection;
 using Castle.DynamicProxy;
 using ItzWarty;
@@ -148,21 +149,21 @@ namespace NMockito
 
       public void VerifyNoMoreInteractions()
       {
+         Exception exception = null;
          foreach (var kvp in invocationCountsByInvocation) {
             if (kvp.Value.Count != 0) {
-               throw new VerificationTimesMismatchException(0, kvp.Value.Count);
+               string explanation = kvp.Key.Item1.Name + " of " + interfaceType.Name;
+               exception = new VerificationTimesMismatchException(0, kvp.Value.Count, exception, explanation);
             }
          }
+         if (exception != null)
+            throw exception;
       }
 
       public void ClearInteractions() { invocationCountsByInvocation.Clear(); }
 
       public void ClearInteractions(int expectedCount)
       {
-         foreach (var kvp in invocationCountsByInvocation)
-         {
-            Console.WriteLine(kvp.Value.Count);
-         }
          var actualCount = invocationCountsByInvocation.Sum(kvp => kvp.Value.Count);
          if (expectedCount != actualCount) {
             throw new VerificationTimesMismatchException(expectedCount, actualCount);
