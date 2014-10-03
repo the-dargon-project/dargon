@@ -20,19 +20,21 @@ namespace NMockito
          createMockGenericDefinition = methods.First(info => info.IsGenericMethodDefinition && info.Name.StartsWith("CreateMock"));
       }
 
-      public static object CreateMock(Type t) 
+      public static object CreateMock(Type t, bool tracked = true) 
       { 
          var factory = createMockGenericDefinition.MakeGenericMethod(new[] { t });
-         return factory.Invoke(null, null);
+         return factory.Invoke(null, new object[] { tracked });
       }
 
-      public static T CreateMock<T>()
+      public static T CreateMock<T>(bool tracked = true)
          where T : class
       {
          var state = new MockState(typeof(T));
          var interceptor = new MockInvocationInterceptor(state);
          var mock = proxyGenerator.CreateInterfaceProxyWithoutTarget<T>(interceptor);
-         statesByMock.Add(mock, state);
+         if (tracked) {
+            statesByMock.Add(mock, state);
+         }
          return mock;
       }
 
