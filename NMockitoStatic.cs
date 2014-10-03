@@ -38,13 +38,13 @@ namespace NMockito
          return mock;
       }
 
-      public static T Verify<T>(T mock, INMockitoTimesMatcher times = null)
+      public static T Verify<T>(T mock, INMockitoTimesMatcher times = null, NMockitoOrder order = NMockitoOrder.DontCare)
          where T : class
       {
          times = times ?? new NMockitoTimesAnyMatcher();
 
          var state = statesByMock[mock];
-         var interceptor = new MockVerifyInterceptor(state, times);
+         var interceptor = new MockVerifyInterceptor(state, times, order);
          var proxy = proxyGenerator.CreateInterfaceProxyWithoutTarget<T>(interceptor);
          return proxy;
       }
@@ -86,14 +86,16 @@ namespace NMockito
       {
          private readonly MockState state;
          private readonly INMockitoTimesMatcher times;
+         private readonly NMockitoOrder order;
 
-         public MockVerifyInterceptor(MockState state, INMockitoTimesMatcher times)
+         public MockVerifyInterceptor(MockState state, INMockitoTimesMatcher times, NMockitoOrder order)
          {
             this.state = state;
             this.times = times;
+            this.order = order;
          }
 
-         public void Intercept(IInvocation invocation) { state.HandleMockVerification(invocation, times); }
+         public void Intercept(IInvocation invocation) { state.HandleMockVerification(invocation, times, order); }
       }
    }
 }

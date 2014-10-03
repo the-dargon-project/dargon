@@ -6,6 +6,8 @@ using System.Reflection;
 using Castle.DynamicProxy;
 using ItzWarty;
 
+using Counter = System.Collections.Generic.List<int>;
+
 namespace NMockito
 {
    internal class MockState
@@ -53,7 +55,7 @@ namespace NMockito
       public void HandleMockInvocation(IInvocation invocation)
       {
          this.lastInvocation = invocation;
-         GetInvocationCounter(invocation).Count++;
+         GetInvocationCounter(invocation).Add(NMockitoInvocationCounters.TakeNextInvocationCounter());
          invocation.ReturnValue = GetInvocationResult(invocation);
          NMockitoGlobals.SetLastInvocationAndMockState(invocation, this);
       }
@@ -61,10 +63,11 @@ namespace NMockito
       public void DecrementInvocationCounter(IInvocation whenBodyInvocation) 
       { 
          // Rollback when(mock.Method(params)) invocation (mock.Method(params))
-         GetInvocationCounter(whenBodyInvocation).Count--; 
+         var counter = GetInvocationCounter(whenBodyInvocation); 
+         counter.RemoveAt(counter.Count - 1);
       }
 
-      public void HandleMockVerification(IInvocation invocation, INMockitoTimesMatcher times) 
+      public void HandleMockVerification(IInvocation invocation, INMockitoTimesMatcher times, NMockitoOrder order) 
       { 
          invocation.ReturnValue = GetDefaultValue(invocation.Method.ReturnType);
 
@@ -79,7 +82,10 @@ namespace NMockito
          var counters = FindMatchingInvocationCounters(invocation.Method, invocation.GenericArguments, smartParameters);
          times.MatchOrThrow(counters.Sum(counter => counter.Count));
          foreach (var counter in counters) {
-            counter.Count = 0;
+            foreach (var count in counter) {
+               NMockitoInvocationCounters.AcceptVerificationCounterOrThrow(count, order);
+            }
+            counter.Clear();
          }
       }
 
@@ -113,7 +119,7 @@ namespace NMockito
          return Util.Generate(arguments.Length, i => (INMockitoSmartParameter)new NMockitoEquals(arguments[i]));
       }
 
-      private Counter GetInvocationCounter(IInvocation invocation)
+      private List<int> GetInvocationCounter(IInvocation invocation)
       {
          foreach (var kvp in invocationCountsByInvocation) {
             if (invocation.Method == kvp.Key.Item1 &&
@@ -176,12 +182,6 @@ namespace NMockito
       {
          if (type == typeof(void)) return null;
          return type.IsValueType ? Activator.CreateInstance(type) : null;
-      }
-
-      private class Counter
-      {
-         public Counter(int count = 0) { this.Count = count; }
-         public int Count { get; set; }
       }
    }
 }

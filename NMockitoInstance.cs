@@ -18,7 +18,7 @@ namespace NMockito
 
       public WhenContext<T> When<T>(T value) { return new WhenContext<T>(); }
 
-      public T Verify<T>(T mock, INMockitoTimesMatcher times = null) where T : class { return NMockitoStatic.Verify(mock, times); }
+      public T Verify<T>(T mock, INMockitoTimesMatcher times = null, NMockitoOrder order = NMockitoOrder.DontCare) where T : class { return NMockitoStatic.Verify(mock, times, order); }
 
       public void VerifyNoMoreInteractions() { NMockitoStatic.VerifyNoMoreInteractions(); }
       public void VerifyNoMoreInteractions<T>(T mock) { NMockitoStatic.VerifyNoMoreInteractions(mock); }
@@ -38,6 +38,12 @@ namespace NMockito
       #region Smart Parameters
       public T Eq<T>(T value) { return NMockitoSmartParameters.Eq(value); }
       public T Any<T>(Func<T, bool> test = null) { return NMockitoSmartParameters.Any<T>(test); }
+      #endregion
+
+      #region Orders
+      public NMockitoOrder DontCare() { return NMockitoOrder.DontCare; }
+      public NMockitoOrder WithPrevious() { return NMockitoOrder.WithPrevious; }
+      public NMockitoOrder AfterPrevious() { return NMockitoOrder.AfterPrevious; }
       #endregion
    }
 }
