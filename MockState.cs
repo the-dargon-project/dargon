@@ -103,8 +103,10 @@ namespace NMockito
                for (var i = 0; i < invocation.Arguments.Length && invocationMatching; i++) {
                   invocationMatching &= kvp.Key.Item3[i].Test(invocation.Arguments[i]);
                }
-               tracker = kvp.Value;
-               break;
+               if (invocationMatching) {
+                  tracker = kvp.Value;
+                  break;
+               }
             }
          }
          if (tracker != null) {
