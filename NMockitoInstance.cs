@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -37,6 +38,7 @@ namespace NMockito
 
       #region Smart Parameters
       public T Eq<T>(T value) { return NMockitoSmartParameters.Eq(value); }
+      public IEnumerable<T> EqSequence<T>(IEnumerable<T> value) { return NMockitoSmartParameters.EqSequence(value); }
       public T Any<T>(Func<T, bool> test = null) { return NMockitoSmartParameters.Any<T>(test); }
       #endregion
 

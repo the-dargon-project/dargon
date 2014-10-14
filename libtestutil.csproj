@@ -53,6 +53,7 @@
     <Compile Include="MockState.cs" />
     <Compile Include="NMockitoAny.cs" />
     <Compile Include="NMockitoEquals.cs" />
+    <Compile Include="NMockitoEqualsSequence.cs" />
     <Compile Include="NMockitoInvocationCounters.cs" />
     <Compile Include="NMockitoNotEnoughSmartParameters.cs" />
     <Compile Include="NMockitoOrder.cs" />

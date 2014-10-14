@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NMockito
 {
@@ -17,6 +18,12 @@ namespace NMockito
       {
          smartParameters.Add(new NMockitoEquals(value));
          return default(T);
+      }
+
+      public static IEnumerable<T> EqSequence<T>(IEnumerable<T> value) 
+      { 
+         smartParameters.Add(new NMockitoEqualsSequence<T>(value));
+         return Enumerable.Empty<T>();
       }
 
       internal static void __AddSmartParameter(INMockitoSmartParameter value) { smartParameters.Add(value); }
