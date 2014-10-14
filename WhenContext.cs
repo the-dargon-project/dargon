@@ -16,6 +16,9 @@ namespace NMockito
 
       public WhenContext<T> ThenReturn(params T[] values)
       {
+         if (values == null)
+            values = new T[] { default(T) };
+
          foreach (var result in values) {
             invocationAndMockState.State.SetInvocationResult(invocationAndMockState.Invocation, smartParameters, new InvocationReturnResult(result));
          }
