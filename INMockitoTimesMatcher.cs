@@ -19,4 +19,9 @@ namespace NMockito
    {
       public void MatchOrThrow(int invocations) { if (invocations == 0) throw new VerificationNotInvokedException(); }
    }
+
+   public class NMockitoTimesAnyOrNoneMatcher : INMockitoTimesMatcher
+   {
+      public void MatchOrThrow(int invocations) { }
+   }
 }
