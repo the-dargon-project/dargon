@@ -18,6 +18,7 @@ namespace NMockito
       public INMockitoTimesMatcher AnyOrNoneTimes() { return new NMockitoTimesAnyOrNoneMatcher(); }
       public INMockitoTimesMatcher Times(int count) { return new NMockitoTimesEqualMatcher(count); }
       public INMockitoTimesMatcher Never() {  return Times(0); }
+      public INMockitoTimesMatcher Once() { return Times(1); }
 
       public WhenContext<T> When<T>(T value) { return new WhenContext<T>(); }
 
