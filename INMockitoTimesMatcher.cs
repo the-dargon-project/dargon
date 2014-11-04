@@ -1,5 +1,4 @@
-﻿
-namespace NMockito
+﻿namespace NMockito
 {
    public interface INMockitoTimesMatcher
    {

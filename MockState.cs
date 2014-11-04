@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Configuration;
 using System.Reflection;
 using Castle.DynamicProxy;
-using ItzWarty;
 
 using Counter = System.Collections.Generic.List<int>;
 
@@ -118,7 +117,11 @@ namespace NMockito
 
       private INMockitoSmartParameter[] ConvertInvocationArgumentsToEqualityParameters(object[] arguments)
       {
-         return Util.Generate(arguments.Length, i => (INMockitoSmartParameter)new NMockitoEquals(arguments[i]));
+         var results = new INMockitoSmartParameter[arguments.Length];
+         for (var i = 0; i < arguments.Length; i++) {
+            results[i] = new NMockitoEquals(arguments[i]);
+         }
+         return results;
       }
 
       private List<int> GetInvocationCounter(IInvocation invocation)

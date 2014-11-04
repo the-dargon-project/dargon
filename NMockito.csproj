@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>NMockito</RootNamespace>
-    <AssemblyName>nmockito</AssemblyName>
+    <AssemblyName>NMockito</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -34,14 +34,15 @@
     <Reference Include="Castle.Core">
       <HintPath>..\the-dargon-project\packages\Castle.Core.3.3.1\lib\net45\Castle.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="xunit">
+      <HintPath>packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArgumentCaptor.cs" />
@@ -49,7 +50,6 @@
     <Compile Include="INMockitoSmartParameter.cs" />
     <Compile Include="InvocationResultTracker.cs" />
     <Compile Include="MockAttribute.cs" />
-    <Compile Include="MockInitializationProcessor.cs" />
     <Compile Include="MockState.cs" />
     <Compile Include="NMockitoAny.cs" />
     <Compile Include="NMockitoEquals.cs" />
@@ -71,12 +71,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\libwarty\ItzWarty.csproj">
-      <Project>{097b6b08-4034-408a-b3c0-a12e8f9e8893}</Project>
-      <Name>ItzWarty</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

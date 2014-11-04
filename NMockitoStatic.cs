@@ -1,9 +1,8 @@
-﻿using System;
+﻿using Castle.DynamicProxy;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Reflection;
-using Castle.DynamicProxy;
 
 namespace NMockito
 {

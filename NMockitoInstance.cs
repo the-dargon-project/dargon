@@ -1,13 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+using Assert = Xunit.Assert;
 
 namespace NMockito
 {
    public class NMockitoInstance
    {
-      public void InitializeMocks() { ClearInteractions(); NMockitoAttributes.InitializeMocks(this); }
+      public NMockitoInstance()
+      {
+         ReinitializeMocks();
+      }
+
+      public void ReinitializeMocks()
+      {
+         ClearInteractions();
+         NMockitoAttributes.InitializeMocks(this);
+      }
 
       public T CreateMock<T>() where T : class { return NMockitoStatic.CreateMock<T>(); }
       public object CreateMock(Type type) { return NMockitoStatic.CreateMock(type); }
@@ -32,11 +42,11 @@ namespace NMockito
       public void ClearInteractions<T>(T mock, int expectedCount) { NMockitoStatic.ClearInteractions(mock, expectedCount); }
 
       #region Assertions
-      [DebuggerHidden] public void AssertEquals<T>(T expected, T actual) { Assert.AreEqual(expected, actual); }
-      [DebuggerHidden] public void AssertNull<T>(T value) { Assert.IsNull(value); }
-      [DebuggerHidden] public void AssertNotNull<T>(T value) { Assert.IsNotNull(value); }
-      [DebuggerHidden] public void AssertTrue(bool value) { Assert.IsTrue(value); }
-      [DebuggerHidden] public void AssertFalse(bool value) { Assert.IsFalse(value); }
+      [DebuggerHidden] public void AssertEquals<T>(T expected, T actual) { Assert.Equal(expected, actual); }
+      [DebuggerHidden] public void AssertNull<T>(T value) { Assert.Null(value); }
+      [DebuggerHidden] public void AssertNotNull<T>(T value) { Assert.NotNull(value); }
+      [DebuggerHidden] public void AssertTrue(bool value) { Assert.True(value); }
+      [DebuggerHidden] public void AssertFalse(bool value) { Assert.False(value); }
       #endregion
 
       #region Smart Parameters
