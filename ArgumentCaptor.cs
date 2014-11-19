@@ -9,7 +9,7 @@
 
       public ArgumentCaptor() { this.capturer = new Capturer(this); } 
 
-      public T Capture()
+      public T GetParameter()
       {
          NMockitoSmartParameters.__AddSmartParameter(capturer);
          return default(T);

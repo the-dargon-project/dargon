@@ -1,4 +1,5 @@
 ﻿using System;
+using Castle.DynamicProxy.Generators.Emitters;
 
 namespace NMockito
 {
@@ -20,7 +21,7 @@ namespace NMockito
             values = new T[] { default(T) };
 
          foreach (var result in values) {
-            invocationAndMockState.State.SetInvocationResult(invocationAndMockState.Invocation, smartParameters, new InvocationReturnResult(result));
+            invocationAndMockState.State.AddInvocationExecutor(invocationAndMockState.Invocation, smartParameters, new InvocationReturnExecutor(result));
          }
          return this;
       }
@@ -28,8 +29,17 @@ namespace NMockito
       public WhenContext<T> ThenThrow(params Exception[] exceptions)
       {
          foreach (var exception in exceptions) {
-            invocationAndMockState.State.SetInvocationResult(invocationAndMockState.Invocation, smartParameters, new InvocationThrowResult(exception));
+            invocationAndMockState.State.AddInvocationExecutor(invocationAndMockState.Invocation, smartParameters, new InvocationThrowExecutor(exception));
          }
+         return this;
+      }
+
+      public WhenContext<T> Set<TMock>(TMock mock, TMock value)
+         where TMock : class {
+         if (mock == null) {
+            throw new ArgumentNullException("mock");
+         }
+         invocationAndMockState.State.AddInvocationExecutor(invocationAndMockState.Invocation, smartParameters, new InvocationSetExecutor(mock, value));
          return this;
       }
    }

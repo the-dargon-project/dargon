@@ -21,22 +21,34 @@ namespace NMockito
          this.interfaceType = interfaceType;
       }
 
-      public void SetInvocationResult(IInvocation invocation, INMockitoSmartParameter[] smartParameters, IInvocationResult result)
+      public void AddInvocationExecutor(IInvocation invocation, INMockitoSmartParameter[] smartParameters, IInvocationExecutor executor)
       {
          var method = invocation.Method;
          var genericArguments = invocation.GenericArguments;
-         var parameters = smartParameters;
 
-         if (parameters.Length != invocation.Arguments.Length)
-            parameters = ConvertInvocationArgumentsToEqualityParameters(invocation.Arguments);
+         // Convert all invocation arguments into eq(arg[i]) smart parameters
+         if (smartParameters.Length != invocation.Arguments.Length)
+            smartParameters = ConvertInvocationArgumentsToEqualityParameters(invocation.Arguments);
 
-         var tracker = trackerByArguments.FirstOrDefault(kvp => kvp.Key.Item1 == method && kvp.Key.Item2 == genericArguments && SmartParametersEqual(kvp.Key.Item3, parameters)).Value;
+         // Find out/ref parameters, swap them with null and record the index => smart parameter replacement.
+         var refReplacementsByIndex = new List<KeyValuePair<int, object>>();
+         var methodParameters = method.GetParameters();
+         for (var i = 0; i < methodParameters.Length; i++) {
+            var parameter = methodParameters[i];
+            if (parameter.Attributes.HasFlag(ParameterAttributes.Out)) {
+               var replacement = invocation.Arguments[i];
+               smartParameters[i] = null;
+               refReplacementsByIndex.Add(new KeyValuePair<int, object>(i, replacement));
+            }
+         }
+
+         var tracker = trackerByArguments.FirstOrDefault(kvp => kvp.Key.Item1 == method && kvp.Key.Item2 == genericArguments && SmartParametersEqual(kvp.Key.Item3, smartParameters)).Value;
          if (tracker == null) {
-            tracker = new InvocationResultTracker(GetDefaultValue(method.ReturnType));
-            var key = new Tuple<MethodInfo, Type[], INMockitoSmartParameter[]>(method, genericArguments, parameters);
+            tracker = new InvocationResultTracker(GetDefaultValue(method.ReturnType), refReplacementsByIndex);
+            var key = new Tuple<MethodInfo, Type[], INMockitoSmartParameter[]>(method, genericArguments, smartParameters);
             trackerByArguments.Add(new KeyValuePair<Tuple<MethodInfo, Type[], INMockitoSmartParameter[]>, InvocationResultTracker>(key, tracker));
          }
-         tracker.AddResult(result);
+         tracker.AddResult(executor);
       }
 
       private bool SmartParametersEqual(INMockitoSmartParameter[] a, INMockitoSmartParameter[] b) {
@@ -44,7 +56,7 @@ namespace NMockito
             return false;
          }
          for (var i = 0; i < a.Length; i++) {
-            if (!a[i].Equals(b[i])) {
+            if (!Equals(a[i], b[i])) {
                return false;
             }
          }
@@ -77,6 +89,14 @@ namespace NMockito
          if (smartParameters.Length != invocation.Arguments.Length) {
             throw new NMockitoNotEnoughSmartParameters();
          }
+         // Find out/ref parameters, swap them with null 
+         var methodParameters = invocation.Method.GetParameters();
+         for (var i = 0; i < methodParameters.Length; i++) {
+            var parameter = methodParameters[i];
+            if (parameter.Attributes.HasFlag(ParameterAttributes.Out)) {
+               smartParameters[i] = null;
+            }
+         }
 
          var counters = FindMatchingInvocationCounters(invocation.Method, invocation.GenericArguments, smartParameters);
          times.MatchOrThrow(counters.Sum(counter => counter.Count));
@@ -100,7 +120,7 @@ namespace NMockito
             {
                bool invocationMatching = true;
                for (var i = 0; i < invocation.Arguments.Length && invocationMatching; i++) {
-                  invocationMatching &= kvp.Key.Item3[i].Test(invocation.Arguments[i]);
+                  invocationMatching &= kvp.Key.Item3[i] == null || kvp.Key.Item3[i].Test(invocation.Arguments[i]);
                }
                if (invocationMatching) {
                   tracker = kvp.Value;
@@ -108,11 +128,32 @@ namespace NMockito
                }
             }
          }
+
+         var returnValue = GetDefaultValue(invocation.Method.ReturnType);
          if (tracker != null) {
-            return tracker.NextResult().GetValueOrThrow();
-         } else {
-            return GetDefaultValue(invocation.Method.ReturnType);
+            // replace smart parameter with their placeholders
+            var refReplacementsByIndex = tracker.RefReplacementsByIndex;
+            foreach (var kvp in refReplacementsByIndex) {
+               invocation.Arguments[kvp.Key] = kvp.Value;
+            }
+            var currentExecutor = tracker.NextResult();
+            while (true) {
+               returnValue = currentExecutor.Execute(invocation);
+               if (currentExecutor.IsTerminal) {
+                  break;
+               } else {
+                  currentExecutor = tracker.NextResult();
+               }
+            } 
+
+            // replace smart parameters' placeholders with null, if they're not swapped out
+            foreach (var kvp in refReplacementsByIndex) {
+               if (ReferenceEquals(invocation.Arguments[kvp.Key], kvp.Value)) {
+                  invocation.Arguments[kvp.Key] = null;
+               }
+            }
          }
+         return returnValue;
       }
 
       private INMockitoSmartParameter[] ConvertInvocationArgumentsToEqualityParameters(object[] arguments)
@@ -148,7 +189,7 @@ namespace NMockito
                 smartParameters.Length == kvp.Key.Item3.Length) {
                bool matching = true;
                for (var i = 0; i < smartParameters.Length && matching; i++) {
-                  matching &= smartParameters[i].Test(kvp.Key.Item3[i]);
+                  matching &= smartParameters[i] == null || kvp.Key.Item3[i] == null || smartParameters[i].Test(kvp.Key.Item3[i]);
                }
                if (matching) {
                   results.Add(kvp.Value);

@@ -24,6 +24,10 @@ namespace NMockito
       public T CreateUntrackedMock<T>() where T : class { return NMockitoStatic.CreateMock<T>(false); }
       public object CreateUntrackedMock(Type type) { return NMockitoStatic.CreateMock(type, false); }
 
+      public T CreateRef<T>() where T : class {
+         return CreateUntrackedMock<T>();
+      }
+
       public INMockitoTimesMatcher AnyTimes() { return new NMockitoTimesAnyMatcher(); }
       public INMockitoTimesMatcher AnyOrNoneTimes() { return new NMockitoTimesAnyOrNoneMatcher(); }
       public INMockitoTimesMatcher Times(int count) { return new NMockitoTimesEqualMatcher(count); }
