@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace NMockito
 {
@@ -12,7 +14,7 @@ namespace NMockito
             var mockAttribute = field.GetCustomAttribute<MockAttribute>();
             if (mockAttribute != null) {
                var fieldType = field.FieldType;
-               field.SetValue(target, NMockitoStatic.CreateMock(fieldType));
+               field.SetValue(target, NMockitoStatic.CreateMock(fieldType, mockAttribute.Tracked));
             }
          }
       }
