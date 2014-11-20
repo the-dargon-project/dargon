@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -20,10 +21,10 @@ namespace NMockito
          return default(T);
       }
 
-      public static TReturn EqSequence<TReturn, TElement>(TReturn value)
-         where TReturn : IEnumerable<TElement> {
-         smartParameters.Add(new NMockitoEqualsSequence<TElement>(value));
-         return default(TReturn);
+      public static TCollection EqSequence<TCollection>(TCollection value)
+         where TCollection : IEnumerable {
+         smartParameters.Add(new NMockitoEqualsSequence(value));
+         return default(TCollection);
       }
 
       internal static void __AddSmartParameter(INMockitoSmartParameter value) { smartParameters.Add(value); }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -56,9 +57,9 @@ namespace NMockito
       #region Smart Parameters
       public T Eq<T>(T value) { return NMockitoSmartParameters.Eq(value); }
 
-      public TReturn EqSequence<TReturn, TElement>(TReturn value) 
-         where TReturn : IEnumerable<TElement> {
-         return NMockitoSmartParameters.EqSequence<TReturn, TElement>(value);
+      public TCollection EqSequence<TCollection>(TCollection value)
+         where TCollection : IEnumerable {
+         return NMockitoSmartParameters.EqSequence(value);
       }
 
       public T Any<T>(Func<T, bool> test = null) { return NMockitoSmartParameters.Any<T>(test); }
