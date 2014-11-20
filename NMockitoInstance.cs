@@ -55,7 +55,12 @@ namespace NMockito
 
       #region Smart Parameters
       public T Eq<T>(T value) { return NMockitoSmartParameters.Eq(value); }
-      public IEnumerable<T> EqSequence<T>(IEnumerable<T> value) { return NMockitoSmartParameters.EqSequence(value); }
+
+      public TReturn EqSequence<TReturn, TElement>(TReturn value) 
+         where TReturn : IEnumerable<TElement> {
+         return NMockitoSmartParameters.EqSequence<TReturn, TElement>(value);
+      }
+
       public T Any<T>(Func<T, bool> test = null) { return NMockitoSmartParameters.Any<T>(test); }
       #endregion
 

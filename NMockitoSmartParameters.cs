@@ -20,10 +20,10 @@ namespace NMockito
          return default(T);
       }
 
-      public static IEnumerable<T> EqSequence<T>(IEnumerable<T> value) 
-      { 
-         smartParameters.Add(new NMockitoEqualsSequence<T>(value));
-         return Enumerable.Empty<T>();
+      public static TReturn EqSequence<TReturn, TElement>(TReturn value)
+         where TReturn : IEnumerable<TElement> {
+         smartParameters.Add(new NMockitoEqualsSequence<TElement>(value));
+         return default(TReturn);
       }
 
       internal static void __AddSmartParameter(INMockitoSmartParameter value) { smartParameters.Add(value); }
