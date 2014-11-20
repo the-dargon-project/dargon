@@ -11,64 +11,55 @@ namespace NMockito
    {
       public NMockitoInstance()
       {
-         ReinitializeMocks();
+         NMockitoStatic.ReinitializeMocks(this);
       }
 
-      public void ReinitializeMocks()
-      {
-         ClearInteractions();
-         NMockitoAttributes.InitializeMocks(this);
-      }
+      [DebuggerHidden] public T CreateMock<T>() where T : class { return NMockitoStatic.CreateMock<T>(); }
+      [DebuggerHidden] public object CreateMock(Type type) { return NMockitoStatic.CreateMock(type); }
+      [DebuggerHidden] public T CreateUntrackedMock<T>() where T : class { return NMockitoStatic.CreateUntrackedMock<T>(); }
+      [DebuggerHidden] public object CreateUntrackedMock(Type type) { return NMockitoStatic.CreateUntrackedMock(type); }
+      [DebuggerHidden] public T CreateRef<T>() where T : class { return NMockitoStatic.CreateRef<T>(); }
 
-      public T CreateMock<T>() where T : class { return NMockitoStatic.CreateMock<T>(); }
-      public object CreateMock(Type type) { return NMockitoStatic.CreateMock(type); }
-      public T CreateUntrackedMock<T>() where T : class { return NMockitoStatic.CreateMock<T>(false); }
-      public object CreateUntrackedMock(Type type) { return NMockitoStatic.CreateMock(type, false); }
+      [DebuggerHidden] public INMockitoTimesMatcher AnyTimes() { return NMockitoStatic.AnyTimes(); }
+      [DebuggerHidden] public INMockitoTimesMatcher AnyOrNoneTimes() { return NMockitoStatic.AnyOrNoneTimes(); }
+      [DebuggerHidden] public INMockitoTimesMatcher Times(int count) { return NMockitoStatic.Times(count); }
+      [DebuggerHidden] public INMockitoTimesMatcher Never() {  return NMockitoStatic.Never(); }
+      [DebuggerHidden] public INMockitoTimesMatcher Once() { return NMockitoStatic.Once(); }
 
-      public T CreateRef<T>() where T : class {
-         return CreateUntrackedMock<T>();
-      }
+      [DebuggerHidden] public WhenContext<T> When<T>(T value) { return NMockitoStatic.When(value); }
 
-      public INMockitoTimesMatcher AnyTimes() { return new NMockitoTimesAnyMatcher(); }
-      public INMockitoTimesMatcher AnyOrNoneTimes() { return new NMockitoTimesAnyOrNoneMatcher(); }
-      public INMockitoTimesMatcher Times(int count) { return new NMockitoTimesEqualMatcher(count); }
-      public INMockitoTimesMatcher Never() {  return Times(0); }
-      public INMockitoTimesMatcher Once() { return Times(1); }
+      [DebuggerHidden] public T Verify<T>(T mock, INMockitoTimesMatcher times = null, NMockitoOrder order = NMockitoOrder.DontCare) where T : class { return NMockitoStatic.Verify(mock, times, order); }
 
-      public WhenContext<T> When<T>(T value) { return new WhenContext<T>(); }
+      [DebuggerHidden] public void VerifyNoMoreInteractions() { NMockitoStatic.VerifyNoMoreInteractions(); }
+      [DebuggerHidden] public void VerifyNoMoreInteractions<T>(T mock) { NMockitoStatic.VerifyNoMoreInteractions(mock); }
 
-      public T Verify<T>(T mock, INMockitoTimesMatcher times = null, NMockitoOrder order = NMockitoOrder.DontCare) where T : class { return NMockitoStatic.Verify(mock, times, order); }
-
-      public void VerifyNoMoreInteractions() { NMockitoStatic.VerifyNoMoreInteractions(); }
-      public void VerifyNoMoreInteractions<T>(T mock) { NMockitoStatic.VerifyNoMoreInteractions(mock); }
-
-      public void ClearInteractions() { NMockitoStatic.ClearInteractions(); }
-      public void ClearInteractions<T>(T mock) { NMockitoStatic.ClearInteractions(mock); }
-      public void ClearInteractions<T>(T mock, int expectedCount) { NMockitoStatic.ClearInteractions(mock, expectedCount); }
+      [DebuggerHidden] public void ClearInteractions() { NMockitoStatic.ClearInteractions(); }
+      [DebuggerHidden] public void ClearInteractions<T>(T mock) { NMockitoStatic.ClearInteractions(mock); }
+      [DebuggerHidden] public void ClearInteractions<T>(T mock, int expectedCount) { NMockitoStatic.ClearInteractions(mock, expectedCount); }
 
       #region Assertions
-      [DebuggerHidden] public void AssertEquals<T>(T expected, T actual) { if (!Equals(expected, actual)) Assert.Equal(expected, actual); }
-      [DebuggerHidden] public void AssertNull<T>(T value) { Assert.Null(value); }
-      [DebuggerHidden] public void AssertNotNull<T>(T value) { Assert.NotNull(value); }
-      [DebuggerHidden] public void AssertTrue(bool value) { Assert.True(value); }
-      [DebuggerHidden] public void AssertFalse(bool value) { Assert.False(value); }
+      [DebuggerHidden] public void AssertEquals<T>(T expected, T actual) { NMockitoStatic.AssertEquals(expected, actual); }
+      [DebuggerHidden] public void AssertNull<T>(T value) { NMockitoStatic.AssertNull(value); }
+      [DebuggerHidden] public void AssertNotNull<T>(T value) { NMockitoStatic.AssertNotNull(value); }
+      [DebuggerHidden] public void AssertTrue(bool value) { NMockitoStatic.AssertTrue(value); }
+      [DebuggerHidden] public void AssertFalse(bool value) { NMockitoStatic.AssertFalse(value); }
       #endregion
 
       #region Smart Parameters
-      public T Eq<T>(T value) { return NMockitoSmartParameters.Eq(value); }
+      [DebuggerHidden] public T Eq<T>(T value) { return NMockitoSmartParameters.Eq(value); }
 
-      public TCollection EqSequence<TCollection>(TCollection value)
+      [DebuggerHidden] public TCollection EqSequence<TCollection>(TCollection value)
          where TCollection : IEnumerable {
          return NMockitoSmartParameters.EqSequence(value);
       }
 
-      public T Any<T>(Func<T, bool> test = null) { return NMockitoSmartParameters.Any<T>(test); }
+      [DebuggerHidden] public T Any<T>(Func<T, bool> test = null) { return NMockitoSmartParameters.Any<T>(test); }
       #endregion
 
       #region Orders
-      public NMockitoOrder DontCare() { return NMockitoOrder.DontCare; }
-      public NMockitoOrder WithPrevious() { return NMockitoOrder.WithPrevious; }
-      public NMockitoOrder AfterPrevious() { return NMockitoOrder.AfterPrevious; }
+      [DebuggerHidden] public NMockitoOrder DontCare() { return NMockitoStatic.DontCare(); }
+      [DebuggerHidden] public NMockitoOrder WithPrevious() { return NMockitoStatic.WithPrevious(); }
+      [DebuggerHidden] public NMockitoOrder AfterPrevious() { return NMockitoStatic.AfterPrevious(); }
       #endregion
    }
 }

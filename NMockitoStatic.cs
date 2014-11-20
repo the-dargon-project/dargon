@@ -1,8 +1,10 @@
-﻿using Castle.DynamicProxy;
+﻿using System.Diagnostics;
+using Castle.DynamicProxy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Xunit;
 
 namespace NMockito
 {
@@ -17,6 +19,11 @@ namespace NMockito
          var type = typeof(NMockitoStatic);
          var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public);
          createMockGenericDefinition = methods.First(info => info.IsGenericMethodDefinition && info.Name.StartsWith("CreateMock"));
+      }
+
+      public static void ReinitializeMocks(object self) {
+         ClearInteractions();
+         NMockitoAttributes.InitializeMocks(self);
       }
 
       public static object CreateMock(Type t, bool tracked = true) 
@@ -36,6 +43,22 @@ namespace NMockito
          }
          return mock;
       }
+      
+      public static T CreateUntrackedMock<T>() where T : class { return CreateMock<T>(false); }
+      public static object CreateUntrackedMock(Type type) { return CreateMock(type, false); }
+
+      public static T CreateRef<T>() 
+         where T : class {
+         return CreateMock<T>(false);
+      }
+
+      public static INMockitoTimesMatcher AnyTimes() { return new NMockitoTimesAnyMatcher(); }
+      public static INMockitoTimesMatcher AnyOrNoneTimes() { return new NMockitoTimesAnyOrNoneMatcher(); }
+      public static INMockitoTimesMatcher Times(int count) { return new NMockitoTimesEqualMatcher(count); }
+      public static INMockitoTimesMatcher Never() { return Times(0); }
+      public static INMockitoTimesMatcher Once() { return Times(1); }
+
+      public static WhenContext<T> When<T>(T value) { return new WhenContext<T>(); }
 
       public static T Verify<T>(T mock, INMockitoTimesMatcher times = null, NMockitoOrder order = NMockitoOrder.DontCare)
          where T : class
@@ -72,6 +95,16 @@ namespace NMockito
       }
 
       public static void ClearInteractions<T>(T mock, int expectedCount) { statesByMock[mock].ClearInteractions(expectedCount); }
+
+      public static void AssertEquals<T>(T expected, T actual) { if (!Equals(expected, actual)) Assert.Equal(expected, actual); }
+      public static void AssertNull<T>(T value) { Assert.Null(value); }
+      public static void AssertNotNull<T>(T value) { Assert.NotNull(value); }
+      public static void AssertTrue(bool value) { Assert.True(value); }
+      public static void AssertFalse(bool value) { Assert.False(value); }
+
+      public static NMockitoOrder DontCare() { return NMockitoOrder.DontCare; }
+      public static NMockitoOrder WithPrevious() { return NMockitoOrder.WithPrevious; }
+      public static NMockitoOrder AfterPrevious() { return NMockitoOrder.AfterPrevious; }
 
       private class MockInvocationInterceptor : IInterceptor
       {
