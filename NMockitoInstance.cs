@@ -47,7 +47,7 @@ namespace NMockito
       public void ClearInteractions<T>(T mock, int expectedCount) { NMockitoStatic.ClearInteractions(mock, expectedCount); }
 
       #region Assertions
-      [DebuggerHidden] public void AssertEquals<T>(T expected, T actual) { Assert.Equal(expected, actual); }
+      [DebuggerHidden] public void AssertEquals<T>(T expected, T actual) { if (!Equals(expected, actual)) Assert.Equal(expected, actual); }
       [DebuggerHidden] public void AssertNull<T>(T value) { Assert.Null(value); }
       [DebuggerHidden] public void AssertNotNull<T>(T value) { Assert.NotNull(value); }
       [DebuggerHidden] public void AssertTrue(bool value) { Assert.True(value); }
