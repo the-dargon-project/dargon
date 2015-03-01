@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Dargon.Courier.Identities;
 using Dargon.PortableObjects;
 using NMockito;
+using System;
 
-namespace Dargon.Courier.Impl.Tests {
+namespace Dargon.Courier.Impl.Identities {
    public class CourierEndpointImplTests : NMockitoInstance {
       [Mock] private readonly IPofSerializer pofSerializer = null;
       private readonly Guid identifier = Guid.NewGuid();

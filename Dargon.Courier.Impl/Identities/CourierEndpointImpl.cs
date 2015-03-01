@@ -1,17 +1,15 @@
-﻿using Dargon.PortableObjects;
-using ItzWarty.Collections;
-using System;
+﻿using System;
 using System.IO;
-using System.Linq;
 using System.Text;
-using ItzWarty;
+using Dargon.PortableObjects;
+using ItzWarty.Collections;
 using SCG = System.Collections.Generic;
 
-namespace Dargon.Courier {
-   public class CourierEndpointImpl : CourierEndpoint, IPortableObject, IEquatable<CourierEndpointImpl> {
+namespace Dargon.Courier.Identities {
+   public class CourierEndpointImpl : ManageableCourierEndpoint { 
       private readonly IPofSerializer pofSerializer;
-      private Guid identifier;
-      private SCG.IDictionary<Guid, byte[]> properties;
+      private readonly Guid identifier;
+      private readonly SCG.IDictionary<Guid, byte[]> properties;
 
       public CourierEndpointImpl(IPofSerializer pofSerializer) {
          this.pofSerializer = pofSerializer;
@@ -26,7 +24,7 @@ namespace Dargon.Courier {
       public Guid Identifier => identifier;
       public string Name => GetPropertyOrDefault<string>(CourierEndpointPropertyKeys.Name);
 
-      public SCG.IReadOnlyDictionary <Guid, byte[]> EnumerateProperties() {
+      public SCG.IReadOnlyDictionary<Guid, byte[]> EnumerateProperties() {
          // properties is either an ICL.ConcurrentDictionary or an SCG.Dictionary
          return (SCG.IReadOnlyDictionary<Guid, byte[]>)properties;
       }
@@ -64,28 +62,5 @@ namespace Dargon.Courier {
             properties[key] = ms.ToArray();
          }
       }
-
-      public void Serialize(IPofWriter writer) {
-         writer.WriteGuid(0, identifier);
-         writer.WriteMap(1, properties);
-      }
-
-      public void Deserialize(IPofReader reader) {
-         identifier = reader.ReadGuid(0);
-         properties = reader.ReadMap<Guid, byte[]>(1);
-      }
-
-      /// <summary>
-      /// Performs a deep equality comparison.
-      /// </summary>
-      public bool Equals(CourierEndpointImpl other) {
-         return other.identifier == this.identifier &&
-                new SCG.HashSet<Guid>(properties.Keys).SetEquals(other.properties.Keys) &&
-                properties.Keys.All(key => properties[key].SequenceEqual(other.properties[key]));
-      }
-   }
-
-   public static class CourierEndpointPropertyKeys {
-      public static Guid Name { get; } = Guid.Parse("{7161B692-B4E5-490F-8BB2-6AB47893B4CE}");
    }
 }

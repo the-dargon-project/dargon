@@ -30,17 +30,26 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dargon.Audits.Api">
+      <HintPath>..\packages\Dargon.Audits.Api.0.0.2\lib\net45\Dargon.Audits.Api.dll</HintPath>
+    </Reference>
+    <Reference Include="ImpromptuInterface">
+      <HintPath>..\packages\libwarty.proxies-impl.0.0.14\lib\net45\ImpromptuInterface.dll</HintPath>
+    </Reference>
     <Reference Include="libdpo, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\libdpo.0.0.18\lib\net45\libdpo.dll</HintPath>
     </Reference>
     <Reference Include="libwarty, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\libdpo.0.0.18\lib\net45\libwarty.dll</HintPath>
+      <HintPath>..\packages\libwarty.proxies-impl.0.0.14\lib\net45\libwarty.dll</HintPath>
     </Reference>
     <Reference Include="libwarty.proxies-api, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\libdpo.0.0.18\lib\net45\libwarty.proxies-api.dll</HintPath>
+      <HintPath>..\packages\libwarty.proxies-impl.0.0.14\lib\net45\libwarty.proxies-api.dll</HintPath>
+    </Reference>
+    <Reference Include="libwarty.proxies-impl">
+      <HintPath>..\packages\libwarty.proxies-impl.0.0.14\lib\net45\libwarty.proxies-impl.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -51,9 +60,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
-    <Compile Include="CourierEndpointImpl.cs" />
-    <Compile Include="DargonCourierImplPofContext.cs" />
+    <Compile Include="CourierAnnouncer.cs" />
+    <Compile Include="CourierClientImpl.cs" />
+    <Compile Include="Identities\CourierEndpointImpl.cs" />
+    <Compile Include="Identities\CourierEndpointPropertyKeys.cs" />
+    <Compile Include="Messaging\MessageTransmitterImpl.cs" />
+    <Compile Include="Networking\CourierNetworkContext.cs" />
+    <Compile Include="Networking\LocalCourierNetwork.cs" />
+    <Compile Include="Networking\CourierNetwork.cs" />
+    <Compile Include="PortableObjects\DargonCourierImplPofContext.cs" />
+    <Compile Include="PortableObjects\CourierAnnounceV1.cs" />
+    <Compile Include="PortableObjects\CourierMessageV1.cs" />
+    <Compile Include="OutboundEnvelopeContext.cs" />
+    <Compile Include="OutboundEnvelopeContextFactory.cs" />
     <Compile Include="OutboundEnvelopeManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -66,6 +85,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
