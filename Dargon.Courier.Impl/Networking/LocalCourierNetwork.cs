@@ -22,7 +22,10 @@ namespace Dargon.Courier.Networking {
          return context;
       }
 
-      private void Broadcast(NetworkContextImpl senderContext, byte[] payload) {
+      private void Broadcast(NetworkContextImpl senderContext, byte[] buffer, int offset, int length) {
+         byte[] payload = new byte[length];
+         Buffer.BlockCopy(buffer, offset, payload, 0, length);
+
          if (StaticRandom.NextDouble() < dropRate) {
             return;
          }
@@ -44,7 +47,11 @@ namespace Dargon.Courier.Networking {
          }
 
          public void Broadcast(byte[] payload) {
-            network.Broadcast(this, payload);
+            Broadcast(payload, 0, payload.Length);
+         }
+
+         public void Broadcast(byte[] payload, int offset, int length) {
+            network.Broadcast(this, payload, offset, length);
          }
 
          public void HandleDataArrived(byte[] data) {

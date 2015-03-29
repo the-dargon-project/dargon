@@ -42,9 +42,10 @@
     <Compile Include="Identities\ManageableCourierEndpoint.cs" />
     <Compile Include="Identities\ReadableCourierEndpoint.cs" />
     <Compile Include="CourierClient.cs" />
+    <Compile Include="Messaging\ICourierMessage.cs" />
     <Compile Include="Messaging\MessageFlags.cs" />
     <Compile Include="Messaging\MessagePriority.cs" />
-    <Compile Include="Messaging\MessageTransmitter.cs" />
+    <Compile Include="Messaging\NetworkBroadcaster.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

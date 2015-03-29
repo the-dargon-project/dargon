@@ -1,0 +1,17 @@
+CourierPacket {
+  uint64 magic; "DCOURIER"
+  guid senderId; "Sender Endpoint GUID"
+  object payload;
+}
+
+CourierMessage is Payload {
+   guid messageId;         // Used to ack / identify duplicates
+   guid recipientId        // Used to throw out message
+   MessageFlags flags;     // Indicates need for ack
+   byte[] payload;         // POF Serialized data if message passes filter.
+}
+
+CourierAnnounce is Payload {
+   int32 propertiesHash;   // So properties don't have to be deserialized nonstop
+   byte[] propertiesData;  // Deserializable to a properties object.
+}

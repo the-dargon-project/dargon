@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.Messaging {
    public enum MessageFlags : uint {
-      AcknowledgementRequired = 1 
+      None = 0, 
+      AcknowledgementRequired = 1,
+      Default = None,
    }
 }

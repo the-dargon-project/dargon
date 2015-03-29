@@ -38,15 +38,15 @@
     </Reference>
     <Reference Include="libdpo, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\libdpo.0.0.18\lib\net45\libdpo.dll</HintPath>
+      <HintPath>..\packages\libdpo.0.0.19\lib\net45\libdpo.dll</HintPath>
     </Reference>
-    <Reference Include="libwarty, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\libwarty.proxies-impl.0.0.14\lib\net45\libwarty.dll</HintPath>
+    <Reference Include="libwarty">
+      <HintPath>..\packages\libwarty.proxies-api.0.0.18\lib\net45\libwarty.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="libwarty.proxies-api, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\libwarty.proxies-impl.0.0.14\lib\net45\libwarty.proxies-api.dll</HintPath>
+      <HintPath>..\packages\libwarty.proxies-api.0.0.18\lib\net45\libwarty.proxies-api.dll</HintPath>
     </Reference>
     <Reference Include="libwarty.proxies-impl">
       <HintPath>..\packages\libwarty.proxies-impl.0.0.14\lib\net45\libwarty.proxies-impl.dll</HintPath>
@@ -62,12 +62,20 @@
   <ItemGroup>
     <Compile Include="CourierAnnouncer.cs" />
     <Compile Include="CourierClientImpl.cs" />
+    <Compile Include="Messaging\CourierMessageFactory.cs" />
+    <Compile Include="Messaging\MessageRouter.cs" />
+    <Compile Include="Messaging\MessageTransmitter.cs" />
+    <Compile Include="Messaging\ReceivedMessage.cs" />
+    <Compile Include="Messaging\ReceivedMessageFactory.cs" />
+    <Compile Include="Networking\NetworkReceiverImpl.cs" />
+    <Compile Include="Networking\NetworkingConstants.cs" />
     <Compile Include="Identities\CourierEndpointImpl.cs" />
     <Compile Include="Identities\CourierEndpointPropertyKeys.cs" />
-    <Compile Include="Messaging\MessageTransmitterImpl.cs" />
+    <Compile Include="Networking\NetworkBroadcasterImpl.cs" />
     <Compile Include="Networking\CourierNetworkContext.cs" />
     <Compile Include="Networking\LocalCourierNetwork.cs" />
     <Compile Include="Networking\CourierNetwork.cs" />
+    <Compile Include="PortableObjects\CourierMessageAcknowledgeV1.cs" />
     <Compile Include="PortableObjects\DargonCourierImplPofContext.cs" />
     <Compile Include="PortableObjects\CourierAnnounceV1.cs" />
     <Compile Include="PortableObjects\CourierMessageV1.cs" />
