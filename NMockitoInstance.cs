@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.Linq.Expressions;
 using Assert = Xunit.Assert;
 
 namespace NMockito
@@ -26,6 +26,7 @@ namespace NMockito
       [DebuggerHidden] public INMockitoTimesMatcher Never() {  return NMockitoStatic.Never(); }
       [DebuggerHidden] public INMockitoTimesMatcher Once() { return NMockitoStatic.Once(); }
 
+      [DebuggerHidden] public WhenContext<object> When(Expression<Action> expression) { return NMockitoStatic.When(expression); }
       [DebuggerHidden] public WhenContext<T> When<T>(T value) { return NMockitoStatic.When(value); }
 
       [DebuggerHidden] public T Verify<T>(T mock, INMockitoTimesMatcher times = null, NMockitoOrder order = NMockitoOrder.DontCare) where T : class { return NMockitoStatic.Verify(mock, times, order); }
@@ -39,10 +40,12 @@ namespace NMockito
 
       #region Assertions
       [DebuggerHidden] public void AssertEquals<T>(T expected, T actual) { NMockitoStatic.AssertEquals(expected, actual); }
+      [DebuggerHidden] public void AssertNotEquals<T>(T expected, T actual) { NMockitoStatic.AssertNotEquals(expected, actual); }
       [DebuggerHidden] public void AssertNull<T>(T value) { NMockitoStatic.AssertNull(value); }
       [DebuggerHidden] public void AssertNotNull<T>(T value) { NMockitoStatic.AssertNotNull(value); }
       [DebuggerHidden] public void AssertTrue(bool value) { NMockitoStatic.AssertTrue(value); }
       [DebuggerHidden] public void AssertFalse(bool value) { NMockitoStatic.AssertFalse(value); }
+      [DebuggerHidden] public void AssertThrows<TException>(Action action) where TException : Exception { NMockitoStatic.AssertThrows<TException>(action); }
       #endregion
 
       #region Smart Parameters

@@ -3,7 +3,9 @@ using Castle.DynamicProxy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
+using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
 using Xunit;
 
 namespace NMockito
@@ -58,6 +60,11 @@ namespace NMockito
       public static INMockitoTimesMatcher Never() { return Times(0); }
       public static INMockitoTimesMatcher Once() { return Times(1); }
 
+      public static WhenContext<object> When(Expression<Action> expression) {
+         expression.Compile().Invoke();
+         return new WhenContext<object>();
+      }
+
       public static WhenContext<T> When<T>(T value) { return new WhenContext<T>(); }
 
       public static T Verify<T>(T mock, INMockitoTimesMatcher times = null, NMockitoOrder order = NMockitoOrder.DontCare)
@@ -97,10 +104,12 @@ namespace NMockito
       public static void ClearInteractions<T>(T mock, int expectedCount) { statesByMock[mock].ClearInteractions(expectedCount); }
 
       public static void AssertEquals<T>(T expected, T actual) { if (!Equals(expected, actual)) Assert.Equal(expected, actual); }
+      public static void AssertNotEquals<T>(T expected, T actual) { if (Equals(expected, actual)) Assert.NotEqual(expected, actual); }
       public static void AssertNull<T>(T value) { Assert.Null(value); }
       public static void AssertNotNull<T>(T value) { Assert.NotNull(value); }
       public static void AssertTrue(bool value) { Assert.True(value); }
       public static void AssertFalse(bool value) { Assert.False(value); }
+      public static void AssertThrows<TException>(Action x) where TException : Exception { Assert.Throws<TException>(new Assert.ThrowsDelegate(x)); }
 
       public static NMockitoOrder DontCare() { return NMockitoOrder.DontCare; }
       public static NMockitoOrder WithPrevious() { return NMockitoOrder.WithPrevious; }
