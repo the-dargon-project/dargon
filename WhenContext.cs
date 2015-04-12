@@ -42,5 +42,12 @@ namespace NMockito
          invocationAndMockState.State.AddInvocationExecutor(invocationAndMockState.Invocation, smartParameters, new InvocationSetExecutor(mock, value));
          return this;
       }
+
+      public WhenContext<T> Exec(params Action[] actions) {
+         foreach (var action in actions) {
+            invocationAndMockState.State.AddInvocationExecutor(invocationAndMockState.Invocation, smartParameters, new InvocationExecExecutor(action));
+         }
+         return this;
+      }
    }
 }

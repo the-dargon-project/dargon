@@ -42,4 +42,18 @@ namespace NMockito
       }
       public bool IsTerminal { get { return false; } }
    }
+
+   internal class InvocationExecExecutor : IInvocationExecutor {
+      private readonly Action action;
+
+      public InvocationExecExecutor(Action action) {
+         this.action = action;
+      }
+
+      public object Execute(IInvocation invocation) {
+         action();
+         return null;
+      }
+      public bool IsTerminal { get { return false; } }
+   }
 }
