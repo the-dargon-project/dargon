@@ -55,6 +55,7 @@
     <Compile Include="AsyncTests.cs" />
     <Compile Include="EventTests.cs" />
     <Compile Include="NMockitoAnyTests.cs" />
+    <Compile Include="OutTests.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
