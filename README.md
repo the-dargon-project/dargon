@@ -3,7 +3,7 @@ NMockito is an open-source Mockito-inspired unit testing framework for the .net 
 
 NMockito has two dependencies: Castle.Core (Proxying) and xUnit (For Test Running). 
 
-Supported features include out/ref-parameter mocking, argument captors, order/times verification, and untracked mocks. Limitations include the inability to mock static classes.
+Supported features include out/ref-parameter mocking, argument captors, order/times verification, and untracked mocks. Only creates interface mocks.
 
 # Example Code
 Note: Newer C# language specifications permit static usings. Consider statically including NMockitoStatic and invoking ReinitializeMocks at your constructor rather than extending from NMockitoInstance.
