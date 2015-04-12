@@ -10,6 +10,7 @@ namespace NMockito
    {
       DontCare,
       WithPrevious,
-      AfterPrevious
+      AfterPrevious,
+      Whenever
    }
 }

@@ -60,6 +60,7 @@ namespace NMockito
       [DebuggerHidden] public NMockitoOrder DontCare() { return NMockitoStatic.DontCare(); }
       [DebuggerHidden] public NMockitoOrder WithPrevious() { return NMockitoStatic.WithPrevious(); }
       [DebuggerHidden] public NMockitoOrder AfterPrevious() { return NMockitoStatic.AfterPrevious(); }
+      [DebuggerHidden] public NMockitoOrder Whenever() { return NMockitoStatic.Whenever(); }
       #endregion
    }
 }

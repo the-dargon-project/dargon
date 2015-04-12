@@ -22,8 +22,10 @@ namespace NMockito
             HandleAfterPreviousVerify(counter);
          } else if (order == NMockitoOrder.WithPrevious) {
             HandleWithPreviousVerify(counter);
-         } else {
-            throw new InvalidOperationException("Unknown orderness " + order);
+         } else if (order == NMockitoOrder.Whenever) {
+            HandleWheneverVerify(counter);
+         } else { 
+         throw new InvalidOperationException("Unknown orderness " + order);
          }
       }
 
@@ -48,6 +50,10 @@ namespace NMockito
       {
          // we still track this so you can test for execution after a DontCare.
          currentSequenceGroupCounter = Math.Max(currentSequenceGroupCounter, counter);
+      }
+
+      private static void HandleWheneverVerify(int counter) {
+         currentSequenceGroupCounter = counter;
       }
    }
 }

@@ -105,6 +105,7 @@ namespace NMockito
       public static NMockitoOrder DontCare() { return NMockitoOrder.DontCare; }
       public static NMockitoOrder WithPrevious() { return NMockitoOrder.WithPrevious; }
       public static NMockitoOrder AfterPrevious() { return NMockitoOrder.AfterPrevious; }
+      public static NMockitoOrder Whenever() { return NMockitoOrder.Whenever; }
 
       private class MockInvocationInterceptor : IInterceptor
       {
