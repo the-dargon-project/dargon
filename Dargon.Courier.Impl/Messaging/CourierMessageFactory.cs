@@ -26,13 +26,16 @@ namespace Dargon.Courier.Messaging {
          using (var ms = new MemoryStream())
          using (var writer = new BinaryWriter(ms)) {
             pofSerializer.Serialize(writer, payload);
-         }
-         var messageId = guidProxy.NewGuid();
-         return new CourierMessageV1(
-            messageId,
-            recipient,
-            messageFlags,
+            var messageId = guidProxy.NewGuid();
+            return new CourierMessageV1(
+               messageId,
+               recipient,
+               messageFlags,
+               ms.GetBuffer(),
+               0,
+               (int)ms.Length
             );
+         }
       }
    }
 }
