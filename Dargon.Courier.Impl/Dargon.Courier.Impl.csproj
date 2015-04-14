@@ -66,6 +66,7 @@
     <Compile Include="Messaging\CourierMessageFactory.cs" />
     <Compile Include="Messaging\MessageRouter.cs" />
     <Compile Include="Messaging\MessageTransmitter.cs" />
+    <Compile Include="Messaging\PeriodicAnnouncer.cs" />
     <Compile Include="Messaging\ReceivedMessage.cs" />
     <Compile Include="Messaging\ReceivedMessageFactory.cs" />
     <Compile Include="Networking\NetworkReceiverImpl.cs" />

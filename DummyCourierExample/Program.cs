@@ -10,6 +10,7 @@ using Dargon.Courier.Networking;
 using Dargon.Courier.PortableObjects;
 using Dargon.PortableObjects;
 using ItzWarty;
+using ItzWarty.Threading;
 
 namespace DummyCourierExample {
    public static class Program {
@@ -20,6 +21,9 @@ namespace DummyCourierExample {
       }
 
       public static void EntryPoint(CourierNetwork network) {
+         IThreadingFactory threadingFactory = new ThreadingFactory();
+         ISynchronizationFactory synchronizationFactory = new SynchronizationFactory();
+         IThreadingProxy threadingProxy = new ThreadingProxy(threadingFactory, synchronizationFactory);
          GuidProxy guidProxy = new GuidProxyImpl();
          IPofContext courierPofContext = new DargonCourierImplPofContext(1337);
          IPofSerializer courierSerializer = new PofSerializer(courierPofContext);
@@ -32,9 +36,11 @@ namespace DummyCourierExample {
          networkReceiver.Initialize();
          var networkBroadcaster = new NetworkBroadcasterImpl(endpoint, networkContext, courierSerializer);
          MessageTransmitter messageTransmitter = new MessageTransmitterImpl(guidProxy, courierSerializer, networkBroadcaster);
+         var periodicAnnouncer = new PeriodicAnnouncerImpl(threadingProxy, courierSerializer, endpoint, networkBroadcaster);
+         periodicAnnouncer.Start();
 
          messageRouter.RegisterPayloadHandler<string>(m => {
-            Console.WriteLine(m.Guid + " " + m.Payload);
+//            Console.WriteLine(m.Guid + " " + m.Payload);
          });
 
          while (true) {

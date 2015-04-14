@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using Dargon.PortableObjects;
 using ItzWarty.Collections;
 using SCG = System.Collections.Generic;
@@ -10,6 +11,7 @@ namespace Dargon.Courier.Identities {
       private readonly IPofSerializer pofSerializer;
       private readonly Guid identifier;
       private readonly SCG.IDictionary<Guid, byte[]> properties;
+      private int revisionNumber = 0;
 
       public CourierEndpointImpl(IPofSerializer pofSerializer, Guid identifier) {
          this.pofSerializer = pofSerializer;
@@ -60,7 +62,12 @@ namespace Dargon.Courier.Identities {
          using (var writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
             pofSerializer.Serialize(writer, (object)value);
             properties[key] = ms.ToArray();
+            Interlocked.Increment(ref revisionNumber);
          }
+      }
+
+      public int GetRevisionNumber() {
+         return Interlocked.CompareExchange(ref revisionNumber, 0, 0);
       }
    }
 }
