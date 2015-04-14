@@ -9,5 +9,6 @@ namespace Dargon.Courier.Identities {
       TValue GetProperty<TValue>(Guid key);
       TValue GetPropertyOrDefault<TValue>(Guid key);
       bool TryGetProperty<TValue>(Guid key, out TValue value);
+      bool Matches(Guid recipientId);
    }
 }

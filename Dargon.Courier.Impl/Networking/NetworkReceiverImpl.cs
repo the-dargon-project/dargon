@@ -43,7 +43,8 @@ namespace Dargon.Courier.Networking {
       }
 
       private void HandleInboundMessage(Guid senderId, CourierMessageV1 payload) {
-         if (payload.RecipientId != localEndpoint.Identifier) {
+//         Console.WriteLine(message.GetType());
+         if (!localEndpoint.Matches(payload.RecipientId)) {
             return;
          }
          messageRouter.RouteMessage(senderId, payload);

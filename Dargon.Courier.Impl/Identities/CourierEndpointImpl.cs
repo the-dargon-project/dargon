@@ -11,10 +11,6 @@ namespace Dargon.Courier.Identities {
       private readonly Guid identifier;
       private readonly SCG.IDictionary<Guid, byte[]> properties;
 
-      public CourierEndpointImpl(IPofSerializer pofSerializer) {
-         this.pofSerializer = pofSerializer;
-      }
-
       public CourierEndpointImpl(IPofSerializer pofSerializer, Guid identifier) {
          this.pofSerializer = pofSerializer;
          this.identifier = identifier;
@@ -53,6 +49,10 @@ namespace Dargon.Courier.Identities {
             value = (TValue)pofSerializer.Deserialize(new MemoryStream(data));
             return true;
          }
+      }
+
+      public bool Matches(Guid recipientId) {
+         return recipientId == identifier || recipientId == IdentityConstants.kBroadcastIdentityGuid;
       }
 
       public void SetProperty<TValue>(Guid key, TValue value) {

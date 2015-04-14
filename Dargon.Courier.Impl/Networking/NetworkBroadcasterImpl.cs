@@ -9,9 +9,9 @@ namespace Dargon.Courier.Networking {
    public class NetworkBroadcasterImpl : NetworkBroadcaster {
       private readonly ReadableCourierEndpoint localEndpoint;
       private readonly CourierNetworkContext networkContext;
-      private readonly PofSerializer pofSerializer;
+      private readonly IPofSerializer pofSerializer;
 
-      public NetworkBroadcasterImpl(ReadableCourierEndpoint localEndpoint, CourierNetworkContext networkContext, PofSerializer pofSerializer) {
+      public NetworkBroadcasterImpl(ReadableCourierEndpoint localEndpoint, CourierNetworkContext networkContext, IPofSerializer pofSerializer) {
          this.localEndpoint = localEndpoint;
          this.networkContext = networkContext;
          this.pofSerializer = pofSerializer;

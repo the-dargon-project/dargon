@@ -22,8 +22,10 @@ namespace Dargon.Courier.Messaging {
    public class MessageTransmitterImpl : MessageTransmitter {
       private readonly IPofSerializer pofSerializer;
       private readonly NetworkBroadcaster networkBroadcaster;
+      private readonly GuidProxy guidProxy;
 
-      public MessageTransmitterImpl(IPofSerializer pofSerializer, NetworkBroadcaster networkBroadcaster) {
+      public MessageTransmitterImpl(GuidProxy guidProxy, IPofSerializer pofSerializer, NetworkBroadcaster networkBroadcaster) {
+         this.guidProxy = guidProxy;
          this.pofSerializer = pofSerializer;
          this.networkBroadcaster = networkBroadcaster;
       }

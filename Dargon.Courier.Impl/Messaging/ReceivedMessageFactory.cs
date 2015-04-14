@@ -22,7 +22,7 @@ namespace Dargon.Courier.Messaging {
 
       public IReceivedMessage<object> CreateReceivedMessage(Guid senderId, CourierMessageV1 message) {
          var payload = pofSerializer.Deserialize(new MemoryStream(message.Payload));
-         var helper = this.GetType().GetMethod(nameof(CreateReceivedMessageHelper), BindingFlags.NonPublic | BindingFlags.Instance);
+         var helper = this.GetType().GetMethod(nameof(CreateReceivedMessageHelper), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(payload.GetType());
          return (IReceivedMessage<object>)helper.Invoke(this, new[] { senderId, message, payload });
       }
 

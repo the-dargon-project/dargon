@@ -4,15 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{648271D2-2A52-4496-A9D1-6E54353D1448}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{09D2E814-7D62-48B9-A94B-DED102626AA6}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Dargon.Courier</RootNamespace>
-    <AssemblyName>Dargon.Courier.Impl</AssemblyName>
+    <RootNamespace>DummyCourierExample</RootNamespace>
+    <AssemblyName>DummyCourierExample</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -30,26 +32,25 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dargon.Audits.Api">
-      <HintPath>..\packages\Dargon.Audits.Api.0.0.2\lib\net45\Dargon.Audits.Api.dll</HintPath>
-    </Reference>
-    <Reference Include="ImpromptuInterface">
-      <HintPath>..\packages\libwarty.proxies-impl.0.0.14\lib\net45\ImpromptuInterface.dll</HintPath>
-    </Reference>
-    <Reference Include="libdpo, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="ImpromptuInterface, Version=6.2.2.0, Culture=neutral, PublicKeyToken=0b1781c923b2975b, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\libdpo.0.0.19\lib\net45\libdpo.dll</HintPath>
+      <HintPath>..\packages\libwarty.proxies-impl.0.0.17\lib\net45\ImpromptuInterface.dll</HintPath>
     </Reference>
-    <Reference Include="libwarty">
-      <HintPath>..\packages\libwarty.proxies-api.0.0.18\lib\net45\libwarty.dll</HintPath>
+    <Reference Include="libdpo">
+      <HintPath>..\packages\libdpo.0.0.20\lib\net45\libdpo.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="libwarty, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\libwarty.proxies-impl.0.0.17\lib\net45\libwarty.dll</HintPath>
     </Reference>
     <Reference Include="libwarty.proxies-api, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\libwarty.proxies-api.0.0.18\lib\net45\libwarty.proxies-api.dll</HintPath>
+      <HintPath>..\packages\libwarty.proxies-impl.0.0.17\lib\net45\libwarty.proxies-api.dll</HintPath>
     </Reference>
-    <Reference Include="libwarty.proxies-impl">
-      <HintPath>..\packages\libwarty.proxies-impl.0.0.14\lib\net45\libwarty.proxies-impl.dll</HintPath>
+    <Reference Include="libwarty.proxies-impl, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\libwarty.proxies-impl.0.0.17\lib\net45\libwarty.proxies-impl.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -60,41 +61,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CourierAnnouncer.cs" />
-    <Compile Include="CourierClientImpl.cs" />
-    <Compile Include="Identities\IdentityConstants.cs" />
-    <Compile Include="Messaging\CourierMessageFactory.cs" />
-    <Compile Include="Messaging\MessageRouter.cs" />
-    <Compile Include="Messaging\MessageTransmitter.cs" />
-    <Compile Include="Messaging\ReceivedMessage.cs" />
-    <Compile Include="Messaging\ReceivedMessageFactory.cs" />
-    <Compile Include="Networking\NetworkReceiverImpl.cs" />
-    <Compile Include="Networking\NetworkingConstants.cs" />
-    <Compile Include="Identities\CourierEndpointImpl.cs" />
-    <Compile Include="Identities\CourierEndpointPropertyKeys.cs" />
-    <Compile Include="Networking\NetworkBroadcasterImpl.cs" />
-    <Compile Include="Networking\CourierNetworkContext.cs" />
-    <Compile Include="Networking\LocalCourierNetwork.cs" />
-    <Compile Include="Networking\CourierNetwork.cs" />
-    <Compile Include="PortableObjects\CourierMessageAcknowledgeV1.cs" />
-    <Compile Include="PortableObjects\DargonCourierImplPofContext.cs" />
-    <Compile Include="PortableObjects\CourierAnnounceV1.cs" />
-    <Compile Include="PortableObjects\CourierMessageV1.cs" />
-    <Compile Include="OutboundEnvelopeContext.cs" />
-    <Compile Include="OutboundEnvelopeContextFactory.cs" />
-    <Compile Include="OutboundEnvelopeManager.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Dargon.Courier.Impl\Dargon.Courier.Impl.csproj">
+      <Project>{648271D2-2A52-4496-A9D1-6E54353D1448}</Project>
+      <Name>Dargon.Courier.Impl</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Dargon.Courier\Dargon.Courier.Api.csproj">
       <Project>{00A1DA2F-D316-4387-8BD4-F1A47C05A402}</Project>
       <Name>Dargon.Courier.Api</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
