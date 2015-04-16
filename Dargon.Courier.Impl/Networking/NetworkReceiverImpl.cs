@@ -2,6 +2,7 @@
 using System.IO;
 using Dargon.Courier.Identities;
 using Dargon.Courier.Messaging;
+using Dargon.Courier.Peering;
 using Dargon.Courier.PortableObjects;
 using Dargon.PortableObjects;
 using ItzWarty;
@@ -12,12 +13,14 @@ namespace Dargon.Courier.Networking {
       private readonly CourierNetworkContext networkContext;
       private readonly IPofSerializer pofSerializer;
       private readonly MessageRouter messageRouter;
+      private readonly PeerRegistryImpl peerRegistry;
 
-      public NetworkReceiverImpl(ReadableCourierEndpoint localEndpoint, CourierNetworkContext networkContext, IPofSerializer pofSerializer, MessageRouter messageRouter) {
+      public NetworkReceiverImpl(ReadableCourierEndpoint localEndpoint, CourierNetworkContext networkContext, IPofSerializer pofSerializer, MessageRouter messageRouter, PeerRegistryImpl peerRegistry) {
          this.localEndpoint = localEndpoint;
          this.networkContext = networkContext;
          this.pofSerializer = pofSerializer;
          this.messageRouter = messageRouter;
+         this.peerRegistry = peerRegistry;
       }
 
       public void Initialize() {
@@ -51,7 +54,7 @@ namespace Dargon.Courier.Networking {
       }
 
       private void HandleInboundAnnounce(Guid senderId, CourierAnnounceV1 payload) {
-
+         peerRegistry.HandlePeerAnnounce(senderId, payload);
       }
    }
 }

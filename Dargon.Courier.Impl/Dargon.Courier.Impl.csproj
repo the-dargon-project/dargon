@@ -77,6 +77,9 @@
     <Compile Include="Networking\CourierNetworkContext.cs" />
     <Compile Include="Networking\LocalCourierNetwork.cs" />
     <Compile Include="Networking\CourierNetwork.cs" />
+    <Compile Include="Peering\ReadablePeerContext.cs" />
+    <Compile Include="Peering\ReadablePeerRegistry.cs" />
+    <Compile Include="Peering\RevisionCounter.cs" />
     <Compile Include="PortableObjects\CourierMessageAcknowledgeV1.cs" />
     <Compile Include="PortableObjects\DargonCourierImplPofContext.cs" />
     <Compile Include="PortableObjects\CourierAnnounceV1.cs" />

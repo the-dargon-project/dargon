@@ -20,6 +20,7 @@ namespace Dargon.Courier.Messaging {
       private readonly IPofSerializer courierSerializer;
       private readonly ReadableCourierEndpoint localEndpoint;
       private readonly NetworkBroadcaster networkBroadcaster;
+      private Task mainLoopTask;
 
       public PeriodicAnnouncerImpl(
          IThreadingProxy threadingProxy, 
@@ -41,7 +42,7 @@ namespace Dargon.Courier.Messaging {
       }
 
       public void Start() {
-         MainLoopAsync();
+         this.mainLoopTask = MainLoopAsync();
       }
 
       private async Task MainLoopAsync() {
