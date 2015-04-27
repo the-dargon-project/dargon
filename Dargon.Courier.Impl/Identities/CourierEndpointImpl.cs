@@ -10,13 +10,17 @@ namespace Dargon.Courier.Identities {
    public class CourierEndpointImpl : ManageableCourierEndpoint { 
       private readonly IPofSerializer pofSerializer;
       private readonly Guid identifier;
-      private readonly SCG.IDictionary<Guid, byte[]> properties;
+      private readonly IConcurrentDictionary<Guid, byte[]> properties;
       private int revisionNumber = 0;
 
-      public CourierEndpointImpl(IPofSerializer pofSerializer, Guid identifier, string name) {
+      public CourierEndpointImpl(IPofSerializer pofSerializer, Guid identifier, string name)
+         : this(pofSerializer, identifier, name, new ConcurrentDictionary<Guid, byte[]>()) {
+      }
+
+      public CourierEndpointImpl(IPofSerializer pofSerializer, Guid identifier, string name, IConcurrentDictionary<Guid, byte[]> properties) {
          this.pofSerializer = pofSerializer;
          this.identifier = identifier;
-         this.properties = new ConcurrentDictionary<Guid, byte[]>();
+         this.properties = properties;
 
          SetProperty(CourierEndpointPropertyKeys.Name, name);
       }
