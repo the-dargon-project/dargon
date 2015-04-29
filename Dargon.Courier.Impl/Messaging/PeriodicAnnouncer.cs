@@ -61,6 +61,6 @@ namespace Dargon.Courier.Messaging {
    }
 
    public static class CourierAnnouncementConstants {
-      public const int kAnnouncementIntervalMillis = 1000;
+      public const int kAnnouncementIntervalMillis = 500;
    }
 }

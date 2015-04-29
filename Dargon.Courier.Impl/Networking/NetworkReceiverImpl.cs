@@ -13,13 +13,15 @@ namespace Dargon.Courier.Networking {
       private readonly CourierNetworkContext networkContext;
       private readonly IPofSerializer pofSerializer;
       private readonly MessageRouter messageRouter;
+      private readonly MessageAcknowledger messageAcknowledger;
       private readonly PeerRegistryImpl peerRegistry;
 
-      public NetworkReceiverImpl(ReadableCourierEndpoint localEndpoint, CourierNetworkContext networkContext, IPofSerializer pofSerializer, MessageRouter messageRouter, PeerRegistryImpl peerRegistry) {
+      public NetworkReceiverImpl(ReadableCourierEndpoint localEndpoint, CourierNetworkContext networkContext, IPofSerializer pofSerializer, MessageRouter messageRouter, MessageAcknowledger messageAcknowledger, PeerRegistryImpl peerRegistry) {
          this.localEndpoint = localEndpoint;
          this.networkContext = networkContext;
          this.pofSerializer = pofSerializer;
          this.messageRouter = messageRouter;
+         this.messageAcknowledger = messageAcknowledger;
          this.peerRegistry = peerRegistry;
       }
 
@@ -41,20 +43,32 @@ namespace Dargon.Courier.Networking {
                HandleInboundMessage(senderId, (CourierMessageV1)payload);
             } else if (payload is CourierAnnounceV1) {
                HandleInboundAnnounce(senderId, (CourierAnnounceV1)payload);
+            } else if (payload is CourierMessageAcknowledgeV1) {
+               HandleCourierAcknowledgement(senderId, (CourierMessageAcknowledgeV1)payload);
             }
          }
       }
 
-      private void HandleInboundMessage(Guid senderId, CourierMessageV1 payload) {
-//         Console.WriteLine(message.GetType());
-         if (!localEndpoint.Matches(payload.RecipientId)) {
+      private void HandleInboundMessage(Guid senderId, CourierMessageV1 message) {
+         if (!localEndpoint.Matches(message.RecipientId)) {
             return;
          }
-         messageRouter.RouteMessage(senderId, payload);
+         if (message.MessageFlags.HasFlag(MessageFlags.AcknowledgementRequired)) {
+            messageAcknowledger.SendAcknowledge(senderId, message.Id);
+         }
+         messageRouter.RouteMessage(senderId, message);
       }
 
       private void HandleInboundAnnounce(Guid senderId, CourierAnnounceV1 payload) {
          peerRegistry.HandlePeerAnnounce(senderId, payload);
+      }
+
+      private void HandleCourierAcknowledgement(Guid senderId, CourierMessageAcknowledgeV1 ack) {
+         if (!localEndpoint.Matches(ack.RecipientId)) {
+            return;
+         }
+         messageAcknowledger.HandleAcknowledge(senderId, ack.MessageId);
+//         Console.WriteLine("Handling acknowledge from " + senderId + " for message " + ack.MessageId);
       }
    }
 }

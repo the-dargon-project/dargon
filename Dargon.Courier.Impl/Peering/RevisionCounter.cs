@@ -3,6 +3,7 @@ using System;
 namespace Dargon.Courier.Peering {
    public interface RevisionCounter {
       bool TryAdvance(int nextCount);
+      bool IsCurrentCount(int value);
    }
 
    public class RevisionCounterImpl : RevisionCounter {
@@ -30,6 +31,12 @@ namespace Dargon.Courier.Peering {
                // Same count indicates no revision change
                return false;
             }
+         }
+      }
+
+      public bool IsCurrentCount(int value) {
+         lock (synchronization) {
+            return count == value;
          }
       }
    }

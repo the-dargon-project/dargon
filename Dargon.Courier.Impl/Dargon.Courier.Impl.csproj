@@ -52,11 +52,15 @@
     <Compile Include="CourierClientImpl.cs" />
     <Compile Include="Identities\IdentityConstants.cs" />
     <Compile Include="Messaging\CourierMessageFactory.cs" />
+    <Compile Include="Messaging\MessageAcknowledger.cs" />
     <Compile Include="Messaging\MessageRouter.cs" />
+    <Compile Include="Messaging\MessageSender.cs" />
     <Compile Include="Messaging\MessageTransmitter.cs" />
+    <Compile Include="Messaging\UnacknowledgedReliableMessageContainer.cs" />
     <Compile Include="Messaging\PeriodicAnnouncer.cs" />
     <Compile Include="Messaging\ReceivedMessage.cs" />
     <Compile Include="Messaging\ReceivedMessageFactory.cs" />
+    <Compile Include="Messaging\UnacknowledgedReliableMessageContext.cs" />
     <Compile Include="Networking\NetworkReceiverImpl.cs" />
     <Compile Include="Networking\NetworkingConstants.cs" />
     <Compile Include="Identities\CourierEndpointImpl.cs" />

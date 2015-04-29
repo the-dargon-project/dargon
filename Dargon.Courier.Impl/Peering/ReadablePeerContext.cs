@@ -37,9 +37,12 @@ namespace Dargon.Courier.Peering {
             if (revisionCounter.TryAdvance(announce.PropertiesRevision)) {
                synchronization.EnterWriteLock();
                try {
-                  using (var ms = new MemoryStream(announce.PropertiesData, announce.PropertiesDataOffset, announce.PropertiesDataLength))
-                  using (var reader = new BinaryReader(ms)) {
-                     var properties = (IReadOnlyDictionary<Guid, byte[]>)courierSerializer.Deserialize(reader);
+                  if (revisionCounter.IsCurrentCount(announce.PropertiesRevision)) {
+                     using (var ms = new MemoryStream(announce.PropertiesData, announce.PropertiesDataOffset, announce.PropertiesDataLength))
+                     using (var reader = new BinaryReader(ms)) {
+                        var properties = (IReadOnlyDictionary<Guid, byte[]>)courierSerializer.Deserialize(reader);
+
+                     }
                   }
                } finally {
                   synchronization.ExitWriteLock();

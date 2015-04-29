@@ -26,11 +26,11 @@ namespace Dargon.Courier.Networking {
          byte[] payload = new byte[length];
          Buffer.BlockCopy(buffer, offset, payload, 0, length);
 
-         if (StaticRandom.NextDouble() < dropRate) {
+         if (StaticRandom.NextDouble() > Math.Sqrt(1 - dropRate)) {
             return;
          }
          foreach (var context in contexts) {
-            if (StaticRandom.NextDouble() < dropRate) {
+            if (StaticRandom.NextDouble() > Math.Sqrt(1 - dropRate)) {
                return;
             }
             if (context != senderContext) {
@@ -55,7 +55,7 @@ namespace Dargon.Courier.Networking {
          }
 
          public void HandleDataArrived(byte[] data) {
-            DataArrived?.Invoke(network, data);
+            DataArrived?.BeginInvoke(network, data, null, null);
          }
 
          public event DataArrivedHandler DataArrived;
