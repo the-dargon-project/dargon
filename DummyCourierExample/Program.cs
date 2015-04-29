@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -58,11 +59,16 @@ namespace DummyCourierExample {
             while (true) {
                for (var j = 0; j < 50; j++) {
                   Console.WriteLine(unacknowledgedReliableMessageContainer.GetUnsentMessagesRemaining() + " pending");
+                  var stopwatch = new Stopwatch();
+                  stopwatch.Start();
+                  var messagesRemaining = unacknowledgedReliableMessageContainer.GetUnsentMessagesRemaining();
                   for (var k = 0; k < 10000; k++) {
                      foreach (var peer in peerRegistry.EnumeratePeers()) {
                         messageSender.SendReliableUnicast(peer.Id, "Message " + j + " hello from " + i + ", " + peer.Id, MessagePriority.Low);
                      }
                   }
+                  var messagesAcked = unacknowledgedReliableMessageContainer.GetUnsentMessagesRemaining() - messagesRemaining + 10000;
+                  Console.WriteLine("Got " + messagesAcked + " acks in " + stopwatch.ElapsedMilliseconds + "ms (" + (messagesAcked / stopwatch.Elapsed.TotalSeconds) + " per second)");
                   Thread.Sleep(1);
                }
 
