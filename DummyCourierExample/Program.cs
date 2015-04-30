@@ -12,6 +12,8 @@ using Dargon.Courier.Peering;
 using Dargon.Courier.PortableObjects;
 using Dargon.PortableObjects;
 using ItzWarty;
+using ItzWarty.Collections;
+using ItzWarty.Pooling;
 using ItzWarty.Threading;
 
 namespace DummyCourierExample {
@@ -23,6 +25,8 @@ namespace DummyCourierExample {
       }
 
       public static void EntryPoint(int i, CourierNetwork network) {
+         ICollectionFactory collectionFactory = new CollectionFactory();
+         ObjectPoolFactory objectPoolFactory = new DefaultObjectPoolFactory(collectionFactory);
          IThreadingFactory threadingFactory = new ThreadingFactory();
          ISynchronizationFactory synchronizationFactory = new SynchronizationFactory();
          IThreadingProxy threadingProxy = new ThreadingProxy(threadingFactory, synchronizationFactory);
@@ -37,7 +41,8 @@ namespace DummyCourierExample {
          var unacknowledgedReliableMessageContainer = new UnacknowledgedReliableMessageContainer();
          var messageTransmitter = new MessageTransmitterImpl(guidProxy, courierSerializer, networkBroadcaster, unacknowledgedReliableMessageContainer);
          var messageSender = new MessageSenderImpl(guidProxy, unacknowledgedReliableMessageContainer, messageTransmitter);
-         var messageAcknowledger = new MessageAcknowledgerImpl(networkBroadcaster, unacknowledgedReliableMessageContainer);
+         var acknowledgeDtoPool = objectPoolFactory.CreatePool(() => new CourierMessageAcknowledgeV1());
+         var messageAcknowledger = new MessageAcknowledgerImpl(networkBroadcaster, unacknowledgedReliableMessageContainer, acknowledgeDtoPool);
          var periodicAnnouncer = new PeriodicAnnouncerImpl(threadingProxy, courierSerializer, endpoint, networkBroadcaster);
          periodicAnnouncer.Start();
          var periodicResender = new PeriodicResenderImpl(threadingProxy, unacknowledgedReliableMessageContainer, messageTransmitter);
