@@ -5,45 +5,47 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.PortableObjects {
    public class CourierMessageV1 : IPortableObject {
-      private Guid id;
-      private Guid recipientId;
-      private MessageFlags messageFlags;
-      private byte[] payload;
-      private int payloadOffset;
-      private int payloadLength;
+      private const int kUseActualPayloadLength = Int32.MinValue / 2;
 
       public CourierMessageV1() { }
 
       public CourierMessageV1(Guid id, Guid recipientId, MessageFlags messageFlags, byte[] payload, int payloadOffset, int payloadLength) {
-         this.id = id;
-         this.recipientId = recipientId;
-         this.messageFlags = messageFlags;
-         this.payload = payload;
-         this.payloadOffset = payloadOffset;
-         this.payloadLength = payloadLength;
+         Update(id, recipientId, messageFlags, payload, payloadOffset, payloadLength);
       }
       
-      public Guid Id { get { return id; } }
-      public Guid RecipientId { get { return recipientId; } }
-      public MessageFlags MessageFlags { get { return messageFlags; } }
-      public byte[] Payload { get { return payload; } }
-      public int PayloadOffset {  get { return payloadOffset; } }
-      public int PayloadLength { get { return payloadLength; } }
+      public Guid Id { get; set; }
+      public Guid RecipientId { get; set; }
+      public MessageFlags MessageFlags { get; set; }
+      public byte[] Payload { get; set; }
+      public int PayloadOffset { get; set; }
+      public int PayloadLength { get; set; }
+
+      public void Update(Guid id, Guid recipientId, MessageFlags messageFlags, byte[] payload, int payloadOffset, int payloadLength) {
+         this.Id = id;
+         this.RecipientId = recipientId;
+         this.MessageFlags = messageFlags;
+         this.Payload = payload;
+         this.PayloadOffset = payloadOffset;
+         this.PayloadLength = payloadLength == kUseActualPayloadLength ? payload.Length : payloadLength;
+      }
+
 
       public void Serialize(IPofWriter writer) {
-         writer.WriteGuid(0, id);
-         writer.WriteGuid(1, recipientId);
-         writer.WriteU32(2, (uint)messageFlags);
-         writer.AssignSlot(3, payload, payloadOffset, payloadLength);
+         writer.WriteGuid(0, Id);
+         writer.WriteGuid(1, RecipientId);
+         writer.WriteU32(2, (uint)MessageFlags);
+         writer.AssignSlot(3, Payload, PayloadOffset, PayloadLength);
       }
 
       public void Deserialize(IPofReader reader) {
-         id = reader.ReadGuid(0);
-         recipientId = reader.ReadGuid(1);
-         messageFlags = (MessageFlags)reader.ReadU32(2);
-         payload = reader.ReadBytes(3);
-         payloadOffset = 0;
-         payloadLength = payload.Length;
+         Update(
+            id:  reader.ReadGuid(0),
+            recipientId: reader.ReadGuid(1),
+            messageFlags: (MessageFlags)reader.ReadU32(2),
+            payload: reader.ReadBytes(3),
+            payloadOffset: 0,
+            payloadLength: kUseActualPayloadLength
+         );
       }
    }
 }

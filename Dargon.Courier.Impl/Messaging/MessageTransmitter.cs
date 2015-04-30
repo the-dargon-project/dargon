@@ -9,6 +9,7 @@ using Dargon.Courier.PortableObjects;
 using Dargon.PortableObjects;
 using ItzWarty;
 using ItzWarty.Networking;
+using ItzWarty.Pooling;
 
 namespace Dargon.Courier.Messaging {
    public interface MessageTransmitter {
@@ -26,12 +27,14 @@ namespace Dargon.Courier.Messaging {
       private readonly NetworkBroadcaster networkBroadcaster;
       private readonly GuidProxy guidProxy;
       private readonly UnacknowledgedReliableMessageContainer unacknowledgedReliableMessageContainer;
+      private readonly ObjectPool<CourierMessageV1> messageDtoPool;
 
-      public MessageTransmitterImpl(GuidProxy guidProxy, IPofSerializer pofSerializer, NetworkBroadcaster networkBroadcaster, UnacknowledgedReliableMessageContainer unacknowledgedReliableMessageContainer) {
+      public MessageTransmitterImpl(GuidProxy guidProxy, IPofSerializer pofSerializer, NetworkBroadcaster networkBroadcaster, UnacknowledgedReliableMessageContainer unacknowledgedReliableMessageContainer, ObjectPool<CourierMessageV1> messageDtoPool) {
          this.guidProxy = guidProxy;
          this.pofSerializer = pofSerializer;
          this.networkBroadcaster = networkBroadcaster;
          this.unacknowledgedReliableMessageContainer = unacknowledgedReliableMessageContainer;
+         this.messageDtoPool = messageDtoPool;
       }
 
 //      public Guid SendReliableUnicast<TMessage>(ReadableCourierEndpoint endpoint, TMessage message, MessagePriority priority) {
@@ -49,16 +52,13 @@ namespace Dargon.Courier.Messaging {
          using (var ms = new MemoryStream())
          using (var writer = new BinaryWriter(ms)) {
             pofSerializer.Serialize(writer, (object)payload);
-            networkBroadcaster.SendCourierPacket(
-               new CourierMessageV1(
-                  messageId,
-                  recipientId,
-                  messageFlags,
-                  ms.GetBuffer(),
-                  0,
-                  (int)ms.Length
-               )
-            );
+
+            var messageDto = messageDtoPool.TakeObject();
+            messageDto.Update(messageId, recipientId, messageFlags, ms.GetBuffer(), 0, (int)ms.Length);
+
+            networkBroadcaster.SendCourierPacket(messageDto);
+
+            messageDtoPool.ReturnObject(messageDto);
          }
       }
    }

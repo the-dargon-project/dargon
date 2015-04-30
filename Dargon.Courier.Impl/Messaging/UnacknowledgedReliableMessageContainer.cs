@@ -2,6 +2,7 @@
 using ItzWarty;
 using ItzWarty.Collections;
 using System.Linq;
+using ItzWarty.Pooling;
 using SCG = System.Collections.Generic;
 
 namespace Dargon.Courier.Messaging {
@@ -12,55 +13,65 @@ namespace Dargon.Courier.Messaging {
          MessagePriority.High, 2
       );
 
+      private readonly ObjectPool<UnacknowledgedReliableMessageContext> messageContextPool;
       private readonly IConcurrentQueue<UnacknowledgedReliableMessageContext> pendingQueue;
       private readonly IQueue<UnacknowledgedReliableMessageContext>[] resendQueues;
-      private readonly IConcurrentDictionary<Guid, UnacknowledgedReliableMessageContext> messageContextsById;
+      private readonly IConcurrentDictionary<Guid, UnacknowledgedReliableMessageContext> unacknowledgedMessageContextsById;
       private int resendQueueIndex = 0;
 
-      public UnacknowledgedReliableMessageContainer() {
+      public UnacknowledgedReliableMessageContainer(ObjectPool<UnacknowledgedReliableMessageContext> messageContextPool) {
+         this.messageContextPool = messageContextPool;
+
          pendingQueue = new ConcurrentQueue<UnacknowledgedReliableMessageContext>();
          resendQueues = Util.Generate<IQueue<UnacknowledgedReliableMessageContext>>(
             kResendIntervalsByPriority.Values.Max() + 1, 
             i => new Queue<UnacknowledgedReliableMessageContext>()
          );
-         messageContextsById = new ConcurrentDictionary<Guid, UnacknowledgedReliableMessageContext>();
+         unacknowledgedMessageContextsById = new ConcurrentDictionary<Guid, UnacknowledgedReliableMessageContext>();
       }
 
       public void AddMessage(Guid messageId, Guid recipientId, object payload, MessagePriority messagePriority, MessageFlags messageFlags) {
-         var messageContext = new UnacknowledgedReliableMessageContext(messageId, recipientId, payload, messagePriority, messageFlags);
-         messageContextsById.Add(messageId, messageContext);
+         var messageContext = messageContextPool.TakeObject();
+         messageContext.UpdateAndMarkUnacknowledged(messageId, recipientId, payload, messagePriority, messageFlags);
+         unacknowledgedMessageContextsById.Add(messageId, messageContext);
          pendingQueue.Enqueue(messageContext);
       }
 
       public void HandleMessageAcknowledged(Guid recipientId, Guid messageId) {
          UnacknowledgedReliableMessageContext context;
-         if (messageContextsById.TryGetValue(messageId, out context)) {
+         if (unacknowledgedMessageContextsById.TryGetValue(messageId, out context)) {
             if (context.RecipientId == recipientId) {
                context.MarkAcknowledged();
-               messageContextsById.Remove(messageId.PairValue(context));
+               unacknowledgedMessageContextsById.Remove(messageId.PairValue(context));
             }
          }
       }
 
-      public SCG.IEnumerable<UnacknowledgedReliableMessageContext> ProcessPendingQueuesAndGetNextMessagesToSend() {
+      public void ProcessPendingQueues(Action<UnacknowledgedReliableMessageContext> unsentMessageProcessor) {
          UnacknowledgedReliableMessageContext context;
          while (pendingQueue.TryDequeue(out context)) {
-            EnqueueMessageForResendIfUnacknowledged(context);
+            EnqueueMessageForResend(context);
          }
 
          var selectedQueueIndex = resendQueueIndex % resendQueues.Length;
          var currentQueue = resendQueues[selectedQueueIndex];
-         resendQueues[selectedQueueIndex] = new Queue<UnacknowledgedReliableMessageContext>();
-         currentQueue.ForEach(EnqueueMessageForResendIfUnacknowledged);
+         while(currentQueue.Count > 0) {
+            var messageContext = currentQueue.Dequeue();
+            if (messageContext.Acknowledged) {
+               messageContextPool.ReturnObject(messageContext);
+            } else {
+               unsentMessageProcessor(messageContext);
+               EnqueueMessageForResend(messageContext);
+            }
+         }
          resendQueueIndex++;
-         return currentQueue;
       }
 
       public int GetUnsentMessagesRemaining () {
-         return messageContextsById.Count;
+         return unacknowledgedMessageContextsById.Count;
       }
 
-      private void EnqueueMessageForResendIfUnacknowledged(UnacknowledgedReliableMessageContext context) {
+      private void EnqueueMessageForResend(UnacknowledgedReliableMessageContext context) {
          if (!context.Acknowledged) {
             var priorityOffset = kResendIntervalsByPriority[context.Priority];
             var targetQueueId = (resendQueueIndex + priorityOffset) % resendQueues.Length;

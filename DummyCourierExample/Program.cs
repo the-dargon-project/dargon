@@ -38,8 +38,10 @@ namespace DummyCourierExample {
          var networkContext = network.Join(endpoint);
 
          var networkBroadcaster = new NetworkBroadcasterImpl(endpoint, networkContext, courierSerializer);
-         var unacknowledgedReliableMessageContainer = new UnacknowledgedReliableMessageContainer();
-         var messageTransmitter = new MessageTransmitterImpl(guidProxy, courierSerializer, networkBroadcaster, unacknowledgedReliableMessageContainer);
+         var messageContextPool = objectPoolFactory.CreatePool(() => new UnacknowledgedReliableMessageContext());
+         var unacknowledgedReliableMessageContainer = new UnacknowledgedReliableMessageContainer(messageContextPool);
+         var messageDtoPool = objectPoolFactory.CreatePool(() => new CourierMessageV1());
+         var messageTransmitter = new MessageTransmitterImpl(guidProxy, courierSerializer, networkBroadcaster, unacknowledgedReliableMessageContainer, messageDtoPool);
          var messageSender = new MessageSenderImpl(guidProxy, unacknowledgedReliableMessageContainer, messageTransmitter);
          var acknowledgeDtoPool = objectPoolFactory.CreatePool(() => new CourierMessageAcknowledgeV1());
          var messageAcknowledger = new MessageAcknowledgerImpl(networkBroadcaster, unacknowledgedReliableMessageContainer, acknowledgeDtoPool);

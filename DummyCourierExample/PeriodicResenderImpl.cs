@@ -27,10 +27,15 @@ namespace DummyCourierExample {
       private async Task MainLoopAsync() {
          var cancellationToken = cancellationTokenSource.Token;
          while (!cancellationToken.IsCancellationRequested) {
-            var messagesToSend = unacknowledgedReliableMessageContainer.ProcessPendingQueuesAndGetNextMessagesToSend();
-            foreach (var message in messagesToSend) {
-               messageTransmitter.Transmit(message.MessageId, message.RecipientId, message.Payload, message.Flags);
-            }
+            unacknowledgedReliableMessageContainer.ProcessPendingQueues(
+               (message) => messageTransmitter.Transmit(
+                  message.MessageId, 
+                  message.RecipientId, 
+                  message.Payload, 
+                  message.Flags
+               )
+            );
+
             await Task.Delay(CourierPeriodicsConstants.kResendTickIntervalMillis);
          }
       }

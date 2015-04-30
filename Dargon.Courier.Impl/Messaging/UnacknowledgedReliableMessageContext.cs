@@ -2,30 +2,24 @@
 
 namespace Dargon.Courier.Messaging {
    public class UnacknowledgedReliableMessageContext {
-      private readonly Guid recipientId;
-      private readonly Guid messageId;
-      private readonly object payload;
-      private readonly MessagePriority priority;
-      private readonly MessageFlags messageFlags;
-      private bool acknowledged = false;
-
-      public UnacknowledgedReliableMessageContext(Guid messageId, Guid recipientId, object payload, MessagePriority priority, MessageFlags messageFlags) {
-         this.recipientId = recipientId;
-         this.messageId = messageId;
-         this.payload = payload;
-         this.priority = priority;
-         this.messageFlags = messageFlags;
-      }
-
-      public Guid RecipientId {  get { return recipientId; } }
-      public Guid MessageId { get { return messageId; } }
-      public object Payload {  get { return payload; } }
-      public MessagePriority Priority { get { return priority; } }
-      public MessageFlags Flags { get { return messageFlags; } }
-      public bool Acknowledged { get { return acknowledged; } }
+      public Guid RecipientId { get; private set; }
+      public Guid MessageId { get; private set; }
+      public object Payload { get; private set; }
+      public MessagePriority Priority { get; private set; }
+      public MessageFlags Flags { get; private set; }
+      public bool Acknowledged { get; private set; }
 
       public void MarkAcknowledged() {
-         acknowledged = true;
+         Acknowledged = true;
+      }
+
+      public void UpdateAndMarkUnacknowledged(Guid messageId, Guid recipientId, object payload, MessagePriority priority, MessageFlags messageFlags) {
+         this.RecipientId = recipientId;
+         this.MessageId = messageId;
+         this.Payload = payload;
+         this.Priority = priority;
+         this.Flags = messageFlags;
+         this.Acknowledged = false;
       }
    }
 }
