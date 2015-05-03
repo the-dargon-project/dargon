@@ -6,5 +6,5 @@
       event DataArrivedHandler DataArrived;
    }
 
-   public delegate void DataArrivedHandler(CourierNetwork network, byte[] data);
+   public delegate void DataArrivedHandler(CourierNetwork network, byte[] data, int offset, int length);
 }

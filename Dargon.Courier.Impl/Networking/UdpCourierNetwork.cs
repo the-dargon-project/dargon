@@ -51,7 +51,7 @@ namespace Dargon.Courier.Networking {
             multicastEndpoint = new IPEndPoint(kMulticastAddress, configuration.Port);
 
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            // socket.SetSocketOption(SocketOptionLevel.Udp, SocketOptionName.NoDelay, 1);
+            socket.SetSocketOption(SocketOptionLevel.Udp, SocketOptionName.NoDelay, 1);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
             socket.Bind(new IPEndPoint(IPAddress.Any, configuration.Port));
 
@@ -72,10 +72,10 @@ namespace Dargon.Courier.Networking {
             receiveState.BeginReceive();
          }
 
-         private void HandleReceiveCompleted(ReceiveState receiveState, byte[] buffer, int i, int bytesTransferred) {
+         private void HandleReceiveCompleted(ReceiveState receiveState, byte[] buffer, int offset, int length) {
             var capture = DataArrived;
             if (capture != null) {
-               capture.BeginInvoke(network, buffer, ar => { receiveStatePool.ReturnObject(receiveState); }, null);
+               capture.BeginInvoke(network, buffer, offset, length, ar => { receiveStatePool.ReturnObject(receiveState); }, null);
             }
          }
 

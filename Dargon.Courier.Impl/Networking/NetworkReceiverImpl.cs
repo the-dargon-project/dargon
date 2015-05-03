@@ -29,8 +29,8 @@ namespace Dargon.Courier.Networking {
          networkContext.DataArrived += HandleDataArrived;
       }
 
-      private void HandleDataArrived(CourierNetwork network, byte[] data) {
-         using (var ms = new MemoryStream(data))
+      private void HandleDataArrived(CourierNetwork network, byte[] data, int offset, int length) {
+         using (var ms = new MemoryStream(data, offset, length))
          using (var reader = new BinaryReader(ms)) {
             ulong magic = reader.ReadUInt64();
             if (magic != NetworkingConstants.kMessageHeader) {

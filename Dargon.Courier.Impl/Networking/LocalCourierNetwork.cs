@@ -55,7 +55,7 @@ namespace Dargon.Courier.Networking {
          }
 
          public void HandleDataArrived(byte[] data) {
-            DataArrived?.BeginInvoke(network, data, null, null);
+            DataArrived?.BeginInvoke(network, data, 0, data.Length, null, null);
          }
 
          public event DataArrivedHandler DataArrived;
