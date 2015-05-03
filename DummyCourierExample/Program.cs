@@ -43,7 +43,7 @@ namespace DummyCourierExample {
          ISynchronizationFactory synchronizationFactory = new SynchronizationFactory();
          IThreadingProxy threadingProxy = new ThreadingProxy(threadingFactory, synchronizationFactory);
          GuidProxy guidProxy = new GuidProxyImpl();
-         IPofContext courierPofContext = new DargonCourierImplPofContext(1337);
+         IPofContext courierPofContext = new DargonCourierImplPofContext();
          IPofSerializer courierSerializer = new PofSerializer(courierPofContext);
          Guid localIdentifier = guidProxy.NewGuid();
          var endpoint = new CourierEndpointImpl(courierSerializer, localIdentifier, "node" + i);

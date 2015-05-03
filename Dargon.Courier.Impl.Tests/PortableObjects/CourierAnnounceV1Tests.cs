@@ -16,7 +16,7 @@ namespace Dargon.Courier.Impl.PortableObjects {
 
       [Fact]
       public void PofSerializationTest() {
-         PofTestUtilities.CheckConfiguration(new DargonCourierImplPofContext(0), testObj);
+         PofTestUtilities.CheckConfiguration(new DargonCourierImplPofContext(), testObj);
       }
    }
 }
