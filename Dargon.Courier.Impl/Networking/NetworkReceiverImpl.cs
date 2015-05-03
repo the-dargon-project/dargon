@@ -38,6 +38,10 @@ namespace Dargon.Courier.Networking {
             }
 
             Guid senderId = reader.ReadGuid();
+            if (localEndpoint.Matches(senderId)) {
+               return;
+            }
+
             var payload = pofSerializer.Deserialize(reader);
             if (payload is CourierMessageV1) {
                HandleInboundMessage(senderId, (CourierMessageV1)payload);
