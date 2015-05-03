@@ -13,13 +13,25 @@ using Dargon.Courier.PortableObjects;
 using Dargon.PortableObjects;
 using ItzWarty;
 using ItzWarty.Collections;
+using ItzWarty.IO;
+using ItzWarty.Networking;
 using ItzWarty.Pooling;
 using ItzWarty.Threading;
 
 namespace DummyCourierExample {
    public static class Program {
       private static void Main(string[] args) {
-         var network = new LocalCourierNetwork(dropRate: 0.1);
+         //var network = new LocalCourierNetwork(dropRate: 0.1);
+         IDnsProxy dnsProxy = new DnsProxy();
+         var tcpEndPointFactory = new TcpEndPointFactory(dnsProxy);
+         IThreadingFactory threadingFactory = new ThreadingFactory();
+         ISynchronizationFactory synchronizationFactory = new SynchronizationFactory();
+         IThreadingProxy threadingProxy = new ThreadingProxy(threadingFactory, synchronizationFactory);
+         IStreamFactory streamFactory = new StreamFactory();
+         INetworkingInternalFactory networkingInternalFactory = new NetworkingInternalFactory(threadingProxy, streamFactory);
+         ISocketFactory socketFactory = new SocketFactory(tcpEndPointFactory, networkingInternalFactory);
+         INetworkingProxy networkingProxy = new NetworkingProxy(socketFactory, tcpEndPointFactory);
+         var network = new UdpCourierNetwork(networkingProxy, new UdpCourierNetworkConfiguration(50555));
          var tasks = Util.Generate(4, i => new Thread(() => EntryPoint(i, network)).With(t => t.Start()));
          tasks.ForEach(t => t.Join());
       }
@@ -69,13 +81,14 @@ namespace DummyCourierExample {
                   var stopwatch = new Stopwatch();
                   stopwatch.Start();
                   var messagesRemaining = unacknowledgedReliableMessageContainer.GetUnsentMessagesRemaining();
+                  var peers = peerRegistry.EnumeratePeers().ToArray();
                   for (var k = 0; k < 10000; k++) {
-                     foreach (var peer in peerRegistry.EnumeratePeers()) {
+                     foreach (var peer in peers) {
                         messageSender.SendReliableUnicast(peer.Id, "Message " + j + " hello from " + i + ", " + peer.Id, MessagePriority.Low);
                      }
                   }
                   var messagesAcked = unacknowledgedReliableMessageContainer.GetUnsentMessagesRemaining() - messagesRemaining + 10000;
-                  Console.WriteLine("Got " + messagesAcked + " acks in " + stopwatch.ElapsedMilliseconds + "ms (" + (messagesAcked / stopwatch.Elapsed.TotalSeconds) + " per second)");
+                  Console.WriteLine("Got " + (messagesAcked * peers.Length) + " acks in " + stopwatch.ElapsedMilliseconds + "ms (" + (messagesAcked * peers.Length / stopwatch.Elapsed.TotalSeconds) + " per second) " + messagesRemaining + " remaining");
                   Thread.Sleep(1);
                }
 

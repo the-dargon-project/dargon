@@ -42,6 +42,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -70,6 +71,7 @@
     <Compile Include="Networking\CourierNetworkContext.cs" />
     <Compile Include="Networking\LocalCourierNetwork.cs" />
     <Compile Include="Networking\CourierNetwork.cs" />
+    <Compile Include="Networking\UdpCourierNetwork.cs" />
     <Compile Include="Peering\ReadablePeerContext.cs" />
     <Compile Include="Peering\ReadablePeerRegistry.cs" />
     <Compile Include="Peering\RevisionCounter.cs" />
