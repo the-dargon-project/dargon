@@ -37,6 +37,7 @@ namespace Dargon.Courier.Networking {
          private IPEndPoint multicastEndpoint;
          private Socket socket;
          private ObjectPool<ReceiveState> receiveStatePool;
+         private readonly ObjectPool<SocketAsyncEventArgs> broadcastSocketAsyncEventArgsPool = new ObjectPoolImpl<SocketAsyncEventArgs>(() => new SocketAsyncEventArgs());
 
          public event DataArrivedHandler DataArrived;
 
@@ -85,16 +86,17 @@ namespace Dargon.Courier.Networking {
          public void Broadcast(byte[] payload) {
             Broadcast(payload, 0, payload.Length);
          }
-
+         
          public void Broadcast(byte[] payload, int offset, int length) {
-            var e = new SocketAsyncEventArgs();
+            var e = broadcastSocketAsyncEventArgsPool.TakeObject();
             e.SetBuffer(payload, offset, length);
             e.RemoteEndPoint = multicastEndpoint;
             e.Completed += (sender, eventArgs) => {
-               eventArgs.Dispose();
+               // doesn't seem like we can return this to the pool in a completed state.
+               e.Dispose();
             };
             if(!socket.SendToAsync(e)) {
-               e.Dispose();
+               broadcastSocketAsyncEventArgsPool.ReturnObject(e);
             }
          }
 
