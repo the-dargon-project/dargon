@@ -59,6 +59,7 @@
     <Compile Include="OutTests.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SingletonMockingTest.cs" />
     <Compile Include="VoidMockingTests.cs" />
   </ItemGroup>
   <ItemGroup>
