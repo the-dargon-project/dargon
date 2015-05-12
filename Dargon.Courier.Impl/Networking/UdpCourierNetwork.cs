@@ -75,7 +75,10 @@ namespace Dargon.Courier.Networking {
          private void HandleReceiveCompleted(ReceiveState receiveState, byte[] buffer, int offset, int length) {
             var capture = DataArrived;
             if (capture != null) {
-               capture.BeginInvoke(network, buffer, offset, length, ar => { receiveStatePool.ReturnObject(receiveState); }, null);
+               capture.Invoke(network, buffer, offset, length);
+               receiveStatePool.ReturnObject(receiveState);
+            } else {
+               receiveStatePool.ReturnObject(receiveState);
             }
          }
 
@@ -87,7 +90,12 @@ namespace Dargon.Courier.Networking {
             var e = new SocketAsyncEventArgs();
             e.SetBuffer(payload, offset, length);
             e.RemoteEndPoint = multicastEndpoint;
-            socket.SendToAsync(e);
+            e.Completed += (sender, eventArgs) => {
+               eventArgs.Dispose();
+            };
+            if(!socket.SendToAsync(e)) {
+               e.Dispose();
+            }
          }
 
          internal class ReceiveState {
@@ -109,7 +117,9 @@ namespace Dargon.Courier.Networking {
             }
 
             public void BeginReceive() {
-               socket.ReceiveFromAsync(socketEventArgs);
+               if(!socket.ReceiveFromAsync(socketEventArgs)) {
+                  HandleReceiveCompleted(this, socketEventArgs);
+               }
             }
 
             public void HandleReceiveCompleted(object sender, SocketAsyncEventArgs e) {
