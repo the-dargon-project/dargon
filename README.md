@@ -215,3 +215,11 @@ public class ConfigurationManagerTests : NMockitoInstance {
    }
 }
 ```
+## Internal and Private Interfaces
+We can test internal interfaces just like public interfaces. However, to generate mocks the assemblies containing internal interfaces must have the following code in AssemblyInfo.cs:
+
+```csharp
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+```
+
+NMockito cannot mock private interfaces, as a workaround, make your interfaces internal.
