@@ -46,6 +46,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Dargon.PortableObjects.Streams.0.2.0\lib\net45\Dargon.PortableObjects.Streams.dll</HintPath>
     </Reference>
+    <Reference Include="Dargon.Ryu.Api, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Dargon.Ryu.Api.0.0.1\lib\portable-net45+netcore45+MonoAndroid1+MonoTouch1\Dargon.Ryu.Api.dll</HintPath>
+    </Reference>
     <Reference Include="Dargon.Services, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Dargon.Services.0.2.1\lib\net45\Dargon.Services.dll</HintPath>
@@ -93,12 +97,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Dargon.Ryu.Api\Dargon.Ryu.Api.csproj">
-      <Project>{BE844DEB-2F95-407E-973E-AE3F3983B54D}</Project>
-      <Name>Dargon.Ryu.Api</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
