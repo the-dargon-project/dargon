@@ -92,13 +92,13 @@
     <Compile Include="RyuFactory.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Dargon.Ryu.Api\Dargon.Ryu.Api.csproj">
-      <Project>{247637C5-7F4B-4F68-BF14-A033207E3D2E}</Project>
-      <Name>Dargon.Ryu.Api</Name>
-    </ProjectReference>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <ProjectReference Include="..\Dargon.Ryu.Api\Dargon.Ryu.Api.csproj">
+      <Project>{BE844DEB-2F95-407E-973E-AE3F3983B54D}</Project>
+      <Name>Dargon.Ryu.Api</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Configuration;
 
 namespace Dargon.Ryu {
    public class RyuPackageV1TypeInfo {
