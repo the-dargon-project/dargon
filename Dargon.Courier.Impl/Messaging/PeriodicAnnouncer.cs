@@ -51,7 +51,6 @@ namespace Dargon.Courier.Messaging {
          using (var writer = new BinaryWriter(ms)) {
             while (!cancellationToken.IsCancellationRequested) {
                var versionNumber = localEndpoint.GetRevisionNumber();
-               Thread.MemoryBarrier();
                courierSerializer.Serialize(writer, (object)localEndpoint.EnumerateProperties());
                networkBroadcaster.SendCourierPacket(new CourierAnnounceV1(versionNumber, ms.GetBuffer(), 0, (int)ms.Length));
                await Task.Delay(CourierAnnouncementConstants.kAnnouncementIntervalMillis, cancellationTokenSource.Token.__InnerToken);

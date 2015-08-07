@@ -1,10 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using Dargon.Courier.Messaging;
-using ItzWarty;
+﻿using System.Threading.Tasks;
 using ItzWarty.Threading;
 
-namespace DummyCourierExample {
+namespace Dargon.Courier.Messaging {
    public class PeriodicResenderImpl {
       private readonly IThreadingProxy threadingProxy;
       private readonly UnacknowledgedReliableMessageContainer unacknowledgedReliableMessageContainer;

@@ -20,6 +20,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -58,6 +59,7 @@
     <Compile Include="Messaging\MessageRouter.cs" />
     <Compile Include="Messaging\MessageSender.cs" />
     <Compile Include="Messaging\MessageTransmitter.cs" />
+    <Compile Include="Messaging\PeriodicResenderImpl.cs" />
     <Compile Include="Messaging\UnacknowledgedReliableMessageContainer.cs" />
     <Compile Include="Messaging\PeriodicAnnouncer.cs" />
     <Compile Include="Messaging\ReceivedMessage.cs" />

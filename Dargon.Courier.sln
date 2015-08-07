@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22609.0
+VisualStudioVersion = 14.0.22823.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dargon.Courier.Api", "Dargon.Courier\Dargon.Courier.Api.csproj", "{00A1DA2F-D316-4387-8BD4-F1A47C05A402}"
 EndProject
@@ -15,8 +15,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DummyCourierExample", "DummyCourierExample\DummyCourierExample.csproj", "{09D2E814-7D62-48B9-A94B-DED102626AA6}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dargon.PortableObjects", "..\Dargon.PortableObjects\Dargon.PortableObjects.csproj", "{DA87B9E0-3584-4448-97B5-9877CAC44352}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,10 +38,6 @@ Global
 		{09D2E814-7D62-48B9-A94B-DED102626AA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{09D2E814-7D62-48B9-A94B-DED102626AA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{09D2E814-7D62-48B9-A94B-DED102626AA6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DA87B9E0-3584-4448-97B5-9877CAC44352}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DA87B9E0-3584-4448-97B5-9877CAC44352}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DA87B9E0-3584-4448-97B5-9877CAC44352}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DA87B9E0-3584-4448-97B5-9877CAC44352}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

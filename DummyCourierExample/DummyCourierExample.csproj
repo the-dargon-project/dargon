@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -32,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dargon.PortableObjects">
+      <HintPath>..\packages\Dargon.PortableObjects.0.1.2\lib\net45\Dargon.PortableObjects.dll</HintPath>
+    </Reference>
     <Reference Include="ImpromptuInterface, Version=6.2.2.0, Culture=neutral, PublicKeyToken=0b1781c923b2975b, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\ImpromptuInterface.6.2.2\lib\net40\ImpromptuInterface.dll</HintPath>
@@ -55,7 +59,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PeriodicResenderImpl.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -64,10 +67,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Dargon.PortableObjects\Dargon.PortableObjects.csproj">
-      <Project>{da87b9e0-3584-4448-97b5-9877cac44352}</Project>
-      <Name>Dargon.PortableObjects</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Dargon.Courier.Impl\Dargon.Courier.Impl.csproj">
       <Project>{648271D2-2A52-4496-A9D1-6E54353D1448}</Project>
       <Name>Dargon.Courier.Impl</Name>

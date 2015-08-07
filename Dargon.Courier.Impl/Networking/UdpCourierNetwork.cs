@@ -75,12 +75,8 @@ namespace Dargon.Courier.Networking {
 
          private void HandleReceiveCompleted(ReceiveState receiveState, byte[] buffer, int offset, int length) {
             var capture = DataArrived;
-            if (capture != null) {
-               capture.Invoke(network, buffer, offset, length);
-               receiveStatePool.ReturnObject(receiveState);
-            } else {
-               receiveStatePool.ReturnObject(receiveState);
-            }
+            capture?.Invoke(network, buffer, offset, length);
+            receiveStatePool.ReturnObject(receiveState);
          }
 
          public void Broadcast(byte[] payload) {

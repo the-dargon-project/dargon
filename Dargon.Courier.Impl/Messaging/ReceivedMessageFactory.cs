@@ -31,7 +31,7 @@ namespace Dargon.Courier.Messaging {
             add => GetType().GetMethod(nameof(CreateReceivedMessageHelper), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(payloadType)
          );
          return (IReceivedMessage<object>)receivedMessageFactory.Invoke(this, new[] { senderId, message, payload });
-      }
+      } 
 
       private IReceivedMessage<object> CreateReceivedMessageHelper<TPayload>(Guid senderId, CourierMessageV1 message, TPayload payload) {
          return (IReceivedMessage<object>)new ReceivedMessage<TPayload>(

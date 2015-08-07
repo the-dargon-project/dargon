@@ -14,6 +14,8 @@ namespace Dargon.Courier.Messaging {
       void RegisterPayloadHandler(Type t, Action<IReceivedMessage<object>> handler);
 
       void RouteMessage(Guid senderId, CourierMessageV1 message);
+      void RouteMessage<TPayload>(IReceivedMessage<TPayload> receivedMessage);
+      void RouteMessage(Type payloadType, IReceivedMessage<object> receivedMessage);
    }
 
    public class MessageRouterImpl : MessageRouter {
@@ -46,6 +48,15 @@ namespace Dargon.Courier.Messaging {
          var receivedMessage = receivedMessageFactory.CreateReceivedMessage(senderId, message);
          var payloadType = receivedMessage.Payload.GetType();
 
+         RouteMessage(payloadType, receivedMessage);
+      }
+
+
+      public void RouteMessage<TPayload>(IReceivedMessage<TPayload> receivedMessage) {
+         RouteMessage(typeof(TPayload), (IReceivedMessage<object>)receivedMessage);
+      }
+
+      public void RouteMessage(Type payloadType, IReceivedMessage<object> receivedMessage) {
          Action<IReceivedMessage<object>> handler;
          if (handlersByPayloadType.TryGetValue(payloadType, out handler)) {
             handler(receivedMessage);
