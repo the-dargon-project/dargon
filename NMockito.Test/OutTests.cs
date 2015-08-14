@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace NMockito {
    public class OutTests : NMockitoInstance {
       [Mock] private readonly IReadOnlyDictionary<string, Configuration> configurationsByName = null;
+      [Mock] private readonly IReadOnlyDictionary<string, string> locationsByName = null;
 
       private readonly ConfigurationManager testObj;
 
@@ -12,10 +15,10 @@ namespace NMockito {
       }
 
       [Fact]
-      public void OutParameterTest() {
+      public void OutParameter_WithInterfaceTest() {
          const string kKeyName = "key_name";
          Configuration configuration = CreateMock<Configuration>();
-         Configuration configurationPlaceholder = CreateMock<Configuration>();
+         var configurationPlaceholder = CreatePlaceholder<Configuration>();
          When(configuration.Validate()).ThenReturn(true);
          When(configurationsByName.TryGetValue(kKeyName, out configurationPlaceholder)).Set(configurationPlaceholder, configuration).ThenReturn(true);
 
@@ -23,6 +26,21 @@ namespace NMockito {
 
          Verify(configuration).Validate();
          Verify(configurationsByName).TryGetValue(kKeyName, out configurationPlaceholder);
+         VerifyNoMoreInteractions();
+      }
+
+      [Fact]
+      public void OutParameter_WithStringTest() {
+         const string kKeyName = "key_name";
+         const string location = "Expected Location";
+         var locationPlaceholder = CreatePlaceholder<string>();
+         When(locationsByName.TryGetValue(kKeyName, out locationPlaceholder)).Set(locationPlaceholder, location).ThenReturn(true);
+
+         string actualLocation;
+         var result = locationsByName.TryGetValue(kKeyName, out actualLocation);
+         AssertTrue(result);
+         AssertEquals(location, actualLocation);
+         Verify(locationsByName).TryGetValue(kKeyName, out locationPlaceholder);
          VerifyNoMoreInteractions();
       }
 

@@ -1,20 +1,19 @@
-﻿using System.Diagnostics;
-using Castle.DynamicProxy;
+﻿using Castle.DynamicProxy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
+using System.Threading;
 using Xunit;
 
-namespace NMockito
-{
+namespace NMockito {
    public static class NMockitoStatic
    {
       private static readonly ProxyGenerator proxyGenerator = new ProxyGenerator();
       private static readonly Dictionary<object, MockState> statesByMock = new Dictionary<object, MockState>();
       private static readonly MethodInfo createMockGenericDefinition;
+      private static int placeholderCounter = 1;
 
       static NMockitoStatic()
       {
@@ -52,6 +51,38 @@ namespace NMockito
       public static T CreateRef<T>() 
          where T : class {
          return CreateMock<T>(false);
+      }
+
+      public static T CreatePlaceholder<T>() {
+         if (typeof(T).IsInterface) {
+            return (T)CreateUntrackedMock(typeof(T));
+         } else if (typeof(T).IsArray) {
+            var counter = Interlocked.Increment(ref placeholderCounter);
+            return (T)(object)Array.CreateInstance(typeof(T).GetElementType(), 1337 + counter);
+         } else if (typeof(T).IsClass && typeof(T) != typeof(string)) {
+            var ctor = typeof(T).GetConstructors().FirstOrDefault(x => x.GetParameters().Length == 0);
+            if (ctor == null) {
+               return default(T);
+            } else {
+               return (T)ctor.Invoke(null);
+            }
+         } else {
+            var counter = Interlocked.Increment(ref placeholderCounter);
+            switch (typeof(T).Name) {
+               case nameof(String): return (T)(object)("placeholder_" + counter);
+               case nameof(Char): return (T)(object)(' ' + counter);
+               case nameof(Byte): return (T)(object)(byte)(1 + counter % 254);
+               case nameof(SByte): return (T)(object)(sbyte)(1 + counter % 254);
+               case nameof(UInt16): return (T)(object)(ushort)(1 + counter % 65535);
+               case nameof(Int16): return (T)(object)(short)(1 + counter % 65535);
+               case nameof(UInt32): return (T)(object)(uint)(1 + counter % (UInt32.MaxValue - 1));
+               case nameof(Int32): return (T)(object)(int)(1 + counter % (UInt32.MaxValue - 1));
+               case nameof(UInt64): return (T)(object)(UInt64)(1 + counter);
+               case nameof(Int64): return (T)(object)(Int64)(1 + counter);
+               case nameof(Boolean): return (T)(object)(counter % 2 == 0);
+            }
+            throw new NotSupportedException("NMockito does not support creating placeholders for type " + typeof(T).FullName);
+         }
       }
 
       public static INMockitoTimesMatcher AnyTimes() { return new NMockitoTimesAnyMatcher(); }

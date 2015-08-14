@@ -19,6 +19,7 @@ namespace NMockito
       [DebuggerHidden] public T CreateUntrackedMock<T>() where T : class { return NMockitoStatic.CreateUntrackedMock<T>(); }
       [DebuggerHidden] public object CreateUntrackedMock(Type type) { return NMockitoStatic.CreateUntrackedMock(type); }
       [DebuggerHidden] public T CreateRef<T>() where T : class { return NMockitoStatic.CreateRef<T>(); }
+      [DebuggerHidden] public T CreatePlaceholder<T>() { return NMockitoStatic.CreatePlaceholder<T>(); }
 
       [DebuggerHidden] public INMockitoTimesMatcher AnyTimes() { return NMockitoStatic.AnyTimes(); }
       [DebuggerHidden] public INMockitoTimesMatcher AnyOrNoneTimes() { return NMockitoStatic.AnyOrNoneTimes(); }
