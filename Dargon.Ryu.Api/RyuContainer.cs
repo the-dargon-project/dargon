@@ -23,6 +23,22 @@ namespace Dargon.Ryu {
       object Get(Type type);
 
       /// <summary>
+      /// Sets the given instance as the implementation of the given type.
+      /// 
+      /// If the the type is already assigned within the container, then the
+      /// old implementation is replaced with the newer implementation.
+      /// </summary>
+      void Set<T>(T instance);
+
+      /// <summary>
+      /// Sets the given instance as the implementation of the given type.
+      /// 
+      /// If the the type is already assigned within the container, then the
+      /// old implementation is replaced with the newer implementation.
+      /// </summary>
+      void Set(Type type, object instance);
+
+      /// <summary>
       /// Constructs a new instance of T, even if T already exists in the
       /// container.
       /// 
