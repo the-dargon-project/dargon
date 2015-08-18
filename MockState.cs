@@ -146,10 +146,19 @@ namespace NMockito
                }
             } 
 
-            // replace smart parameters' placeholders with null, if they're not swapped out
+            // replace smart parameters' placeholders with default value, if they're not swapped out
             foreach (var kvp in refReplacementsByIndex) {
                if (ReferenceEquals(invocation.Arguments[kvp.Key], kvp.Value)) {
-                  invocation.Arguments[kvp.Key] = null;
+                  var parameterType = invocation.Method.GetParameters()[kvp.Key].ParameterType;
+                  // If we have an 'out int', for example, the type is actually a by-ref int&.
+                  if (parameterType.IsByRef) {
+                     parameterType = parameterType.GetElementType();
+                  }
+                  if (parameterType.IsValueType) {
+                     invocation.Arguments[kvp.Key] = Activator.CreateInstance(parameterType);
+                  } else {
+                     invocation.Arguments[kvp.Key] = null;
+                  }
                }
             }
          }

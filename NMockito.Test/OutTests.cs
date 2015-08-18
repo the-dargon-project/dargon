@@ -15,6 +15,22 @@ namespace NMockito {
       }
 
       [Fact]
+      public void UnsetOutParameter_TakesDefaultValueTest() {
+         const int kKey = 21337;
+         var testObj = CreateMock<IReadOnlyDictionary<int, int>>();
+         var outPlaceholder = CreatePlaceholder<int>();
+         When(testObj.TryGetValue(kKey, out outPlaceholder)).ThenReturn(false);
+
+         int value;
+         var result = testObj.TryGetValue(kKey, out value);
+
+         Verify(testObj).TryGetValue(kKey, out outPlaceholder);
+         VerifyNoMoreInteractions();
+         AssertFalse(result);
+         AssertEquals(0, value);
+      }
+
+      [Fact]
       public void OutParameter_WithInterfaceTest() {
          const string kKeyName = "key_name";
          Configuration configuration = CreateMock<Configuration>();
