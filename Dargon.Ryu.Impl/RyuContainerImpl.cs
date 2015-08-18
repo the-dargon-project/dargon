@@ -192,7 +192,7 @@ namespace Dargon.Ryu {
             parameterValues[i] = Get(parameters[i].ParameterType);
          }
          var result = constructor.Invoke(parameterValues);
-         var initializeMethod = result.GetType().GetMethods().Where(m => m.Name.Equals("Initialize", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+         var initializeMethod = result.GetType().GetMethods().FirstOrDefault(m => m.Name.Equals("Initialize", StringComparison.OrdinalIgnoreCase));
          initializeMethod?.Invoke(result, null);
          return result;
       }
