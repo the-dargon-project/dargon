@@ -33,8 +33,9 @@ namespace NMockito
       }
 
       public object Execute(IInvocation invocation) {
+         var methodParameters = invocation.Method.GetParameters();
          for (var i = 0; i < invocation.Arguments.Length; i++) {
-            if (invocation.Arguments[i] == mock) {
+            if ((methodParameters[i].IsOut || methodParameters[i].ParameterType.IsByRef) && invocation.Arguments[i].Equals(mock)) {
                invocation.Arguments[i] = value;
             }
          }
