@@ -132,6 +132,18 @@ namespace Dargon.Ryu {
          }
       }
 
+      public void Set<T>(T instance) {
+         Set(typeof(T), instance);
+      }
+
+      public void Set(Type type, object instance) {
+         instancesByType.AddOrUpdate(
+            type,
+            add => instance,
+            (update, existing) => instance
+         );
+      }
+
       public T Construct<T>() {
          return (T)Construct(typeof(T));
       }
