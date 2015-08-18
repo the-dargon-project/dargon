@@ -34,10 +34,9 @@ namespace NMockito
          return this;
       }
 
-      public WhenContext<T> Set<TMock>(TMock mock, TMock value)
-         where TMock : class {
-         if (mock == null) {
-            throw new ArgumentNullException("mock");
+      public WhenContext<T> Set<TMock>(TMock mock, TMock value) {
+         if (mock.Equals(default(TMock))) {
+            throw new ArgumentNullException($"Mock placeholders are not permitted to be the default value. The placeholder for type {typeof(TMock).FullName} has value {value}.");
          }
          invocationAndMockState.State.AddInvocationExecutor(invocationAndMockState.Invocation, smartParameters, new InvocationSetExecutor(mock, value));
          return this;
