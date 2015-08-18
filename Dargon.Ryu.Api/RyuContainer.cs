@@ -3,12 +3,13 @@
 namespace Dargon.Ryu {
    public interface RyuContainer {
       /// <summary>
-      /// Initializes the container.
+      /// Initializes the container, force-loading all referenced assemblies 
+      /// and instantiating all uninstantiated Ryu packages.
       /// </summary>
       void Setup();
 
       /// <summary>
-      /// Gets or creates an instance of type T in the container.
+      /// Gets or creates an instance of type T in the container. 
       /// </summary>
       /// <typeparam name="T"></typeparam>
       /// <returns></returns>
@@ -24,6 +25,10 @@ namespace Dargon.Ryu {
       /// <summary>
       /// Constructs a new instance of T, even if T already exists in the
       /// container.
+      /// 
+      /// Throws if the type is not registered, as it would then default to
+      /// being a singleton. Likewise, throws if the type is marked cacheable,
+      /// as that would result in the multiple instantiation of a singleton.
       /// </summary>
       /// <typeparam name="T"></typeparam>
       /// <returns></returns>
@@ -33,6 +38,10 @@ namespace Dargon.Ryu {
       /// Constructs a new instance of the given type, even if an instance of
       /// the given type already exists in the container.
       /// container.
+      /// 
+      /// Throws if the type is not registered, as it would then default to
+      /// being a singleton. Likewise, throws if the type is marked cacheable,
+      /// as that would result in the multiple instantiation of a singleton.
       /// </summary>
       object Construct(Type type);
 
@@ -53,12 +62,18 @@ namespace Dargon.Ryu {
       /// <summary>
       /// Forces construction of the given type, ignoring whether it has been
       /// specified as a singleton.
+      /// 
+      /// The method can be leveraged by containers and packages to force the
+      /// initial construction of singletons.
       /// </summary>
       T ForceConstruct<T>();
 
       /// <summary>
       /// Forces construction of the given type, ignoring whether it has been
       /// specified as a singleton.
+      /// 
+      /// The method can be leveraged by containers and packages to force the
+      /// initial construction of singletons.
       /// </summary>
       object ForceConstruct(Type type);
    }
