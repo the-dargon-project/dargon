@@ -17,7 +17,7 @@ namespace NMockito
 
       public WhenContext<T> ThenReturn(params T[] values)
       {
-         if (values == null)
+         if (values == null || values.Length == 0)
             values = new T[] { default(T) };
 
          foreach (var result in values) {
