@@ -80,6 +80,7 @@ namespace NMockito {
                case nameof(UInt64): return (T)(object)(UInt64)(1 + counter);
                case nameof(Int64): return (T)(object)(Int64)(1 + counter);
                case nameof(Boolean): return (T)(object)(counter % 2 == 0);
+               case nameof(Guid): return (T)(object)new Guid(1 + counter, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             }
             throw new NotSupportedException("NMockito does not support creating placeholders for type " + typeof(T).FullName);
          }
