@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Dargon.Courier.PortableObjects;
@@ -13,7 +14,7 @@ namespace Dargon.Courier.Messaging {
       void RegisterPayloadHandler<T>(Action<IReceivedMessage<T>> handler);
       void RegisterPayloadHandler(Type t, Action<IReceivedMessage<object>> handler);
 
-      void RouteMessage(Guid senderId, CourierMessageV1 message);
+      void RouteMessage(Guid senderId, CourierMessageV1 message, IPEndPoint remoteEndPoint);
       void RouteMessage<TPayload>(IReceivedMessage<TPayload> receivedMessage);
       void RouteMessage(Type payloadType, IReceivedMessage<object> receivedMessage);
    }
@@ -44,8 +45,8 @@ namespace Dargon.Courier.Messaging {
          );
       }
 
-      public void RouteMessage(Guid senderId, CourierMessageV1 message) {
-         var receivedMessage = receivedMessageFactory.CreateReceivedMessage(senderId, message);
+      public void RouteMessage(Guid senderId, CourierMessageV1 message, IPEndPoint remoteEndPoint) {
+         var receivedMessage = receivedMessageFactory.CreateReceivedMessage(senderId, message, remoteEndPoint.Address);
          var payloadType = receivedMessage.Payload.GetType();
 
          RouteMessage(payloadType, receivedMessage);

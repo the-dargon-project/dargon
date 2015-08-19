@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ using ItzWarty.Collections;
 
 namespace Dargon.Courier.Messaging {
    public interface ReceivedMessageFactory {
-      IReceivedMessage<object> CreateReceivedMessage(Guid senderId, CourierMessageV1 message);
+      IReceivedMessage<object> CreateReceivedMessage(Guid senderId, CourierMessageV1 message, IPAddress remoteAddress);
    }
 
    public class ReceivedMessageFactoryImpl : ReceivedMessageFactory {
@@ -23,23 +24,24 @@ namespace Dargon.Courier.Messaging {
          this.receivedMessageFactoriesByPayloadType = new ConcurrentDictionary<Type, MethodInfo>();
       }
 
-      public IReceivedMessage<object> CreateReceivedMessage(Guid senderId, CourierMessageV1 message) {
+      public IReceivedMessage<object> CreateReceivedMessage(Guid senderId, CourierMessageV1 message, IPAddress remoteAddress) {
          var payload = pofSerializer.Deserialize(new MemoryStream(message.Payload));
          var payloadType = payload.GetType();
          var receivedMessageFactory = receivedMessageFactoriesByPayloadType.GetOrAdd(
             payloadType,
             add => GetType().GetMethod(nameof(CreateReceivedMessageHelper), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(payloadType)
          );
-         return (IReceivedMessage<object>)receivedMessageFactory.Invoke(this, new[] { senderId, message, payload });
+         return (IReceivedMessage<object>)receivedMessageFactory.Invoke(this, new[] { senderId, message, payload, remoteAddress });
       } 
 
-      private IReceivedMessage<object> CreateReceivedMessageHelper<TPayload>(Guid senderId, CourierMessageV1 message, TPayload payload) {
+      private IReceivedMessage<object> CreateReceivedMessageHelper<TPayload>(Guid senderId, CourierMessageV1 message, TPayload payload, IPAddress remoteAddress) {
          return (IReceivedMessage<object>)new ReceivedMessage<TPayload>(
             message.Id,
             senderId,
             message.RecipientId,
             message.MessageFlags,
-            payload
+            payload,
+            remoteAddress
          );
       }
    }

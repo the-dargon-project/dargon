@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using Dargon.Courier.Identities;
 using Dargon.Courier.Messaging;
 using Dargon.Courier.Peering;
@@ -29,7 +30,7 @@ namespace Dargon.Courier.Networking {
          networkContext.DataArrived += HandleDataArrived;
       }
 
-      private void HandleDataArrived(CourierNetwork network, byte[] data, int offset, int length) {
+      private void HandleDataArrived(CourierNetwork network, byte[] data, int offset, int length, IPEndPoint remoteEndPoint) {
          using (var ms = new MemoryStream(data, offset, length))
          using (var reader = new BinaryReader(ms)) {
             ulong magic = reader.ReadUInt64();
@@ -44,7 +45,7 @@ namespace Dargon.Courier.Networking {
 
             var payload = pofSerializer.Deserialize(reader);
             if (payload is CourierMessageV1) {
-               HandleInboundMessage(senderId, (CourierMessageV1)payload);
+               HandleInboundMessage(senderId, (CourierMessageV1)payload, remoteEndPoint);
             } else if (payload is CourierAnnounceV1) {
                HandleInboundAnnounce(senderId, (CourierAnnounceV1)payload);
             } else if (payload is CourierMessageAcknowledgeV1) {
@@ -53,14 +54,14 @@ namespace Dargon.Courier.Networking {
          }
       }
 
-      private void HandleInboundMessage(Guid senderId, CourierMessageV1 message) {
+      private void HandleInboundMessage(Guid senderId, CourierMessageV1 message, IPEndPoint remoteEndPoint) {
          if (!localEndpoint.Matches(message.RecipientId)) {
             return;
          }
          if (message.MessageFlags.HasFlag(MessageFlags.AcknowledgementRequired)) {
             messageAcknowledger.SendAcknowledge(senderId, message.Id);
          }
-         messageRouter.RouteMessage(senderId, message);
+         messageRouter.RouteMessage(senderId, message, remoteEndPoint);
       }
 
       private void HandleInboundAnnounce(Guid senderId, CourierAnnounceV1 payload) {

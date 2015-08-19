@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Dargon.Courier.Identities;
@@ -9,12 +10,15 @@ using ItzWarty.Collections;
 
 namespace Dargon.Courier.Networking {
    public class LocalCourierNetwork : CourierNetwork {
+      private static readonly IPEndPoint localEndpoint = new IPEndPoint(IPAddress.Loopback, 0);
       private readonly IConcurrentSet<NetworkContextImpl> contexts = new ConcurrentSet<NetworkContextImpl>();
       private readonly double dropRate;
 
       public LocalCourierNetwork(double dropRate) {
          this.dropRate = dropRate;
       }
+
+      public IPEndPoint LocalEndpoint => localEndpoint;
 
       public CourierNetworkContext Join(ReadableCourierEndpoint endpoint) {
          var context = new NetworkContextImpl(this);
@@ -55,7 +59,7 @@ namespace Dargon.Courier.Networking {
          }
 
          public void HandleDataArrived(byte[] data) {
-            DataArrived?.BeginInvoke(network, data, 0, data.Length, null, null);
+            DataArrived?.BeginInvoke(network, data, 0, data.Length, network.LocalEndpoint, null, null);
          }
 
          public event DataArrivedHandler DataArrived;
