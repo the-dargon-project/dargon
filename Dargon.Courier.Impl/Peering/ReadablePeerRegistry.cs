@@ -13,6 +13,7 @@ using ItzWarty.Collections;
 namespace Dargon.Courier.Peering {
    public interface ReadablePeerRegistry {
       RemoteCourierEndpoint GetRemoteCourierEndpointOrNull(Guid identifier);
+      IEnumerable<RemoteCourierEndpoint> EnumeratePeers();
    }
 
    public interface ManageablePeerRegistry : ReadablePeerRegistry {
