@@ -47,7 +47,7 @@ namespace Dargon.Courier.Networking {
             if (payload is CourierMessageV1) {
                HandleInboundMessage(senderId, (CourierMessageV1)payload, remoteEndPoint);
             } else if (payload is CourierAnnounceV1) {
-               HandleInboundAnnounce(senderId, (CourierAnnounceV1)payload);
+               HandleInboundAnnounce(senderId, (CourierAnnounceV1)payload, remoteEndPoint);
             } else if (payload is CourierMessageAcknowledgeV1) {
                HandleCourierAcknowledgement(senderId, (CourierMessageAcknowledgeV1)payload);
             }
@@ -64,8 +64,8 @@ namespace Dargon.Courier.Networking {
          messageRouter.RouteMessage(senderId, message, remoteEndPoint);
       }
 
-      private void HandleInboundAnnounce(Guid senderId, CourierAnnounceV1 payload) {
-         peerRegistry.HandlePeerAnnounce(senderId, payload);
+      private void HandleInboundAnnounce(Guid senderId, CourierAnnounceV1 payload, IPEndPoint remoteEndPoint) {
+         peerRegistry.HandlePeerAnnounce(senderId, payload, remoteEndPoint);
       }
 
       private void HandleCourierAcknowledgement(Guid senderId, CourierMessageAcknowledgeV1 ack) {

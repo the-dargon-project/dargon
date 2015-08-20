@@ -52,7 +52,7 @@ namespace Dargon.Courier.Messaging {
             while (!cancellationToken.IsCancellationRequested) {
                var versionNumber = localEndpoint.GetRevisionNumber();
                courierSerializer.Serialize(writer, (object)localEndpoint.EnumerateProperties());
-               networkBroadcaster.SendCourierPacket(new CourierAnnounceV1(versionNumber, ms.GetBuffer(), 0, (int)ms.Length));
+               networkBroadcaster.SendCourierPacket(new CourierAnnounceV1(localEndpoint.Name, versionNumber, ms.GetBuffer(), 0, (int)ms.Length));
                await Task.Delay(CourierAnnouncementConstants.kAnnouncementIntervalMillis, cancellationTokenSource.Token.__InnerToken);
             }
          }

@@ -4,6 +4,7 @@ namespace Dargon.Courier.Peering {
    public interface RevisionCounter {
       bool TryAdvance(int nextCount);
       bool IsCurrentCount(int value);
+      int GetCurrentCount();
    }
 
    public class RevisionCounterImpl : RevisionCounter {
@@ -37,6 +38,12 @@ namespace Dargon.Courier.Peering {
       public bool IsCurrentCount(int value) {
          lock (synchronization) {
             return count == value;
+         }
+      }
+
+      public int GetCurrentCount() {
+         lock (synchronization) {
+            return count;
          }
       }
    }

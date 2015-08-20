@@ -74,7 +74,7 @@
     <Compile Include="Networking\LocalCourierNetwork.cs" />
     <Compile Include="Networking\CourierNetwork.cs" />
     <Compile Include="Networking\UdpCourierNetwork.cs" />
-    <Compile Include="Peering\ReadablePeerContext.cs" />
+    <Compile Include="Peering\RemoteCourierEndpoint.cs" />
     <Compile Include="Peering\ReadablePeerRegistry.cs" />
     <Compile Include="Peering\RevisionCounter.cs" />
     <Compile Include="PortableObjects\CourierMessageAcknowledgeV1.cs" />
