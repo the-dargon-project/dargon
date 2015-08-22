@@ -33,6 +33,8 @@ namespace Dargon.Courier.Peering {
          this.lastAddress = initialAddress;
       }
 
+      public IPAddress InitialAddress => initialAddress;
+      public IPAddress LastAddress => lastAddress;
       public Guid Identifier => identifier;
       public string Name => name;
 

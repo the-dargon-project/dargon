@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Threading;
 using Dargon.PortableObjects;
@@ -25,6 +26,8 @@ namespace Dargon.Courier.Identities {
          SetProperty(CourierEndpointPropertyKeys.Name, name);
       }
 
+      public IPAddress InitialAddress => IPAddress.Loopback;
+      public IPAddress LastAddress => IPAddress.Loopback;
       public Guid Identifier => identifier;
       public string Name => GetPropertyOrDefault<string>(CourierEndpointPropertyKeys.Name);
 

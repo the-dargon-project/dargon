@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 
 namespace Dargon.Courier.Identities {
    public interface ReadableCourierEndpoint {
+      IPAddress InitialAddress { get; }
+      IPAddress LastAddress { get; }
       Guid Identifier { get; }
       string Name { get; }
       IReadOnlyDictionary<Guid, byte[]> EnumerateProperties();
