@@ -19,8 +19,8 @@ namespace NMockito
          }
 
          var sb = new StringBuilder();
-         sb.AppendLine($"Expected {expectedCountString} invocations {invocationString} but found {actual} invocations. ");
-         sb.AppendLine($"Other invocations found: ");
+         sb.AppendLine($"Expected {expectedCountString} invocations {invocationString} but found {actual} invocations.");
+         sb.AppendLine($"Other invocations found:");
          foreach (var kvp in invocationCountsByInvocation) {
             sb.AppendLine($"{kvp.Value.Count} invocations of " + GetInvocationSummary(kvp.Key.Item1, kvp.Key.Item2, kvp.Key.Item3));
          }
