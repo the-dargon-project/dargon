@@ -8,7 +8,16 @@ using Xunit;
 namespace NMockito {
    public class VoidMockingTests : NMockitoInstance {
       [Fact]
-      public void Run() {
+      public void WithoutParameter_Test() {
+         var mock = CreateMock<TestInterface>();
+         When(() => mock.Method()).ThenThrow(new InternalException());
+         AssertThrows<InternalException>(() => mock.Method());
+         Verify(mock).Method();
+         VerifyNoMoreInteractions();
+      }
+
+      [Fact]
+      public void WithParameter_Test() {
          var mock = CreateMock<TestInterface>();
          When(() => mock.Method(10)).ThenThrow(new InternalException());
          AssertThrows<InternalException>(() => mock.Method(10));
@@ -17,6 +26,7 @@ namespace NMockito {
       }
 
       public interface TestInterface {
+         void Method();
          void Method(int value);
       }
       private class InternalException : Exception { }

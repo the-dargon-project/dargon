@@ -25,14 +25,27 @@ namespace NMockito
       {
          var method = invocation.Method;
          var genericArguments = invocation.GenericArguments;
+         var methodParameters = method.GetParameters();
+         var invocationArguments = invocation.Arguments;
+
+         // Flatten params[] of invocation arguments
+         if (methodParameters.Length > 0 && 
+             methodParameters.Last().GetCustomAttributes(typeof(ParamArrayAttribute), false).Length > 0 &&
+             invocationArguments.Last() != null) {
+            var paramsArray = (Array)invocationArguments.Last();
+            var newInvocationArguments = new object[invocationArguments.Length + paramsArray.Length - 1];
+            var cutIndex = invocationArguments.Length - 1;
+            Array.Copy(invocationArguments, newInvocationArguments, cutIndex);
+            Array.Copy(paramsArray, 0, newInvocationArguments, cutIndex, paramsArray.Length);
+            invocationArguments = newInvocationArguments;
+         }
 
          // Convert all invocation arguments into eq(arg[i]) smart parameters
-         if (smartParameters.Length != invocation.Arguments.Length)
-            smartParameters = ConvertInvocationArgumentsToEqualityParameters(invocation.Arguments);
+         if (smartParameters.Length == 0)
+            smartParameters = ConvertInvocationArgumentsToEqualityParameters(invocationArguments);
 
          // Find out/ref parameters, swap them with null and record the index => smart parameter replacement.
          var refReplacementsByIndex = new List<KeyValuePair<int, object>>();
-         var methodParameters = method.GetParameters();
          for (var i = 0; i < methodParameters.Length; i++) {
             var parameter = methodParameters[i];
             if (parameter.Attributes.HasFlag(ParameterAttributes.Out)) {
@@ -82,15 +95,29 @@ namespace NMockito
       { 
          invocation.ReturnValue = GetDefaultValue(invocation.Method.ReturnType);
 
+         // Flatten params[] of invocation arguments
+         var method = invocation.Method;
+         var methodParameters = method.GetParameters();
+         var invocationArguments = invocation.Arguments;
+         if (methodParameters.Length > 0 &&
+             methodParameters.Last().GetCustomAttributes(typeof(ParamArrayAttribute), false).Length > 0 &&
+             invocationArguments.Last() != null) {
+            var paramsArray = (Array)invocationArguments.Last();
+            var newInvocationArguments = new object[invocationArguments.Length + paramsArray.Length - 1];
+            var cutIndex = invocationArguments.Length - 1;
+            Array.Copy(invocationArguments, newInvocationArguments, cutIndex);
+            Array.Copy(paramsArray, 0, newInvocationArguments, cutIndex, paramsArray.Length);
+            invocationArguments = newInvocationArguments;
+         }
+
          var smartParameters = NMockitoSmartParameters.CopyAndClearSmartParameters().ToArray();
          if (smartParameters.Length == 0) {
-            smartParameters = ConvertInvocationArgumentsToEqualityParameters(invocation.Arguments);
+            smartParameters = ConvertInvocationArgumentsToEqualityParameters(invocationArguments);
          }
-         if (smartParameters.Length != invocation.Arguments.Length) {
+         if (smartParameters.Length != invocationArguments.Length) {
             throw new NMockitoNotEnoughSmartParameters();
          }
          // Find out/ref parameters, swap them with null 
-         var methodParameters = invocation.Method.GetParameters();
          for (var i = 0; i < methodParameters.Length; i++) {
             var parameter = methodParameters[i];
             if (parameter.Attributes.HasFlag(ParameterAttributes.Out)) {
@@ -99,7 +126,7 @@ namespace NMockito
          }
 
          var counters = FindMatchingInvocationCounters(invocation.Method, invocation.GenericArguments, smartParameters);
-         times.MatchOrThrow(counters.Sum(counter => counter.Count));
+         times.MatchOrThrow(counters.Sum(counter => counter.Count), invocation, invocationCountsByInvocation);
          foreach (var counter in counters) {
             foreach (var count in counter) {
                NMockitoInvocationCounters.AcceptVerificationCounterOrThrow(count, order);
@@ -108,19 +135,33 @@ namespace NMockito
          }
       }
 
-      private object GetInvocationResult(IInvocation invocation)
-      {
+      private object GetInvocationResult(IInvocation invocation) {
+         // Flatten params[] of invocation arguments
+         var method = invocation.Method;
+         var methodParameters = method.GetParameters();
+         var invocationArguments = invocation.Arguments;
+         if (methodParameters.Length > 0 &&
+             methodParameters.Last().GetCustomAttributes(typeof(ParamArrayAttribute), false).Length > 0 &&
+             invocationArguments.Last() != null) {
+            var paramsArray = (Array)invocationArguments.Last();
+            var newInvocationArguments = new object[invocationArguments.Length + paramsArray.Length - 1];
+            var cutIndex = invocationArguments.Length - 1;
+            Array.Copy(invocationArguments, newInvocationArguments, cutIndex);
+            Array.Copy(paramsArray, 0, newInvocationArguments, cutIndex, paramsArray.Length);
+            invocationArguments = newInvocationArguments;
+         }
+
          // Try to find our invocation result tracker... can't use dictionary comparers
          InvocationResultTracker tracker = null;
          foreach (var kvp in trackerByArguments)
          {
             if (invocation.Method == kvp.Key.Item1 &&
                 ((invocation.GenericArguments == null && kvp.Key.Item2 == null) || Enumerable.SequenceEqual(invocation.GenericArguments, kvp.Key.Item2)) &&
-                ((invocation.Arguments == null && kvp.Key.Item3 == null) || invocation.Arguments.Length == kvp.Key.Item3.Length))
+                ((invocationArguments == null && kvp.Key.Item3 == null) || invocationArguments.Length == kvp.Key.Item3.Length))
             {
                bool invocationMatching = true;
-               for (var i = 0; i < invocation.Arguments.Length && invocationMatching; i++) {
-                  invocationMatching &= kvp.Key.Item3[i] == null || kvp.Key.Item3[i].Test(invocation.Arguments[i]);
+               for (var i = 0; i < invocationArguments.Length && invocationMatching; i++) {
+                  invocationMatching &= kvp.Key.Item3[i] == null || kvp.Key.Item3[i].Test(invocationArguments[i]);
                }
                if (invocationMatching) {
                   tracker = kvp.Value;
@@ -165,27 +206,41 @@ namespace NMockito
          return returnValue;
       }
 
-      private INMockitoSmartParameter[] ConvertInvocationArgumentsToEqualityParameters(object[] arguments)
-      {
-         var results = new INMockitoSmartParameter[arguments.Length];
-         for (var i = 0; i < arguments.Length; i++) {
-            results[i] = new NMockitoEquals(arguments[i]);
+      private INMockitoSmartParameter[] ConvertInvocationArgumentsToEqualityParameters(object[] invocationArguments) {
+         var results = new INMockitoSmartParameter[invocationArguments.Length];
+         for (var i = 0; i < invocationArguments.Length; i++) {
+            results[i] = new NMockitoEquals(invocationArguments[i]);
          }
          return results;
       }
 
-      private List<int> GetInvocationCounter(IInvocation invocation)
-      {
+      private List<int> GetInvocationCounter(IInvocation invocation) {
+         var method = invocation.Method;
+         var methodParameters = method.GetParameters();
+         var invocationArguments = invocation.Arguments;
+
+         // Flatten params[] of invocation arguments
+         if (methodParameters.Length > 0 &&
+             methodParameters.Last().GetCustomAttributes(typeof(ParamArrayAttribute), false).Length > 0 &&
+             invocationArguments.Last() != null) {
+            var paramsArray = (Array)invocationArguments.Last();
+            var newInvocationArguments = new object[invocationArguments.Length + paramsArray.Length - 1];
+            var cutIndex = invocationArguments.Length - 1;
+            Array.Copy(invocationArguments, newInvocationArguments, cutIndex);
+            Array.Copy(paramsArray, 0, newInvocationArguments, cutIndex, paramsArray.Length);
+            invocationArguments = newInvocationArguments;
+         }
+
          foreach (var kvp in invocationCountsByInvocation) {
             if (invocation.Method == kvp.Key.Item1 &&
                 ((invocation.GenericArguments == null && kvp.Key.Item2 == null) || invocation.GenericArguments.SequenceEqual(kvp.Key.Item2)) &&
-                invocation.Arguments.SequenceEqual(kvp.Key.Item3)) {
+                invocationArguments.SequenceEqual(kvp.Key.Item3)) {
                return kvp.Value;
             }
          }
 
          var counter = new Counter();
-         invocationCountsByInvocation.Add(new KeyValuePair<Tuple<MethodInfo, Type[], object[]>, Counter>(new Tuple<MethodInfo, Type[], object[]>(invocation.Method, invocation.GenericArguments, invocation.Arguments), counter));
+         invocationCountsByInvocation.Add(new KeyValuePair<Tuple<MethodInfo, Type[], object[]>, Counter>(new Tuple<MethodInfo, Type[], object[]>(invocation.Method, invocation.GenericArguments, invocationArguments), counter));
          return counter;
       }
 
@@ -210,15 +265,15 @@ namespace NMockito
 
       public void VerifyNoMoreInteractions()
       {
-         Exception exception = null;
+         List<Exception> exceptions = new List<Exception>();
          foreach (var kvp in invocationCountsByInvocation) {
             if (kvp.Value.Count != 0) {
-               string explanation = kvp.Key.Item1.Name + " of " + interfaceType.Name;
-               exception = new VerificationTimesMismatchException(0, kvp.Value.Count, exception, explanation);
+               exceptions.Add(new VerificationTimesMismatchException("no more", kvp.Value.Count, null, invocationCountsByInvocation));
             }
          }
-         if (exception != null)
-            throw exception;
+         if (exceptions.Any()) {
+            throw new AggregateException(exceptions);
+         }
       }
 
       public void ClearInteractions() { invocationCountsByInvocation.Clear(); }
@@ -227,7 +282,7 @@ namespace NMockito
       {
          var actualCount = invocationCountsByInvocation.Sum(kvp => kvp.Value.Count);
          if (expectedCount != actualCount) {
-            throw new VerificationTimesMismatchException(expectedCount, actualCount);
+            throw new VerificationTimesMismatchException(expectedCount.ToString(), actualCount, null, invocationCountsByInvocation);
          } else {
             invocationCountsByInvocation.Clear();
          }
