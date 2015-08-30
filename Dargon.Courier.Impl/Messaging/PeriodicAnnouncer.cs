@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Dargon.Courier.Identities;
+﻿using Dargon.Courier.Identities;
 using Dargon.Courier.PortableObjects;
 using Dargon.PortableObjects;
+using ItzWarty;
 using ItzWarty.Threading;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Dargon.Courier.Messaging {
    public interface PeriodicAnnouncer {
@@ -50,6 +48,9 @@ namespace Dargon.Courier.Messaging {
          using (var ms = new MemoryStream())
          using (var writer = new BinaryWriter(ms)) {
             while (!cancellationToken.IsCancellationRequested) {
+               ms.Position = 0;
+               ms.SetLength(0);
+
                var versionNumber = localEndpoint.GetRevisionNumber();
                courierSerializer.Serialize(writer, (object)localEndpoint.EnumerateProperties());
                networkBroadcaster.SendCourierPacket(new CourierAnnounceV1(localEndpoint.Name, versionNumber, ms.GetBuffer(), 0, (int)ms.Length));

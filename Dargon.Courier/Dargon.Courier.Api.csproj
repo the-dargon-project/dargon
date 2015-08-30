@@ -47,7 +47,10 @@
     <Compile Include="Messaging\ICourierMessage.cs" />
     <Compile Include="Messaging\MessageFlags.cs" />
     <Compile Include="Messaging\MessagePriority.cs" />
+    <Compile Include="Messaging\MessageRouter.cs" />
+    <Compile Include="Messaging\MessageSender.cs" />
     <Compile Include="Messaging\NetworkBroadcaster.cs" />
+    <Compile Include="Peering\ReadablePeerRegistry.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

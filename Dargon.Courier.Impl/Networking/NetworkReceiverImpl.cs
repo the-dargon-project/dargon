@@ -16,14 +16,16 @@ namespace Dargon.Courier.Networking {
       private readonly MessageRouter messageRouter;
       private readonly MessageAcknowledger messageAcknowledger;
       private readonly PeerRegistryImpl peerRegistry;
+      private readonly ReceivedMessageFactory receivedMessageFactory;
 
-      public NetworkReceiverImpl(ReadableCourierEndpoint localEndpoint, CourierNetworkContext networkContext, IPofSerializer pofSerializer, MessageRouter messageRouter, MessageAcknowledger messageAcknowledger, PeerRegistryImpl peerRegistry) {
+      public NetworkReceiverImpl(ReadableCourierEndpoint localEndpoint, CourierNetworkContext networkContext, IPofSerializer pofSerializer, MessageRouter messageRouter, MessageAcknowledger messageAcknowledger, PeerRegistryImpl peerRegistry, ReceivedMessageFactory receivedMessageFactory) {
          this.localEndpoint = localEndpoint;
          this.networkContext = networkContext;
          this.pofSerializer = pofSerializer;
          this.messageRouter = messageRouter;
          this.messageAcknowledger = messageAcknowledger;
          this.peerRegistry = peerRegistry;
+         this.receivedMessageFactory = receivedMessageFactory;
       }
 
       public void Initialize() {
@@ -61,7 +63,9 @@ namespace Dargon.Courier.Networking {
          if (message.MessageFlags.HasFlag(MessageFlags.AcknowledgementRequired)) {
             messageAcknowledger.SendAcknowledge(senderId, message.Id);
          }
-         messageRouter.RouteMessage(senderId, message, remoteEndPoint);
+         var receivedMessage = receivedMessageFactory.CreateReceivedMessage(senderId, message, remoteEndPoint.Address);
+         var payloadType = receivedMessage.Payload.GetType();
+         messageRouter.RouteMessage(payloadType, receivedMessage);
       }
 
       private void HandleInboundAnnounce(Guid senderId, CourierAnnounceV1 payload, IPEndPoint remoteEndPoint) {

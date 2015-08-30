@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Dargon.Courier.Identities;
+﻿using Dargon.Courier.Identities;
 using Dargon.Courier.Messaging;
+using Dargon.Courier.Peering;
 
 namespace Dargon.Courier {
-   public interface CourierClient {
-      Guid SendReliableUnicast<TMessage>(ReadableCourierEndpoint endpoint, TMessage message, MessagePriority priority);
+   public interface CourierClient : ManageableCourierEndpoint, MessageSender, MessageRouter, ReadablePeerRegistry {
+      ManageableCourierEndpoint LocalEndpoint { get; }
+      MessageSender MessageSender { get; }
+      MessageRouter MessageRouter { get; }
+      ReadablePeerRegistry PeerRegistry { get; }
    }
 }

@@ -1,25 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
+using Dargon.Courier.Identities;
 using Dargon.Courier.PortableObjects;
 using Dargon.PortableObjects;
 using ItzWarty;
 using ItzWarty.Collections;
 
 namespace Dargon.Courier.Peering {
-   public interface ReadablePeerRegistry {
-      RemoteCourierEndpoint GetRemoteCourierEndpointOrNull(Guid identifier);
-      IEnumerable<RemoteCourierEndpoint> EnumeratePeers();
-   }
-
-   public interface ManageablePeerRegistry : ReadablePeerRegistry {
-      void HandlePeerAnnounce(Guid senderId, CourierAnnounceV1 announce, IPEndPoint remoteEndpoint);
-   }
-
    public class PeerRegistryImpl : ManageablePeerRegistry {
       private readonly IConcurrentDictionary<Guid, RemoteCourierEndpoint> peerContextsById;
       private readonly IPofSerializer courierSerializer;
@@ -39,13 +28,13 @@ namespace Dargon.Courier.Peering {
          );
       }
 
-      public RemoteCourierEndpoint GetRemoteCourierEndpointOrNull(Guid identifier) {
+      public ReadableCourierEndpoint GetRemoteCourierEndpointOrNull(Guid identifier) {
          RemoteCourierEndpoint remoteCourierEndpoint;
          peerContextsById.TryGetValue(identifier, out remoteCourierEndpoint);
          return remoteCourierEndpoint;
       }
 
-      public IEnumerable<RemoteCourierEndpoint> EnumeratePeers() {
+      public IEnumerable<ReadableCourierEndpoint> EnumeratePeers() {
          return peerContextsById.Values;
       }
    }
