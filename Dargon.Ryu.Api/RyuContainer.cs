@@ -9,7 +9,7 @@ namespace Dargon.Ryu {
       void Setup();
 
       /// <summary>
-      /// Gets or creates an instance of type T in the container. 
+      /// Gets or creates an instance of type T in the container.
       /// </summary>
       /// <typeparam name="T"></typeparam>
       /// <returns></returns>

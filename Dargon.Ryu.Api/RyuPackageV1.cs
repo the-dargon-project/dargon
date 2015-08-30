@@ -2,9 +2,15 @@ using System;
 using System.Collections.Generic;
 
 namespace Dargon.Ryu {
-   public class RyuPackageV1TypeInfo {
+   public interface RyuPackageV1TypeInfo {
+      Type Type { get; set; }
+      Func<RyuContainer, object> GetInstance { get; set; }
+      RyuTypeFlags Flags { get; set; }
+   }
+
+   public class RyuPackageV1TypeInfoImpl : RyuPackageV1TypeInfo {
       public Type Type { get; set; }
-      public Func<RyuContainer, object> GetInstance { get; set; } 
+      public Func<RyuContainer, object> GetInstance { get; set; }
       public RyuTypeFlags Flags { get; set; }
    }
 
@@ -18,7 +24,7 @@ namespace Dargon.Ryu {
       public void Register(Type type, Func<RyuContainer, object> getInstance, RyuTypeFlags flags = RyuTypeFlags.None) {
          typeInfoByType.Add(
             type,
-            new RyuPackageV1TypeInfo {
+            new RyuPackageV1TypeInfoImpl {
                Type = type,
                GetInstance = getInstance,
                Flags = flags

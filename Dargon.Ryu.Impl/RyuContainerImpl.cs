@@ -1,48 +1,52 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Dargon.Management.Server;
 using Dargon.PortableObjects;
 using Dargon.Services;
+using ItzWarty;
+using ItzWarty.Collections;
 using NLog;
+using SCG = System.Collections.Generic;
 
 namespace Dargon.Ryu {
    public class RyuContainerImpl : RyuContainer {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-      private readonly PofContext pofContext;
-      private readonly PofSerializer pofSerializer;
+      private readonly IPofContext pofContext;
+      private readonly IPofSerializer pofSerializer;
 
-      private readonly Dictionary<Type, RyuPackageV1TypeInfo> typeInfosByType = new Dictionary<Type, RyuPackageV1TypeInfo>();
-      private readonly ConcurrentDictionary<Type, object> instancesByType = new ConcurrentDictionary<Type, object>();
-      private readonly ISet<Type> remoteServices = new HashSet<Type>();
+      private readonly SCG.IDictionary<Type, RyuPackageV1TypeInfo> typeInfosByType;
+      private readonly IConcurrentDictionary<Type, object> instancesByType;
+      private readonly SCG.ISet<Type> remoteServices;
 
-      private readonly ISet<Assembly> loadedAssemblies = new HashSet<Assembly>();
-      private readonly ISet<RyuPackageV1> packages = new HashSet<RyuPackageV1>();
+      private readonly SCG.ISet<Assembly> loadedAssemblies = new SCG.HashSet<Assembly>();
+      private readonly SCG.ISet<RyuPackageV1> packages = new SCG.HashSet<RyuPackageV1>();
 
-      public RyuContainerImpl(PofContext pofContext, PofSerializer pofSerializer) {
+      public RyuContainerImpl(IPofContext pofContext, IPofSerializer pofSerializer, SCG.IDictionary<Type, RyuPackageV1TypeInfo> typeInfosByType, IConcurrentDictionary<Type, object> instancesByType, SCG.ISet<Type> remoteServices) {
          this.pofContext = pofContext;
          this.pofSerializer = pofSerializer;
+         this.typeInfosByType = typeInfosByType;
+         this.instancesByType = instancesByType;
+         this.remoteServices = remoteServices;
       }
 
       public void Setup() {
-         instancesByType[typeof(IPofContext)] = pofContext;
-         instancesByType[typeof(PofContext)] = pofContext;
-         instancesByType[typeof(IPofSerializer)] = pofSerializer;
-         instancesByType[typeof(PofSerializer)] = pofSerializer;
+         instancesByType.TryAdd(typeof(IPofContext), pofContext);
+         instancesByType.TryAdd(typeof(IPofSerializer), pofSerializer);
+         instancesByType.TryAdd(typeof(RyuContainer), this);
+         instancesByType.TryAdd(typeof(RyuContainerImpl), this);
 
-         var stack = new Stack<Assembly>();
+         var stack = new SCG.Stack<Assembly>();
          stack.Push(Assembly.GetCallingAssembly());
          stack.Push(Assembly.GetEntryAssembly());
-         HashSet<string> loadedAssemblyFullNames = new HashSet<string>();
+         var loadedAssemblyFullNames = new SCG.HashSet<string>();
          while (stack.Any()) {
             var assembly = stack.Pop();
             if (assembly == null) {
                continue;
             }
-            var referencedAssemblyNames = new HashSet<AssemblyName>(assembly.GetReferencedAssemblies());
+            var referencedAssemblyNames = new SCG.HashSet<AssemblyName>(assembly.GetReferencedAssemblies());
             foreach (var referencedAssemblyName in referencedAssemblyNames) {
                if (!loadedAssemblyFullNames.Contains(referencedAssemblyName.FullName)) {
                   var loadedAssembly = Assembly.Load(referencedAssemblyName);
@@ -55,7 +59,7 @@ namespace Dargon.Ryu {
       }
 
       public bool LoadAdditionalAssemblies() {
-         var assemblies = new HashSet<Assembly>(AppDomain.CurrentDomain.GetAssemblies());
+         var assemblies = new SCG.HashSet<Assembly>(AppDomain.CurrentDomain.GetAssemblies());
          assemblies.ExceptWith(loadedAssemblies);
          loadedAssemblies.UnionWith(assemblies);
 
@@ -115,6 +119,20 @@ namespace Dargon.Ryu {
          return true;
       }
 
+      public void Set<T>(T value) {
+         Set(typeof(T), value);
+      }
+
+      public void Set(Type type, object value) {
+         RyuPackageV1TypeInfo typeInfo;
+         if (typeInfosByType.TryGetValue(type, out typeInfo) &&
+             !typeInfo.Flags.HasFlag(RyuTypeFlags.Cache)) {
+            throw new InvalidOperationException("Cannot set cached value for non-cached type");
+         } else {
+            instancesByType[type] = value;
+         }
+      }
+
       public T Get<T>() {
          return (T)Get(typeof(T));
       }
@@ -130,18 +148,6 @@ namespace Dargon.Ryu {
          } catch (Exception e) {
             throw new AggregateException("While constructing " + type.FullName, e);
          }
-      }
-
-      public void Set<T>(T instance) {
-         Set(typeof(T), instance);
-      }
-
-      public void Set(Type type, object instance) {
-         instancesByType.AddOrUpdate(
-            type,
-            add => instance,
-            (update, existing) => instance
-         );
       }
 
       public T Construct<T>() {
@@ -179,7 +185,7 @@ namespace Dargon.Ryu {
          RyuPackageV1TypeInfo typeInfo;
          if (typeInfosByType.TryGetValue(type, out typeInfo)) {
             if (typeInfo.Flags.HasFlag(RyuTypeFlags.Cache)) {
-               return instancesByType.GetOrAdd(type, add => typeInfo.GetInstance(this));
+               return instancesByType.GetOrAdd(type, new Func<Type, object>(add => typeInfo.GetInstance(this)));
             } else {
                return typeInfo.GetInstance(this);
             }
@@ -227,16 +233,10 @@ namespace Dargon.Ryu {
 
       private bool FilterRyuConstructor(ConstructorInfo constructor) {
          try {
-            constructor.GetCustomAttribute<RyuConstructorAttribute>();
-            return true;
-         } catch (Exception e) {
+            var ryuConstructorAttribute = constructor.GetCustomAttribute<RyuConstructorAttribute>();
+            return ryuConstructorAttribute != null;
+         } catch (Exception) {
             return false;
-         }
-      }
-
-      public void DebugEnumerateInstances() {
-         foreach (var kvp in this.instancesByType) {
-            Console.WriteLine(kvp.Value);
          }
       }
    }
