@@ -32,14 +32,17 @@ namespace Dargon.Ryu {
 
       [Fact]
       public void Construct_ParameterfulRyuCtor_SadPathTest() {
-         try {
-            ryu.ForceConstruct<ClassC>();
-            throw new InvalidOperationException("Expected an aggregate exception to be thrown!");
-         } catch (AggregateException ae) {
-            AssertEquals(1, ae.InnerExceptions.Count);
-            var e = ae.InnerExceptions[0];
-            AssertTrue(e is ImplementationNotDefinedException);
-         }
+         AssertThrows<RyuGetException>(() => ryu.ForceConstruct<ClassC>());
+      }
+
+      [Fact]
+      public void Construct_NoCtor_SadPathTest() {
+         AssertThrows<NoConstructorsFoundException>(() => ryu.ForceConstruct<ClassD>());
+      }
+
+      [Fact]
+      public void Construct_SingleCtor_SadPathTest() {
+         ryu.ForceConstruct<ClassE>();
       }
    }
 
@@ -60,5 +63,13 @@ namespace Dargon.Ryu {
       public ClassC() { throw new InvalidOperationException(); }
       [RyuConstructor]
       public ClassC(Dependency A) { }
+   }
+
+   public class ClassD {
+      private ClassD() { }
+   }
+
+   public class ClassE {
+      public ClassE() { }
    }
 }

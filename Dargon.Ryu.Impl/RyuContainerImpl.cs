@@ -1,18 +1,16 @@
-using System;
-using System.Linq;
-using System.Reflection;
 using Dargon.Management.Server;
 using Dargon.PortableObjects;
 using Dargon.Services;
-using ItzWarty;
 using ItzWarty.Collections;
 using NLog;
+using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using SCG = System.Collections.Generic;
 
 namespace Dargon.Ryu {
    public class RyuContainerImpl : RyuContainer {
-      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-
       private readonly IPofContext pofContext;
       private readonly IPofSerializer pofSerializer;
 
@@ -23,6 +21,8 @@ namespace Dargon.Ryu {
       private readonly SCG.ISet<Assembly> loadedAssemblies = new SCG.HashSet<Assembly>();
       private readonly SCG.ISet<RyuPackageV1> packages = new SCG.HashSet<RyuPackageV1>();
 
+      private Logger logger = LogManager.CreateNullLogger();
+
       public RyuContainerImpl(IPofContext pofContext, IPofSerializer pofSerializer, SCG.IDictionary<Type, RyuPackageV1TypeInfo> typeInfosByType, IConcurrentDictionary<Type, object> instancesByType, SCG.ISet<Type> remoteServices) {
          this.pofContext = pofContext;
          this.pofSerializer = pofSerializer;
@@ -31,44 +31,55 @@ namespace Dargon.Ryu {
          this.remoteServices = remoteServices;
       }
 
-      public void Setup() {
+      internal void Initialize() {
          instancesByType.TryAdd(typeof(IPofContext), pofContext);
          instancesByType.TryAdd(typeof(IPofSerializer), pofSerializer);
          instancesByType.TryAdd(typeof(RyuContainer), this);
          instancesByType.TryAdd(typeof(RyuContainerImpl), this);
-
-         var stack = new SCG.Stack<Assembly>();
-         stack.Push(Assembly.GetCallingAssembly());
-         stack.Push(Assembly.GetEntryAssembly());
-         var loadedAssemblyFullNames = new SCG.HashSet<string>();
-         while (stack.Any()) {
-            var assembly = stack.Pop();
-            if (assembly == null) {
-               continue;
-            }
-            var referencedAssemblyNames = new SCG.HashSet<AssemblyName>(assembly.GetReferencedAssemblies());
-            foreach (var referencedAssemblyName in referencedAssemblyNames) {
-               if (!loadedAssemblyFullNames.Contains(referencedAssemblyName.FullName)) {
-                  var loadedAssembly = Assembly.Load(referencedAssemblyName);
-                  stack.Push(loadedAssembly);
-                  loadedAssemblyFullNames.Add(referencedAssemblyName.FullName);
-               }
-            }
-         }
-         LoadAdditionalAssemblies();
       }
 
-      public bool LoadAdditionalAssemblies() {
-         var assemblies = new SCG.HashSet<Assembly>(AppDomain.CurrentDomain.GetAssemblies());
-         assemblies.ExceptWith(loadedAssemblies);
-         loadedAssemblies.UnionWith(assemblies);
+      public void SetLoggerEnabled(bool isLoggerEnabled) {
+         if (isLoggerEnabled) {
+            logger = LogManager.GetCurrentClassLogger();
+         } else {
+            logger = LogManager.CreateNullLogger();
+         }
+      }
 
-         if (!assemblies.Any()) {
-            return false;
+      public void Setup() {
+         logger.Info("Touching entry assembly...");
+         TouchAssembly(Assembly.GetEntryAssembly());
+
+         logger.Info("Touching calling assembly...");
+         TouchAssembly(Assembly.GetCallingAssembly());
+      }
+
+      private HashSet<Assembly> GetDirectlyReferencedAssemblies(Assembly seedAssembly) {
+         var assemblyNames = seedAssembly.GetReferencedAssemblies().Where(x => x != null).ToList();
+         var assemblies = new HashSet<Assembly>();
+         foreach (var assemblyName in assemblyNames) {
+            logger.Info("Loading assembly: " + assemblyName);
+            var assembly = Assembly.Load(assemblyName);
+            Trace.Assert(assembly != null, "assembly != null");
+            assemblies.Add(assembly);
+         }
+         return assemblies;
+      }
+
+      public bool TouchAssembly(Assembly assembly) {
+         bool anyAssembliesLoaded = false;
+
+         if (assembly == null || loadedAssemblies.Contains(assembly)) {
+            return anyAssembliesLoaded;
          }
 
-         var packageTypes = assemblies.AsParallel().SelectMany(assembly => assembly.GetTypes().Where(x => typeof(RyuPackageV1).IsAssignableFrom(x))).ToList();
+         logger.Info("Touching assembly: " + assembly.FullName);
+
+         loadedAssemblies.Add(assembly);
+
+         var packageTypes = assembly.GetTypes().Where(x => typeof(RyuPackageV1).IsAssignableFrom(x)).ToList();
          var packageInstances = packageTypes.Select(Activator.CreateInstance).Cast<RyuPackageV1>().ToList();
+
          foreach (var package in packageInstances) {
             logger.Info("Found package: " + package);
             this.packages.Add(package);
@@ -77,7 +88,12 @@ namespace Dargon.Ryu {
                    typeInfosByType.ContainsKey(typeInfo.Type)) {
                   // Do nothing!
                } else {
-                  typeInfosByType.Add(typeInfo.Type, typeInfo);
+                  try {
+                     typeInfosByType.Add(typeInfo.Type, typeInfo);
+                  } catch (ArgumentException e) {
+                     Trace.WriteLine("While loading typeinfo for type " + typeInfo.Type.FullName);
+                     throw;
+                  }
                }
             }
             foreach (var remoteServiceType in package.RemoteServiceTypes) {
@@ -90,7 +106,9 @@ namespace Dargon.Ryu {
             }
          }
 
-         LoadAdditionalAssemblies();
+         foreach (var referencedAssembly in GetDirectlyReferencedAssemblies(assembly)) {
+            anyAssembliesLoaded |= TouchAssembly(referencedAssembly);
+         }
 
          foreach (var package in packageInstances) {
             foreach (var typeInfo in package.TypeInfoByType.Values) {
@@ -146,7 +164,8 @@ namespace Dargon.Ryu {
                return GetUninstantiated(type);
             }
          } catch (Exception e) {
-            throw new AggregateException("While constructing " + type.FullName, e);
+            Trace.WriteLine("Threw while constructing " + type.FullName);
+            throw new RyuGetException(type, e);
          }
       }
 
@@ -179,7 +198,7 @@ namespace Dargon.Ryu {
       }
 
       public void Touch<T>() { Touch(typeof(T)); }
-      public void Touch(Type type) { LoadAdditionalAssemblies(); }
+      public void Touch(Type type) { TouchAssembly(type.Assembly); }
 
       private object GetUninstantiated(Type type) {
          RyuPackageV1TypeInfo typeInfo;
@@ -193,7 +212,7 @@ namespace Dargon.Ryu {
             if (remoteServices.Contains(type)) {
                var serviceClient = Get<IServiceClient>();
                return typeof(IServiceClient).GetMethod(nameof(serviceClient.GetService)).MakeGenericMethod(type).Invoke(serviceClient, null);
-            } else if (!LoadAdditionalAssemblies()) {
+            } else if (!TouchAssembly(type.Assembly)) {
                throw new ImplementationNotDefinedException(type);
             } else {
                return GetUninstantiated(type);
