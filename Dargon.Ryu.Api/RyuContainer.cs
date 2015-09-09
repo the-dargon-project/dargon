@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Dargon.Ryu {
    public interface RyuContainer {
@@ -21,6 +22,22 @@ namespace Dargon.Ryu {
       /// <param name="type"></param>
       /// <returns></returns>
       object Get(Type type);
+
+      /// <summary>
+      /// Finds all objects in the container implementing, extending, or 
+      /// equating to the given type.
+      /// </summary>
+      /// <typeparam name="T"></typeparam>
+      /// <returns></returns>
+      IEnumerable<T> Find<T>();
+
+      /// <summary>
+      /// Finds all objects in the container implementing, extending, or 
+      /// equating to the given type.
+      /// </summary>
+      /// <param name="queryType"></param>
+      /// <returns></returns>
+      IEnumerable<object> Find(Type queryType);
 
       /// <summary>
       /// Sets the given instance as the implementation of the given type.

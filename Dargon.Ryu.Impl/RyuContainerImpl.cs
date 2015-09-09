@@ -4,6 +4,7 @@ using Dargon.Services;
 using ItzWarty.Collections;
 using NLog;
 using System;
+using System.Collections;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -167,6 +168,18 @@ namespace Dargon.Ryu {
             Trace.WriteLine("Threw while constructing " + type.FullName);
             throw new RyuGetException(type, e);
          }
+      }
+
+      public SCG.IEnumerable<T> Find<T>() {
+         var queryType = typeof(T);
+         return Find(queryType).Cast<T>();
+      }
+
+      public SCG.IEnumerable<object> Find(Type queryType) {
+         return instancesByType.Where(kvp => {
+            var t = kvp.Value.GetType();
+            return !t.IsAbstract && queryType.IsAssignableFrom(t);
+         }).Select(kvp => kvp.Value).Distinct();
       }
 
       public T Construct<T>() {
