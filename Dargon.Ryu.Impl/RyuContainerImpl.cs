@@ -91,7 +91,7 @@ namespace Dargon.Ryu {
                } else {
                   try {
                      typeInfosByType.Add(typeInfo.Type, typeInfo);
-                  } catch (ArgumentException e) {
+                  } catch (ArgumentException) {
                      Trace.WriteLine("While loading typeinfo for type " + typeInfo.Type.FullName);
                      throw;
                   }
@@ -211,7 +211,8 @@ namespace Dargon.Ryu {
       }
 
       public void Touch<T>() { Touch(typeof(T)); }
-      public void Touch(Type type) { TouchAssembly(type.Assembly); }
+      public void Touch(Type type) { Touch(type.Assembly); }
+      public void Touch(Assembly assembly) { TouchAssembly(assembly); }
 
       private object GetUninstantiated(Type type) {
          RyuPackageV1TypeInfo typeInfo;
