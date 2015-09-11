@@ -1,13 +1,16 @@
 using Dargon.Management.Server;
 using Dargon.PortableObjects;
 using Dargon.Services;
+using ItzWarty;
 using ItzWarty.Collections;
 using NLog;
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using SCG = System.Collections.Generic;
 
 namespace Dargon.Ryu {
@@ -48,11 +51,33 @@ namespace Dargon.Ryu {
       }
 
       public void Setup() {
-         logger.Info("Touching entry assembly...");
-         TouchAssembly(Assembly.GetEntryAssembly());
+         Setup(false);
+      }
 
-         logger.Info("Touching calling assembly...");
-         TouchAssembly(Assembly.GetCallingAssembly());
+      public void Setup(bool forceLoadDirectory) {
+         var seedAssemblies = new[] { Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly() };
+
+         if (forceLoadDirectory) {
+            Func<Assembly, SCG.IEnumerable<string>> enumerateNearbyAssemblyPaths = assembly => Directory.EnumerateFiles(new FileInfo(assembly.Location).DirectoryName, "*.dll", SearchOption.AllDirectories).Concat(Directory.EnumerateFiles(new FileInfo(assembly.Location).DirectoryName, "*.exe", SearchOption.AllDirectories));
+            var assemblyPaths = seedAssemblies.SelectMany(enumerateNearbyAssemblyPaths).Distinct();
+            var packagesToTouch = new HashSet<RyuPackageV1>();
+            foreach (var assemblyPath in assemblyPaths) {
+               try {
+                  var assembly = Assembly.LoadFrom(assemblyPath);
+                  Console.WriteLine("Force loaded: " + assemblyPath);
+                  var packageType = typeof(RyuPackageV1);
+                  var packageTypes = assembly.GetTypes().Where(type => packageType.IsAssignableFrom(type) && !type.IsAbstract);
+                  packageTypes.ForEach(t => packagesToTouch.Add((RyuPackageV1)Activator.CreateInstance(t)));
+               } catch (Exception) { }
+            }
+            TouchPackages(packagesToTouch.ToArray());
+         } else {
+            logger.Info("Touching entry assembly...");
+            TouchAssembly(Assembly.GetEntryAssembly());
+
+            logger.Info("Touching calling assembly...");
+            TouchAssembly(Assembly.GetCallingAssembly());
+         }
       }
 
       private HashSet<Assembly> GetDirectlyReferencedAssemblies(Assembly seedAssembly) {
