@@ -92,7 +92,7 @@ namespace Dargon.Ryu {
          remoteServiceTypes.Add(typeof(Interface));
       }
 
-      public void LocalService<Implementation>(Type serviceInterface, RyuTypeFlags additionalFlags, bool required = true) {
+      public void LocalService<Implementation>(Type serviceInterface, RyuTypeFlags additionalFlags = RyuTypeFlags.None, bool required = true) {
          RyuTypeFlags flags = RyuTypeFlags.Service | additionalFlags;
          if (required) {
             flags |= RyuTypeFlags.Required;
@@ -100,17 +100,17 @@ namespace Dargon.Ryu {
          Singleton(serviceInterface, typeof(Implementation), flags);
       }
 
-      public void LocalService<Interface, Implementation>(RyuTypeFlags additionalFlags, bool required = true) {
+      public void LocalService<Interface, Implementation>(RyuTypeFlags additionalFlags = RyuTypeFlags.None, bool required = true) {
          LocalService<Implementation>(typeof(Interface), additionalFlags, required: required);
       }
 
-      public void LocalService<Implementation>(Type[] serviceInterfaces, RyuTypeFlags additionalFlags, bool required = true) {
+      public void LocalService<Implementation>(Type[] serviceInterfaces, RyuTypeFlags additionalFlags = RyuTypeFlags.None, bool required = true) {
          foreach (var serviceInterface in serviceInterfaces) {
             LocalService<Implementation>(serviceInterface, additionalFlags, required: required);
          }
       }
 
-      public void Mob<T>(RyuTypeFlags additionalFlags, bool required = true) {
+      public void Mob<T>(RyuTypeFlags additionalFlags = RyuTypeFlags.None, bool required = true) {
          RyuTypeFlags flags = RyuTypeFlags.ManagementObject | additionalFlags;
          if (required) {
             flags |= RyuTypeFlags.Required;

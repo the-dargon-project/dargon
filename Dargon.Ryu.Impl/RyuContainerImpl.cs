@@ -118,10 +118,10 @@ namespace Dargon.Ryu {
                }
             }
 
-            IServiceClient serviceClient = null;
+            ServiceClient serviceClient = null;
             foreach (var typeInfo in package.TypeInfoByType.Values) {
                if (typeInfo.Flags.HasFlag(RyuTypeFlags.Service)) {
-                  serviceClient = serviceClient ?? Get<IServiceClient>();
+                  serviceClient = serviceClient ?? Get<ServiceClient>();
                   serviceClient.RegisterService(typeInfo.GetInstance(this), typeInfo.Type);
                }
             }
@@ -224,8 +224,8 @@ namespace Dargon.Ryu {
             }
          } else if (type.IsInterface) {
             if (remoteServices.Contains(type)) {
-               var serviceClient = Get<IServiceClient>();
-               return typeof(IServiceClient).GetMethod(nameof(serviceClient.GetService)).MakeGenericMethod(type).Invoke(serviceClient, null);
+               var serviceClient = Get<ServiceClient>();
+               return typeof(ServiceClient).GetMethod(nameof(serviceClient.GetService)).MakeGenericMethod(type).Invoke(serviceClient, null);
             } else if (!TouchAssembly(type.Assembly)) {
                throw new ImplementationNotDefinedException(type);
             } else {
