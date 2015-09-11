@@ -68,19 +68,26 @@ namespace Dargon.Ryu {
       }
 
       public bool TouchAssembly(Assembly assembly) {
-         bool anyAssembliesLoaded = false;
-
+         bool anyAssembliesLoaded;
          if (assembly == null || loadedAssemblies.Contains(assembly)) {
-            return anyAssembliesLoaded;
+            anyAssembliesLoaded = false;
+         } else {
+
+            logger.Info("Touching assembly: " + assembly.FullName);
+
+            loadedAssemblies.Add(assembly);
+
+            var packageTypes = assembly.GetTypes().Where(x => typeof(RyuPackageV1).IsAssignableFrom(x)).ToList();
+            var packageInstances = packageTypes.Select(Activator.CreateInstance).Cast<RyuPackageV1>().ToList();
+
+            TouchPackages(packageInstances, assembly);
+
+            anyAssembliesLoaded = true;
          }
+         return anyAssembliesLoaded;
+      }
 
-         logger.Info("Touching assembly: " + assembly.FullName);
-
-         loadedAssemblies.Add(assembly);
-
-         var packageTypes = assembly.GetTypes().Where(x => typeof(RyuPackageV1).IsAssignableFrom(x)).ToList();
-         var packageInstances = packageTypes.Select(Activator.CreateInstance).Cast<RyuPackageV1>().ToList();
-
+      public void TouchPackages(SCG.IReadOnlyCollection<RyuPackageV1> packageInstances, Assembly seedAssembly = null) {
          foreach (var package in packageInstances) {
             logger.Info("Found package: " + package);
             this.packages.Add(package);
@@ -107,8 +114,10 @@ namespace Dargon.Ryu {
             }
          }
 
-         foreach (var referencedAssembly in GetDirectlyReferencedAssemblies(assembly)) {
-            anyAssembliesLoaded |= TouchAssembly(referencedAssembly);
+         if (seedAssembly != null) {
+            foreach (var referencedAssembly in GetDirectlyReferencedAssemblies(seedAssembly)) {
+               TouchAssembly(referencedAssembly);
+            }
          }
 
          foreach (var package in packageInstances) {
@@ -134,9 +143,8 @@ namespace Dargon.Ryu {
                }
             }
          }
-
-         return true;
       }
+
 
       public void Set<T>(T value) {
          Set(typeof(T), value);
