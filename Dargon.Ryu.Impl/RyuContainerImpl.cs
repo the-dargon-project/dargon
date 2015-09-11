@@ -20,7 +20,7 @@ namespace Dargon.Ryu {
       private readonly SCG.ISet<Type> remoteServices;
 
       private readonly SCG.ISet<Assembly> loadedAssemblies = new SCG.HashSet<Assembly>();
-      private readonly SCG.ISet<RyuPackageV1> loadedPackages = new SCG.HashSet<RyuPackageV1>();
+      private readonly SCG.ISet<Type> loadedPackageTypes = new SCG.HashSet<Type>();
 
       private Logger logger = LogManager.CreateNullLogger();
 
@@ -88,9 +88,14 @@ namespace Dargon.Ryu {
       }
 
       public void TouchPackages(SCG.IReadOnlyCollection<RyuPackageV1> packageInstancesInput, Assembly seedAssembly = null) {
-         var packagesToLoad = new HashSet<RyuPackageV1>(packageInstancesInput);
-         packagesToLoad.ExceptWith(loadedPackages);
-         loadedPackages.UnionWith(packagesToLoad);
+         var packagesToLoad = new HashSet<RyuPackageV1>();
+         foreach (var package in packageInstancesInput) {
+            var packageType = package.GetType();
+            if (!loadedPackageTypes.Contains(packageType)) {
+               packagesToLoad.Add(package);
+               loadedPackageTypes.Add(packageType);
+            }
+         }
 
          foreach (var package in packagesToLoad) {
             logger.Info("Found package: " + package);
