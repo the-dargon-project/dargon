@@ -20,7 +20,7 @@ namespace Dargon.Ryu {
       private readonly SCG.ISet<Type> remoteServices;
 
       private readonly SCG.ISet<Assembly> loadedAssemblies = new SCG.HashSet<Assembly>();
-      private readonly SCG.ISet<RyuPackageV1> packages = new SCG.HashSet<RyuPackageV1>();
+      private readonly SCG.ISet<RyuPackageV1> loadedPackages = new SCG.HashSet<RyuPackageV1>();
 
       private Logger logger = LogManager.CreateNullLogger();
 
@@ -87,10 +87,13 @@ namespace Dargon.Ryu {
          return anyAssembliesLoaded;
       }
 
-      public void TouchPackages(SCG.IReadOnlyCollection<RyuPackageV1> packageInstances, Assembly seedAssembly = null) {
-         foreach (var package in packageInstances) {
+      public void TouchPackages(SCG.IReadOnlyCollection<RyuPackageV1> packageInstancesInput, Assembly seedAssembly = null) {
+         var packagesToLoad = new HashSet<RyuPackageV1>(packageInstancesInput);
+         packagesToLoad.ExceptWith(loadedPackages);
+         loadedPackages.UnionWith(packagesToLoad);
+
+         foreach (var package in packagesToLoad) {
             logger.Info("Found package: " + package);
-            this.packages.Add(package);
             foreach (var typeInfo in package.TypeInfoByType.Values) {
                if (typeInfo.Flags.HasFlag(RyuTypeFlags.IgnoreDuplicates) &&
                    typeInfosByType.ContainsKey(typeInfo.Type)) {
@@ -120,7 +123,7 @@ namespace Dargon.Ryu {
             }
          }
 
-         foreach (var package in packageInstances) {
+         foreach (var package in packagesToLoad) {
             foreach (var typeInfo in package.TypeInfoByType.Values) {
                if (typeInfo.Flags.HasFlag(RyuTypeFlags.Required)) {
                   Get(typeInfo.Type);
