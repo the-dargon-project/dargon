@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Dargon.Ryu {
    public interface RyuContainer {
@@ -91,6 +92,13 @@ namespace Dargon.Ryu {
       /// </summary>
       /// <param name="type"></param>
       void Touch(Type type);
+
+      /// <summary>
+      /// Touches the given assembly, forcing Ryu to detect newly loaded 
+      /// assemblies and the packages.
+      /// </summary>
+      /// <param name="type"></param>
+      void Touch(Assembly type);
 
       /// <summary>
       /// Forces construction of the given type, ignoring whether it has been
