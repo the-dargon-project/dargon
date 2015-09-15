@@ -6,25 +6,22 @@ namespace NMockito2.FunctionalTests {
       [Fact]
       public void Run() {
          var testObj = CreateMock<TestInterface>();
-         Expect<int, char, bool>((x, y) => testObj.TryInvoke("asdf", out x, out y))
-            .SetOut(1337, 't').ThenReturn(true)
-            .SetOut(21337, 'u').ThenReturn(false);
+         Expect<int, bool>(x => testObj.TryInvoke("asdf", out x))
+            .SetOut(1337).ThenReturn(true)
+            .SetOut(21337).ThenReturn(false);
 
-         int a;
-         char b;
-         AssertTrue(testObj.TryInvoke("asdf", out a, out b));
-         AssertEquals(1337, a);
-         AssertEquals('t', b);
+         int result;
+         AssertTrue(testObj.TryInvoke("asdf", out result));
+         AssertEquals(1337, result);
 
-         AssertFalse(testObj.TryInvoke("asdf", out a, out b));
-         AssertEquals(21337, a);
-         AssertEquals('u', b);
+         AssertFalse(testObj.TryInvoke("asdf", out result));
+         AssertEquals(21337, result);
 
          VerifyExpectationsAndNoMoreInteractions();
       }
 
       internal interface TestInterface {
-         bool TryInvoke(string x, out int a, out char b);
+         bool TryInvoke(string x, out int result);
       }
    }
 }

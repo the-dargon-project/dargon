@@ -52,9 +52,11 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="FunctionalTests\WhenOutFT_0.cs" />
+    <Compile Include="FunctionalTests\WhenOutFT_1.cs" />
+    <Compile Include="FunctionalTests\WhenOutFT_4.cs" />
     <Compile Include="FunctionalTests\WhenOutFT_3.cs" />
     <Compile Include="FunctionalTests\WhenOutFT_2.cs" />
-    <Compile Include="FunctionalTests\WhenOutFT_1.cs" />
     <Compile Include="FunctionalTests\ParamsFT.cs" />
     <Compile Include="InternalTestingUtilities.cs" />
     <Compile Include="MockFactoryTests.cs" />

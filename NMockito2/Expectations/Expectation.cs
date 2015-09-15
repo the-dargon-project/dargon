@@ -12,10 +12,12 @@ namespace NMockito2.Expectations {
          this.invocationOperationManagerFinder = invocationOperationManagerFinder;
       }
 
-      public Expectation ThenThrow(Exception exception) {
-         invocationOperationManagerFinder.AddInvocationOperation(
-            invocationDescriptor,
-            new ThrowInvocationOperation(exception));
+      public Expectation ThenThrow(params Exception[] exceptions) {
+         foreach (var exception in exceptions) {
+            invocationOperationManagerFinder.AddInvocationOperation(
+               invocationDescriptor,
+               new ThrowInvocationOperation(exception));
+         }
          return this;
       }
    }
@@ -29,17 +31,25 @@ namespace NMockito2.Expectations {
          this.invocationOperationManagerFinder = invocationOperationManagerFinder;
       }
 
-      public Expectation<TReturnValue> ThenReturn(TReturnValue value) {
-         invocationOperationManagerFinder.AddInvocationOperation(
-            invocationDescriptor,
-            new ReturnInvocationOperation(value));
+      public Expectation<TReturnValue> ThenReturn(params TReturnValue[] values) {
+         if (values == null) {
+            values = new TReturnValue[1];
+         }
+
+         foreach (var value in values) {
+            invocationOperationManagerFinder.AddInvocationOperation(
+               invocationDescriptor,
+               new ReturnInvocationOperation(value));
+         }
          return this;
       }
 
-      public Expectation<TReturnValue> ThenThrow(Exception exception) {
-         invocationOperationManagerFinder.AddInvocationOperation(
-            invocationDescriptor,
-            new ThrowInvocationOperation(exception));
+      public Expectation<TReturnValue> ThenThrow(params Exception[] exceptions) {
+         foreach (var exception in exceptions) {
+            invocationOperationManagerFinder.AddInvocationOperation(
+               invocationDescriptor,
+               new ThrowInvocationOperation(exception));
+         }
          return this;
       }
    }
@@ -67,10 +77,12 @@ namespace NMockito2.Expectations {
          return this;
       }
 
-      public Expectation<TOut1, TReturnValue> ThenThrow(Exception exception) {
-         invocationOperationManagerFinder.AddInvocationOperation(
-            invocationDescriptor,
-            new ThrowInvocationOperation(exception));
+      public Expectation<TOut1, TReturnValue> ThenThrow(params Exception[] exceptions) {
+         foreach (var exception in exceptions) {
+            invocationOperationManagerFinder.AddInvocationOperation(
+               invocationDescriptor,
+               new ThrowInvocationOperation(exception));
+         }
          return this;
       }
    }
@@ -98,10 +110,12 @@ namespace NMockito2.Expectations {
          return this;
       }
 
-      public Expectation<TOut1, TOut2, TReturnValue> ThenThrow(Exception exception) {
-         invocationOperationManagerFinder.AddInvocationOperation(
-            invocationDescriptor,
-            new ThrowInvocationOperation(exception));
+      public Expectation<TOut1, TOut2, TReturnValue> ThenThrow(params Exception[] exceptions) {
+         foreach (var exception in exceptions) {
+            invocationOperationManagerFinder.AddInvocationOperation(
+               invocationDescriptor,
+               new ThrowInvocationOperation(exception));
+         }
          return this;
       }
    }
@@ -129,10 +143,12 @@ namespace NMockito2.Expectations {
          return this;
       }
 
-      public Expectation<TOut1, TOut2, TOut3, TReturnValue> ThenThrow(Exception exception) {
-         invocationOperationManagerFinder.AddInvocationOperation(
-            invocationDescriptor,
-            new ThrowInvocationOperation(exception));
+      public Expectation<TOut1, TOut2, TOut3, TReturnValue> ThenThrow(params Exception[] exceptions) {
+         foreach (var exception in exceptions) {
+            invocationOperationManagerFinder.AddInvocationOperation(
+               invocationDescriptor,
+               new ThrowInvocationOperation(exception));
+         }
          return this;
       }
    }
