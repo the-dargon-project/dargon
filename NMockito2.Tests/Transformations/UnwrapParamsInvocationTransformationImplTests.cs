@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Reflection;
+using NMockito2.Mocks;
 using Xunit;
 
 namespace NMockito2.Transformations {
