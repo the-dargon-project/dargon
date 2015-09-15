@@ -1,0 +1,101 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D12C1161-9C1B-44FF-A0D1-3BD8FF1E58F4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>NMockito2</RootNamespace>
+    <AssemblyName>NMockito2</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Castle.Core">
+      <HintPath>..\libdsp\packages\Castle.Core.3.3.3\lib\net45\Castle.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="xunit">
+      <HintPath>..\NMockito\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Assertions\AssertionsProxy.cs" />
+    <Compile Include="Counters\AnyCounter.cs" />
+    <Compile Include="Counters\TimesCounter.cs" />
+    <Compile Include="Expectations\Expectation.cs" />
+    <Compile Include="Expectations\ExpectationFactory.cs" />
+    <Compile Include="Counters\Counter.cs" />
+    <Compile Include="Fluent\FluentAssertions.cs" />
+    <Compile Include="Operations\SetOutsInvocationOperation.cs" />
+    <Compile Include="NMockitoInstance.cs" />
+    <Compile Include="Operations\ThrowInvocationOperation.cs" />
+    <Compile Include="SmartParameters\AnySmartParameter.cs" />
+    <Compile Include="SmartParameters\EqualitySmartParameter.cs" />
+    <Compile Include="Operations\Execution.cs" />
+    <Compile Include="Mocks\InvocationDescriptor.cs" />
+    <Compile Include="Mocks\InvocationDescriptorFactory.cs" />
+    <Compile Include="Operations\InvocationOperation.cs" />
+    <Compile Include="Mocks\InvocationOperationManager.cs" />
+    <Compile Include="Mocks\InvocationOperationManagerConfigurer.cs" />
+    <Compile Include="Mocks\InvocationOperationManagerFinder.cs" />
+    <Compile Include="Mocks\InvocationStage.cs" />
+    <Compile Include="Operations\ReturnInvocationOperation.cs" />
+    <Compile Include="SmartParameters\SmartParameterPusher.cs" />
+    <Compile Include="Transformations\CreateImplicitEqualitySmartParametersInvocationTransformationImpl.cs" />
+    <Compile Include="Transformations\InvocationTransformation.cs" />
+    <Compile Include="Mocks\InvocationTransformer.cs" />
+    <Compile Include="Mocks\MockAndMethod.cs" />
+    <Compile Include="Mocks\MockFactory.cs" />
+    <Compile Include="Fluent\FluentMockOperations.cs" />
+    <Compile Include="Mocks\MockInterceptor.cs" />
+    <Compile Include="Mocks\MockMethodInvocationOperationManagerFinder.cs" />
+    <Compile Include="NMockitoStatics.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SmartParameters\SmartParameter.cs" />
+    <Compile Include="SmartParameters\SmartParameterCollection.cs" />
+    <Compile Include="SmartParameters\SmartParameterStore.cs" />
+    <Compile Include="Transformations\OutEnablingInvocationTransformationImpl.cs" />
+    <Compile Include="Transformations\UnwrapParamsInvocationTransformationImpl.cs" />
+    <Compile Include="Utilities\ReflectionUtilities.cs" />
+    <Compile Include="Verification\UnverifiedInvocationContainer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

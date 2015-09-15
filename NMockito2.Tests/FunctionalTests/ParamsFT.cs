@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NMockito2.Fluent;
+﻿using NMockito2.Fluent;
 using Xunit;
 
 namespace NMockito2.FunctionalTests {
@@ -16,6 +11,8 @@ namespace NMockito2.FunctionalTests {
          
          AssertEquals("10ab", testObj.Invoke(10, "a", "b"));
          AssertEquals("20null", testObj.Invoke(20, null));
+
+         VerifyExpectationsAndNoMoreInteractions();
       }
 
       internal interface TestInterface {

@@ -66,7 +66,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\NMockito2\NMockito2.csproj">
+    <ProjectReference Include="..\NMockito2\NMockito2.csproj">
       <Project>{D12C1161-9C1B-44FF-A0D1-3BD8FF1E58F4}</Project>
       <Name>NMockito2</Name>
     </ProjectReference>
