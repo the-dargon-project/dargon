@@ -39,6 +39,9 @@ namespace NMockito2.Mocks {
 
          // Reverse transform e.g. to set out params
          invocationTransformer.Backward(invocationDescriptor);
+
+         // Throw if exception has been set
+         invocationDescriptor.Exception?.Rethrow();
       }
    }
 }

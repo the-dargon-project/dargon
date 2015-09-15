@@ -7,6 +7,7 @@ using System.Runtime.ExceptionServices;
 using System.Text;
 using NMockito2.Counters;
 using NMockito2.Expectations;
+using NMockito2.Utilities;
 
 namespace NMockito2.Verification {
    public class VerificationOperations {
@@ -34,9 +35,7 @@ namespace NMockito2.Verification {
                e = new AggregateException(e, ex);
             }
          }
-         if (e != null) {
-            ExceptionDispatchInfo.Capture(e).Throw();
-         }
+         e?.Rethrow();
       }
 
       public void VerifyExpectations() {

@@ -8,7 +8,7 @@ namespace NMockito2.FunctionalTests {
          var testObj = CreateMock<TestInterface>();
          testObj.Invoke(10, "a", "b").Returns("10ab");
          testObj.Invoke(20, null).Returns("20null");
-         
+
          AssertEquals("10ab", testObj.Invoke(10, "a", "b"));
          AssertEquals("20null", testObj.Invoke(20, null));
 

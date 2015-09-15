@@ -7,10 +7,11 @@ namespace NMockito2.FunctionalTests {
       [Fact]
       public void Run() {
          var testObj = CreateMock<TestInterface>();
-         testObj.TryInvoke().Returns(true, false);
+         testObj.TryInvoke().Returns(true, false).ThenThrows(new InvalidOperationException());
 
          AssertTrue(testObj.TryInvoke());
          AssertFalse(testObj.TryInvoke());
+         Assert(testObj).TryInvoke().Throws<InvalidOperationException>();
 
          VerifyExpectationsAndNoMoreInteractions();
       }

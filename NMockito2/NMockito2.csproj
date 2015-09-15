@@ -46,13 +46,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Fluent\AssertExceptionCatchingInterceptor.cs" />
     <Compile Include="Assertions\AssertionsProxy.cs" />
+    <Compile Include="Assertions\AssertWithAction.cs" />
+    <Compile Include="Fluent\ExceptionCaptorFactory.cs" />
     <Compile Include="Counters\AnyCounter.cs" />
     <Compile Include="Counters\TimesCounter.cs" />
     <Compile Include="Expectations\Expectation.cs" />
     <Compile Include="Expectations\ExpectationFactory.cs" />
     <Compile Include="Counters\Counter.cs" />
-    <Compile Include="Fluent\FluentAssertions.cs" />
+    <Compile Include="Fluent\FluentAssertionStatics.cs" />
+    <Compile Include="Fluent\FluentExpectation.cs" />
+    <Compile Include="Fluent\FluentExceptionAssertion.cs" />
     <Compile Include="Operations\SetOutsInvocationOperation.cs" />
     <Compile Include="NMockitoInstance.cs" />
     <Compile Include="Operations\ThrowInvocationOperation.cs" />
@@ -73,7 +78,7 @@
     <Compile Include="Mocks\InvocationTransformer.cs" />
     <Compile Include="Mocks\MockAndMethod.cs" />
     <Compile Include="Mocks\MockFactory.cs" />
-    <Compile Include="Fluent\FluentMockOperations.cs" />
+    <Compile Include="Fluent\FluentMockOperationStatics.cs" />
     <Compile Include="Mocks\MockInterceptor.cs" />
     <Compile Include="Mocks\MockMethodInvocationOperationManagerFinder.cs" />
     <Compile Include="NMockitoStatics.cs" />
@@ -83,6 +88,7 @@
     <Compile Include="SmartParameters\SmartParameterStore.cs" />
     <Compile Include="Transformations\OutEnablingInvocationTransformationImpl.cs" />
     <Compile Include="Transformations\UnwrapParamsInvocationTransformationImpl.cs" />
+    <Compile Include="Utilities\ExceptionUtilities.cs" />
     <Compile Include="Utilities\ReflectionUtilities.cs" />
     <Compile Include="Verification\UnverifiedInvocationContainer.cs" />
   </ItemGroup>

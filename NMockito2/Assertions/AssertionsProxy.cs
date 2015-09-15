@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace NMockito2.Assertions {
@@ -11,5 +7,12 @@ namespace NMockito2.Assertions {
 
       public void AssertTrue(bool value) => Assert.True(value);
       public void AssertFalse(bool value) => Assert.False(value);
+      public void AssertNull(object obj) => Assert.Null(obj);
+      public void AssertNotNull(object obj) => Assert.NotNull(obj);
+
+      public void AssertThrows<TException>(Action action) where TException : Exception => Assert.Throws<TException>(() => action());
+      public void AssertThrows<TException, TObject>(TObject obj, Action<TObject> action) where TException : Exception => AssertThrows<TException>(() => action(obj));
+
+      public AssertWithAction AssertWithAction(Action action) => new AssertWithAction(action);
    }
 }

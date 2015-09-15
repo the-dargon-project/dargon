@@ -52,6 +52,8 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="FunctionalTests\VoidFT_1.cs" />
+    <Compile Include="FunctionalTests\VoidFT_0.cs" />
     <Compile Include="FunctionalTests\WhenOutFT_0.cs" />
     <Compile Include="FunctionalTests\WhenOutFT_1.cs" />
     <Compile Include="FunctionalTests\WhenOutFT_4.cs" />

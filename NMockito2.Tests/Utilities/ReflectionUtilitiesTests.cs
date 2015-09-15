@@ -10,6 +10,7 @@ namespace NMockito2.Utilities {
          Assert.Equal(0, typeof(int).GetDefaultValue());
          Assert.Equal(false, typeof(bool).GetDefaultValue());
          Assert.Equal(TimeSpan.Zero, typeof(TimeSpan).GetDefaultValue());
+         Assert.Equal(null, typeof(void).GetDefaultValue());
          Assert.Equal(null, typeof(string).GetDefaultValue());
          Assert.Equal(null, typeof(IDictionary<,>).GetDefaultValue());
          Assert.Equal(null, typeof(Dictionary<,>).GetDefaultValue());

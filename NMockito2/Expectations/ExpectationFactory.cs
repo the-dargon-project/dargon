@@ -18,6 +18,16 @@ namespace NMockito2.Expectations {
          this.verificationInvocationsContainer = verificationInvocationsContainer;
       }
 
+      public Expectation When(Action action) {
+         action();
+         return When();
+      }
+
+      public Expectation When() {
+         var invocationDescriptor = invocationStage.ReleaseLastInvocation();
+         return new Expectation(invocationDescriptor, invocationOperationManagerFinder);
+      }
+
       public Expectation<T> When<T>() {
          var invocationDescriptor = invocationStage.ReleaseLastInvocation();
          return new Expectation<T>(invocationDescriptor, invocationOperationManagerFinder);
@@ -39,6 +49,11 @@ namespace NMockito2.Expectations {
          func(default(TOut1), default(TOut2), default(TOut3));
          var invocationDescriptor = invocationStage.ReleaseLastInvocation();
          return new Expectation<TOut1, TOut2, TOut3, TResult>(invocationDescriptor, invocationOperationManagerFinder);
+      }
+
+      public Expectation Expect(Action action) {
+         action();
+         return Expect();
       }
 
       public Expectation Expect() {

@@ -26,6 +26,7 @@ namespace NMockito2 {
       private readonly AssertionsProxy assertionsProxy;
       private readonly ExpectationFactory expectationFactory;
       private readonly VerificationOperations verificationOperations;
+      private readonly FluentExceptionAssertion fluentExceptionAssertion;
 
       public NMockitoInstance() {
          Instance = this;
@@ -48,6 +49,8 @@ namespace NMockito2 {
          assertionsProxy = new AssertionsProxy();
          expectationFactory = new ExpectationFactory(invocationStage, invocationOperationManagerFinder, verificationInvocationsContainer);
          verificationOperations = new VerificationOperations(invocationStage, verificationInvocationsContainer);
+         ExceptionCaptorFactory exceptionCaptorFactory = new ExceptionCaptorFactory(proxyGenerator);
+         fluentExceptionAssertion = new FluentExceptionAssertion(exceptionCaptorFactory);
       }
 
       public T CreateMock<T>() where T : class => mockFactory.CreateMock<T>();
@@ -64,11 +67,20 @@ namespace NMockito2 {
       public Expectation<TOut1, TOut2, TResult> Expect<TOut1, TOut2, TResult>(Func<TOut1, TOut2, TResult> func) => expectationFactory.Expect<TOut1, TOut2, TResult>(func);
       public Expectation<TOut1, TOut2, TOut3, TResult> Expect<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func) => expectationFactory.Expect<TOut1, TOut2, TOut3, TResult>(func);
 
+      public Expectation Expect(Action action) => expectationFactory.Expect(action);
+
       public void AssertEquals<T>(T expected, T actual) => assertionsProxy.AssertEquals(expected, actual);
-
       public void AssertTrue(bool value) => assertionsProxy.AssertTrue(value);
-
       public void AssertFalse(bool value) => assertionsProxy.AssertFalse(value);
+      public void AssertThrows<TException>(Action action) where TException : Exception => assertionsProxy.AssertThrows<TException>(action);
+
+      // Exception assertion by action:
+      public AssertWithAction Assert(Action action) => assertionsProxy.AssertWithAction(action);
+      
+      // Fluent exception assertion:
+      public TMock Assert<TMock>(TMock mock) where TMock : class => fluentExceptionAssertion.CreateExceptionCaptor(mock);
+      internal void SetLastException(Exception exception) => fluentExceptionAssertion.SetLastException(exception);
+      internal void AssertThrown<TException>() where TException : Exception => fluentExceptionAssertion.AssertThrown<TException>();
 
       public void VerifyExpectations() => verificationOperations.VerifyExpectations();
       public void VerifyNoMoreInteractions() => verificationOperations.VerifyNoMoreInteractions();
@@ -78,5 +90,6 @@ namespace NMockito2 {
          runThis();
          return default(T);
       }
+
    }
 }

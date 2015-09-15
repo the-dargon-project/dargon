@@ -12,11 +12,7 @@ namespace NMockito2.Utilities {
       }
 
       public static object GetDefaultValue(this Type type) {
-         if (type.IsValueType) {
-            return Activator.CreateInstance(type);
-         } else {
-            return null;
-         }
+         return type.IsValueType && type != typeof(void) ? Activator.CreateInstance(type) : null;
       }
 
       public static Type GetParamsType(this MethodInfo methodInfo) {

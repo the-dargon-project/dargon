@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NMockito2.Fluent;
+using System;
 using Xunit;
 
 namespace NMockito2.FunctionalTests {
@@ -8,7 +9,8 @@ namespace NMockito2.FunctionalTests {
          var testObj = CreateMock<TestInterface>();
          Expect<int, char, bool>((x, y) => testObj.TryInvoke("asdf", out x, out y))
             .SetOut(1337, 't').ThenReturn(true)
-            .SetOut(21337, 'u').ThenReturn(false);
+            .SetOut(21337, 'u').ThenReturn(false)
+            .ThenThrow(new InvalidOperationException());
 
          int a;
          char b;
@@ -19,6 +21,8 @@ namespace NMockito2.FunctionalTests {
          AssertFalse(testObj.TryInvoke("asdf", out a, out b));
          AssertEquals(21337, a);
          AssertEquals('u', b);
+
+         Assert(testObj).TryInvoke("asdf", out a, out b).Throws<InvalidOperationException>();
 
          VerifyExpectationsAndNoMoreInteractions();
       }
