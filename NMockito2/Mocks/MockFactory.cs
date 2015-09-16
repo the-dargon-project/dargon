@@ -1,7 +1,9 @@
+using System;
 using Castle.DynamicProxy;
 
 namespace NMockito2.Mocks {
    public interface MockFactory {
+      object CreateMock(Type mockType);
       T CreateMock<T>() where T : class;
    }
 
@@ -21,9 +23,13 @@ namespace NMockito2.Mocks {
       }
 
       public T CreateMock<T>() where T : class {
+         return (T)CreateMock(typeof(T));
+      }
+
+      public object CreateMock(Type mockType) {
          var interceptor = new MockInterceptor(invocationDescriptorFactory, invocationTransformer, invocationStage, invocationOperationManagerFinder);
-         var mock = proxyGenerator.CreateInterfaceProxyWithoutTarget<T>(interceptor);
-         interceptor.SetMock(typeof(T), mock);
+         var mock = proxyGenerator.CreateInterfaceProxyWithoutTarget(mockType, interceptor);
+         interceptor.SetMock(mockType, mock);
          return mock;
       }
    }

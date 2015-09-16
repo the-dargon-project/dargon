@@ -46,6 +46,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BehavioralTesters\StaticProxyBehaviorTester.cs" />
     <Compile Include="Fluent\AssertExceptionCatchingInterceptor.cs" />
     <Compile Include="Assertions\AssertionsProxy.cs" />
     <Compile Include="Assertions\AssertWithAction.cs" />
@@ -61,6 +62,7 @@
     <Compile Include="Operations\SetOutsInvocationOperation.cs" />
     <Compile Include="NMockitoInstance.cs" />
     <Compile Include="Operations\ThrowInvocationOperation.cs" />
+    <Compile Include="Placeholders\PlaceholderFactory.cs" />
     <Compile Include="SmartParameters\AnySmartParameter.cs" />
     <Compile Include="SmartParameters\EqualitySmartParameter.cs" />
     <Compile Include="Operations\Execution.cs" />

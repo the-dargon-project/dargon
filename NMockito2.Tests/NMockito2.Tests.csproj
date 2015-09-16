@@ -56,6 +56,7 @@
     <Compile Include="Counters\AnyCounterTests.cs" />
     <Compile Include="Counters\TimesCounterTests.cs" />
     <Compile Include="FunctionalTests\FluentAssertionFT.cs" />
+    <Compile Include="FunctionalTests\StaticProxyBehaviorFT.cs" />
     <Compile Include="FunctionalTests\VerificationFT.cs" />
     <Compile Include="FunctionalTests\VoidFT_1.cs" />
     <Compile Include="FunctionalTests\VoidFT_0.cs" />

@@ -6,6 +6,7 @@ using NMockito2.Expectations;
 using NMockito2.Fluent;
 using NMockito2.Mocks;
 using NMockito2.Operations;
+using NMockito2.Placeholders;
 using NMockito2.SmartParameters;
 using NMockito2.Transformations;
 using NMockito2.Verification;
@@ -27,6 +28,7 @@ namespace NMockito2 {
       private readonly VerificationOperations verificationOperations;
       private readonly FluentExceptionAssertor fluentExceptionAssertor;
       private readonly VerificationOperationsProxy verificationOperationsProxy;
+      private readonly PlaceholderFactory placeholderFactory;
 
       public NMockitoInstance() {
          Instance = this;
@@ -52,9 +54,14 @@ namespace NMockito2 {
          fluentExceptionAssertor = new FluentExceptionAssertor(exceptionCaptorFactory);
          VerificationMockFactory verificationMockFactory = new VerificationMockFactory(proxyGenerator);
          verificationOperationsProxy = new VerificationOperationsProxy(invocationStage, verificationOperations, verificationMockFactory);
+         placeholderFactory = new PlaceholderFactory(mockFactory);
       }
 
+      public object CreateMock(Type type) => mockFactory.CreateMock(type);
       public T CreateMock<T>() where T : class => mockFactory.CreateMock<T>();
+
+      public object CreatePlaceholder(Type type) => placeholderFactory.CreatePlaceholder(type);
+      public T CreatePlaceholder<T>() where T : class => placeholderFactory.CreatePlaceholder<T>();
 
       public T Any<T>() => Default<T>(smartParameterPusher.Any<T>);
 

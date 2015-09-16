@@ -12,6 +12,30 @@ namespace NMockito2.Expectations {
          this.invocationOperationManagerFinder = invocationOperationManagerFinder;
       }
 
+      public Expectation SetOuts(params object[] values) {
+         if (values == null) {
+            values = new object[1];
+         }
+
+         invocationOperationManagerFinder.AddInvocationOperation(
+            invocationDescriptor,
+            new SetOutsInvocationOperation(values));
+         return this;
+      }
+
+      public Expectation ThenReturn(params object[] values) {
+         if (values == null) {
+            values = new object[1];
+         }
+
+         foreach (var value in values) {
+            invocationOperationManagerFinder.AddInvocationOperation(
+               invocationDescriptor,
+               new ReturnInvocationOperation(value));
+         }
+         return this;
+      }
+
       public Expectation ThenThrow(params Exception[] exceptions) {
          foreach (var exception in exceptions) {
             invocationOperationManagerFinder.AddInvocationOperation(
