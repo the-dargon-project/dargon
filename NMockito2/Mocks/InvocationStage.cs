@@ -12,15 +12,20 @@ namespace NMockito2.Mocks {
       }
 
       public void SetLastInvocation(InvocationDescriptor invocationDescriptor) {
+         var lastStagedInvocationDescriptor = SwapLastStagedInvocation(invocationDescriptor);
+
+         if (lastStagedInvocationDescriptor != null) {
+            verificationInvocationsContainer.HandleUnverifiedInvocation(lastStagedInvocationDescriptor);
+         }
+      }
+
+      private InvocationDescriptor SwapLastStagedInvocation(InvocationDescriptor invocationDescriptor) {
          InvocationDescriptor lastStagedInvocationDescriptor;
          SpinWait spinner = new SpinWait();
          while (!TrySwapStagedInvocationDescriptor(invocationDescriptor, out lastStagedInvocationDescriptor)) {
             spinner.SpinOnce();
          }
-
-         if (lastStagedInvocationDescriptor != null) {
-            verificationInvocationsContainer.HandleUnverifiedInvocation(lastStagedInvocationDescriptor);
-         }
+         return lastStagedInvocationDescriptor;
       }
 
       private bool TrySwapStagedInvocationDescriptor(InvocationDescriptor invocationDescriptor, out InvocationDescriptor lastStagedInvocationDescriptor) {
@@ -32,14 +37,8 @@ namespace NMockito2.Mocks {
          return originalStagedInvocationDescriptor == lastStagedInvocationDescriptor;
       }
 
-      public InvocationDescriptor GetLastInvocation() {
-         return stagedInvocationDescriptor;
-      }
-
       public InvocationDescriptor ReleaseLastInvocation() {
-         var result = stagedInvocationDescriptor;
-         stagedInvocationDescriptor = null;
-         return result;
+         return SwapLastStagedInvocation(null);
       }
 
       public void FlushUnverifiedInvocation() {

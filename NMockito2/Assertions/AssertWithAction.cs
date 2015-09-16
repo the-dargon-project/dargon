@@ -2,14 +2,16 @@
 
 namespace NMockito2.Assertions {
    public class AssertWithAction {
+      private readonly AssertionsProxy assertionsProxy;
       private readonly Action action;
 
-      public AssertWithAction(Action action) {
+      public AssertWithAction(AssertionsProxy assertionsProxy, Action action) {
+         this.assertionsProxy = assertionsProxy;
          this.action = action;
       }
 
       public void Throws<TException>() where TException : Exception {
-         NMockitoInstance.Instance.AssertThrows<TException>(action);
+         assertionsProxy.AssertThrows<TException>(action);
       }
    }
 }

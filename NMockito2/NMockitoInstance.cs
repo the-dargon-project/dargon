@@ -22,11 +22,10 @@ namespace NMockito2 {
       private readonly MockFactoryImpl mockFactory;
       private readonly SmartParameterStore smartParameterStore;
       private readonly SmartParameterPusher smartParameterPusher;
-      private readonly InvocationOperationManagerConfigurer invocationOperationManagerConfigurer;
       private readonly AssertionsProxy assertionsProxy;
       private readonly ExpectationFactory expectationFactory;
       private readonly VerificationOperations verificationOperations;
-      private readonly FluentExceptionAssertion fluentExceptionAssertion;
+      private readonly FluentExceptionAssertor fluentExceptionAssertor;
 
       public NMockitoInstance() {
          Instance = this;
@@ -45,42 +44,40 @@ namespace NMockito2 {
          mockFactory = new MockFactoryImpl(proxyGenerator, invocationDescriptorFactory, invocationTransformer, invocationStage, invocationOperationManagerFinder);
          smartParameterStore = new SmartParameterStore();
          smartParameterPusher = new SmartParameterPusher(smartParameterStore);
-         invocationOperationManagerConfigurer = new InvocationOperationManagerConfigurer(invocationOperationManagerFinder, invocationStage);
          assertionsProxy = new AssertionsProxy();
          expectationFactory = new ExpectationFactory(invocationStage, invocationOperationManagerFinder, verificationInvocationsContainer);
          verificationOperations = new VerificationOperations(invocationStage, verificationInvocationsContainer);
          ExceptionCaptorFactory exceptionCaptorFactory = new ExceptionCaptorFactory(proxyGenerator);
-         fluentExceptionAssertion = new FluentExceptionAssertion(exceptionCaptorFactory);
+         fluentExceptionAssertor = new FluentExceptionAssertor(exceptionCaptorFactory);
       }
 
       public T CreateMock<T>() where T : class => mockFactory.CreateMock<T>();
 
       public T Any<T>() => Default<T>(smartParameterPusher.Any<T>);
 
-      public Expectation<TResult> When<TResult>(TResult value) => expectationFactory.When<TResult>();
-      public Expectation<TOut1, TResult> When<TOut1, TResult>(Func<TOut1, TResult> func) => expectationFactory.When<TOut1, TResult>(func);
-      public Expectation<TOut1, TOut2, TResult> When<TOut1, TResult, TOut2>(Func<TOut1, TOut2, TResult> func) => expectationFactory.When<TOut1, TOut2, TResult>(func);
-      public Expectation<TOut1, TOut2, TOut3, TResult> When<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func) => expectationFactory.When<TOut1, TOut2, TOut3, TResult>(func);
+      public Expectation When(Action action) => expectationFactory.Create(action, false);
+      public Expectation<TResult> When<TResult>(TResult value) => expectationFactory.Create<TResult>(false);
+      public Expectation<TOut1, TResult> When<TOut1, TResult>(Func<TOut1, TResult> func) => expectationFactory.Create<TOut1, TResult>(func, false);
+      public Expectation<TOut1, TOut2, TResult> When<TOut1, TResult, TOut2>(Func<TOut1, TOut2, TResult> func) => expectationFactory.Create<TOut1, TOut2, TResult>(func, false);
+      public Expectation<TOut1, TOut2, TOut3, TResult> When<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func) => expectationFactory.Create<TOut1, TOut2, TOut3, TResult>(func, false);
 
-      public Expectation<TResult> Expect<TResult>(TResult func) => expectationFactory.Expect<TResult>();
-      public Expectation<TOut1, TResult> Expect<TOut1, TResult>(Func<TOut1, TResult> func) => expectationFactory.Expect<TResult, TOut1>(func);
-      public Expectation<TOut1, TOut2, TResult> Expect<TOut1, TOut2, TResult>(Func<TOut1, TOut2, TResult> func) => expectationFactory.Expect<TOut1, TOut2, TResult>(func);
-      public Expectation<TOut1, TOut2, TOut3, TResult> Expect<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func) => expectationFactory.Expect<TOut1, TOut2, TOut3, TResult>(func);
-
-      public Expectation Expect(Action action) => expectationFactory.Expect(action);
+      public Expectation Expect(Action action) => expectationFactory.Create(action, true);
+      public Expectation<TResult> Expect<TResult>(TResult func) => expectationFactory.Create<TResult>(true);
+      public Expectation<TOut1, TResult> Expect<TOut1, TResult>(Func<TOut1, TResult> func) => expectationFactory.Create<TOut1, TResult>(func, true);
+      public Expectation<TOut1, TOut2, TResult> Expect<TOut1, TOut2, TResult>(Func<TOut1, TOut2, TResult> func) => expectationFactory.Create<TOut1, TOut2, TResult>(func, true);
+      public Expectation<TOut1, TOut2, TOut3, TResult> Expect<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func) => expectationFactory.Create<TOut1, TOut2, TOut3, TResult>(func, true);
 
       public void AssertEquals<T>(T expected, T actual) => assertionsProxy.AssertEquals(expected, actual);
       public void AssertTrue(bool value) => assertionsProxy.AssertTrue(value);
       public void AssertFalse(bool value) => assertionsProxy.AssertFalse(value);
+      public void AssertNull(object value) => assertionsProxy.AssertNull(value);
+      public void AssertNotNull(object value) => assertionsProxy.AssertNotNull(value);
       public void AssertThrows<TException>(Action action) where TException : Exception => assertionsProxy.AssertThrows<TException>(action);
-
-      // Exception assertion by action:
       public AssertWithAction Assert(Action action) => assertionsProxy.AssertWithAction(action);
       
       // Fluent exception assertion:
-      public TMock Assert<TMock>(TMock mock) where TMock : class => fluentExceptionAssertion.CreateExceptionCaptor(mock);
-      internal void SetLastException(Exception exception) => fluentExceptionAssertion.SetLastException(exception);
-      internal void AssertThrown<TException>() where TException : Exception => fluentExceptionAssertion.AssertThrown<TException>();
+      public TMock Assert<TMock>(TMock mock) where TMock : class => fluentExceptionAssertor.CreateExceptionCaptor(mock);
+      internal void AssertThrown<TException>() where TException : Exception => fluentExceptionAssertor.AssertThrown<TException>();
 
       public void VerifyExpectations() => verificationOperations.VerifyExpectations();
       public void VerifyNoMoreInteractions() => verificationOperations.VerifyNoMoreInteractions();

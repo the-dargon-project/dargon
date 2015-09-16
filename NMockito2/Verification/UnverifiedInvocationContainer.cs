@@ -62,7 +62,7 @@ namespace NMockito2.Verification {
             }
          }
          if (expectedInvocations.Any(x => !x.Value.IsSatisfied)) {
-            throw new UnexpectedInvocationsException("Expected but did not find mock invocations:", expectedInvocations);
+            throw new InvocationExpectationException("Expected but did not find mock invocations:", expectedInvocations);
          }
       }
 
@@ -70,13 +70,13 @@ namespace NMockito2.Verification {
          invocationStage.FlushUnverifiedInvocation();
          var unverifiedInvocations = verificationInvocationsContainer.UnverifiedInvocationDescriptors;
          if (unverifiedInvocations.Any()) {
-            throw new UnexpectedInvocationsException("Expected no more mock invocations but found:", unverifiedInvocations);
+            throw new InvocationExpectationException("Expected no more mock invocations but found:", unverifiedInvocations);
          }
       }
    }
 
-   public class UnexpectedInvocationsException : Exception {
-      public UnexpectedInvocationsException(string message, ConcurrentDictionary<InvocationDescriptor, Counter> invocationsAndCounters) : base(GenerateMessage(message, invocationsAndCounters)) {
+   public class InvocationExpectationException : Exception {
+      public InvocationExpectationException(string message, ConcurrentDictionary<InvocationDescriptor, Counter> invocationsAndCounters) : base(GenerateMessage(message, invocationsAndCounters)) {
 
       }
 

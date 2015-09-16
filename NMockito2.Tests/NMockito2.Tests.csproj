@@ -52,6 +52,11 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="Assertions\AssertionsProxyTests.cs" />
+    <Compile Include="Counters\AnyCounterTests.cs" />
+    <Compile Include="Counters\TimesCounterTests.cs" />
+    <Compile Include="FunctionalTests\FluentAssertionFT.cs" />
+    <Compile Include="FunctionalTests\VerificationFT.cs" />
     <Compile Include="FunctionalTests\VoidFT_1.cs" />
     <Compile Include="FunctionalTests\VoidFT_0.cs" />
     <Compile Include="FunctionalTests\WhenOutFT_0.cs" />
@@ -63,7 +68,9 @@
     <Compile Include="InternalTestingUtilities.cs" />
     <Compile Include="MockFactoryTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SmartParameters\AnySmartParameterTests.cs" />
     <Compile Include="Transformations\UnwrapParamsInvocationTransformationImplTests.cs" />
+    <Compile Include="Utilities\ExceptionUtilitiesTests.cs" />
     <Compile Include="Utilities\ReflectionUtilitiesTests.cs" />
   </ItemGroup>
   <ItemGroup>

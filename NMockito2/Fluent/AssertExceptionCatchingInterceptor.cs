@@ -7,19 +7,21 @@ using NMockito2.Utilities;
 namespace NMockito2.Fluent {
    public class AssertExceptionCatchingInterceptor<TMock> : IInterceptor {
       private readonly TMock mock;
+      private readonly FluentExceptionAssertor fluentExceptionAssertor;
 
-      public AssertExceptionCatchingInterceptor(TMock mock) {
+      public AssertExceptionCatchingInterceptor(TMock mock, FluentExceptionAssertor fluentExceptionAssertor) {
          this.mock = mock;
+         this.fluentExceptionAssertor = fluentExceptionAssertor;
       }
 
       public void Intercept(IInvocation invocation) {
          try {
             invocation.ReturnValue = invocation.Method.Invoke(mock, invocation.Arguments);
-            NMockitoInstance.Instance.SetLastException(null);
+            fluentExceptionAssertor.SetLastException(null);
          } catch (TargetInvocationException targetInvocationException) {
             var e = targetInvocationException.InnerException;
             invocation.ReturnValue = invocation.Method.GetDefaultReturnValue();
-            NMockitoInstance.Instance.SetLastException(e);
+            fluentExceptionAssertor.SetLastException(e);
          }
       }
    }

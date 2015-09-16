@@ -20,6 +20,18 @@ namespace NMockito2.Utilities {
       }
 
       [Fact]
+      public void GetParamsType_ThrowsOnParamsless() {
+         var paramslessExampleMethod = typeof(TestClass).GetMethod(nameof(TestClass.ParamslessExample));
+         Assert.Throws<ArgumentException>(() => { paramslessExampleMethod.GetParamsType(); });
+      }
+
+      [Fact]
+      public void GetParamsType_HappyPath() {
+         var paramsExampleMethod = typeof(TestClass).GetMethod(nameof(TestClass.ParamsExample));
+         Assert.Equal(typeof(string[]), paramsExampleMethod.GetParamsType());
+      }
+
+      [Fact]
       public void TryGetParamsType_HappyPathTest() {
          var paramsExampleMethod = typeof(TestClass).GetMethod(nameof(TestClass.ParamsExample));
          Type paramsArrayType;
@@ -37,6 +49,7 @@ namespace NMockito2.Utilities {
 
       private static class TestClass {
          public static void ParamsExample(int i, params string[] x) { }
+         public static void ParamslessExample(int i, string[] x) { }
       }
    }
 }

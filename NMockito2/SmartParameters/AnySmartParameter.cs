@@ -9,7 +9,7 @@ namespace NMockito2.SmartParameters {
       }
 
       public bool Matches(object value) {
-         return typeConstraint?.IsInstanceOfType(value) ?? true;
+         return typeConstraint?.IsInstanceOfType(value) ?? (value != null);
       }
    }
 }

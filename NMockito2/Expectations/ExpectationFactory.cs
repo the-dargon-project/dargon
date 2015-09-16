@@ -18,74 +18,51 @@ namespace NMockito2.Expectations {
          this.verificationInvocationsContainer = verificationInvocationsContainer;
       }
 
-      public Expectation When(Action action) {
+      public Expectation Create(Action action, bool expectInvocation) {
          action();
-         return When();
+         return Create(expectInvocation);
       }
 
-      public Expectation When() {
+      public Expectation Create(bool expectInvocation) {
          var invocationDescriptor = invocationStage.ReleaseLastInvocation();
+         if (expectInvocation) {
+            verificationInvocationsContainer.ExpectUnverifiedInvocation(invocationDescriptor);
+         }
          return new Expectation(invocationDescriptor, invocationOperationManagerFinder);
       }
 
-      public Expectation<T> When<T>() {
+      public Expectation<TResult> Create<TResult>(bool expectInvocation) {
          var invocationDescriptor = invocationStage.ReleaseLastInvocation();
-         return new Expectation<T>(invocationDescriptor, invocationOperationManagerFinder);
-      }
-
-      public Expectation<TOut1, TResult> When<TOut1, TResult>(Func<TOut1, TResult> func) {
-         func(default(TOut1));
-         var invocationDescriptor = invocationStage.ReleaseLastInvocation();
-         return new Expectation<TOut1, TResult>(invocationDescriptor, invocationOperationManagerFinder);
-      }
-
-      public Expectation<TOut1, TOut2, TResult> When<TOut1, TOut2, TResult>(Func<TOut1, TOut2, TResult> func) {
-         func(default(TOut1), default(TOut2));
-         var invocationDescriptor = invocationStage.ReleaseLastInvocation();
-         return new Expectation<TOut1, TOut2, TResult>(invocationDescriptor, invocationOperationManagerFinder);
-      }
-
-      public Expectation<TOut1, TOut2, TOut3, TResult> When<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func) {
-         func(default(TOut1), default(TOut2), default(TOut3));
-         var invocationDescriptor = invocationStage.ReleaseLastInvocation();
-         return new Expectation<TOut1, TOut2, TOut3, TResult>(invocationDescriptor, invocationOperationManagerFinder);
-      }
-
-      public Expectation Expect(Action action) {
-         action();
-         return Expect();
-      }
-
-      public Expectation Expect() {
-         var invocationDescriptor = invocationStage.ReleaseLastInvocation();
-         verificationInvocationsContainer.ExpectUnverifiedInvocation(invocationDescriptor);
-         return new Expectation(invocationDescriptor, invocationOperationManagerFinder);
-      }
-
-      public Expectation<TResult> Expect<TResult>() {
-         var invocationDescriptor = invocationStage.ReleaseLastInvocation();
-         verificationInvocationsContainer.ExpectUnverifiedInvocation(invocationDescriptor);
+         if (expectInvocation) {
+            verificationInvocationsContainer.ExpectUnverifiedInvocation(invocationDescriptor);
+         }
          return new Expectation<TResult>(invocationDescriptor, invocationOperationManagerFinder);
       }
 
-      public Expectation<TOut1, TResult> Expect<TResult, TOut1>(Func<TOut1, TResult> func) {
+      public Expectation<TOut1, TResult> Create<TOut1, TResult>(Func<TOut1, TResult> func, bool expectInvocation) {
          func(default(TOut1));
          var invocationDescriptor = invocationStage.ReleaseLastInvocation();
-         verificationInvocationsContainer.ExpectUnverifiedInvocation(invocationDescriptor);
+         if (expectInvocation) {
+            verificationInvocationsContainer.ExpectUnverifiedInvocation(invocationDescriptor);
+         }
          return new Expectation<TOut1, TResult>(invocationDescriptor, invocationOperationManagerFinder);
       }
 
-      public Expectation<TOut1, TOut2, TResult> Expect<TOut1, TOut2, TResult>(Func<TOut1, TOut2, TResult> func) {
+      public Expectation<TOut1, TOut2, TResult> Create<TOut1, TOut2, TResult>(Func<TOut1, TOut2, TResult> func, bool expectInvocation) {
          func(default(TOut1), default(TOut2));
          var invocationDescriptor = invocationStage.ReleaseLastInvocation();
-         verificationInvocationsContainer.ExpectUnverifiedInvocation(invocationDescriptor);
+         if (expectInvocation) {
+            verificationInvocationsContainer.ExpectUnverifiedInvocation(invocationDescriptor);
+         }
          return new Expectation<TOut1, TOut2, TResult>(invocationDescriptor, invocationOperationManagerFinder);
       }
 
-      public Expectation<TOut1, TOut2, TOut3, TResult> Expect<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func) {
+      public Expectation<TOut1, TOut2, TOut3, TResult> Create<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func, bool expectInvocation) {
          func(default(TOut1), default(TOut2), default(TOut3));
          var invocationDescriptor = invocationStage.ReleaseLastInvocation();
-         verificationInvocationsContainer.ExpectUnverifiedInvocation(invocationDescriptor);
+         if (expectInvocation) {
+            verificationInvocationsContainer.ExpectUnverifiedInvocation(invocationDescriptor);
+         }
          return new Expectation<TOut1, TOut2, TOut3, TResult>(invocationDescriptor, invocationOperationManagerFinder);
       }
    }

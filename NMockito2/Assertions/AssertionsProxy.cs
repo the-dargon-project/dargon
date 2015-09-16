@@ -13,6 +13,6 @@ namespace NMockito2.Assertions {
       public void AssertThrows<TException>(Action action) where TException : Exception => Assert.Throws<TException>(() => action());
       public void AssertThrows<TException, TObject>(TObject obj, Action<TObject> action) where TException : Exception => AssertThrows<TException>(() => action(obj));
 
-      public AssertWithAction AssertWithAction(Action action) => new AssertWithAction(action);
+      public AssertWithAction AssertWithAction(Action action) => new AssertWithAction(this, action);
    }
 }

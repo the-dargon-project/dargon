@@ -57,7 +57,7 @@
     <Compile Include="Counters\Counter.cs" />
     <Compile Include="Fluent\FluentAssertionStatics.cs" />
     <Compile Include="Fluent\FluentExpectation.cs" />
-    <Compile Include="Fluent\FluentExceptionAssertion.cs" />
+    <Compile Include="Fluent\FluentExceptionAssertor.cs" />
     <Compile Include="Operations\SetOutsInvocationOperation.cs" />
     <Compile Include="NMockitoInstance.cs" />
     <Compile Include="Operations\ThrowInvocationOperation.cs" />
@@ -68,7 +68,6 @@
     <Compile Include="Mocks\InvocationDescriptorFactory.cs" />
     <Compile Include="Operations\InvocationOperation.cs" />
     <Compile Include="Mocks\InvocationOperationManager.cs" />
-    <Compile Include="Mocks\InvocationOperationManagerConfigurer.cs" />
     <Compile Include="Mocks\InvocationOperationManagerFinder.cs" />
     <Compile Include="Mocks\InvocationStage.cs" />
     <Compile Include="Operations\ReturnInvocationOperation.cs" />
