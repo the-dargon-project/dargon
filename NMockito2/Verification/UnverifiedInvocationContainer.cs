@@ -2,79 +2,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using NMockito2.Counters;
 using NMockito2.Expectations;
-using NMockito2.Utilities;
 
 namespace NMockito2.Verification {
-   public class VerificationOperations {
-      private readonly InvocationStage invocationStage;
-      private readonly VerificationInvocationsContainer verificationInvocationsContainer;
-
-      public VerificationOperations(InvocationStage invocationStage, VerificationInvocationsContainer verificationInvocationsContainer) {
-         this.invocationStage = invocationStage;
-         this.verificationInvocationsContainer = verificationInvocationsContainer;
-      }
-
-      public void VerifyExpectationsAndNoMoreInteractions() {
-         Exception e = null;
-         try {
-            VerifyExpectations();
-         } catch (Exception ex) {
-            e = ex;
-         }
-         try {
-            VerifyNoMoreInteractions();
-         } catch (Exception ex) {
-            if (e == null) {
-               e = ex;
-            } else {
-               e = new AggregateException(e, ex);
-            }
-         }
-         e?.Rethrow();
-      }
-
-      public void VerifyExpectations() {
-         invocationStage.FlushUnverifiedInvocation();
-         var expectedInvocations = verificationInvocationsContainer.ExpectedInvocationDescriptors;
-         var unverifiedInvocations = verificationInvocationsContainer.UnverifiedInvocationDescriptors;
-         foreach (var expectedInvocationKvp in expectedInvocations) {
-            var expectedInvocation = expectedInvocationKvp.Key;
-            var expectedInvocationCounter = expectedInvocationKvp.Value;
-            foreach (var unverifiedInvocationKvp in unverifiedInvocations) {
-               var unverifiedInvocation = unverifiedInvocationKvp.Key;
-               var unverifiedInvocationCounter = unverifiedInvocationKvp.Value;
-               if (expectedInvocation.SmartParameters.Matches(unverifiedInvocation)) {
-                  var countsRemoved = Math.Min(expectedInvocationCounter.Remaining, unverifiedInvocationCounter.Remaining);
-                  expectedInvocationCounter.HandleVerified(countsRemoved);
-                  unverifiedInvocationCounter.HandleVerified(countsRemoved);
-               }
-               if (unverifiedInvocationCounter.IsSatisfied) {
-                  unverifiedInvocations.TryRemove(unverifiedInvocation, out unverifiedInvocationCounter);
-               }
-            }
-            if (expectedInvocationCounter.IsSatisfied) {
-               expectedInvocations.TryRemove(expectedInvocation, out expectedInvocationCounter);
-            }
-         }
-         if (expectedInvocations.Any(x => !x.Value.IsSatisfied)) {
-            throw new InvocationExpectationException("Expected but did not find mock invocations:", expectedInvocations);
-         }
-      }
-
-      public void VerifyNoMoreInteractions() {
-         invocationStage.FlushUnverifiedInvocation();
-         var unverifiedInvocations = verificationInvocationsContainer.UnverifiedInvocationDescriptors;
-         if (unverifiedInvocations.Any()) {
-            throw new InvocationExpectationException("Expected no more mock invocations but found:", unverifiedInvocations);
-         }
-      }
-   }
-
    public class InvocationExpectationException : Exception {
       public InvocationExpectationException(string message, ConcurrentDictionary<InvocationDescriptor, Counter> invocationsAndCounters) : base(GenerateMessage(message, invocationsAndCounters)) {
 

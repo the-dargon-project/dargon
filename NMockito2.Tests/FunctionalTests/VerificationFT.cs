@@ -15,7 +15,16 @@ namespace NMockito2.FunctionalTests {
       }
 
       [Fact]
-      public void TrivialVerifyNoMoreInteractionsTest() {
+      public void VerifyNoMoreInteractionsTest() {
+         testObj.A(10);
+         testObj.A(15);
+
+         AssertThrows<InvocationExpectationException>(VerifyNoMoreInteractions);
+
+         Verify(() => testObj.A(10));
+         AssertThrows<InvocationExpectationException>(VerifyNoMoreInteractions);
+
+         Verify(testObj).A(15);
          VerifyNoMoreInteractions();
       }
 

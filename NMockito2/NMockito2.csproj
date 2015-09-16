@@ -90,6 +90,8 @@
     <Compile Include="Utilities\ExceptionUtilities.cs" />
     <Compile Include="Utilities\ReflectionUtilities.cs" />
     <Compile Include="Verification\UnverifiedInvocationContainer.cs" />
+    <Compile Include="Verification\VerificationOperations.cs" />
+    <Compile Include="Verification\VerificationOperationsProxy.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

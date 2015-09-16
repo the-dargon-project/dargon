@@ -26,6 +26,7 @@ namespace NMockito2 {
       private readonly ExpectationFactory expectationFactory;
       private readonly VerificationOperations verificationOperations;
       private readonly FluentExceptionAssertor fluentExceptionAssertor;
+      private readonly VerificationOperationsProxy verificationOperationsProxy;
 
       public NMockitoInstance() {
          Instance = this;
@@ -49,6 +50,8 @@ namespace NMockito2 {
          verificationOperations = new VerificationOperations(invocationStage, verificationInvocationsContainer);
          ExceptionCaptorFactory exceptionCaptorFactory = new ExceptionCaptorFactory(proxyGenerator);
          fluentExceptionAssertor = new FluentExceptionAssertor(exceptionCaptorFactory);
+         VerificationMockFactory verificationMockFactory = new VerificationMockFactory(proxyGenerator);
+         verificationOperationsProxy = new VerificationOperationsProxy(invocationStage, verificationOperations, verificationMockFactory);
       }
 
       public T CreateMock<T>() where T : class => mockFactory.CreateMock<T>();
@@ -78,6 +81,9 @@ namespace NMockito2 {
       // Fluent exception assertion:
       public TMock Assert<TMock>(TMock mock) where TMock : class => fluentExceptionAssertor.CreateExceptionCaptor(mock);
       internal void AssertThrown<TException>() where TException : Exception => fluentExceptionAssertor.AssertThrown<TException>();
+
+      public void Verify(Action action) => verificationOperationsProxy.Verify(action);
+      public TMock Verify<TMock>(TMock mock) where TMock : class => verificationOperationsProxy.Verify(mock);
 
       public void VerifyExpectations() => verificationOperations.VerifyExpectations();
       public void VerifyNoMoreInteractions() => verificationOperations.VerifyNoMoreInteractions();
