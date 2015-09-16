@@ -9,5 +9,7 @@ namespace NMockito2 {
       public static void Initialize() {
 
       }
+
+      public static void NoOp<T>(this T throwaway) { }
    }
 }

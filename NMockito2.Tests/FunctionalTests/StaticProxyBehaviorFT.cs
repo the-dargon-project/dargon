@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NMockito2.BehavioralTesters;
+﻿using NMockito2.BehavioralTesters;
+using System;
 using Xunit;
 
 namespace NMockito2.FunctionalTests {

@@ -10,8 +10,13 @@ namespace NMockito2.Fluent {
 
       public TMock Create<TMock>(TMock mock, FluentExceptionAssertor fluentExceptionAssertor)
          where TMock : class {
-         return proxyGenerator.CreateInterfaceProxyWithoutTarget<TMock>(
-            new AssertExceptionCatchingInterceptor<TMock>(mock, fluentExceptionAssertor));
+         if (typeof(TMock).IsInterface) {
+            return proxyGenerator.CreateInterfaceProxyWithoutTarget<TMock>(
+               new AssertExceptionCatchingInterceptor<TMock>(mock, fluentExceptionAssertor));
+         } else {
+            return proxyGenerator.CreateClassProxy<TMock>(
+               new AssertExceptionCatchingInterceptor<TMock>(mock, fluentExceptionAssertor));
+         }
       }
    }
 }

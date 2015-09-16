@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using Castle.DynamicProxy;
 using NMockito2.Utilities;
 
@@ -10,6 +11,7 @@ namespace NMockito2.Mocks {
       private readonly InvocationOperationManagerFinder invocationOperationManagerFinder;
       private Type mockType;
       private object mock;
+      private object target;
 
       public MockInterceptor(InvocationDescriptorFactory invocationDescriptorFactory, InvocationTransformer invocationTransformer, InvocationStage invocationStage, InvocationOperationManagerFinder invocationOperationManagerFinder) {
          this.invocationDescriptorFactory = invocationDescriptorFactory;
@@ -23,6 +25,10 @@ namespace NMockito2.Mocks {
          this.mock = mock;
       }
 
+      public void SetTarget(object target) {
+         this.target = target;
+      }
+
       public void Intercept(IInvocation invocation) {
          // Transform and stage invocation
          var invocationDescriptor = invocationDescriptorFactory.Create(mockType, mock, invocation);
@@ -33,6 +39,8 @@ namespace NMockito2.Mocks {
          InvocationOperationManager invocationOperationManager;
          if (invocationOperationManagerFinder.TryFind(invocationDescriptor, out invocationOperationManager)) {
             invocationOperationManager.Execute(invocationDescriptor);
+         } else if (target != null) {
+            invocation.ReturnValue = invocation.Method.Invoke(target, invocation.Arguments);
          } else {
             invocation.ReturnValue = invocation.Method.GetDefaultReturnValue();
          }

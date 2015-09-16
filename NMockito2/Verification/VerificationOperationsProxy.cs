@@ -42,10 +42,17 @@ namespace NMockito2.Verification {
       }
 
       public TMock Create<TMock>(TMock mock, VerificationOperationsProxy verificationOperationsProxy) where TMock : class {
-         return proxyGenerator.CreateInterfaceProxyWithoutTarget<TMock>(
-            new VerificationMockInterceptor<TMock>(
-               mock, 
-               verificationOperationsProxy));
+         if (typeof(TMock).IsInterface) {
+            return proxyGenerator.CreateInterfaceProxyWithoutTarget<TMock>(
+               new VerificationMockInterceptor<TMock>(
+                  mock,
+                  verificationOperationsProxy));
+         } else {
+            return proxyGenerator.CreateClassProxy<TMock>(
+               new VerificationMockInterceptor<TMock>(
+                  mock,
+                  verificationOperationsProxy));
+         }
       }
    }
 

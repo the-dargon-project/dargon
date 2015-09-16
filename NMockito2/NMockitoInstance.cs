@@ -59,6 +59,7 @@ namespace NMockito2 {
 
       public object CreateMock(Type type) => mockFactory.CreateMock(type);
       public T CreateMock<T>() where T : class => mockFactory.CreateMock<T>();
+      public T CreateSpy<T>() where T : class => mockFactory.CreateSpy<T>();
 
       public object CreatePlaceholder(Type type) => placeholderFactory.CreatePlaceholder(type);
       public T CreatePlaceholder<T>() where T : class => placeholderFactory.CreatePlaceholder<T>();
