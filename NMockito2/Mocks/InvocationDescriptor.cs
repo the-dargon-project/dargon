@@ -10,8 +10,6 @@ using System.Text;
 
 namespace NMockito2.Mocks {
    public class InvocationDescriptor {
-      public Type MockedType { get; set; }
-      public object Mock { get; set; }
       public MethodInfo Method { get; set; }
       public object[] Arguments { get; set; }
       public IInvocation Invocation { get; set; }
@@ -19,10 +17,12 @@ namespace NMockito2.Mocks {
       public SmartParameterCollection SmartParameters { get; set; }
       public Exception Exception { get; set; }
 
+      public object Mock => Invocation.Proxy;
+      public object Target => Invocation.InvocationTarget;
+      public Type MockedType => Invocation.Method.ReflectedType;
+
       public InvocationDescriptor Clone() {
          return new InvocationDescriptor {
-            MockedType = MockedType,
-            Mock = Mock,
             Method = Method,
             Arguments = (object[])Arguments.Clone(),
             Invocation = Invocation,

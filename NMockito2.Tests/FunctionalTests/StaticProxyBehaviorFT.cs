@@ -19,7 +19,7 @@ namespace NMockito2.FunctionalTests {
       internal interface Interface1 {
          int A<T>(string x, T y) where T : struct;
          int B(string x);
-         bool C<T, U>(T x, out U y) where T : class where U : struct;
+         bool C<T, U>(T x, out U y, out int z) where T : class where U : struct;
       }
 
       internal interface Interface2 {
@@ -33,7 +33,7 @@ namespace NMockito2.FunctionalTests {
 
          public static int A<T>(string x, T y) where T : struct => interface1.A(x, y);
          public static int B(string x) => interface1.B(x);
-         public static bool C<T, U>(T x, out U y) where T : class where U : struct => interface1.C(x, out y);
+         public static bool C<T, U>(T x, out U y, out int z) where T : class where U : struct => interface1.C(x, out y, out z);
          public static bool D(string x, out int y) => interface2.D(x, out y);
       }
 

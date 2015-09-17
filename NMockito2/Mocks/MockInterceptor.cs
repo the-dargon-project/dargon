@@ -9,9 +9,6 @@ namespace NMockito2.Mocks {
       private readonly InvocationTransformer invocationTransformer;
       private readonly InvocationStage invocationStage;
       private readonly InvocationOperationManagerFinder invocationOperationManagerFinder;
-      private Type mockType;
-      private object mock;
-      private object target;
 
       public MockInterceptor(InvocationDescriptorFactory invocationDescriptorFactory, InvocationTransformer invocationTransformer, InvocationStage invocationStage, InvocationOperationManagerFinder invocationOperationManagerFinder) {
          this.invocationDescriptorFactory = invocationDescriptorFactory;
@@ -20,18 +17,9 @@ namespace NMockito2.Mocks {
          this.invocationOperationManagerFinder = invocationOperationManagerFinder;
       }
 
-      public void SetMock(Type mockType, object mock) {
-         this.mockType = mockType;
-         this.mock = mock;
-      }
-
-      public void SetTarget(object target) {
-         this.target = target;
-      }
-
       public void Intercept(IInvocation invocation) {
          // Transform and stage invocation
-         var invocationDescriptor = invocationDescriptorFactory.Create(mockType, mock, invocation);
+         var invocationDescriptor = invocationDescriptorFactory.Create(invocation);
          invocationTransformer.Forward(invocationDescriptor);
          invocationStage.SetLastInvocation(invocationDescriptor.Clone());
 
@@ -39,8 +27,8 @@ namespace NMockito2.Mocks {
          InvocationOperationManager invocationOperationManager;
          if (invocationOperationManagerFinder.TryFind(invocationDescriptor, out invocationOperationManager)) {
             invocationOperationManager.Execute(invocationDescriptor);
-         } else if (target != null) {
-            invocation.ReturnValue = invocation.Method.Invoke(target, invocation.Arguments);
+         } else if (invocationDescriptor.Target != null) {
+            invocation.ReturnValue = invocation.Method.Invoke(invocationDescriptor.Target, invocation.Arguments);
          } else {
             invocation.ReturnValue = invocation.Method.GetDefaultReturnValue();
          }

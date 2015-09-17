@@ -5,10 +5,8 @@ using NMockito2.Transformations;
 
 namespace NMockito2.Mocks {
    public class InvocationDescriptorFactory {
-      public InvocationDescriptor Create(Type mockedType, object mock, IInvocation invocation) {
+      public InvocationDescriptor Create(IInvocation invocation) {
          return new InvocationDescriptor {
-            MockedType = mockedType,
-            Mock = mock,
             Method = invocation.Method,
             Arguments = (object[])invocation.Arguments.Clone(),
             Invocation = invocation,

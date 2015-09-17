@@ -31,7 +31,6 @@ namespace NMockito2.Mocks {
       public object CreateMock(Type mockType) {
          var interceptor = new MockInterceptor(invocationDescriptorFactory, invocationTransformer, invocationStage, invocationOperationManagerFinder);
          var mock = proxyGenerator.CreateInterfaceProxyWithoutTarget(mockType, interceptor);
-         interceptor.SetMock(mockType, mock);
          return mock;
       }
 
@@ -39,8 +38,6 @@ namespace NMockito2.Mocks {
          var interceptor = new MockInterceptor(invocationDescriptorFactory, invocationTransformer, invocationStage, invocationOperationManagerFinder);
          T target = (T)Activator.CreateInstance(typeof(T));
          var mock = proxyGenerator.CreateClassProxyWithTarget(target, interceptor);
-         interceptor.SetMock(typeof(T), mock);
-         interceptor.SetTarget(target);
          return mock;
       }
    }
