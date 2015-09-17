@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Castle.DynamicProxy;
 using NMockito2.Assertions;
+using NMockito2.Attributes;
 using NMockito2.Expectations;
 using NMockito2.Fluent;
 using NMockito2.Mocks;
@@ -29,6 +30,7 @@ namespace NMockito2 {
       private readonly FluentExceptionAssertor fluentExceptionAssertor;
       private readonly VerificationOperationsProxy verificationOperationsProxy;
       private readonly PlaceholderFactory placeholderFactory;
+      private readonly AttributesInitializer attributesInitializer;
 
       public NMockitoInstance() {
          Instance = this;
@@ -55,6 +57,8 @@ namespace NMockito2 {
          VerificationMockFactory verificationMockFactory = new VerificationMockFactory(proxyGenerator);
          verificationOperationsProxy = new VerificationOperationsProxy(invocationStage, verificationOperations, verificationMockFactory);
          placeholderFactory = new PlaceholderFactory(mockFactory);
+         attributesInitializer = new AttributesInitializer(mockFactory);
+         attributesInitializer.InitializeTestClassInstance(this);
       }
 
       public object CreateMock(Type type) => mockFactory.CreateMock(type);

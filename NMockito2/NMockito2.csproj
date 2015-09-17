@@ -47,6 +47,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Attributes\AttributesInitializer.cs" />
+    <Compile Include="Attributes\MockAttribute.cs" />
     <Compile Include="BehavioralTesters\StaticProxyBehaviorTester.cs" />
     <Compile Include="Fluent\AssertExceptionCatchingInterceptor.cs" />
     <Compile Include="Assertions\AssertionsProxy.cs" />
