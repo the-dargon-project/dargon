@@ -15,9 +15,7 @@ namespace NMockito2.Placeholders {
       public T CreatePlaceholder<T>() => (T)CreatePlaceholder(typeof(T));
 
       public object CreatePlaceholder(Type type) {
-         if (type.IsInterface) {
-            return mockFactory.CreateMock(type);
-         } else if (type.IsArray) {
+         if (type.IsArray) {
             var counter = Interlocked.Increment(ref placeholderCounter);
             return Array.CreateInstance(type.GetElementType(), 1337 + counter);
          } else if (type.IsClass && type != typeof(string)) {

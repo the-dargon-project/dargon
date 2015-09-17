@@ -1,4 +1,6 @@
-﻿using Xunit;
+﻿using System;
+using NMockito2.Fluent;
+using Xunit;
 
 namespace NMockito2.FunctionalTests {
    public class SpyFT : NMockitoInstance {
@@ -6,13 +8,15 @@ namespace NMockito2.FunctionalTests {
       public void Run() {
          var spy = CreateSpy<TestClass>();
          Expect<string, bool>(x => spy.TryGet(10, out x))
-            .SetOut("qwerty").ThenReturn(true);
+            .SetOut("qwerty").ThenReturn(true)
+            .ThenThrow(new InvalidOperationException());
 
          string value;
          AssertTrue(spy.TryGet(10, out value));
          AssertEquals("qwerty", value);
          AssertEquals(3, spy.Three);
          AssertEquals(5, spy.Five);
+         Assert(spy).TryGet(10, out value).Throws<InvalidOperationException>();
 
          Verify(spy).Five.NoOp();
          VerifyExpectationsAndNoMoreInteractions();

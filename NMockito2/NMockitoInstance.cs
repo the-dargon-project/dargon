@@ -66,7 +66,7 @@ namespace NMockito2 {
       public T CreateSpy<T>() where T : class => mockFactory.CreateSpy<T>();
 
       public object CreatePlaceholder(Type type) => placeholderFactory.CreatePlaceholder(type);
-      public T CreatePlaceholder<T>() where T : class => placeholderFactory.CreatePlaceholder<T>();
+      public T CreatePlaceholder<T>() => placeholderFactory.CreatePlaceholder<T>();
 
       public T Any<T>() => Default<T>(smartParameterPusher.Any<T>);
 
@@ -105,6 +105,5 @@ namespace NMockito2 {
          runThis();
          return default(T);
       }
-
    }
 }
