@@ -24,7 +24,7 @@ namespace NMockito2.Expectations {
       }
 
       public Expectation ThenReturn(params object[] values) {
-         if (values == null) {
+         if (values == null || values.Length == 0) {
             values = new object[1];
          }
 

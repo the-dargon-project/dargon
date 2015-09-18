@@ -29,16 +29,25 @@ namespace NMockito2.Mocks {
       }
 
       public object CreateMock(Type mockType) {
-         var interceptor = new MockInterceptor(invocationDescriptorFactory, invocationTransformer, invocationStage, invocationOperationManagerFinder);
-         var mock = proxyGenerator.CreateInterfaceProxyWithoutTarget(mockType, interceptor);
-         return mock;
+         return Create(mockType);
       }
 
       public T CreateSpy<T>() where T : class {
+         return (T)CreateSpy(typeof(T));
+      }
+
+      public object CreateSpy(Type spyType) {
+         return Create(spyType);
+      }
+
+      public object Create(Type mockType) {
          var interceptor = new MockInterceptor(invocationDescriptorFactory, invocationTransformer, invocationStage, invocationOperationManagerFinder);
-         T target = (T)Activator.CreateInstance(typeof(T));
-         var mock = proxyGenerator.CreateClassProxyWithTarget(target, interceptor);
-         return mock;
+         if (mockType.IsInterface) {
+            return proxyGenerator.CreateInterfaceProxyWithoutTarget(mockType, interceptor);
+         } else {
+            var target = Activator.CreateInstance(mockType);
+            return proxyGenerator.CreateClassProxyWithTarget(mockType, target, interceptor);
+         }
       }
    }
 }

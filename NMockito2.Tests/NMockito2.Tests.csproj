@@ -71,10 +71,12 @@
     <Compile Include="FunctionalTests\ParamsFT.cs" />
     <Compile Include="InternalTestingUtilities.cs" />
     <Compile Include="MockFactoryTests.cs" />
+    <Compile Include="NMockitoStaticsTests.cs" />
     <Compile Include="Placeholders\PlaceholderFactoryTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SmartParameters\AnySmartParameterTests.cs" />
     <Compile Include="Transformations\UnwrapParamsInvocationTransformationImplTests.cs" />
+    <Compile Include="Utilities\PairwiseCombinatorialSetGeneratorTests.cs" />
     <Compile Include="Utilities\ExceptionUtilitiesTests.cs" />
     <Compile Include="Utilities\ReflectionUtilitiesTests.cs" />
   </ItemGroup>

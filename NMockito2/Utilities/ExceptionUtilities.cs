@@ -7,8 +7,6 @@ using System.Threading.Tasks;
 
 namespace NMockito2.Utilities {
    public static class ExceptionUtilities {
-      public static void Rethrow(this Exception e) {
-         ExceptionDispatchInfo.Capture(e).Throw();
-      }
+      public static void Rethrow(this Exception e) => ExceptionDispatchInfo.Capture(e).Throw();
    }
 }

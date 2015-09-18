@@ -7,17 +7,28 @@ namespace NMockito2.FunctionalTests {
       [Fact]
       public void Run() {
          var testObj = CreateMock<TestInterface>();
-         testObj.TryInvoke().Returns(true, false).ThenThrows(new InvalidOperationException());
 
-         AssertTrue(testObj.TryInvoke());
-         AssertFalse(testObj.TryInvoke());
-         Assert(testObj).TryInvoke().Throws<InvalidOperationException>();
+         object resultOutPlaceholder;
+         var outValue = new object();
+         Expect(() => testObj.TryInvoke(out resultOutPlaceholder))
+            .SetOuts(null).ThenReturn()
+            .SetOuts(outValue).ThenReturn()
+            .ThenThrow(new InvalidOperationException());
+
+         object result;
+         testObj.TryInvoke(out result);
+         AssertEquals(null, result);
+
+         testObj.TryInvoke(out result);
+         AssertEquals(outValue, result);
+
+         Assert(() => testObj.TryInvoke(out result)).Throws<InvalidOperationException>();
 
          VerifyExpectationsAndNoMoreInteractions();
       }
 
       internal interface TestInterface {
-         bool TryInvoke();
+         void TryInvoke(out object result);
       }
    }
 }

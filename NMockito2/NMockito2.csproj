@@ -62,6 +62,7 @@
     <Compile Include="Fluent\FluentAssertionStatics.cs" />
     <Compile Include="Fluent\FluentExpectation.cs" />
     <Compile Include="Fluent\FluentExceptionAssertor.cs" />
+    <Compile Include="NMockitoCore.cs" />
     <Compile Include="Operations\SetOutsInvocationOperation.cs" />
     <Compile Include="NMockitoInstance.cs" />
     <Compile Include="Operations\ThrowInvocationOperation.cs" />
@@ -93,6 +94,7 @@
     <Compile Include="Transformations\OutEnablingInvocationTransformationImpl.cs" />
     <Compile Include="Transformations\UnwrapParamsInvocationTransformationImpl.cs" />
     <Compile Include="Utilities\ExceptionUtilities.cs" />
+    <Compile Include="Utilities\PairwiseCombinatorialSetGenerator.cs" />
     <Compile Include="Utilities\ReflectionUtilities.cs" />
     <Compile Include="Verification\UnverifiedInvocationContainer.cs" />
     <Compile Include="Verification\VerificationOperations.cs" />

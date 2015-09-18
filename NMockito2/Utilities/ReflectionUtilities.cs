@@ -35,5 +35,19 @@ namespace NMockito2.Utilities {
          }
          return paramsArrayType != null;
       }
+
+      public static bool IsEqualTo(this Type self, Type other) {
+         if (self == other) {
+            return true;
+         } else if (self.IsGenericParameter && other.IsGenericParameter) {
+            return self.GenericParameterAttributes == other.GenericParameterAttributes &&
+                   self.GetGenericParameterConstraints().SequenceEqual(other.GetGenericParameterConstraints());
+         } else if (self.ContainsGenericParameters && other.ContainsGenericParameters) {
+            return self.GetGenericTypeDefinition() == other.GetGenericTypeDefinition() &&
+                   self.GetGenericArguments().Zip(other.GetGenericArguments(), IsEqualTo).All(x => x);
+         } else {
+            return false;
+         }
+      }
    }
 }

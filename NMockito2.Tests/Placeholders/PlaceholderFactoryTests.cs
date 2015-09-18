@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using NMockito2.Fluent;
 using Xunit;
 
 namespace NMockito2.Placeholders {

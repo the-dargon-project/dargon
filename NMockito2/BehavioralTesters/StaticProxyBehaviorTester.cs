@@ -10,6 +10,7 @@ using NMockito2.Utilities;
 
 namespace NMockito2.BehavioralTesters {
    public class StaticProxyBehaviorTester {
+      private static readonly CombinatorialSetGenerator combinatorialSetGenerator = new PairwiseCombinatorialSetGenerator();
       private readonly NMockitoInstance nmockito;
 
       public StaticProxyBehaviorTester(NMockitoInstance nmockito) {
@@ -18,19 +19,20 @@ namespace NMockito2.BehavioralTesters {
 
       public void TestStaticProxy(Type staticClass) {
          var mockableFields = staticClass.GetFields(BindingFlags.NonPublic | BindingFlags.Static)
-                                         .Where(f => f.FieldType.IsInterface);
+                                         .Where(f => f.FieldType.IsInterface || f.FieldType.IsClass);
          foreach (var f in mockableFields) {
-            Debug.WriteLine("Testing proxy to interface " + f.Name + ": ");
+            Debug.WriteLine("Testing proxy to field " + f.Name + " of type " + f.FieldType + ": ");
             TestStaticProxyField(staticClass, f);
          }
       }
 
       public void TestStaticProxyField(Type staticClass, FieldInfo staticField) {
          var interfaceType = staticField.FieldType;
-         var interfaceMethods = interfaceType.GetMethods();
+         var interfaceMethods = interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                                             .Where(interfaceMethod => interfaceMethod.DeclaringType != typeof(object));
          var staticMethods = staticClass.GetMethods(BindingFlags.Public | BindingFlags.Static);
          foreach (var method in interfaceMethods) {
-            var staticMethodMatches = staticMethods.Where(m => m.Name.Equals(method.Name) && m.ReturnType == method.ReturnType).ToList();
+            var staticMethodMatches = staticMethods.Where(m => m.Name.Equals(method.Name) && m.ReturnType.IsEqualTo(method.ReturnType)).ToList();
             if (staticMethodMatches.Count == 0) {
                throw new EntryPointNotFoundException("Failed to find static proxy method for " + method + " of interface " + interfaceType);
             } else if (staticMethodMatches.Count > 1) {
@@ -70,14 +72,11 @@ namespace NMockito2.BehavioralTesters {
             genericArgumentsByParameterIndex[i] = genericArguments;
          }
 
-         var combinationCount = genericArgumentsByParameterIndex.Aggregate(1, (current, types) => current * types.Length);
-         for (var i = 0; i < combinationCount; i++) {
-            var genericArguments = new Type[genericParameters.Length];
-            var counter = i;
-            for (var genericParameterIndex = 0; genericParameterIndex < genericParameters.Length; genericParameterIndex++) {
-               var genericArgumentCandidates = genericArgumentsByParameterIndex[genericParameterIndex];
-               genericArguments[genericParameterIndex] = genericArgumentCandidates[counter % genericArgumentCandidates.Length];
-               counter /= genericArgumentCandidates.Length;
+         var testSets = combinatorialSetGenerator.GenerateCombinations(genericArgumentsByParameterIndex.Select(x => x.Length).ToArray());
+         foreach (var testSet in testSets) {
+            var genericArguments = new Type[testSet.Length];
+            for (var i = 0; i < genericArguments.Length; i++) {
+               genericArguments[i] = genericArgumentsByParameterIndex[i][testSet[i]];
             }
 
             var genericMethod = method.MakeGenericMethod(genericArguments);
@@ -85,6 +84,22 @@ namespace NMockito2.BehavioralTesters {
 
             TestProxiedStaticMethod(staticField, genericMethod, genericStaticMethod);
          }
+
+         //         var combinationCount = genericArgumentsByParameterIndex.Aggregate(1, (current, types) => current * types.Length);
+         //         for (var i = 0; i < combinationCount; i++) {
+         //            var genericArguments = new Type[genericParameters.Length];
+         //            var counter = i;
+         //            for (var genericParameterIndex = 0; genericParameterIndex < genericParameters.Length; genericParameterIndex++) {
+         //               var genericArgumentCandidates = genericArgumentsByParameterIndex[genericParameterIndex];
+         //               genericArguments[genericParameterIndex] = genericArgumentCandidates[counter % genericArgumentCandidates.Length];
+         //               counter /= genericArgumentCandidates.Length;
+         //            }
+         //
+         //            var genericMethod = method.MakeGenericMethod(genericArguments);
+         //            var genericStaticMethod = staticMethod.MakeGenericMethod(genericArguments);
+         //
+         //            TestProxiedStaticMethod(staticField, genericMethod, genericStaticMethod);
+         //         }
       }
 
       private void TestProxiedStaticMethod(FieldInfo staticField, MethodInfo method, MethodInfo staticMethod) {
@@ -109,7 +124,7 @@ namespace NMockito2.BehavioralTesters {
             }
          }
 
-         var expectedReturnValue = nmockito.CreatePlaceholder(method.ReturnType);
+         var expectedReturnValue = method.ReturnType == typeof(void) ? null : nmockito.CreatePlaceholder(method.ReturnType);
 
          Console.WriteLine($"   Arguments: " + string.Join(", ", originalArguments));
          Console.WriteLine($"        Outs: " + (outResultsOrderedByIndex.Any() ? string.Join(", ", outResultsOrderedByIndex.Values) : "(none)"));
