@@ -63,6 +63,7 @@
     <Compile Include="Fluent\FluentExpectation.cs" />
     <Compile Include="Fluent\FluentExceptionAssertor.cs" />
     <Compile Include="NMockitoCore.cs" />
+    <Compile Include="NMockitoCoreImpl.cs" />
     <Compile Include="Operations\SetOutsInvocationOperation.cs" />
     <Compile Include="NMockitoInstance.cs" />
     <Compile Include="Operations\ThrowInvocationOperation.cs" />

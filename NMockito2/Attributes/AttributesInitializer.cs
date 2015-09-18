@@ -15,7 +15,7 @@ namespace NMockito2.Attributes {
          this.mockFactory = mockFactory;
       }
 
-      public void InitializeTestClassInstance(object testClassInstance) {
+      public void InitializeMocks(object testClassInstance) {
          var testClass = testClassInstance.GetType();
          var fieldsAndMockAttributes = from field in testClass.GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
                                        let mockAttribute = field.GetCustomAttribute<MockAttribute>()

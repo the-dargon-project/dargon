@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using NMockito2.Assertions;
 using NMockito2.Expectations;
 
 namespace NMockito2 {
    public interface NMockitoCore {
+      void InitializeMocks(object testClassInstance);
+
       object CreateMock(Type type);
       T CreateMock<T>() where T : class;
       T CreateSpy<T>() where T : class;
@@ -30,6 +33,7 @@ namespace NMockito2 {
       void AssertNull(object value);
       void AssertNotNull(object value);
       void AssertThrows<TException>(Action action) where TException : Exception;
+      void AssertSequenceEquals<T>(IEnumerable<T> a, IEnumerable<T> b);
       AssertWithAction Assert(Action action);
       TMock Assert<TMock>(TMock mock) where TMock : class;
 

@@ -1,5 +1,6 @@
 ﻿using NMockito2.Mocks;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
@@ -18,6 +19,9 @@ namespace NMockito2.Placeholders {
          if (type.IsArray) {
             var counter = Interlocked.Increment(ref placeholderCounter);
             return Array.CreateInstance(type.GetElementType(), 1337 + counter);
+         } else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)) {
+            var genericArgument = type.GetGenericArguments()[0];
+            return CreatePlaceholder(genericArgument.MakeArrayType());
          } else if (type.IsClass && type != typeof(string)) {
             var ctor = type.GetConstructors().FirstOrDefault(x => x.GetParameters().Length == 0);
             return ctor?.Invoke(null);
