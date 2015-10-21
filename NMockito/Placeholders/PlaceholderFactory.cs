@@ -28,7 +28,7 @@ namespace NMockito.Placeholders {
          } else {
             var counter = Interlocked.Increment(ref placeholderCounter);
             switch (type.Name) {
-               case nameof(String): return "placeholder_" + counter;
+               case nameof(String): return "placeholder_" + (counter + 1);
                case nameof(Char): return (char)('!' + (counter % 94)); // ! to ~ in ascii
                case nameof(Byte): return (byte)(1 + counter % 254);
                case nameof(SByte): return (sbyte)(1 + counter % 254);
