@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NMockito.Attributes;
+﻿using NMockito.Attributes;
+using System;
+using NMockito.Fluent;
 using Xunit;
 
 namespace NMockito {
@@ -63,14 +60,14 @@ namespace NMockito {
       }
    }
 
-   public class MessageDispatcherTest : NMockitoInstance {
+   public class MessageDispatcherTests : NMockitoInstance {
       [Mock] private readonly EventBus<Message> messageBus = null;
       [Mock] private readonly PingService pingService = null;
       [Mock] private readonly PeerDiscoveryService peerDiscoveryService = null;
 
       private readonly MessageDispatcher testObj;
 
-      public MessageDispatcherTest() {
+      public MessageDispatcherTests() {
          this.testObj = new MessageDispatcher(messageBus, pingService, peerDiscoveryService);
       }
 
@@ -85,14 +82,47 @@ namespace NMockito {
 
       [Fact]
       public void HandleMessage_WithSurpassedSizeLimit_DoesNothing() {
-         var message = CreateMock<Message>(m => 
-            m.Size == MessageDispatcher.kMessageSizeLimit + 1 && 
-            m.Type == MessageType.Unknown &&
-            m.Type == (MessageType)10);
+         var message = CreateMock<Message>(m =>
+            m.Size == MessageDispatcher.kMessageSizeLimit + 1);
 
-         Console.WriteLine(message.Size);
-         Console.WriteLine(message.Type);
          testObj.HandleMessage(messageBus, message);
+
+         VerifyExpectationsAndNoMoreInteractions();
+      }
+
+      [Fact]
+      public void HandleMessage_WithPing_DelegatesToPingService() {
+         var message = CreateMock<Message>(m =>
+            m.Size == MessageDispatcher.kMessageSizeLimit &&
+            m.Type == MessageType.Ping);
+
+         Expect(() => pingService.HandlePing(message)).ThenReturn();
+
+         testObj.HandleMessage(messageBus, message);
+
+         VerifyExpectationsAndNoMoreInteractions();
+      }
+
+      [Fact]
+      public void HandleMessage_WithAnnounce_DelegatesToPeerDiscoveryService() {
+         var message = CreateMock<Message>(m =>
+            m.Size == MessageDispatcher.kMessageSizeLimit &&
+            m.Type == MessageType.Announce);
+
+         Expect(() => peerDiscoveryService.HandleAnnounce(message)).ThenReturn();
+
+         testObj.HandleMessage(messageBus, message);
+
+         VerifyExpectationsAndNoMoreInteractions();
+      }
+
+      [Fact]
+      public void HandleMessage_WithUnhandledMessage_Throws() {
+         var message = CreateMock<Message>(m =>
+            m.Size == MessageDispatcher.kMessageSizeLimit &&
+            m.Type == MessageType.Unknown);
+
+         Assert(() => testObj.HandleMessage(messageBus, message)).Throws<NotSupportedException>();
 
          VerifyExpectationsAndNoMoreInteractions();
       }

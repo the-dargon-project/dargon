@@ -36,9 +36,9 @@ namespace NMockito.Mocks {
 
       public override int GetHashCode() {
          int hash = 13;
-         hash *= 17 * Method.GetHashCode();
+         hash += 17 * Method.GetHashCode();
          foreach (var argument in Arguments) {
-            hash *= 17 * argument.GetHashCode();
+            hash += 17 * (argument?.GetHashCode() ?? 0);
          }
          return hash;
       }
