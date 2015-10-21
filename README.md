@@ -6,6 +6,12 @@ NMockito has two dependencies: Castle.Core (Proxying) and xUnit (For Test Runnin
 
 Supported features include out/ref-parameter mocking, spies, and untracked mocks. Upcoming features previously supported in NMockito include invocation order verification, argument captors.
 
+# Installing NMockito
+NMockito is released as a NuGet package via the Dargon Package Source.
+
+* Add `https://nuget.dargon.io/` as a NuGet package source.
+* Run `Install-Package NMockito` from the package management console.
+
 # Some Highlights
 Elegant poco training:
 ```csharp
