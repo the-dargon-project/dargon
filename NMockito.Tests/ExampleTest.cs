@@ -87,8 +87,11 @@ namespace NMockito {
       public void HandleMessage_WithSurpassedSizeLimit_DoesNothing() {
          var message = CreateMock<Message>(m => 
             m.Size == MessageDispatcher.kMessageSizeLimit + 1 && 
-            m.Type == MessageType.Unknown);
-         
+            m.Type == MessageType.Unknown &&
+            m.Type == (MessageType)10);
+
+         Console.WriteLine(message.Size);
+         Console.WriteLine(message.Type);
          testObj.HandleMessage(messageBus, message);
 
          VerifyExpectationsAndNoMoreInteractions();

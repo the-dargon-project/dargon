@@ -16,7 +16,7 @@ namespace NMockito {
 
       public static object CreateMock(Type type) => Core.CreateMock(type);
       public static T CreateMock<T>() where T : class => Core.CreateMock<T>();
-      public static T CreateMock<T>(Expression<Func<T, bool>> expectations) where T : class => Core.CreateMock<T>();
+      public static T CreateMock<T>(Expression<Func<T, bool>> expectations) where T : class => Core.CreateMock(expectations);
       public static object CreateUntrackedMock(Type type) => Core.CreateUntrackedMock(type);
       public static T CreateUntrackedMock<T>() where T : class => Core.CreateUntrackedMock<T>();
       public static T CreateSpy<T>() where T : class => Core.CreateSpy<T>();

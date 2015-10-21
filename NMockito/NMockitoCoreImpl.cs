@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using Castle.DynamicProxy;
 using NMockito.Assertions;
 using NMockito.Attributes;
@@ -30,6 +31,7 @@ namespace NMockito {
       private readonly VerificationOperationsProxy verificationOperationsProxy;
       private readonly PlaceholderFactory placeholderFactory;
       private readonly AttributesInitializer attributesInitializer;
+      private readonly TrainedMockFactory trainedMockFactory;
 
       public NMockitoCoreImpl() {
          Instance = this;
@@ -57,12 +59,15 @@ namespace NMockito {
          verificationOperationsProxy = new VerificationOperationsProxy(invocationStage, verificationOperations, verificationMockFactory);
          placeholderFactory = new PlaceholderFactory(mockFactory);
          attributesInitializer = new AttributesInitializer(mockFactory);
+         trainedMockFactory = new TrainedMockFactory(mockFactory, this);
       }
 
       public void InitializeMocks(object testClassInstance) => attributesInitializer.InitializeMocks(testClassInstance);
 
       public object CreateMock(Type type) => mockFactory.CreateMock(type);
       public T CreateMock<T>() where T : class => mockFactory.CreateMock<T>();
+      public T CreateMock<T>(Expression<Func<T, bool>> setupExpectations) where T : class => trainedMockFactory.Create(setupExpectations);
+
       public object CreateUntrackedMock(Type type) => mockFactory.CreateUntrackedMock(type);
       public T CreateUntrackedMock<T>() where T : class => mockFactory.CreateUntrackedMock<T>();
       public T CreateSpy<T>() where T : class => mockFactory.CreateSpy<T>();

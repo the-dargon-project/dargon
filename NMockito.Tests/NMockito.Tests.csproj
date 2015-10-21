@@ -59,6 +59,7 @@
     <Compile Include="ExampleTest.cs" />
     <Compile Include="FunctionalTests\FluentAssertionFT.cs" />
     <Compile Include="FunctionalTests\MockAttributeFT.cs" />
+    <Compile Include="FunctionalTests\MockTrainingTests.cs" />
     <Compile Include="FunctionalTests\SpyFT.cs" />
     <Compile Include="FunctionalTests\StaticProxyBehaviorFT.cs" />
     <Compile Include="FunctionalTests\UntrackedMockFT.cs" />

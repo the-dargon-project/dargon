@@ -50,6 +50,7 @@
     <Compile Include="Attributes\AttributesInitializer.cs" />
     <Compile Include="Attributes\MockAttribute.cs" />
     <Compile Include="BehavioralTesters\StaticProxyBehaviorTester.cs" />
+    <Compile Include="Expectations\TrainedMockFactory.cs" />
     <Compile Include="Fluent\AssertExceptionCatchingInterceptor.cs" />
     <Compile Include="Assertions\AssertionsProxy.cs" />
     <Compile Include="Assertions\AssertWithAction.cs" />

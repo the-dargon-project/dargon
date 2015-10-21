@@ -9,7 +9,7 @@ using NMockito.SmartParameters;
 using NMockito.Transformations;
 
 namespace NMockito.Mocks {
-   public class InvocationDescriptor {
+   public class InvocationDescriptor : IEquatable<InvocationDescriptor> {
       public MockInterceptor Interceptor { get; set; }
       public MethodInfo Method { get; set; }
       public object[] Arguments { get; set; }
@@ -32,6 +32,26 @@ namespace NMockito.Mocks {
             SmartParameters = SmartParameters,
             Exception = Exception
          };
+      }
+
+      public override int GetHashCode() {
+         int hash = 13;
+         hash *= 17 * Method.GetHashCode();
+         foreach (var argument in Arguments) {
+            hash *= 17 * argument.GetHashCode();
+         }
+         return hash;
+      }
+
+      public override bool Equals(object obj) {
+         return (obj as InvocationDescriptor)?.Equals(this) ?? false;
+      }
+
+      public bool Equals(InvocationDescriptor other) {
+         return other.Interceptor == this.Interceptor &&
+                other.Method == this.Method &&
+                other.Arguments.SequenceEqual(this.Arguments) &&
+                other.Mock == this.Mock;
       }
 
       public override string ToString() {

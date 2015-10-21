@@ -57,7 +57,9 @@ namespace NMockito.Verification {
          foreach (var unverifiedInvocationKvp in unverifiedInvocations) {
             var unverifiedInvocation = unverifiedInvocationKvp.Key;
             var unverifiedInvocationCounter = unverifiedInvocationKvp.Value;
-            if (expectedInvocation.SmartParameters.Matches(unverifiedInvocation)) {
+            if (expectedInvocation.Mock == unverifiedInvocation.Mock &&
+                expectedInvocation.Method == unverifiedInvocation.Method &&
+                expectedInvocation.SmartParameters.Matches(unverifiedInvocation)) {
                var countsRemoved = Math.Min(expectedInvocationCounter.Remaining, unverifiedInvocationCounter.Remaining);
                expectedInvocationCounter.HandleVerified(countsRemoved);
                unverifiedInvocationCounter.HandleVerified(countsRemoved);

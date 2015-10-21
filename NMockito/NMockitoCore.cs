@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
+using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
 using NMockito.Assertions;
 using NMockito.Expectations;
 
@@ -9,6 +11,7 @@ namespace NMockito {
 
       object CreateMock(Type type);
       T CreateMock<T>() where T : class;
+      T CreateMock<T>(Expression<Func<T, bool>> setupExpectations) where T : class;
       object CreateUntrackedMock(Type type);
       T CreateUntrackedMock<T>() where T : class;
       T CreateSpy<T>() where T : class;
