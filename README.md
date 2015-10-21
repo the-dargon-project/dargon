@@ -1,12 +1,13 @@
 # An Introduction to NMockito
+
 NMockito is an open-source Mockito-inspired unit testing framework for the .net ecosystem released under the BSD License and maintained by [The Dargon Project](https://www.github.com/the-dargon-project) developer [ItzWarty](https://www.twitter.com/ItzWarty).
 
-NMockito has two dependencies: Castle.Core (Proxying) and xUnit (For Test Running). 
+NMockito has two dependencies: Castle.Core (Proxying) and xUnit (For Test Running, Assertions). 
 
 Supported features include out/ref-parameter mocking, argument captors, order/times verification, and untracked mocks. Only creates interface mocks.
 
 # Example Code
-Note: Newer C# language specifications permit static usings. Consider statically including NMockitoStatic and invoking ReinitializeMocks at your constructor rather than extending from NMockitoInstance.
+Note: Newer C# language specifications permit static usings. Consider statically including NMockitoStatics and invoking ReinitializeMocks at your constructor rather than extending from NMockitoInstance.
 
 ## Event Subscription
 
