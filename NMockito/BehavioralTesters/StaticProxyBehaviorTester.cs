@@ -29,7 +29,10 @@ namespace NMockito.BehavioralTesters {
                                              .Where(interfaceMethod => interfaceMethod.DeclaringType != typeof(object));
          var staticMethods = staticClass.GetMethods(BindingFlags.Public | BindingFlags.Static);
          foreach (var method in interfaceMethods) {
-            var staticMethodMatches = staticMethods.Where(m => m.Name.Equals(method.Name) && m.ReturnType.IsEqualTo(method.ReturnType)).ToList();
+            var staticMethodMatches = staticMethods.Where(
+               m => m.Name.Equals(method.Name) && 
+                    m.ReturnType.IsEqualTo(method.ReturnType) &&
+                    m.GetParameters().Length == method.GetParameters().Length).ToList();
             if (staticMethodMatches.Count == 0) {
                throw new EntryPointNotFoundException("Failed to find static proxy method for " + method + " of interface " + interfaceType);
             } else if (staticMethodMatches.Count > 1) {
