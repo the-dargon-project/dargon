@@ -7,27 +7,33 @@ NMockito has two dependencies: Castle.Core (Proxying) and xUnit (For Test Runnin
 Supported features include out/ref-parameter mocking, spies, and untracked mocks. Upcoming features previously supported in NMockito include invocation order verification, argument captors.
 
 # Some Highlights
-Mocked fields:
-```csharp
-class TestClass : NMockitoInstance {
-   [Mock] private readonly IDictionary<int, string> namesById = null;
-}
-```
-Placeholders for test code:
-```csharp
-var user1Id = CreatePlaceholder<Guid>();     // {00000001-0000-0000-0000-000000000000}
-var user1Name = CreatePlaceholder<string>(); // "placeholder_2"
-```
 Elegant poco training:
 ```csharp
 var message = CreateMock<Message>(m =>
    m.Size == MessageDispatcher.kMessageSizeLimit &&
    m.Type == MessageType.Unknown);
 ```
+Automatic mock fields:
+```csharp
+class TestClass : NMockitoInstance {
+   [Mock] private readonly IDictionary<Guid, string> namesById = null;
+}
+```
+Placeholders for test code:
+```csharp
+var userId = CreatePlaceholder<Guid>();     // {00000001-0000-0000-0000-000000000000}
+var userName = CreatePlaceholder<string>(); // "placeholder_2"
+```
 With support for out/ref parameters:
 ```csharp
-Expect<int, bool>(value => dictionary.TryGetValue(key, out value))
-   .SetOut(1337).ThenReturn(true)
+Expect<string, bool>(value => namesById.TryGetValue(userId, out value))
+   .SetOut(userName).ThenReturn(true)
+```
+Simple Assertions:
+```csharp
+string result;
+AssertTrue(namesById.TryGetValue(userId, out result));
+AssertEquals(userName, result);
 ```
 And automated proxy class testing:
 ```csharp
