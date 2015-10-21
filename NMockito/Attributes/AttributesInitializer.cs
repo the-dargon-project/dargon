@@ -18,7 +18,8 @@ namespace NMockito.Attributes {
                                        select new { Field = field, MockAttribute = mockAttribute };
          foreach (var fieldsAndMockAttribute in fieldsAndMockAttributes) {
             var field = fieldsAndMockAttribute.Field;
-            var mock = mockFactory.CreateMock(field.FieldType);
+            var mockAttribute = fieldsAndMockAttribute.MockAttribute;
+            var mock = mockFactory.Create(field.FieldType, mockAttribute.IsTracked);
             field.SetValue(testClassInstance, mock);
          }
       }

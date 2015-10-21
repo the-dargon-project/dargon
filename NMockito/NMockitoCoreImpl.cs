@@ -61,11 +61,12 @@ namespace NMockito {
 
       public void InitializeMocks(object testClassInstance) => attributesInitializer.InitializeMocks(testClassInstance);
 
-      //attributesInitializer.InitializeTestClassInstance(this);
-
       public object CreateMock(Type type) => mockFactory.CreateMock(type);
       public T CreateMock<T>() where T : class => mockFactory.CreateMock<T>();
+      public object CreateUntrackedMock(Type type) => mockFactory.CreateUntrackedMock(type);
+      public T CreateUntrackedMock<T>() where T : class => mockFactory.CreateUntrackedMock<T>();
       public T CreateSpy<T>() where T : class => mockFactory.CreateSpy<T>();
+      public T CreateUntrackedSpy<T>() where T : class => mockFactory.CreateUntrackedSpy<T>();
 
       public object CreatePlaceholder(Type type) => placeholderFactory.CreatePlaceholder(type);
       public T CreatePlaceholder<T>() => placeholderFactory.CreatePlaceholder<T>();

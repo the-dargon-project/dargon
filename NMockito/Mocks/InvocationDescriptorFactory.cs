@@ -4,8 +4,9 @@ using NMockito.Transformations;
 
 namespace NMockito.Mocks {
    public class InvocationDescriptorFactory {
-      public InvocationDescriptor Create(IInvocation invocation) {
+      public InvocationDescriptor Create(MockInterceptor interceptor, IInvocation invocation) {
          return new InvocationDescriptor {
+            Interceptor = interceptor,
             Method = invocation.Method,
             Arguments = (object[])invocation.Arguments.Clone(),
             Invocation = invocation,

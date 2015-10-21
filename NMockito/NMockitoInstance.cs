@@ -18,7 +18,11 @@ namespace NMockito {
       public object CreateMock(Type type) => core.CreateMock(type);
       public T CreateMock<T>() where T : class => core.CreateMock<T>();
       public T CreateMock<T>(Func<T, bool> setupExpectations) where T : class => core.CreateMock<T>();
+      public object CreateUntrackedMock(Type type) => core.CreateUntrackedMock(type);
+      public T CreateUntrackedMock<T>() where T : class => core.CreateUntrackedMock<T>();
       public T CreateSpy<T>() where T : class => core.CreateSpy<T>();
+      public T CreateUntrackedSpy<T>() where T : class => core.CreateUntrackedSpy<T>();
+
       public object CreatePlaceholder(Type type) => core.CreatePlaceholder(type);
       public T CreatePlaceholder<T>() => core.CreatePlaceholder<T>();
 

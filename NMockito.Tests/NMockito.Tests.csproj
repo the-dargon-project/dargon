@@ -61,6 +61,7 @@
     <Compile Include="FunctionalTests\MockAttributeFT.cs" />
     <Compile Include="FunctionalTests\SpyFT.cs" />
     <Compile Include="FunctionalTests\StaticProxyBehaviorFT.cs" />
+    <Compile Include="FunctionalTests\UntrackedMockFT.cs" />
     <Compile Include="FunctionalTests\VerificationFT.cs" />
     <Compile Include="FunctionalTests\VoidFT_1.cs" />
     <Compile Include="FunctionalTests\VoidFT_0.cs" />

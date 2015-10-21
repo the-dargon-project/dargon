@@ -7,17 +7,26 @@ namespace NMockito.Mocks {
       private readonly InvocationTransformer invocationTransformer;
       private readonly InvocationStage invocationStage;
       private readonly InvocationOperationManagerFinder invocationOperationManagerFinder;
+      private readonly bool isTracked;
 
-      public MockInterceptor(InvocationDescriptorFactory invocationDescriptorFactory, InvocationTransformer invocationTransformer, InvocationStage invocationStage, InvocationOperationManagerFinder invocationOperationManagerFinder) {
+      public MockInterceptor(
+         InvocationDescriptorFactory invocationDescriptorFactory, 
+         InvocationTransformer invocationTransformer, 
+         InvocationStage invocationStage, 
+         InvocationOperationManagerFinder invocationOperationManagerFinder,
+         bool isTracked) {
          this.invocationDescriptorFactory = invocationDescriptorFactory;
          this.invocationTransformer = invocationTransformer;
          this.invocationStage = invocationStage;
          this.invocationOperationManagerFinder = invocationOperationManagerFinder;
+         this.isTracked = isTracked;
       }
+
+      public bool IsTracked => isTracked;
 
       public void Intercept(IInvocation invocation) {
          // Transform and stage invocation
-         var invocationDescriptor = invocationDescriptorFactory.Create(invocation);
+         var invocationDescriptor = invocationDescriptorFactory.Create(this, invocation);
          invocationTransformer.Forward(invocationDescriptor);
          invocationStage.SetLastInvocation(invocationDescriptor.Clone());
 

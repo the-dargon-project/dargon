@@ -9,7 +9,10 @@ namespace NMockito {
 
       object CreateMock(Type type);
       T CreateMock<T>() where T : class;
+      object CreateUntrackedMock(Type type);
+      T CreateUntrackedMock<T>() where T : class;
       T CreateSpy<T>() where T : class;
+      T CreateUntrackedSpy<T>() where T : class;
       object CreatePlaceholder(Type type);
       T CreatePlaceholder<T>();
 

@@ -14,7 +14,8 @@ namespace NMockito.Mocks {
       public void SetLastInvocation(InvocationDescriptor invocationDescriptor) {
          var lastStagedInvocationDescriptor = SwapLastStagedInvocation(invocationDescriptor);
 
-         if (lastStagedInvocationDescriptor != null) {
+         if (lastStagedInvocationDescriptor != null &&
+             lastStagedInvocationDescriptor.Interceptor.IsTracked) {
             verificationInvocationsContainer.HandleUnverifiedInvocation(lastStagedInvocationDescriptor);
          }
       }

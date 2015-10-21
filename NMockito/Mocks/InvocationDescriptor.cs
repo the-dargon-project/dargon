@@ -10,6 +10,7 @@ using NMockito.Transformations;
 
 namespace NMockito.Mocks {
    public class InvocationDescriptor {
+      public MockInterceptor Interceptor { get; set; }
       public MethodInfo Method { get; set; }
       public object[] Arguments { get; set; }
       public IInvocation Invocation { get; set; }
@@ -23,6 +24,7 @@ namespace NMockito.Mocks {
 
       public InvocationDescriptor Clone() {
          return new InvocationDescriptor {
+            Interceptor = Interceptor,
             Method = Method,
             Arguments = (object[])Arguments.Clone(),
             Invocation = Invocation,

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using NMockito.Assertions;
 using NMockito.Expectations;
 
@@ -15,7 +16,11 @@ namespace NMockito {
 
       public static object CreateMock(Type type) => Core.CreateMock(type);
       public static T CreateMock<T>() where T : class => Core.CreateMock<T>();
+      public static T CreateMock<T>(Expression<Func<T, bool>> expectations) where T : class => Core.CreateMock<T>();
+      public static object CreateUntrackedMock(Type type) => Core.CreateUntrackedMock(type);
+      public static T CreateUntrackedMock<T>() where T : class => Core.CreateUntrackedMock<T>();
       public static T CreateSpy<T>() where T : class => Core.CreateSpy<T>();
+      public static T CreateUntrackedSpy<T>() where T : class => Core.CreateUntrackedSpy<T>();
 
       public static object CreatePlaceholder(Type type) => Core.CreatePlaceholder(type);
       public static T CreatePlaceholder<T>() => Core.CreatePlaceholder<T>();
