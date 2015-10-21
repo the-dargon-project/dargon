@@ -3,6 +3,8 @@ using System;
 using NMockito.Fluent;
 using Xunit;
 
+// ReSharper disable TestClassNameDoesNotMatchFileNameWarning
+
 namespace NMockito {
    public interface EventBus<T> {
       void Post(T message);
