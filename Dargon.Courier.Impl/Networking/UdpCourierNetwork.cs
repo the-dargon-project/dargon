@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.ServiceModel.Channels;
-using System.Text;
-using System.Threading.Tasks;
+using System.Data.Common;
 using Dargon.Courier.Identities;
-using ItzWarty.Collections;
 using ItzWarty.Networking;
 using ItzWarty.Pooling;
+using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using ItzWarty;
+using NLog;
 
 namespace Dargon.Courier.Networking {
    public class UdpCourierNetwork : CourierNetwork {
@@ -29,7 +29,10 @@ namespace Dargon.Courier.Networking {
 
       private class NetworkContextImpl : CourierNetworkContext {
          private const int kMaximumTransportSize = 8192;
+
+         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
          private static readonly IPAddress kMulticastAddress = IPAddress.Parse("235.13.33.37");
+
          private readonly UdpCourierNetwork network;
          private readonly INetworkingProxy networkingProxy;
          private readonly UdpCourierNetworkConfiguration configuration;
@@ -61,11 +64,44 @@ namespace Dargon.Courier.Networking {
             socket.MulticastLoopback = true; // necessary to test locally
             var multicastOption = new MulticastOption(kMulticastAddress);
             socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, multicastOption);
-            socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, 1); //0 lan, 1 single router hop, 2 two router hops
+            socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, 1); //0: localhost, 1: lan (via switch), 2: 1 mitm, etc...
+
+            var bestNetworkInterface = NetworkInterface.GetAllNetworkInterfaces().MaxBy(RateOutboundNetworkInterfaceCandidate);
+            var ipv4Properties = bestNetworkInterface?.GetIPProperties()?.GetIPv4Properties();
+            if (ipv4Properties != null) {
+               logger.Info("Selected best network interface: " + bestNetworkInterface.Name);
+               socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, (int)IPAddress.HostToNetworkOrder(ipv4Properties.Index));
+            }
 
             receiveStatePool = new ObjectPoolImpl<ReceiveState>(() => new ReceiveState(this, socket, new IPEndPoint(IPAddress.Any, configuration.Port)));
 
             BeginNextReceive();
+         }
+         
+         private static int RateOutboundNetworkInterfaceCandidate(NetworkInterface networkInterface) {
+            int rating = 0;
+            if (!networkInterface.SupportsMulticast ||
+                networkInterface.OperationalStatus != OperationalStatus.Up ||
+                networkInterface.IsReceiveOnly) {
+               rating = int.MinValue;
+            } else {
+               var ipProperties = networkInterface.GetIPProperties();
+               var ipv4Properties = ipProperties.GetIPv4Properties();
+               if (networkInterface.NetworkInterfaceType == NetworkInterfaceType.Loopback) {
+                  rating -= 10;
+               }
+               if (networkInterface.Name.Contains("VirtualBox")) {
+                  rating -= 100;
+               }
+               if (ipProperties.MulticastAddresses.Any()) {
+                  rating += 5;
+               }
+               if (ipv4Properties == null) {
+                  rating -= 10;
+               }
+            }
+            logger.Info($"Rating for interface {networkInterface.Name}: {rating}.");
+            return rating;
          }
 
          private void BeginNextReceive() {
