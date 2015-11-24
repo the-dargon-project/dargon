@@ -55,7 +55,7 @@ namespace Dargon.Ryu {
       }
 
       public void Setup(bool forceLoadDirectory) {
-         var seedAssemblies = new[] { Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly() };
+         var seedAssemblies = new[] { Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly() }.Where(x => x != null).ToArray();
 
          if (forceLoadDirectory) {
             Func<Assembly, SCG.IEnumerable<string>> enumerateNearbyAssemblyPaths = assembly => Directory.EnumerateFiles(new FileInfo(assembly.Location).DirectoryName, "*.dll", SearchOption.AllDirectories).Concat(Directory.EnumerateFiles(new FileInfo(assembly.Location).DirectoryName, "*.exe", SearchOption.AllDirectories));
