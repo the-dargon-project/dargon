@@ -33,23 +33,23 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dargon.PortableObjects, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Dargon.PortableObjects">
       <HintPath>..\..\..\packages\Dargon.PortableObjects.0.1.2\lib\net45\Dargon.PortableObjects.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="ImpromptuInterface, Version=6.2.2.0, Culture=neutral, PublicKeyToken=0b1781c923b2975b, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\libwarty.proxies-impl.0.0.17\lib\net45\ImpromptuInterface.dll</HintPath>
+      <HintPath>..\..\..\packages\ImpromptuInterface.6.2.2\lib\net40\ImpromptuInterface.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="ItzWarty.Commons, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="ItzWarty.Commons">
       <HintPath>..\..\..\packages\ItzWarty.Commons.0.2.0\lib\portable-net45+netcore45+MonoAndroid1+MonoTouch1\ItzWarty.Commons.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="ItzWarty.Proxies.Api, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="ItzWarty.Proxies.Api">
       <HintPath>..\..\..\packages\ItzWarty.Proxies.Api.0.1.0\lib\net45\ItzWarty.Proxies.Api.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="ItzWarty.Proxies.Impl, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="ItzWarty.Proxies.Impl">
       <HintPath>..\..\..\packages\ItzWarty.Proxies.Impl.0.1.0\lib\net45\ItzWarty.Proxies.Impl.dll</HintPath>
       <Private>True</Private>
     </Reference>
