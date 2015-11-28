@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dargon.Nest.Repl;
+using Dargon.Repl;
 using ItzWarty;
 
 namespace Dargon.Nest {
@@ -26,6 +29,11 @@ namespace Dargon.Nest {
       public int Eval(string args) {
          string commandName;
          args = Util.NextToken(args, out commandName);
+
+         if (commandName.Equals("help", StringComparison.OrdinalIgnoreCase)) {
+            PrettyPrint.List(commandsByName.Select(kvp => kvp.Key));
+            return 0;
+         }
 
          ICommand command;
          if (commandsByName.TryGetValue(commandName, out command)) {

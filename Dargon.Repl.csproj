@@ -50,9 +50,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AliasCommand.cs" />
     <Compile Include="CommandNotFoundException.cs" />
     <Compile Include="ExitCommand.cs" />
     <Compile Include="ICommand.cs" />
+    <Compile Include="PrettyPrint.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DispatcherCommand.cs" />
     <Compile Include="ReplCore.cs" />

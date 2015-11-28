@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,9 +15,20 @@ namespace Dargon.Repl {
       }
 
       public int Run() {
+         int ctrlCCount = 0;
          while (true) {
             Console.Write("> ");
-            var input = Console.ReadLine();
+            var input = ReadLineCancellable();
+            if (input != null) {
+               ctrlCCount = 0;
+            } else {
+               ctrlCCount++;
+               if (ctrlCCount == 2) {
+                  Console.WriteLine("Ctrl+C one more time to exit.");
+               } else if (ctrlCCount == 3) {
+                  return 1;
+               }
+            }
             if (!string.IsNullOrWhiteSpace(input)) {
                try {
                   dispatcher.Eval(input);
@@ -26,6 +38,27 @@ namespace Dargon.Repl {
                }
                Console.WriteLine();
             }
+         }
+      }
+
+      private string ReadLineCancellable() {
+         Console.CancelKeyPress += (s, e) => {
+            e.Cancel = true;
+         };
+         var cin = Console.In;
+         StringBuilder sb = new StringBuilder();
+         while (true) {
+            int ch = cin.Read();
+            if (ch == -1) {
+               // control + c case
+               Console.WriteLine();
+               return null;
+            }
+            if (ch == '\r' || ch == '\n') {
+               if (ch == '\r' && cin.Peek() == '\n') cin.Read();
+               return sb.ToString();
+            }
+            sb.Append((char)ch);
          }
       }
    }
