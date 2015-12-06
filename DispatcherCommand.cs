@@ -30,7 +30,7 @@ namespace Dargon.Nest {
          string commandName;
          args = Util.NextToken(args, out commandName);
 
-         if (commandName.Equals("help", StringComparison.OrdinalIgnoreCase)) {
+         if (string.IsNullOrWhiteSpace(commandName) || commandName.Equals("help", StringComparison.OrdinalIgnoreCase)) {
             PrettyPrint.List(commandsByName.Select(kvp => kvp.Key));
             return 0;
          }
