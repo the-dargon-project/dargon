@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9E41DC5D-E409-45E5-AE89-191DB4252EE0}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Dargon.Services</RootNamespace>
+    <AssemblyName>Dargon.Services.Impl</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">.\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Castle.Core, Version=3.3.0.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\Castle.Core.3.3.3\lib\net45\Castle.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Dargon.PortableObjects, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\Dargon.PortableObjects.0.2.0\lib\net45\Dargon.PortableObjects.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Dargon.PortableObjects.Streams, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\Dargon.PortableObjects.Streams.0.3.0\lib\net45\Dargon.PortableObjects.Streams.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Dargon.Ryu.Api, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\Dargon.Ryu.Api.0.3.0\lib\portable-net45+netcore45+MonoAndroid1+MonoTouch1\Dargon.Ryu.Api.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Dargon.Services.Api, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\Dargon.Services.Api.1.0.0\lib\net45\Dargon.Services.Api.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ItzWarty.Commons, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\ItzWarty.Commons.0.5.2\lib\portable-net45+netcore45+MonoAndroid1+MonoTouch1\ItzWarty.Commons.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ItzWarty.Proxies.Api, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\ItzWarty.Proxies.Api.0.1.1\lib\portable-net45+netcore45+MonoAndroid1+MonoTouch1\ItzWarty.Proxies.Api.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Nito.AsyncEx, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Nito.AsyncEx.Concurrent, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Concurrent.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Nito.AsyncEx.Enlightenment, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="NLog, Version=3.1.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\NLog.3.1.0.0\lib\net45\NLog.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AsyncServiceInvokerImpl.cs" />
+    <Compile Include="Client\InvocationResultTranslator.cs" />
+    <Compile Include="Client\RemoteServiceInvocationValidator.cs" />
+    <Compile Include="Client\RemoteServiceInvocationValidatorFactory.cs" />
+    <Compile Include="Client\RemoteServiceInvokerFactory.cs" />
+    <Compile Include="Client\RemoteServiceProxyFactory.cs" />
+    <Compile Include="Client\RemoteServiceProxyInvocationInterceptor.cs" />
+    <Compile Include="Clustering\ClusteringConfiguration.cs" />
+    <Compile Include="Clustering\Local\ClusteringPhaseManager.cs" />
+    <Compile Include="Clustering\Remote\InvalidLocalServiceRegistryImpl.cs" />
+    <Compile Include="Clustering\Remote\LoadBalancedRemoteServiceProxyContainerImpl.cs" />
+    <Compile Include="Clustering\Remote\RemoteServiceClientContainerImpl.cs" />
+    <Compile Include="Clustering\Remote\RemoteServiceClientSource.cs" />
+    <Compile Include="Clustering\Remote\LoadBalancedServiceProxyInterceptorImpl.cs" />
+    <Compile Include="Clustering\Remote\RemoteServiceClientContainer.cs" />
+    <Compile Include="LocalServiceRegistryImpl.cs" />
+    <Compile Include="Messaging\MessageSender.cs" />
+    <Compile Include="Messaging\OutRefMethodResult.cs" />
+    <Compile Include="Messaging\PortableObjectBoxConverter.cs" />
+    <Compile Include="Messaging\PortableObjectBox.cs" />
+    <Compile Include="Server\MethodDescriptor.cs" />
+    <Compile Include="Clustering\Local\RemoteServiceProxyContainerImpl.cs" />
+    <Compile Include="ServiceClientFactoryImpl.cs" />
+    <Compile Include="ServiceClientProxyImpl.cs" />
+    <Compile Include="ServicesRyuPackage.cs" />
+    <Compile Include="ServiceUnavailableException.cs" />
+    <Compile Include="Clustering\Local\Host\RemoteInvocationResult.cs" />
+    <Compile Include="Server\InvokableServiceContextFactory.cs" />
+    <Compile Include="Messaging\X2XServiceInvocation.cs" />
+    <Compile Include="Messaging\PortableException.cs" />
+    <Compile Include="Messaging\DspPofContext.cs" />
+    <Compile Include="Messaging\G2HServiceBroadcast.cs" />
+    <Compile Include="Messaging\G2HServiceUpdate.cs" />
+    <Compile Include="Clustering\Local\Guest\GuestPhase.cs" />
+    <Compile Include="Clustering\Local\Host\HostContext.cs" />
+    <Compile Include="Clustering\Local\ClusteringPhase.cs" />
+    <Compile Include="Clustering\Local\ClusteringPhaseFactory.cs" />
+    <Compile Include="Server\LocalServiceContainer.cs" />
+    <Compile Include="Clustering\Local\Indeterminate\IndeterminateClusteringPhase.cs" />
+    <Compile Include="Clustering\Local\Host\HostPhase.cs" />
+    <Compile Include="Messaging\X2XInvocationResult.cs" />
+    <Compile Include="Clustering\Local\Host\HostSession.cs" />
+    <Compile Include="Clustering\Local\Host\HostSessionFactory.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Server\InvokableServiceContextImpl.cs" />
+    <Compile Include="Utilities\AsyncInterceptorBase.cs" />
+    <Compile Include="Utilities\AsyncInterceptorUtilities.cs" />
+    <Compile Include="Utilities\AsyncValueBox.cs" />
+    <Compile Include="Utilities\AttributeUtilities.cs" />
+    <Compile Include="Utilities\ReflectionUtilities.cs" />
+    <Compile Include="Utilities\IAsyncInterceptor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
