@@ -1,0 +1,10 @@
+{
+    "frameworks": {
+        "net451": { }
+    },
+
+    "dependencies": {
+        "NMockito": "",
+        "xunit": "1.9.2"
+    }
+}

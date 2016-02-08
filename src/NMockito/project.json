@@ -1,0 +1,12 @@
+{
+    "version": "0.0.0",
+
+    "frameworks": {
+        "net451": { }
+    },
+    
+    "dependencies": {
+       "Castle.Core": "3.3.3",
+       "xunit": "1.9.2"
+    }
+}
