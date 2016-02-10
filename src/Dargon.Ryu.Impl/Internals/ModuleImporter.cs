@@ -80,6 +80,7 @@ namespace Dargon.Ryu.Internals {
                container.GetOrActivate(type.Type);
             }
          }
+         container.ObjectActivated -= objectsByConstructionOrder.Add;
          return objectsByConstructionOrder;
       }
 
