@@ -1,0 +1,12 @@
+{
+    "frameworks": {
+        "net451": { }
+    },
+
+    "dependencies": {
+        "Dargon.Ryu.Api": "",
+        "Dargon.Ryu.Impl": "",
+        "NMockito": "",
+        "xunit": "1.9.2"
+    }
+}

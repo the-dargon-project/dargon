@@ -1,0 +1,199 @@
+{
+  "locked": false,
+  "version": 2,
+  "targets": {
+    ".NETFramework,Version=v4.5.1": {
+      "Castle.Core/3.3.3": {
+        "type": "package",
+        "compile": {
+          "lib/net45/Castle.Core.dll": {}
+        },
+        "runtime": {
+          "lib/net45/Castle.Core.dll": {}
+        }
+      },
+      "Dargon.Commons/1.0.0": {
+        "type": "project",
+        "framework": ".NETFramework,Version=v4.5.1",
+        "dependencies": {
+          "Dargon.Ryu.Api": null,
+          "Fody": "1.29.3",
+          "NLombok.Fody": "0.0.5"
+        }
+      },
+      "Dargon.Ryu.Api/0.0.0": {
+        "type": "project",
+        "framework": ".NETFramework,Version=v4.5.1"
+      },
+      "Fody/1.29.3": {
+        "type": "package"
+      },
+      "NLombok.Fody/0.0.5": {
+        "type": "package",
+        "dependencies": {
+          "Fody": null
+        },
+        "compile": {
+          "Lib/dotnet/Fody.NLombok.dll": {}
+        },
+        "runtime": {
+          "Lib/dotnet/Fody.NLombok.dll": {}
+        }
+      }
+    },
+    ".NETFramework,Version=v4.5.1/win7-x86": {
+      "Castle.Core/3.3.3": {
+        "type": "package",
+        "compile": {
+          "lib/net45/Castle.Core.dll": {}
+        },
+        "runtime": {
+          "lib/net45/Castle.Core.dll": {}
+        }
+      },
+      "Dargon.Commons/1.0.0": {
+        "type": "project",
+        "framework": ".NETFramework,Version=v4.5.1",
+        "dependencies": {
+          "Dargon.Ryu.Api": null,
+          "Fody": "1.29.3",
+          "NLombok.Fody": "0.0.5"
+        }
+      },
+      "Dargon.Ryu.Api/0.0.0": {
+        "type": "project",
+        "framework": ".NETFramework,Version=v4.5.1"
+      },
+      "Fody/1.29.3": {
+        "type": "package"
+      },
+      "NLombok.Fody/0.0.5": {
+        "type": "package",
+        "dependencies": {
+          "Fody": null
+        },
+        "compile": {
+          "Lib/dotnet/Fody.NLombok.dll": {}
+        },
+        "runtime": {
+          "Lib/dotnet/Fody.NLombok.dll": {}
+        }
+      }
+    },
+    ".NETFramework,Version=v4.5.1/win7-x64": {
+      "Castle.Core/3.3.3": {
+        "type": "package",
+        "compile": {
+          "lib/net45/Castle.Core.dll": {}
+        },
+        "runtime": {
+          "lib/net45/Castle.Core.dll": {}
+        }
+      },
+      "Dargon.Commons/1.0.0": {
+        "type": "project",
+        "framework": ".NETFramework,Version=v4.5.1",
+        "dependencies": {
+          "Dargon.Ryu.Api": null,
+          "Fody": "1.29.3",
+          "NLombok.Fody": "0.0.5"
+        }
+      },
+      "Dargon.Ryu.Api/0.0.0": {
+        "type": "project",
+        "framework": ".NETFramework,Version=v4.5.1"
+      },
+      "Fody/1.29.3": {
+        "type": "package"
+      },
+      "NLombok.Fody/0.0.5": {
+        "type": "package",
+        "dependencies": {
+          "Fody": null
+        },
+        "compile": {
+          "Lib/dotnet/Fody.NLombok.dll": {}
+        },
+        "runtime": {
+          "Lib/dotnet/Fody.NLombok.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Dargon.Commons/1.0.0": {
+      "type": "project",
+      "path": "../../../commons/src/Dargon.Commons/project.json"
+    },
+    "Dargon.Ryu.Api/0.0.0": {
+      "type": "project",
+      "path": "../Dargon.Ryu.Api/project.json"
+    },
+    "Castle.Core/3.3.3": {
+      "type": "package",
+      "sha512": "tvVrLbHhtAGubUUDbEkH9JlivdlJOTI25u3hlyHpPxuJdTVi/yVQKWCYvGpafGPm7G1ibdWj4brqhtSQkAmN+g==",
+      "files": [
+        "ASL - Apache Software Foundation License.txt",
+        "BreakingChanges.txt",
+        "Castle.Core.3.3.3.nupkg.sha512",
+        "Castle.Core.nuspec",
+        "Changes.txt",
+        "lib/net35/Castle.Core.dll",
+        "lib/net35/Castle.Core.xml",
+        "lib/net40-client/Castle.Core.dll",
+        "lib/net40-client/Castle.Core.xml",
+        "lib/net45/Castle.Core.dll",
+        "lib/net45/Castle.Core.xml",
+        "lib/sl4/Castle.Core.dll",
+        "lib/sl4/Castle.Core.xml",
+        "lib/sl5/Castle.Core.dll",
+        "lib/sl5/Castle.Core.xml",
+        "License.txt",
+        "readme.txt"
+      ]
+    },
+    "Fody/1.29.3": {
+      "type": "package",
+      "sha512": "I+dC/ez9Tl2QH+YuUhZBoqsMJKk3JzNszHpYSEFHzNBES1C5KcNJJPtc0gRUrQBpCz5x9oxPBfMZaI0UXFg9rw==",
+      "files": [
+        "build/dotnet/Fody.targets",
+        "build/portable-net+sl+win+wpa+wp/Fody.targets",
+        "Content/FodyWeavers.xml",
+        "Fody.1.29.3.nupkg.sha512",
+        "Fody.dll",
+        "Fody.nuspec",
+        "Fody.pdb",
+        "FodyCommon.dll",
+        "FodyCommon.pdb",
+        "FodyIsolated.dll",
+        "FodyIsolated.pdb",
+        "Mono.Cecil.dll",
+        "Mono.Cecil.Mdb.dll",
+        "Mono.Cecil.Pdb.dll",
+        "Mono.Cecil.Rocks.dll"
+      ]
+    },
+    "NLombok.Fody/0.0.5": {
+      "type": "package",
+      "sha512": "N+NO9OuW7Rxlqr0hNMRf/kOb5N0Vk5SH7x9BKcEf3tmoCYOO+ZJh9tl8ln26QUvjazns9xt60Q2rFkO375gvlw==",
+      "files": [
+        "Fody.NLombok.dll",
+        "Lib/dotnet/Fody.NLombok.dll",
+        "Lib/portable-net4+sl5+wpa81+wp8+win8+MonoAndroid16+MonoTouch40/Fody.NLombok.dll",
+        "NLombok.Fody.0.0.5.nupkg.sha512",
+        "NLombok.Fody.dll",
+        "NLombok.Fody.nuspec",
+        "Tools/install.ps1",
+        "Tools/uninstall.ps1"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    "": [
+      "Castle.Core >= 3.3.3",
+      "Dargon.Ryu.Api ",
+      "Dargon.Commons "
+    ],
+    ".NETFramework,Version=v4.5.1": []
+  }
+}
