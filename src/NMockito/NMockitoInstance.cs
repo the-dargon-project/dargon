@@ -48,6 +48,7 @@ namespace NMockito {
       public void AssertNull(object value) => core.AssertNull(value);
       public void AssertNotNull(object value) => core.AssertNotNull(value);
       public void AssertThrows<TException>(Action action) where TException : Exception => core.AssertThrows<TException>(action);
+      public void AssertThrows<TOuterException, TInnerException>(Action action) where TOuterException : Exception where TInnerException : Exception => core.AssertThrows<TOuterException, TInnerException>(action);
       public void AssertSequenceEquals<T>(IEnumerable<T> a, IEnumerable<T> b) => core.AssertSequenceEquals(a, b);
       public AssertWithAction Assert(Action action) => core.Assert(action);
       public TMock Assert<TMock>(TMock mock) where TMock : class => core.Assert(mock);

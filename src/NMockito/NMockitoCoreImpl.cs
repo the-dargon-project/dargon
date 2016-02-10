@@ -96,6 +96,9 @@ namespace NMockito {
       public void AssertNull(object value) => assertionsProxy.AssertNull(value);
       public void AssertNotNull(object value) => assertionsProxy.AssertNotNull(value);
       public void AssertThrows<TException>(Action action) where TException : Exception => assertionsProxy.AssertThrows<TException>(action);
+      public void AssertThrows<TOuterException, TInnerException>(Action action) where TOuterException : Exception where TInnerException : Exception 
+         => assertionsProxy.AssertThrows<TOuterException, TInnerException>(action);
+
       public void AssertSequenceEquals<T>(IEnumerable<T> a, IEnumerable<T> b) => assertionsProxy.AssertSequenceEquals(a, b);
       public AssertWithAction Assert(Action action) => assertionsProxy.AssertWithAction(action);
 

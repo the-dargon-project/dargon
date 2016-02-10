@@ -39,6 +39,9 @@ namespace NMockito {
       void AssertNull(object value);
       void AssertNotNull(object value);
       void AssertThrows<TException>(Action action) where TException : Exception;
+      void AssertThrows<TOuterException, TInnerException>(Action action)
+         where TOuterException : Exception
+         where TInnerException : Exception;
       void AssertSequenceEquals<T>(IEnumerable<T> a, IEnumerable<T> b);
       AssertWithAction Assert(Action action);
       TMock Assert<TMock>(TMock mock) where TMock : class;
