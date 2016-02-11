@@ -41,19 +41,36 @@ namespace NMockito.Assertions {
          () => { throw new InvalidOperationException(); });
 
       [Fact]
-      public void AssertThrows_WithAction_SadPathTest() => Assert.Throws<ThrowsException>(() => {
-         testObj.AssertThrows<Exception>(
-            () => { throw new InvalidOperationException(); });
+      public void AssertThrows_WithAction_NoExceptionTest() => Assert.Throws<NothingThrownException>(() => {
+         testObj.AssertThrows<Exception>(() => { });
       });
 
       [Fact]
-      public void AssertThrows_WithInstanceAndAction_HappyPathTest() => testObj.AssertThrows<InvalidOperationException, object>(
-         new object(), (o) => { throw new InvalidOperationException(); });
+      public void AssertThrows_WithAction_WrongExceptionTest() => Assert.Throws<IncorrectOuterThrowException>(() => {
+         testObj.AssertThrows<Exception>(() => { throw new InvalidOperationException(); });
+      });
 
       [Fact]
-      public void AssertThrows_WithInstanceAndAction_SadPathTest() => Assert.Throws<ThrowsException>(() => {
-         testObj.AssertThrows<Exception, object>(
-            new object(), (o) => { throw new InvalidOperationException(); });
+      public void AssertThrows_WithActionAndInnerException_HappyPathTest() => testObj.AssertThrows<InvalidOperationException, OutOfMemoryException>(
+         () => { throw new InvalidOperationException("", new OutOfMemoryException()); });
+
+      [Fact]
+      public void AssertThrows_WithActionAndInnerException_NoExceptionTest() => Assert.Throws<NothingThrownException>(() => {
+         testObj.AssertThrows<InvalidOperationException, OutOfMemoryException>(() => { });
+      });
+
+      [Fact]
+      public void AssertThrows_WithActionAndInnerException_WrongOuterExceptionTest() => Assert.Throws<IncorrectOuterThrowException>(() => {
+         testObj.AssertThrows<InvalidOperationException, OutOfMemoryException>(() => {
+            throw new Exception("", new OutOfMemoryException());
+         });
+      });
+
+      [Fact]
+      public void AssertThrows_WithActionAndInnerException_WrongInnerExceptionTest() => Assert.Throws<IncorrectInnerThrowException>(() => {
+         testObj.AssertThrows<InvalidOperationException, OutOfMemoryException>(() => {
+            throw new InvalidOperationException("", new Exception());
+         });
       });
 
       [Fact]
@@ -61,9 +78,8 @@ namespace NMockito.Assertions {
          () => { throw new InvalidOperationException(); }).Throws<InvalidOperationException>();
 
       [Fact]
-      public void AssertWithAction_SadPathTest() => Assert.Throws<ThrowsException>(() => {
-         testObj.AssertWithAction(() => {
-            throw new InvalidOperationException(); }).Throws<Exception>();
+      public void AssertWithAction_SadPathTest() => Assert.Throws<IncorrectOuterThrowException>(() => {
+         testObj.AssertWithAction(() => { throw new InvalidOperationException(); }).Throws<Exception>();
       });
    }
 }

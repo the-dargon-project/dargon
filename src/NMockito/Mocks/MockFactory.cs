@@ -70,7 +70,7 @@ namespace NMockito.Mocks {
          if (mockType.IsInterface) {
             return proxyGenerator.CreateInterfaceProxyWithoutTarget(mockType, interceptor);
          } else {
-            var target = Activator.CreateInstance(mockType);
+            var target = mockType.IsAbstract ? null : Activator.CreateInstance(mockType);
             return proxyGenerator.CreateClassProxyWithTarget(mockType, target, interceptor);
          }
       }

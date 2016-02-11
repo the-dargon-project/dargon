@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 namespace NMockito.Assertions {
    public class AssertionsProxy {
@@ -21,9 +22,11 @@ namespace NMockito.Assertions {
             action();
          } catch (Exception e) {
             if (e.GetType() != typeof(TException)) {
-               throw new Exception($"Expected exception of type {typeof(TException).FullName} but got {e.GetType().FullName}", e);
+               throw new IncorrectOuterThrowException(typeof(TException), e);
             }
+            return;
          }
+         throw new NothingThrownException(typeof(TException));
       }
 
       public void AssertThrows<TOuterException, TInnerException>(Action action) where TOuterException : Exception where TInnerException : Exception {
@@ -31,11 +34,13 @@ namespace NMockito.Assertions {
             action();
          } catch (Exception e) {
             if (e.GetType() != typeof(TOuterException)) {
-               throw new Exception($"Expected outer exception of type {typeof(TOuterException).FullName} but got {e.GetType().FullName}.", e);
+               throw new IncorrectOuterThrowException(typeof(TOuterException), e);
             } else if (!TestForInnerException<TInnerException>(e)) {
-               throw new Exception($"Expected but did not find inner exception type {typeof(TInnerException).FullName}, instead got {e}.", e);
+               throw new IncorrectInnerThrowException(typeof(TInnerException), e);
             }
+            return;
          }
+         throw new NothingThrownException(typeof(TOuterException), typeof(TInnerException));
       }
 
       private bool TestForInnerException<TInnerException>(Exception exception) {
