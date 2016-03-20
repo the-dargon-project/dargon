@@ -20,6 +20,9 @@ namespace Dargon.Ryu.Internals {
       }
 
       public void ImportModules(RyuContainer container, IReadOnlyList<IRyuModule> modules) {
+         var extensionArguments = new RyuExtensionArguments { Container = container };
+
+         // Order extensions by invocation order
          var extensions = modules.OfType<IRyuExtensionModule>().ToList();
          var orderedExtensions = moduleSorter.SortModulesByInitializationOrder(extensions).Cast<IRyuExtensionModule>().ToArray();
          InvokeInitialize(orderedExtensions);
@@ -28,17 +31,17 @@ namespace Dargon.Ryu.Internals {
          var ryuTypesByType = GetTypeToRyuTypeMap(modules);
          var typeToImplementors = GetTypeToImplementorsMap(ryuTypesByType);
          container.Import(ryuTypesByType, typeToImplementors);
+         orderedExtensions.ForEach(e => e.Loaded(extensionArguments));
 
          // Construct container contents
-         var extensionArguments = new RyuExtensionArguments { Container = container };
-         orderedExtensions.ForEach(e => e.Preconstruction(extensionArguments));
+         orderedExtensions.ForEach(e => e.PreConstruction(extensionArguments));
          var objectsByConstructionOrder = ConstructRequiredTypes(container, ryuTypesByType);
-         orderedExtensions.ForEach(e => e.Postconstruction(extensionArguments));
+         orderedExtensions.ForEach(e => e.PostConstruction(extensionArguments));
 
          // Initialize container contents
-         orderedExtensions.ForEach(e => e.Preinitialization(extensionArguments));
+         orderedExtensions.ForEach(e => e.PreInitialization(extensionArguments));
          InvokeInitialize(objectsByConstructionOrder);
-         orderedExtensions.ForEach(e => e.Postinitialization(extensionArguments));
+         orderedExtensions.ForEach(e => e.PostInitialization(extensionArguments));
       }
 
       private static Dictionary<Type, RyuType> GetTypeToRyuTypeMap(IReadOnlyList<IRyuModule> modules) {

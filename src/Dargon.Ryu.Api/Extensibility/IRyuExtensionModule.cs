@@ -9,10 +9,10 @@ namespace Dargon.Ryu.Extensibility {
    public interface IRyuExtensionModule : IRyuModule {
       void Loaded(IRyuExtensionArguments args);
 
-      void Preconstruction(IRyuExtensionArguments args);
-      void Postconstruction(IRyuExtensionArguments args);
+      void PreConstruction(IRyuExtensionArguments args);
+      void PostConstruction(IRyuExtensionArguments args);
 
-      void Preinitialization(IRyuExtensionArguments args);
-      void Postinitialization(IRyuExtensionArguments args);
+      void PreInitialization(IRyuExtensionArguments args);
+      void PostInitialization(IRyuExtensionArguments args);
    }
 }
