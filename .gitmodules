@@ -1,0 +1,19 @@
+[submodule "dependencies/courier"]
+	path = dependencies/courier
+	url = git@github.com:the-dargon-project/courier.git
+[submodule "dependencies/vox"]
+	path = dependencies/vox
+	url = ssh://git@github.com/the-dargon-project/vox.git
+	branch = master
+[submodule "dependencies/ryu"]
+	path = dependencies/ryu
+	url = ssh://git@github.com/the-dargon-project/ryu.git
+	branch = master
+[submodule "dependencies/commons"]
+	path = dependencies/commons
+	url = ssh://git@github.com/the-dargon-project/commons.git
+	branch = master
+[submodule "dependencies/FodyDnx"]
+	path = dependencies/FodyDnx
+	url = ssh://git@github.com/itzwarty/FodyDnx.git
+	branch = master

@@ -1,0 +1,79 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "B. src", "B. src", "{A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Courier.Api", "dependencies\courier\src\Dargon.Courier.Api\Dargon.Courier.Api.xproj", "{5279248E-9513-4ACF-BD3B-8E5B5D896905}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Courier.Impl", "dependencies\courier\src\Dargon.Courier.Impl\Dargon.Courier.Impl.xproj", "{7A583A0F-6154-47D5-9D6E-D91E94A0C4FB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "A. Solution Files", "A. Solution Files", "{381983DF-40C9-431F-BFFC-9D944132C149}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		global.json = global.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C. test", "C. test", "{8C077420-A36E-4D87-993F-BD51BDB216FE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "D. dependencies", "D. dependencies", "{717230C9-AFBC-456B-A700-9CFC5FB5FDD6}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Vox", "dependencies\vox\src\Dargon.Vox\Dargon.Vox.xproj", "{64BDC2CE-1457-4AD8-AA1F-B39A5DDC42C2}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Ryu.Api", "dependencies\ryu\src\Dargon.Ryu.Api\Dargon.Ryu.Api.xproj", "{97247D5E-A3C9-4050-84E8-2FD8E9178DB8}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Ryu.Impl", "dependencies\ryu\src\Dargon.Ryu.Impl\Dargon.Ryu.Impl.xproj", "{8848F79E-7EBB-4D00-9645-FF86C39F8DE4}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Commons", "dependencies\commons\src\Dargon.Commons\Dargon.Commons.xproj", "{2D7BAFC8-38E8-42EC-B215-F1A0A08E4BA8}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "FodyDnx", "dependencies\FodyDnx\src\FodyDnx.xproj", "{F3EA0646-E97A-4535-8E19-B5E38FB2706A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5279248E-9513-4ACF-BD3B-8E5B5D896905}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5279248E-9513-4ACF-BD3B-8E5B5D896905}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5279248E-9513-4ACF-BD3B-8E5B5D896905}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5279248E-9513-4ACF-BD3B-8E5B5D896905}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A583A0F-6154-47D5-9D6E-D91E94A0C4FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A583A0F-6154-47D5-9D6E-D91E94A0C4FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A583A0F-6154-47D5-9D6E-D91E94A0C4FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A583A0F-6154-47D5-9D6E-D91E94A0C4FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64BDC2CE-1457-4AD8-AA1F-B39A5DDC42C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64BDC2CE-1457-4AD8-AA1F-B39A5DDC42C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64BDC2CE-1457-4AD8-AA1F-B39A5DDC42C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64BDC2CE-1457-4AD8-AA1F-B39A5DDC42C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97247D5E-A3C9-4050-84E8-2FD8E9178DB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97247D5E-A3C9-4050-84E8-2FD8E9178DB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97247D5E-A3C9-4050-84E8-2FD8E9178DB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97247D5E-A3C9-4050-84E8-2FD8E9178DB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8848F79E-7EBB-4D00-9645-FF86C39F8DE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8848F79E-7EBB-4D00-9645-FF86C39F8DE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8848F79E-7EBB-4D00-9645-FF86C39F8DE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8848F79E-7EBB-4D00-9645-FF86C39F8DE4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D7BAFC8-38E8-42EC-B215-F1A0A08E4BA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D7BAFC8-38E8-42EC-B215-F1A0A08E4BA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D7BAFC8-38E8-42EC-B215-F1A0A08E4BA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D7BAFC8-38E8-42EC-B215-F1A0A08E4BA8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3EA0646-E97A-4535-8E19-B5E38FB2706A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3EA0646-E97A-4535-8E19-B5E38FB2706A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3EA0646-E97A-4535-8E19-B5E38FB2706A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3EA0646-E97A-4535-8E19-B5E38FB2706A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5279248E-9513-4ACF-BD3B-8E5B5D896905} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
+		{7A583A0F-6154-47D5-9D6E-D91E94A0C4FB} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
+		{64BDC2CE-1457-4AD8-AA1F-B39A5DDC42C2} = {717230C9-AFBC-456B-A700-9CFC5FB5FDD6}
+		{97247D5E-A3C9-4050-84E8-2FD8E9178DB8} = {717230C9-AFBC-456B-A700-9CFC5FB5FDD6}
+		{8848F79E-7EBB-4D00-9645-FF86C39F8DE4} = {717230C9-AFBC-456B-A700-9CFC5FB5FDD6}
+		{2D7BAFC8-38E8-42EC-B215-F1A0A08E4BA8} = {717230C9-AFBC-456B-A700-9CFC5FB5FDD6}
+		{F3EA0646-E97A-4535-8E19-B5E38FB2706A} = {717230C9-AFBC-456B-A700-9CFC5FB5FDD6}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,13 @@
+﻿{
+    "projects": [
+        "dependencies/courier/src",
+        "dependencies/courier/test",
+        "dependencies/ryu/src",
+        "dependencies/nmockito/src",
+        "dependencies/commons/src",
+        "dependencies/vox/src",
+    ],
+    "sdk": {
+        "version": "1.0.0-rc1-update1"
+    }
+}
