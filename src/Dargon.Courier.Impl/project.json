@@ -1,0 +1,17 @@
+{
+    "version": "1.0.0-*",
+
+    "dependencies": {
+        "Dargon.Commons": "",
+        "Dargon.Ryu.Api": "",
+        "Dargon.Vox": "",
+        "Fody": "1.29.4",
+        "NLombok.Fody": "0.0.5",
+        "NLog": "3.1.0"
+    },
+
+    "frameworks": {
+        "net451": {
+        }
+    }
+}

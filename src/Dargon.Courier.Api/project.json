@@ -1,0 +1,18 @@
+{
+    "version": "1.0.0-*",
+
+    "dependencies": {
+        "Dargon.Ryu.Api": "",
+        "Fody": "1.29.4",
+        "NLombok.Fody": "0.0.5"
+    },
+
+    "frameworks": { 
+        "net451": { }
+    },
+
+    "scripts": {
+        "prebuild": [ "" ],
+        "postbuild": [ "powershell ../../../FodyDnx/src/exec-fody-weavers.ps1 -ProjectDir %cd%" ]
+    }
+}
