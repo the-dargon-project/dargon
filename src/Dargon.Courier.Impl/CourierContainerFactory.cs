@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Dargon.Ryu;
+﻿using Dargon.Ryu;
 using Fody.Constructors;
 
 namespace Dargon.Courier {
@@ -7,8 +6,16 @@ namespace Dargon.Courier {
    public class CourierContainerFactory {
       private readonly IRyuContainer root = null;
 
-      public void Create() {
+      public IRyuContainer Create() {
+         var outboundBus = new AsyncEventBus<object>();
+         var inboundBus = new AsyncEventBus<object>();
+         var transport = UdpTransport.Create(outboundBus.Consumer(), inboundBus.Producer());
+
          var child = root.CreateChildContainer();
+         child.Set(outboundBus.Producer());
+         child.Set(inboundBus.Consumer());
+         child.Set(transport);
+         return child;
       }
    }
 }

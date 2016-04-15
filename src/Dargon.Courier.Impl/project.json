@@ -3,6 +3,7 @@
 
     "dependencies": {
         "Dargon.Commons": "",
+        "Dargon.Courier.Api": "",
         "Dargon.Ryu.Api": "",
         "Dargon.Vox": "",
         "Fody": "1.29.4",
@@ -13,5 +14,9 @@
     "frameworks": {
         "net451": {
         }
+    },
+
+    "compilationOptions": {
+        "allowUnsafe": true
     }
 }

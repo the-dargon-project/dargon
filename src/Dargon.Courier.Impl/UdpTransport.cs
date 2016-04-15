@@ -1,35 +1,35 @@
-﻿using System.Collections.Generic;
+﻿using Dargon.Commons;
+using Dargon.Commons.Pooling;
+using Dargon.Vox;
+using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using NLog;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Runtime.Remoting.Channels;
 using System.Threading.Tasks;
-using Dargon.Commons;
-using Dargon.Commons.Pooling;
-using Dargon.Vox;
 
 namespace Dargon.Courier {
-   public class UdpTransport {
+   public class UdpTransport : IDisposable {
       private const int kMaximumTransportSize = 8192;
       private const int kPort = 21337;
       private static readonly IPAddress kMulticastAddress = IPAddress.Parse("235.13.33.37");
       private static readonly IPEndPoint kSendEndpoint = new IPEndPoint(kMulticastAddress, kPort);
       private static readonly IPEndPoint kReceiveEndpoint = new IPEndPoint(IPAddress.Any, kPort);
 
-      private readonly IObjectPool<MemoryStream> sendBufferPool; 
       private readonly List<Socket> sockets;
-      private readonly IObjectPool<SocketAsyncEventArgs> receiveArgsPool;
       private readonly IAsyncConsumer<object> receiver;
       private readonly IAsyncProducer<object> outboundConsumable;
+      private readonly IObjectPool<MemoryStream> sendBufferPool; 
+      private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool; 
+      private readonly IObjectPool<SocketAsyncEventArgs> receiveArgsPool;
 
       private UdpTransport(List<Socket> sockets, IAsyncConsumer<object> receiver, IAsyncProducer<object> outboundConsumable) {
          this.sockets = sockets;
          this.receiver = receiver;
          this.outboundConsumable = outboundConsumable;
          this.sendBufferPool = ObjectPool.Create(() => new MemoryStream());
+         this.sendArgsPool = ObjectPool.Create(() => new SocketAsyncEventArgs());
          this.receiveArgsPool = ObjectPool.Create(() => {
             return new SocketAsyncEventArgs {
                RemoteEndPoint = kReceiveEndpoint
@@ -73,11 +73,19 @@ namespace Dargon.Courier {
       private async Task HandleOutboundSendAsyncHelperAsync(MemoryStream ms) {
          await Task.Yield();
 
-         var e = new SocketAsyncEventArgs { RemoteEndPoint = kSendEndpoint };
-         e.SetBuffer(ms.GetBuffer(), 0, (int)ms.Length);
-         e.Completed += (sender, args) => {
-            e.Dispose();
-         };
+         foreach (var socket in sockets) {
+            var e = sendArgsPool.TakeObject();
+            e.RemoteEndPoint = kSendEndpoint;
+            e.SetBuffer(ms.GetBuffer(), 0, (int)ms.Length);
+            e.Completed += (sender, args) => {
+               e.Dispose();
+               sendBufferPool.ReturnObject(ms);
+            };
+            if (!socket.SendToAsync(e)) {
+               sendArgsPool.ReturnObject(e);
+               sendBufferPool.ReturnObject(ms);
+            }
+         }
       }
 
       public static UdpTransport Create(IAsyncConsumer<object> inboundPublisher, IAsyncProducer<object> outboundConsumable) {
@@ -106,6 +114,12 @@ namespace Dargon.Courier {
          socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(adapterIndex));
          socket.Bind(new IPEndPoint(IPAddress.Any, kPort));
          return socket;
+      }
+
+      public void Dispose() {
+         foreach (var socket in sockets) {
+            socket.Dispose();
+         }
       }
    }
 }
