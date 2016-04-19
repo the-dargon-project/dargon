@@ -17,3 +17,7 @@
 	path = dependencies/FodyDnx
 	url = ssh://git@github.com/itzwarty/FodyDnx.git
 	branch = master
+[submodule "dependencies/NMockito"]
+	path = dependencies/NMockito
+	url = ssh://git@github.com/the-dargon-project/NMockito.git
+	branch = master

@@ -187,3 +187,4 @@ FakesAssemblies/
 # dotnet
 project.lock.json
 .vs
+scriptcs_*
