@@ -1,34 +1,36 @@
-﻿using Dargon.Commons;
-using Dargon.Commons.Pooling;
-using Dargon.Vox;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Dargon.Commons;
+using Dargon.Commons.Pooling;
+using Nito.AsyncEx;
 
-namespace Dargon.Courier {
+namespace Dargon.Courier.TransitTier {
    public class UdpTransport : IDisposable {
-      private const int kMaximumTransportSize = 8192;
+      public const int kMaximumTransportSize = 8192;
       private const int kPort = 21337;
       private static readonly IPAddress kMulticastAddress = IPAddress.Parse("235.13.33.37");
       private static readonly IPEndPoint kSendEndpoint = new IPEndPoint(kMulticastAddress, kPort);
       private static readonly IPEndPoint kReceiveEndpoint = new IPEndPoint(IPAddress.Any, kPort);
 
       private readonly List<Socket> sockets;
-      private readonly IAsyncConsumer<object> receiver;
-      private readonly IAsyncProducer<object> outboundConsumable;
-      private readonly IObjectPool<MemoryStream> sendBufferPool; 
+      private readonly IAsyncPoster<InboundDataEvent> inboundDataEventPoster;
+      private readonly IAsyncSubscriber<MemoryStream> outboundDataSubscriber;
+      private readonly IObjectPool<InboundDataEvent> inboundDataEventPool; 
+      private readonly IObjectPool<AsyncAutoResetEvent> asyncAutoResetEventPool; 
       private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool; 
       private readonly IObjectPool<SocketAsyncEventArgs> receiveArgsPool;
 
-      private UdpTransport(List<Socket> sockets, IAsyncConsumer<object> receiver, IAsyncProducer<object> outboundConsumable) {
+      private UdpTransport(List<Socket> sockets, IAsyncPoster<InboundDataEvent> inboundDataEventPoster, IAsyncSubscriber<MemoryStream> outboundDataSubscriber) {
          this.sockets = sockets;
-         this.receiver = receiver;
-         this.outboundConsumable = outboundConsumable;
-         this.sendBufferPool = ObjectPool.Create(() => new MemoryStream());
+         this.inboundDataEventPoster = inboundDataEventPoster;
+         this.outboundDataSubscriber = outboundDataSubscriber;
+         this.inboundDataEventPool = ObjectPool.Create(() => new InboundDataEvent());
+         this.asyncAutoResetEventPool = ObjectPool.Create(() => new AsyncAutoResetEvent());
          this.sendArgsPool = ObjectPool.Create(() => new SocketAsyncEventArgs());
          this.receiveArgsPool = ObjectPool.Create(() => {
             return new SocketAsyncEventArgs {
@@ -42,12 +44,13 @@ namespace Dargon.Courier {
 
       public void Initialize() {
          sockets.ForEach(BeginReceive);
-         outboundConsumable.Subscribe(HandleOutboundSendAsync);
+         outboundDataSubscriber.Subscribe(HandleOutboundDataSendAsync);
       }
 
       private void BeginReceive(Socket socket) {
          var e = receiveArgsPool.TakeObject();
          e.AcceptSocket = socket;
+         socket.ReceiveFromAsync(e);
       }
 
       private void HandleReceiveCompleted(object sender, SocketAsyncEventArgs e) {
@@ -56,39 +59,33 @@ namespace Dargon.Courier {
       }
 
       private async Task HandleReceiveCompletedHelperAsync(SocketAsyncEventArgs e) {
-         var message = Deserialize.From(e.Buffer, 0, e.BytesTransferred);
-         await receiver.PostAsync(message);
+         var inboundDataEvent = inboundDataEventPool.TakeObject();
+         inboundDataEvent.Data = e.Buffer;
+         await inboundDataEventPoster.PostAsync(inboundDataEvent);
          receiveArgsPool.ReturnObject(e);
+         inboundDataEventPool.ReturnObject(inboundDataEvent);
       }
 
-      private async Task HandleOutboundSendAsync(IAsyncProducer<object> producer, object payload) {
-         await Task.Yield();
-
-         var ms = sendBufferPool.TakeObject();
-         Serialize.To(ms, payload);
-
-         HandleOutboundSendAsyncHelperAsync(ms).Forget();
-      }
-
-      private async Task HandleOutboundSendAsyncHelperAsync(MemoryStream ms) {
-         await Task.Yield();
-
+      private Task HandleOutboundDataSendAsync(IAsyncSubscriber<MemoryStream> subscriber, MemoryStream payload) {
+         var sync = asyncAutoResetEventPool.TakeObject();
          foreach (var socket in sockets) {
             var e = sendArgsPool.TakeObject();
             e.RemoteEndPoint = kSendEndpoint;
-            e.SetBuffer(ms.GetBuffer(), 0, (int)ms.Length);
+            e.SetBuffer(payload.GetBuffer(), 0, (int)payload.Length);
             e.Completed += (sender, args) => {
                e.Dispose();
-               sendBufferPool.ReturnObject(ms);
+               sync.Set();
             };
             if (!socket.SendToAsync(e)) {
+               // Completed synchronously. e.Completed won't be called.
                sendArgsPool.ReturnObject(e);
-               sendBufferPool.ReturnObject(ms);
+               sync.Set();
             }
          }
+         return sync.WaitAsync();
       }
 
-      public static UdpTransport Create(IAsyncConsumer<object> inboundPublisher, IAsyncProducer<object> outboundConsumable) {
+      public static UdpTransport Create(IAsyncPoster<InboundDataEvent> inboundDataEventPoster, IAsyncSubscriber<MemoryStream> outboundDataSubscriber) {
          var sockets = new List<Socket>();
          foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces()) {
             if (!networkInterface.SupportsMulticast ||
@@ -98,7 +95,7 @@ namespace Dargon.Courier {
             if (ipv4Properties != null)
                sockets.Add(CreateSocket(ipv4Properties.Index));
          }
-         var transport = new UdpTransport(sockets, inboundPublisher, outboundConsumable);
+         var transport = new UdpTransport(sockets, inboundDataEventPoster, outboundDataSubscriber);
          transport.Initialize();
          return transport;
       }

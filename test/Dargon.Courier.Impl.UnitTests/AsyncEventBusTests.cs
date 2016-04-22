@@ -1,13 +1,14 @@
 ﻿using NMockito;
 using NMockito.Fluent;
 using System.Threading.Tasks;
+using Dargon.Courier.AsyncPrimitives;
 using Xunit;
 
 namespace Dargon.Courier {
    public class AsyncEventBusTests : NMockitoInstance {
       [Fact]
       public async Task Run() {
-         var bus = new AsyncEventBus<int>();
+         var bus = new AsyncBus<int>();
          int val = 0;
          bus.Subscribe(async (producer, value) => {
             await Task.Delay(1000);

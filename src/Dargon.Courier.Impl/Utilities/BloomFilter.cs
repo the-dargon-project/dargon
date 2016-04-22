@@ -1,5 +1,4 @@
-﻿using Dargon.Commons;
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 
@@ -15,15 +14,24 @@ namespace Dargon.Courier.Utilities {
          bitSet = new ConcurrentBitSet((uint)bitsPerFilter);
       }
 
+      public bool Test(Guid guid) {
+         var hash1 = guid.GetHashCode();
+         var hash2 = Hash(guid);
+         var bits = Enumerable.Range(1, hashCount)
+                              .Select(i => (uint)DoubleHashToBitNumber(hash1, hash2, i))
+                              .Distinct();
+         return bits.All(bitSet.Contains);
+      }
+
       public bool SetAndTest(Guid guid) {
          var hash1 = guid.GetHashCode();
          var hash2 = Hash(guid);
          var bits = Enumerable.Range(1, hashCount)
                               .Select(i => (uint)DoubleHashToBitNumber(hash1, hash2, i))
                               .Distinct();
-         bool result = false;;
+         bool result = false;
          foreach (var bit in bits) {
-            result |= bitSet.SetAndTest(bit);
+            result |= bitSet.TrySet(bit);
          }
          return result;
       }
@@ -54,9 +62,36 @@ namespace Dargon.Courier.Utilities {
             this.storage = new int[(size + 31) / 32];
          }
 
-         public bool SetAndTest(uint bit) {
+         /// <summary>
+         /// Returns a value indicating whether the specified bit
+         /// in the bitset is set.
+         /// </summary>
+         /// <param name="bit">
+         /// The zero-based index of the bit being checked.
+         /// </param>
+         /// <returns>
+         /// Whether the bit of index <paramref name="bit"/> is set.
+         /// </returns>
+         public bool Contains(uint bit) {
             var index = bit / 32;
             var offset = bit % 32;
+            var mask = 1 << (int)offset;
+            int value = storage[index];
+            return (value & mask) != 0;
+         }
+
+         /// <summary>
+         /// Sets the n-th bit of the bitset. If the n-th bit is already set,
+         /// then nothing happens.
+         /// </summary>
+         /// <param name="n">Zero-index of the bit to set.</param>
+         /// <returns>
+         /// Whether the operation mutated the bitset.
+         /// </returns>
+         /// <exception cref="ArgumentOutOfRangeException"></exception>
+         public bool TrySet(uint n) {
+            var index = n / 32;
+            var offset = n % 32;
             var mask = 1 << (int)offset;
             int lastValue = 0;
             int readValue;

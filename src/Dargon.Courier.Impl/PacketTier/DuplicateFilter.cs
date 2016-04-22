@@ -1,11 +1,11 @@
 ﻿using Dargon.Commons;
 using Dargon.Courier.Utilities;
-using Dargon.Courier.Vox;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Dargon.Courier {
-   public class ReliableMessageFilter {
+namespace Dargon.Courier.PacketTier {
+   public class DuplicateFilter {
       private const int kFilterCount = 10;
       private const int kFilterIntervalMillis = 100;
       private const int kExpectedMessagesPerInterval = 10000;
@@ -26,9 +26,14 @@ namespace Dargon.Courier {
          }
       }
 
-      public bool IsNewMessage(MessageDto message) {
-         var filter = bloomFilters[((uint)epoch) % bloomFilters.Length];
-         return filter.SetAndTest(message.Id);
+      public bool IsNew(Guid id) {
+         foreach (var filter in bloomFilters) {
+            if (filter.Test(id)) {
+               return false;
+            }
+         }
+         var currentFilter = bloomFilters[epoch % bloomFilters.Length];
+         return currentFilter.SetAndTest(id);
       }
    }
 }

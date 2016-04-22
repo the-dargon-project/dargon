@@ -2,7 +2,8 @@
 
 namespace Dargon.Courier.Vox {
    [Flags]
-   public enum MessageFlags {
-      Reliable = 1
+   public enum PacketFlags {
+      None = 0,
+      Reliable = 1,
    }
 }
