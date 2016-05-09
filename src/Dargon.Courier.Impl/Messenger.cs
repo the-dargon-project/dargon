@@ -1,21 +1,42 @@
-﻿using System;
-using Dargon.Courier.Vox;
+﻿using Dargon.Courier.Vox;
+using System;
+using System.Threading.Tasks;
+using Dargon.Commons.Pooling;
 
 namespace Dargon.Courier {
    public class Messenger {
-      public void Broadcast<T>(T payload) {
-         Helper(MessageDto.Create(payload, Guid.Empty, MessageFlags.None));
+      private readonly IObjectPool<OutboundMessageEvent> outboundMessageEventPool;
+      private readonly IAsyncPoster<OutboundMessageEvent> outboundMessageEventPoster;
+
+      public Messenger(IObjectPool<OutboundMessageEvent> outboundMessageEventPool, IAsyncPoster<OutboundMessageEvent> outboundMessageEventPoster) {
+         this.outboundMessageEventPool = outboundMessageEventPool;
+         this.outboundMessageEventPoster = outboundMessageEventPoster;
       }
 
-      public void Send<T>(T payload, Guid destination) {
-         Helper(MessageDto.Create(payload, destination, MessageFlags.None));
+      public Task BroadcastAsync<T>(T payload) {
+         return HelperAsync(payload, Guid.Empty, false);
       }
 
-      public void SendReliable<T>(T payload, Guid destination) {
-         Helper(MessageDto.Create(payload, destination, MessageFlags.Reliable));
+      public Task SendAsync<T>(T payload, Guid destination) {
+         return HelperAsync(payload, destination, false);
       }
 
-      private void Helper(MessageDto message) {
+      public Task SendReliableAsync<T>(T payload, Guid destination) {
+         return HelperAsync(payload, destination, true);
+      }
+
+      private async Task HelperAsync(object payload, Guid destination, bool reliable) {
+         var e = outboundMessageEventPool.TakeObject();
+         e.Message.Body = payload;
+         e.Reliable = reliable;
+         e.Destination = destination;
+
+         await outboundMessageEventPoster.PostAsync(e);
+
+         e.Message.Body = null;
+         e.Reliable = false;
+         e.Destination = Guid.Empty;
+         outboundMessageEventPool.ReturnObject(e);
       }
    }
 }

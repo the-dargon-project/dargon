@@ -1,4 +1,5 @@
-﻿using Dargon.Courier.PeeringTier;
+﻿using System;
+using Dargon.Courier.PeeringTier;
 using Dargon.Courier.Vox;
 
 namespace Dargon.Courier {
@@ -44,6 +45,7 @@ namespace Dargon.Courier {
 
    public class OutboundMessageEvent {
       public MessageDto Message { get; set; }
+      public Guid Destination { get; set; }
       public bool Reliable { get; set; }
       public object TagEvent { get; set; }
    }

@@ -9,6 +9,9 @@ using Dargon.Ryu;
 using Dargon.Vox;
 using Fody.Constructors;
 using System.IO;
+using Dargon.Courier.ServiceTier.Client;
+using Dargon.Courier.ServiceTier.Server;
+using Dargon.Courier.ServiceTier.Vox;
 
 namespace Dargon.Courier {
    [RequiredFieldsConstructor]
@@ -16,6 +19,8 @@ namespace Dargon.Courier {
       private readonly IRyuContainer root = null;
 
       public IRyuContainer Create() {
+         var container = root.CreateChildContainer();
+
          // Transit Tier - UDP
          var outboundDataBus = new AsyncBus<MemoryStream>();
          var inboundDataEventBus = new AsyncBus<InboundDataEvent>();
@@ -73,7 +78,7 @@ namespace Dargon.Courier {
             acknowledgementCoordinator);
 
          //----------------------------------------------------------------------------------------
-         // Peering Tier - Identity, Discovery, Messaging
+         // Peering Tier - Identity, Peer Discovery, Messaging
          //----------------------------------------------------------------------------------------
          // identity
          var identity = Identity.Create();
@@ -84,10 +89,10 @@ namespace Dargon.Courier {
 
          // discovery
          var peerDiscoveryEventBus = new AsyncBus<PeerDiscoveryEvent>();
-         var peerTable = new PeerTable(() => {
+         var peerTable = new PeerTable(container, table => {
             var router = new AsyncRouter<InboundPayloadEvent, InboundPayloadEvent>(
                x => x.Payload.GetType(), x => x);
-            var result = new PeerContext(peerDiscoveryEventBus.Poster(), router);
+            var result = new PeerContext(table, peerDiscoveryEventBus.Poster(), router);
             result.Initialize();
             return result;
          });
@@ -101,21 +106,27 @@ namespace Dargon.Courier {
          inboundPacketEventRouter.RegisterHandler<MessageDto>(
             e => nongenericInboundMessageToGenericMessageDispatchInvoker.InvokeDispatchAsync(
                e, inboundMessageDispatcher));
-
-         inboundMessageRouter.RegisterHandler<Guid>(x => {
-//            x.Sender
-         });
+         container.Set(inboundMessageRouter);
 
          var outboundMessageEventBus = new AsyncBus<OutboundMessageEvent>();
          outboundMessageEventBus.Subscribe(async (bus, e) => {
             await outboundPacketEventEmitter.EmitAsync(
                e.Message,
+               e.Destination,
                e.Reliable,
                e.TagEvent);
          });
+         var outboundMessageEventPool = ObjectPool.Create(() => new OutboundMessageEvent());
+         var messenger = new Messenger(outboundMessageEventPool, outboundMessageEventBus.Poster());
+         container.Set(messenger);
 
-         var child = root.CreateChildContainer();
-         return child;
+         //----------------------------------------------------------------------------------------
+         // Service Tier - Service Discovery, Remote Method Invocation
+         //----------------------------------------------------------------------------------------
+         var localServiceRegistry = new LocalServiceRegistry(messenger);
+         var remoteServiceInvoker = new RemoteServiceInvoker(messenger);
+         inboundMessageRouter.RegisterHandler<RmiRequestDto>(localServiceRegistry.HandleInvocationRequestAsync);
+         return container;
       }
    }
 }
