@@ -26,12 +26,14 @@ namespace Dargon.Courier {
       }
 
       public IRyuContainer Create() {
-         var container = root.CreateChildContainer();
+         return Create(UdpTransport.Create());
+      }
 
-         // Transit Tier - UDP
+      public IRyuContainer Create(ITransport transport) {
+         var container = root.CreateChildContainer();
          var outboundDataBus = new AsyncBus<MemoryStream>();
          var inboundDataEventBus = new AsyncBus<InboundDataEvent>();
-         var transport = UdpTransport.Create(inboundDataEventBus.Poster(), outboundDataBus.Subscriber());
+         transport.Start(inboundDataEventBus.Poster(), outboundDataBus.Subscriber());
 
          // Vox Payload Tier - byte[] <-> Vox Serializable
          var inboundPayloadEventRouter = new InboundPayloadEventRouter();

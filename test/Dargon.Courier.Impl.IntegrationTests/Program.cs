@@ -14,7 +14,7 @@ namespace Dargon.Courier {
 
          new BloomFilterTests().CanHaveNegligibleFalseCollisionRate();
          new BloomFilterTests().PerformanceTest();
-         new MessagingTests().HappyPathTest().Wait();
+         new MessagingTests().BroadcastTest().Wait();
       }
 
       private static void InitializeLogging() {

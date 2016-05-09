@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -11,7 +10,7 @@ using Nito.AsyncEx;
 using NLog;
 
 namespace Dargon.Courier.TransitTier {
-   public class UdpTransport : IDisposable {
+   public class UdpTransport : ITransport {
       public const int kMaximumTransportSize = 8192;
       private const int kPort = 21337;
       private static readonly IPAddress kMulticastAddress = IPAddress.Parse("235.13.33.37");
@@ -20,17 +19,15 @@ namespace Dargon.Courier.TransitTier {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
       private readonly List<Socket> sockets;
-      private readonly IAsyncPoster<InboundDataEvent> inboundDataEventPoster;
-      private readonly IAsyncSubscriber<MemoryStream> outboundDataSubscriber;
       private readonly IObjectPool<InboundDataEvent> inboundDataEventPool; 
       private readonly IObjectPool<AsyncAutoResetEvent> asyncAutoResetEventPool; 
       private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool; 
       private readonly IObjectPool<SocketAsyncEventArgs> receiveArgsPool;
+      private IAsyncPoster<InboundDataEvent> inboundDataEventPoster;
+      private IAsyncSubscriber<MemoryStream> outboundDataSubscriber;
 
-      private UdpTransport(List<Socket> sockets, IAsyncPoster<InboundDataEvent> inboundDataEventPoster, IAsyncSubscriber<MemoryStream> outboundDataSubscriber) {
+      private UdpTransport(List<Socket> sockets) {
          this.sockets = sockets;
-         this.inboundDataEventPoster = inboundDataEventPoster;
-         this.outboundDataSubscriber = outboundDataSubscriber;
          this.inboundDataEventPool = ObjectPool.Create(() => new InboundDataEvent());
          this.asyncAutoResetEventPool = ObjectPool.Create(() => new AsyncAutoResetEvent());
          this.sendArgsPool = ObjectPool.Create(() => new SocketAsyncEventArgs());
@@ -44,7 +41,10 @@ namespace Dargon.Courier.TransitTier {
          });
       }
 
-      public void Initialize() {
+      public void Start(IAsyncPoster<InboundDataEvent> inboundDataEventPoster, IAsyncSubscriber<MemoryStream> outboundDataSubscriber) {
+         this.inboundDataEventPoster = inboundDataEventPoster;
+         this.outboundDataSubscriber = outboundDataSubscriber;
+
          sockets.ForEach(BeginReceive);
          outboundDataSubscriber.Subscribe(HandleOutboundDataSendAsync);
       }
@@ -69,7 +69,7 @@ namespace Dargon.Courier.TransitTier {
          inboundDataEventPool.ReturnObject(inboundDataEvent);
       }
 
-      private Task HandleOutboundDataSendAsync(IAsyncSubscriber<MemoryStream> subscriber, MemoryStream payload) {
+      public Task HandleOutboundDataSendAsync(IAsyncSubscriber<MemoryStream> subscriber, MemoryStream payload) {
          logger.Error($"Sending {payload.Length} bytes!");
          var sync = asyncAutoResetEventPool.TakeObject();
          foreach (var socket in sockets) {
@@ -89,7 +89,7 @@ namespace Dargon.Courier.TransitTier {
          return sync.WaitAsync();
       }
 
-      public static UdpTransport Create(IAsyncPoster<InboundDataEvent> inboundDataEventPoster, IAsyncSubscriber<MemoryStream> outboundDataSubscriber) {
+      public static UdpTransport Create() {
          var sockets = new List<Socket>();
          foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces()) {
             if (!networkInterface.SupportsMulticast ||
@@ -99,9 +99,7 @@ namespace Dargon.Courier.TransitTier {
             if (ipv4Properties != null)
                sockets.Add(CreateSocket(ipv4Properties.Index));
          }
-         var transport = new UdpTransport(sockets, inboundDataEventPoster, outboundDataSubscriber);
-         transport.Initialize();
-         return transport;
+         return new UdpTransport(sockets);
       }
 
       private static Socket CreateSocket(long adapterIndex) {

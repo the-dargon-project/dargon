@@ -17,6 +17,8 @@ namespace Dargon.Courier.PacketTier {
       }
 
       private async Task RunAnnounceLoopAsync() {
+         await Task.Yield();
+
          var announce = new AnnouncementDto();
          announce.Identity = identity;
 
