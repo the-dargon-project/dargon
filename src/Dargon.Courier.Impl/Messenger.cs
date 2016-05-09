@@ -28,14 +28,14 @@ namespace Dargon.Courier {
       private async Task HelperAsync(object payload, Guid destination, bool reliable) {
          var e = outboundMessageEventPool.TakeObject();
          e.Message.Body = payload;
+         e.Message.ReceiverId = destination;
          e.Reliable = reliable;
-         e.Destination = destination;
 
          await outboundMessageEventPoster.PostAsync(e);
 
          e.Message.Body = null;
+         e.Message.ReceiverId = Guid.Empty;
          e.Reliable = false;
-         e.Destination = Guid.Empty;
          outboundMessageEventPool.ReturnObject(e);
       }
    }

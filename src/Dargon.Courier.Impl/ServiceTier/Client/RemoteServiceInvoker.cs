@@ -15,9 +15,10 @@ namespace Dargon.Courier.ServiceTier.Client {
          this.messenger = messenger;
       }
 
-      public async Task HandleInvocationResponse(RmiResponseDto response) {
+      public async Task HandleInvocationResponse(InboundMessageEvent<RmiResponseDto> x) {
          await Task.Yield();
 
+         var response = x.Body;
          AsyncBox<RmiResponseDto> responseBox;
          if (!responseBoxes.TryRemove(response.InvocationId, out responseBox)) {
             throw new InvalidStateException();

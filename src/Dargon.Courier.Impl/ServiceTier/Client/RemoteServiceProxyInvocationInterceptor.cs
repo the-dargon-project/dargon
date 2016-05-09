@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Dargon.Courier.ServiceTier.Vox;
 
 namespace Dargon.Courier.ServiceTier.Client {
-   public class RemoteServiceProxyInvocationInterceptor {
+   public class RemoteServiceProxyInvocationInterceptor : IInterceptor {
       private readonly RemoveServiceInfo remoteServiceInfo;
       private readonly RemoteServiceInvoker remoteServiceInvoker;
 
@@ -30,6 +30,13 @@ namespace Dargon.Courier.ServiceTier.Client {
          }
 
          invocation.ReturnValue = responseDto.ReturnValue;
+         var parameters = invocation.Method.GetParameters();
+         var outValues = responseDto.Outs;
+         for (int i = 0, outIndex = 0; i < parameters.Length && outIndex < outValues.Length; i++) {
+            if (parameters[i].IsOut) {
+               invocation.Arguments[i] = outValues[outIndex++];
+            }
+         }
          var exception = responseDto.Exception as Exception;
          if (exception != null) {
             throw exception;

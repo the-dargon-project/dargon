@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.PacketTier {
    public class Announcer {
+      private const int kAnnounceIntervalMillis = 100;
       private readonly Identity identity;
       private readonly OutboundPayloadEventEmitter outboundPayloadEventEmitter;
 
@@ -24,6 +25,7 @@ namespace Dargon.Courier.PacketTier {
 
          while (true) {
             await outboundPayloadEventEmitter.EmitAsync(announce, null);
+            await Task.Delay(kAnnounceIntervalMillis);
          }
       }
    }

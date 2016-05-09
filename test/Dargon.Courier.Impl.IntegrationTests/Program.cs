@@ -1,4 +1,5 @@
 ﻿using Dargon.Commons;
+using Dargon.Courier.ServiceTier;
 using Dargon.Courier.Utilities;
 using NLog;
 using NLog.Config;
@@ -15,6 +16,8 @@ namespace Dargon.Courier {
          new BloomFilterTests().CanHaveNegligibleFalseCollisionRate();
          new BloomFilterTests().PerformanceTest();
          new MessagingTests().BroadcastTest().Wait();
+         new MessagingTests().ReliableTest().Wait();
+         new ServiceTests().Run();
       }
 
       private static void InitializeLogging() {

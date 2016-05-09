@@ -17,13 +17,12 @@ namespace Dargon.Courier {
          this.acknowledgementCoordinator = acknowledgementCoordinator;
       }
 
-      public async Task EmitAsync(object payload, Guid destination, bool reliable, object tagEvent) {
+      public async Task EmitAsync(object payload, bool reliable, object tagEvent) {
          await Task.Yield();
 
          var outboundPacketEvent = outboundPacketEventPool.TakeObject();
          outboundPacketEvent.Packet.Id = Guid.NewGuid();
          outboundPacketEvent.Packet.Payload = payload;
-         outboundPacketEvent.Packet.Destination = destination;
          outboundPacketEvent.Packet.Flags = reliable ? PacketFlags.Reliable : PacketFlags.None;
          outboundPacketEvent.TagEvent = tagEvent;
 
@@ -52,7 +51,6 @@ namespace Dargon.Courier {
 
          outboundPacketEvent.Packet.Id = Guid.Empty;
          outboundPacketEvent.Packet.Payload = null;
-         outboundPacketEvent.Packet.Destination = Guid.Empty;
          outboundPacketEvent.Packet.Flags = 0;
          outboundPacketEventPool.ReturnObject(outboundPacketEvent);
       }

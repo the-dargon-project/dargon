@@ -9,6 +9,7 @@ using Dargon.Ryu;
 using Dargon.Vox;
 using Fody.Constructors;
 using System.IO;
+using Castle.DynamicProxy;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.ServiceTier.Vox;
@@ -30,6 +31,8 @@ namespace Dargon.Courier {
       }
 
       public IRyuContainer Create(ITransport transport) {
+         var proxyGenerator = root.GetOrDefault<ProxyGenerator>() ?? new ProxyGenerator();
+
          var container = root.CreateChildContainer();
          var outboundDataBus = new AsyncBus<MemoryStream>();
          var inboundDataEventBus = new AsyncBus<InboundDataEvent>();
@@ -91,6 +94,7 @@ namespace Dargon.Courier {
          //----------------------------------------------------------------------------------------
          // identity
          var identity = Identity.Create();
+         container.Set(identity);
 
          // announcement
          var announcer = new Announcer(identity, outboundPayloadEventEmitter);
@@ -107,10 +111,11 @@ namespace Dargon.Courier {
          });
          var peerAnnouncementHandler = new PeerAnnouncementHandler(peerTable);
          inboundPayloadEventRouter.RegisterHandler<AnnouncementDto>(peerAnnouncementHandler.HandleAnnouncementAsync);
+         container.Set(peerTable);
 
          // messaging
          var inboundMessageRouter = new InboundMessageRouter();
-         var inboundMessageDispatcher = new InboundMessageDispatcher(peerTable, inboundMessageRouter);
+         var inboundMessageDispatcher = new InboundMessageDispatcher(identity, peerTable, inboundMessageRouter);
          var nongenericInboundMessageToGenericMessageDispatchInvoker = new NongenericInboundMessageToGenericDispatchInvoker();
          inboundPacketEventRouter.RegisterHandler<MessageDto>(
             e => nongenericInboundMessageToGenericMessageDispatchInvoker.InvokeDispatchAsync(
@@ -121,7 +126,6 @@ namespace Dargon.Courier {
          outboundMessageEventBus.Subscribe(async (bus, e) => {
             await outboundPacketEventEmitter.EmitAsync(
                e.Message,
-               e.Destination,
                e.Reliable,
                e.TagEvent);
          });
@@ -136,7 +140,11 @@ namespace Dargon.Courier {
          //----------------------------------------------------------------------------------------
          var localServiceRegistry = new LocalServiceRegistry(messenger);
          var remoteServiceInvoker = new RemoteServiceInvoker(messenger);
+         var remoteServiceProxyContainer = new RemoteServiceProxyContainer(proxyGenerator, remoteServiceInvoker);
          inboundMessageRouter.RegisterHandler<RmiRequestDto>(localServiceRegistry.HandleInvocationRequestAsync);
+         inboundMessageRouter.RegisterHandler<RmiResponseDto>(remoteServiceInvoker.HandleInvocationResponse);
+         container.Set(localServiceRegistry);
+         container.Set(remoteServiceProxyContainer);
          return container;
       }
    }

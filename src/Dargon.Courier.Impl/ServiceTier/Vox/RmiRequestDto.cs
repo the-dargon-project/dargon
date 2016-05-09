@@ -17,6 +17,7 @@ namespace Dargon.Courier.ServiceTier.Vox {
    /// <summary>
    /// Remote Method Invocation Response Data Transfer Object
    /// </summary>
+   [AutoSerializable]
    public class RmiResponseDto {
       public Guid InvocationId { get; set; }
       public object ReturnValue { get; set; }

@@ -24,5 +24,10 @@
 
     "compilationOptions": {
         "allowUnsafe": true
+    },
+
+    "scripts": {
+        "prebuild": [ "" ],
+        "postbuild": [ "powershell ../../../FodyDnx/src/exec-fody-weavers.ps1 -ProjectDir %cd%" ]
     }
 }
