@@ -5,22 +5,15 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.TestUtilities {
    public class TestTransport : ITransport {
-      private IAsyncPoster<InboundDataEvent> inboundDataEventPoster;
-      private IAsyncSubscriber<MemoryStream> outboundDataSubscriber;
-
       public void Start(IAsyncPoster<InboundDataEvent> inboundDataEventPoster, IAsyncSubscriber<MemoryStream> outboundDataSubscriber) {
-         this.inboundDataEventPoster = inboundDataEventPoster;
-         this.outboundDataSubscriber = outboundDataSubscriber;
+         outboundDataSubscriber.Subscribe(async (s, ms) => {
+            await Task.Yield();
 
-         this.outboundDataSubscriber.Subscribe(HandleOutboundData);
-      }
-
-      private Task HandleOutboundData(IAsyncSubscriber<MemoryStream> s, MemoryStream ms) {
-         inboundDataEventPoster.PostAsync(
-            new InboundDataEvent {
-               Data = ms.ToArray()
-            }).Forget();
-         return Task.FromResult(false);
+            inboundDataEventPoster.PostAsync(
+               new InboundDataEvent {
+                  Data = ms.ToArray()
+               }).Forget();
+         });
       }
 
       /// <summary>

@@ -8,11 +8,13 @@ using Xunit;
 
 namespace Dargon.Courier {
    public class MessagingTests : NMockitoInstance {
-      private readonly IRyuContainer container;
+      private readonly IRyuContainer app1Container;
+      private readonly IRyuContainer app2Container;
 
       public MessagingTests() {
-         var ryu = new RyuFactory().Create();
-         container = new CourierContainerFactory(ryu).Create(new TestTransport());
+         var transport = new TestTransport();
+         app1Container = new CourierContainerFactory(new RyuFactory().Create()).Create(transport);
+         app2Container = new CourierContainerFactory(new RyuFactory().Create()).Create(transport);
       }
 
       [Fact(Timeout = 10000)]
@@ -20,7 +22,7 @@ namespace Dargon.Courier {
          var str = CreatePlaceholder<string>();
 
          var latch = new AsyncLatch();
-         var router = container.GetOrThrow<InboundMessageRouter>();
+         var router = app1Container.GetOrThrow<InboundMessageRouter>();
          router.RegisterHandler<string>(async x => {
             await Task.Yield();
 
@@ -28,7 +30,7 @@ namespace Dargon.Courier {
             latch.Set();
          });
 
-         var messenger = container.GetOrThrow<Messenger>();
+         var messenger = app1Container.GetOrThrow<Messenger>();
          await messenger.BroadcastAsync(str);
 
          await latch.WaitAsync();
@@ -39,7 +41,7 @@ namespace Dargon.Courier {
          var str = CreatePlaceholder<string>();
 
          var latch = new AsyncLatch();
-         var router = container.GetOrThrow<InboundMessageRouter>();
+         var router = app1Container.GetOrThrow<InboundMessageRouter>();
          router.RegisterHandler<string>(async x => {
             await Task.Yield();
 
@@ -47,7 +49,26 @@ namespace Dargon.Courier {
             latch.Set();
          });
 
-         var messenger = container.GetOrThrow<Messenger>();
+         var messenger = app1Container.GetOrThrow<Messenger>();
+         await messenger.BroadcastAsync(str);
+
+         await latch.WaitAsync();
+      }
+
+      [Fact(Timeout = 10000)]
+      public async Task ReliableTest() {
+         var str = CreatePlaceholder<string>();
+
+         var latch = new AsyncLatch();
+         var router = app1Container.GetOrThrow<InboundMessageRouter>();
+         router.RegisterHandler<string>(async x => {
+            await Task.Yield();
+
+            AssertEquals(str, x.Body);
+            latch.Set();
+         });
+
+         var messenger = app1Container.GetOrThrow<Messenger>();
          await messenger.BroadcastAsync(str);
 
          await latch.WaitAsync();
