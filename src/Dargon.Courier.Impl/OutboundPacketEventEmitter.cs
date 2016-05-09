@@ -27,21 +27,25 @@ namespace Dargon.Courier {
          outboundPacketEvent.Packet.Flags = reliable ? PacketFlags.Reliable : PacketFlags.None;
          outboundPacketEvent.TagEvent = tagEvent;
 
-         using (var cts = new CancellationTokenSource()) {
-            var expectation = acknowledgementCoordinator.Expect(
-               outboundPacketEvent.Packet.Id,
-               cts.Token);
-            expectation.ContinueWith(state => {
-               cts.Cancel();
-            }, cts.Token).Forget();
+         if (!reliable) {
+            await outboundPacketEventPoster.PostAsync(outboundPacketEvent);
+         } else {
+            using (var cts = new CancellationTokenSource()) {
+               var expectation = acknowledgementCoordinator.Expect(
+                  outboundPacketEvent.Packet.Id,
+                  cts.Token);
+               expectation.ContinueWith(state => {
+                  cts.Cancel();
+               }, cts.Token).Forget();
 
-            const int resendDelay = 1000;
-            while (!expectation.IsCompleted) {
-               try {
-                  await outboundPacketEventPoster.PostAsync(outboundPacketEvent);
-                  await Task.Delay(resendDelay, cts.Token);
-               } catch (TaskCanceledException) {
-                  // It's on the Task.Delay
+               const int resendDelay = 1000;
+               while (!expectation.IsCompleted) {
+                  try {
+                     await outboundPacketEventPoster.PostAsync(outboundPacketEvent);
+                     await Task.Delay(resendDelay, cts.Token);
+                  } catch (TaskCanceledException) {
+                     // It's on the Task.Delay
+                  }
                }
             }
          }

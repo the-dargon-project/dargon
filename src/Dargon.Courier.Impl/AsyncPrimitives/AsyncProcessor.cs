@@ -24,6 +24,8 @@ namespace Dargon.Courier.AsyncPrimitives {
       public async Task ProcessAsync(TInput input) {
          var state = asyncStatePool.TakeObject();
          state.Input = input;
+         queue.Enqueue(state);
+         semaphore.Release();
 
          await state.Sync.WaitAsync();
 

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.Pooling;
 using Nito.AsyncEx;
+using NLog;
 
 namespace Dargon.Courier.TransitTier {
    public class UdpTransport : IDisposable {
@@ -16,6 +17,7 @@ namespace Dargon.Courier.TransitTier {
       private static readonly IPAddress kMulticastAddress = IPAddress.Parse("235.13.33.37");
       private static readonly IPEndPoint kSendEndpoint = new IPEndPoint(kMulticastAddress, kPort);
       private static readonly IPEndPoint kReceiveEndpoint = new IPEndPoint(IPAddress.Any, kPort);
+      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
       private readonly List<Socket> sockets;
       private readonly IAsyncPoster<InboundDataEvent> inboundDataEventPoster;
@@ -59,6 +61,7 @@ namespace Dargon.Courier.TransitTier {
       }
 
       private async Task HandleReceiveCompletedHelperAsync(SocketAsyncEventArgs e) {
+         logger.Error($"Received from {e.RemoteEndPoint} {e.BytesTransferred} bytes!");
          var inboundDataEvent = inboundDataEventPool.TakeObject();
          inboundDataEvent.Data = e.Buffer;
          await inboundDataEventPoster.PostAsync(inboundDataEvent);
@@ -67,6 +70,7 @@ namespace Dargon.Courier.TransitTier {
       }
 
       private Task HandleOutboundDataSendAsync(IAsyncSubscriber<MemoryStream> subscriber, MemoryStream payload) {
+         logger.Error($"Sending {payload.Length} bytes!");
          var sync = asyncAutoResetEventPool.TakeObject();
          foreach (var socket in sockets) {
             var e = sendArgsPool.TakeObject();
@@ -108,7 +112,7 @@ namespace Dargon.Courier.TransitTier {
          socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
          socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(kMulticastAddress));
          socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, 1); //0: localhost, 1: lan (via switch)
-         socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(adapterIndex));
+         socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, (int)IPAddress.HostToNetworkOrder(adapterIndex));
          socket.Bind(new IPEndPoint(IPAddress.Any, kPort));
          return socket;
       }

@@ -24,5 +24,7 @@ namespace Dargon.Courier {
             Name = $"{hostName}:{id.ToString("N").Substring(8)}"
          };
       }
+
+      public override string ToString() => $"[Identity Id = {Id}, Name = {Name}]";
    }
 }

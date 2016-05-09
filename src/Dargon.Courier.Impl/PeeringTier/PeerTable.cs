@@ -1,6 +1,7 @@
 using System;
 using Dargon.Commons.Collections;
 using Dargon.Ryu;
+using NLog;
 
 namespace Dargon.Courier.PeeringTier {
    public class PeerTable {
@@ -16,6 +17,10 @@ namespace Dargon.Courier.PeeringTier {
       public IRyuContainer Container => container;
 
       public PeerContext GetOrAdd(Guid id) {
+         if (id == Guid.Empty) {
+            throw new InvalidOperationException("Cannot get peer context of broadcast.");
+         }
+
          return peerContextsById.GetOrAdd(
             id, add => peerContextFactory(this));
       }

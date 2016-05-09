@@ -12,11 +12,18 @@ using System.IO;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.ServiceTier.Vox;
+using NLog;
 
 namespace Dargon.Courier {
    [RequiredFieldsConstructor]
    public class CourierContainerFactory {
-      private readonly IRyuContainer root = null;
+      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
+      private readonly IRyuContainer root;
+
+      public CourierContainerFactory(IRyuContainer root) {
+         this.root = root;
+      }
 
       public IRyuContainer Create() {
          var container = root.CreateChildContainer();
@@ -116,7 +123,9 @@ namespace Dargon.Courier {
                e.Reliable,
                e.TagEvent);
          });
-         var outboundMessageEventPool = ObjectPool.Create(() => new OutboundMessageEvent());
+         var outboundMessageEventPool = ObjectPool.Create(() => new OutboundMessageEvent {
+            Message = new MessageDto { SenderId = identity.Id }
+         });
          var messenger = new Messenger(outboundMessageEventPool, outboundMessageEventBus.Poster());
          container.Set(messenger);
 

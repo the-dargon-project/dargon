@@ -86,7 +86,7 @@ namespace Dargon.Courier.AsyncPrimitives {
       }
 
       private class Inner : AsyncRouter<InternalRoutableInboundMessageEvent, InternalRoutableInboundMessageEvent> {
-         public Inner() : base(x => x.Message.Body.GetType(), x => x) {}
+         public Inner() : base(x => x.Body.GetType(), x => x) {}
       }
    }
 }

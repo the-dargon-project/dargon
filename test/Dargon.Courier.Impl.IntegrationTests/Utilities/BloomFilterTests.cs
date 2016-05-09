@@ -14,7 +14,7 @@ namespace Dargon.Courier.Utilities {
       
       [Fact]
       public void PerformanceTest() {
-         const int guidCount = 200000;
+         const int guidCount = 150000;
          const int timeAllowed = 1000;
          var guids = Util.Generate(guidCount, Guid.NewGuid);
          var sw = new Stopwatch();

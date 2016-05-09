@@ -6,6 +6,12 @@
     "dependencies": {
         "Dargon.Courier.Api": "",
         "Dargon.Courier.Impl": "",
+        "Dargon.Ryu.Api": "",
+        "Dargon.Ryu.Impl": "",
         "NMockito": ""
+    },
+
+    "compilationOptions": {
+        "emitEntryPoint": true
     }
 }
