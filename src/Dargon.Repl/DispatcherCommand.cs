@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Dargon.Commons;
 using Dargon.Nest.Repl;
 using Dargon.Repl;
-using ItzWarty;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Dargon.Nest {
    public class DispatcherCommand : ICommand, IDispatcher {
@@ -28,7 +28,7 @@ namespace Dargon.Nest {
 
       public int Eval(string args) {
          string commandName;
-         args = Util.NextToken(args, out commandName);
+         args = Tokenizer.Next(args, out commandName);
 
          if (string.IsNullOrWhiteSpace(commandName) || commandName.Equals("help", StringComparison.OrdinalIgnoreCase)) {
             PrettyPrint.List(commandsByName.Select(kvp => kvp.Key));

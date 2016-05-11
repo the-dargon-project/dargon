@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Dargon.Nest {
+﻿namespace Dargon.Nest {
    public interface ICommand {
       string Name { get; }
       int Eval(string args);
