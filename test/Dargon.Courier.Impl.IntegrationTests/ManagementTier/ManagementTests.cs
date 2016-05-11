@@ -26,7 +26,7 @@ namespace Dargon.Courier.ServiceTier {
       public void Run() {
          courierContainer.GetOrThrow<ManagementObjectRegistry>()
                          .RegisterService(new TestMob());
-         var managementObjectDirectoryService = courierContainer.GetOrThrow<ManagementObjectDirectoryService>();
+         var managementObjectDirectoryService = courierContainer.GetOrThrow<ManagementObjectService>();
 
          var mobIds = managementObjectDirectoryService.EnumerateManagementObjectIds();
          AssertSequenceEquals(Guid.Parse(kTestMobGuid).Wrap(), mobIds);

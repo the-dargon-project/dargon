@@ -1,6 +1,6 @@
 ﻿{
   "version": "1.0.0-*",
-  "description": "dargon-management-interface Console Application",
+  "description": "Dargon Management Interface",
   "authors": [ "Warty" ],
   "tags": [ "" ],
   "projectUrl": "",
@@ -15,26 +15,14 @@
         "Dargon.Courier.Impl": "",
         "Dargon.Ryu.Api": "",
         "Dargon.Ryu.Impl": "",
-        "Perspex": "0.2.0-alpha3",
-        "Perspex.Desktop": "0.2.0-alpha3",
-        "Rx-Core": "2.2.5",
-        "Rx-Interfaces": "2.2.5",
-        "Rx-Linq": "2.2.5",
-        "Rx-Main": "2.2.5",
-        "Rx-PlatformServices": "2.2.5",
-        "Rx-XAML": "2.2.5",
-        "Serilog": "1.5.9",
-        "SharpDX": "3.0.0-rc017",
-        "SharpDX.Direct2D1": "3.0.0-rc017",
-        "SharpDX.DXGI": "3.0.0-rc017",
-        "Splat": "1.6.2",
-        "Sprache": "2.0.0.47"
+        "Dargon.Repl": ""
     },
 
   "frameworks": {
-    "net452": {
+    "net451": {
         "frameworkAssemblies": {
-            "System.ObjectModel": "4.0.0.0"
+            "System.ObjectModel": "4.0.0.0",
+            "System.Windows.Forms": "4.0.0.0"
         }
     }
   }

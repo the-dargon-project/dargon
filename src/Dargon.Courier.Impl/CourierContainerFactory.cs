@@ -150,10 +150,8 @@ namespace Dargon.Courier {
          //----------------------------------------------------------------------------------------
          // Management Tier - DMI
          //----------------------------------------------------------------------------------------
-         var managementObjectRegistry = new ManagementObjectRegistry(localServiceRegistry);
-         var managementObjectDirectoryService = new ManagementObjectDirectoryService(managementObjectRegistry);
-         container.Set(managementObjectRegistry);
-         container.Set(managementObjectDirectoryService);
+         var managementObjectService = new ManagementObjectService();
+         container.Set(managementObjectService);
          return container;
       }
    }
