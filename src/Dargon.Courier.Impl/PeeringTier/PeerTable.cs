@@ -1,7 +1,7 @@
-using System;
 using Dargon.Commons.Collections;
 using Dargon.Ryu;
-using NLog;
+using System;
+using System.Collections.Generic;
 
 namespace Dargon.Courier.PeeringTier {
    public class PeerTable {
@@ -24,5 +24,7 @@ namespace Dargon.Courier.PeeringTier {
          return peerContextsById.GetOrAdd(
             id, add => peerContextFactory(this));
       }
+
+      public IEnumerable<PeerContext> Enumerate() => peerContextsById.Values;
    }
 }

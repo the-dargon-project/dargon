@@ -18,6 +18,7 @@ namespace Dargon.Courier {
          new MessagingTests().BroadcastTest().Wait();
          new MessagingTests().ReliableTest().Wait();
          new ServiceTests().Run();
+         new ManagementTests().Run();
       }
 
       private static void InitializeLogging() {

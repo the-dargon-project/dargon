@@ -10,6 +10,7 @@ using Dargon.Vox;
 using Fody.Constructors;
 using System.IO;
 using Castle.DynamicProxy;
+using Dargon.Courier.ManagementTier;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.ServiceTier.Vox;
@@ -145,6 +146,14 @@ namespace Dargon.Courier {
          inboundMessageRouter.RegisterHandler<RmiResponseDto>(remoteServiceInvoker.HandleInvocationResponse);
          container.Set(localServiceRegistry);
          container.Set(remoteServiceProxyContainer);
+
+         //----------------------------------------------------------------------------------------
+         // Management Tier - DMI
+         //----------------------------------------------------------------------------------------
+         var managementObjectRegistry = new ManagementObjectRegistry(localServiceRegistry);
+         var managementObjectDirectoryService = new ManagementObjectDirectoryService(managementObjectRegistry);
+         container.Set(managementObjectRegistry);
+         container.Set(managementObjectDirectoryService);
          return container;
       }
    }
