@@ -5,6 +5,12 @@ using System.Threading.Tasks;
 
 namespace Dargon.Ryu {
    public static class RyuContainerExtensions {
+      public static T GetOrDefault<T>(this IRyuContainer container) {
+         T result;
+         container.TryGet<T>(out result);
+         return result;
+      }
+
       public static T GetOrThrow<T>(this IRyuContainer container) {
          return (T)container.GetOrThrow(typeof(T));
       }

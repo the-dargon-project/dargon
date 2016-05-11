@@ -11,6 +11,7 @@ namespace Dargon.Ryu.Internals {
 
    public class AssemblyLoader : IAssemblyLoader {
       private static readonly string[] kAssemblyExtensions = { ".dll", ".exe" };
+      private static readonly string[] kExcludedFilePathFilter = { "xunit" };
       private readonly IRyuLogger logger;
 
       public AssemblyLoader(IRyuLogger logger) {
@@ -30,7 +31,8 @@ namespace Dargon.Ryu.Internals {
 
       public void LoadAssembliesFromDirectory(string directory) {
          foreach (var path in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)) {
-            if (path.EndsWithAny(kAssemblyExtensions, StringComparison.OrdinalIgnoreCase)) {
+            if (path.EndsWithAny(kAssemblyExtensions, StringComparison.OrdinalIgnoreCase) &&
+                !path.ContainsAny(kExcludedFilePathFilter, StringComparison.OrdinalIgnoreCase)) {
                try {
                   Assembly.LoadFrom(path);
                   logger.LoadedAssemblyFromPath(path);
