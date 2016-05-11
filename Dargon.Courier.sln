@@ -50,8 +50,6 @@ Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "Dargon.Courier.Impl.Integra
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "dargon-management-interface", "dependencies\courier\src\dargon-management-interface\dargon-management-interface.xproj", "{DC6C332E-10DB-4097-8FAF-84F505250A3C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dargon.management-interface", "dependencies\courier\src\dargon.management-interface_\dargon.management-interface.csproj", "{79872398-F5A6-4F34-9596-447D1CFBCAB4}"
-EndProject
 Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "dargon-management-interface", "dependencies\courier\src\dargon-management-interface\bin\Debug\net452\dargon-management-interface.exe", "{9F7834D7-F3AF-4691-9D35-E8580BC80D8E}"
 	ProjectSection(DebuggerProjectSystem) = preProject
 		PortSupplier = 00000000-0000-0000-0000-000000000000
@@ -64,6 +62,10 @@ Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "dargon-management-interface
 		LaunchSQLEngine = No
 		AttachLaunchAction = No
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dargon-management-interface_", "..\dargon-management-interface\dargon-management-interface_.csproj", "{79872398-F5A6-4F34-9596-447D1CFBCAB4}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Repl", "dependencies\repl\src\Dargon.Repl\Dargon.Repl.xproj", "{B8BA80E1-0831-4613-8A80-14E5E34696BD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -117,12 +119,16 @@ Global
 		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F7834D7-F3AF-4691-9D35-E8580BC80D8E}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{9F7834D7-F3AF-4691-9D35-E8580BC80D8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9F7834D7-F3AF-4691-9D35-E8580BC80D8E}.Debug|Any CPU.ActiveCfg = Release|Any CPU
-		{9F7834D7-F3AF-4691-9D35-E8580BC80D8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8BA80E1-0831-4613-8A80-14E5E34696BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8BA80E1-0831-4613-8A80-14E5E34696BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8BA80E1-0831-4613-8A80-14E5E34696BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8BA80E1-0831-4613-8A80-14E5E34696BD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -140,5 +146,6 @@ Global
 		{5DDF8899-F77A-49C9-A814-372388ECF5BD} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
 		{DC6C332E-10DB-4097-8FAF-84F505250A3C} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
 		{79872398-F5A6-4F34-9596-447D1CFBCAB4} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
+		{B8BA80E1-0831-4613-8A80-14E5E34696BD} = {717230C9-AFBC-456B-A700-9CFC5FB5FDD6}
 	EndGlobalSection
 EndGlobal

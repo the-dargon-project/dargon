@@ -21,3 +21,7 @@
 	path = dependencies/NMockito
 	url = ssh://git@github.com/the-dargon-project/NMockito.git
 	branch = master
+[submodule "dependencies/repl"]
+	path = dependencies/repl
+	url = ssh://git@github.com/the-dargon-project/repl.git
+	branch = master
