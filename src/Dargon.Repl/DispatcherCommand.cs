@@ -1,11 +1,9 @@
 ﻿using Dargon.Commons;
-using Dargon.Nest.Repl;
-using Dargon.Repl;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Dargon.Nest {
+namespace Dargon.Repl {
    public class DispatcherCommand : ICommand, IDispatcher {
       private readonly Dictionary<string, ICommand> commandsByName = new Dictionary<string, ICommand>();
       private readonly string name;

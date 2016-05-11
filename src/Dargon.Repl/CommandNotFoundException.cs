@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Dargon.Nest.Repl {
+namespace Dargon.Repl {
    public class CommandNotFoundException : Exception {
       public CommandNotFoundException(string s) : base(s) {
       }

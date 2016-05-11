@@ -1,6 +1,6 @@
 using System;
 
-namespace Dargon.Nest.Repl {
+namespace Dargon.Repl {
    public class ExitCommand : ICommand {
       public string Name { get { return "exit"; } }
 

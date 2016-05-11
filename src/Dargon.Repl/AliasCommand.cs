@@ -1,6 +1,4 @@
-﻿using Dargon.Nest;
-
-namespace Dargon.Repl {
+﻿namespace Dargon.Repl {
    public class AliasCommand : ICommand {
       public AliasCommand(string name, ICommand target) {
          Name = name;

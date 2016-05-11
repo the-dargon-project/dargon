@@ -1,4 +1,4 @@
-﻿namespace Dargon.Nest {
+﻿namespace Dargon.Repl {
    public interface ICommand {
       string Name { get; }
       int Eval(string args);
