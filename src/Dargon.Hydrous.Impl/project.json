@@ -1,0 +1,20 @@
+﻿{
+    "version": "1.0.0-*",
+    "description": "Dargon.Hydrous.Impl Class Library",
+    "authors": [ "Warty" ],
+    "tags": [ "" ],
+    "projectUrl": "",
+    "licenseUrl": "",
+
+    "dependencies": {
+        "Dargon.Commons": "",
+        "Dargon.Courier.Api": "",
+        "Dargon.Courier.Impl": "",
+        "Dargon.Vox": ""
+    },
+
+    "frameworks": {
+        "net451": {
+        }
+    }
+}

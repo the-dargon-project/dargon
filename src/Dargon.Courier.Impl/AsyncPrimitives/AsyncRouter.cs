@@ -60,16 +60,20 @@ namespace Dargon.Courier.AsyncPrimitives {
       }
 
       private static class DispatchVisitor<T> {
-         private static readonly IObjectPool<InboundMessageEvent<T>> pool = ObjectPool.Create(() => new InboundMessageEvent<T>());
+         private static readonly IObjectPool<InboundMessageEvent<T>> pool =
+            ObjectPool.Create<InboundMessageEvent<T>>(
+               pool => new InboundMessageEvent<T>(pool));
 
          public static async Task Visit(InboundPacketEvent e, InboundMessageDispatcher dispatcher) {
             var inboundMessageEvent = pool.TakeObject();
             inboundMessageEvent.PacketEvent = e;
 
+            inboundMessageEvent.AddRef();
+
             await dispatcher.DispatchAsync(inboundMessageEvent);
 
-            inboundMessageEvent.PacketEvent = null;
-            pool.ReturnObject(inboundMessageEvent);
+            // clears and returns self to pool when ref hits 0.
+            inboundMessageEvent.ReleaseRef();
          }
       }
    }
@@ -77,8 +81,8 @@ namespace Dargon.Courier.AsyncPrimitives {
    public class InboundMessageRouter {
       private readonly Inner inner = new Inner();
 
-      public void RegisterHandler<T>(Func<InboundMessageEvent<T>, Task> handler) {
-         inner.RegisterHandler<T>(x => handler((InboundMessageEvent<T>)x));
+      public void RegisterHandler<T>(Func<IInboundMessageEvent<T>, Task> handler) {
+         inner.RegisterHandler<T>(x => handler((IInboundMessageEvent<T>)x));
       }
 
       public Task RouteAsync<T>(InboundMessageEvent<T> x) {

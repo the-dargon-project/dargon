@@ -1,20 +1,19 @@
-﻿using System;
+﻿using Castle.DynamicProxy;
 using Dargon.Commons.Pooling;
 using Dargon.Courier.AsyncPrimitives;
+using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PacketTier;
 using Dargon.Courier.PeeringTier;
+using Dargon.Courier.ServiceTier.Client;
+using Dargon.Courier.ServiceTier.Server;
+using Dargon.Courier.ServiceTier.Vox;
 using Dargon.Courier.TransitTier;
 using Dargon.Courier.Vox;
 using Dargon.Ryu;
 using Dargon.Vox;
 using Fody.Constructors;
-using System.IO;
-using Castle.DynamicProxy;
-using Dargon.Courier.ManagementTier;
-using Dargon.Courier.ServiceTier.Client;
-using Dargon.Courier.ServiceTier.Server;
-using Dargon.Courier.ServiceTier.Vox;
 using NLog;
+using System.IO;
 
 namespace Dargon.Courier {
    [RequiredFieldsConstructor]
