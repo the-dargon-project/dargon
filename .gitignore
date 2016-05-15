@@ -184,5 +184,6 @@ UpgradeLog*.htm
 # Microsoft Fakes
 FakesAssemblies/
 
-# Nuget Executables and configuration
-NuGet.exe
+# dotnet
+project.lock.json
+scriptcs_*
