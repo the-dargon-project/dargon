@@ -7,7 +7,7 @@
 
     "dependencies": {
         "Castle.Core": "3.3.3",
-        "Dargon.Ryu.Api": "",
-        "Dargon.Commons": ""
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Commons": "*"
     }
 }
