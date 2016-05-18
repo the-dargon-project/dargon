@@ -7,6 +7,6 @@
     
     "dependencies": {
        "Castle.Core": "3.3.3",
-       "xunit": "1.9.2"
+       "xunit": "2.1.0-rc2-build3176"
     }
 }
