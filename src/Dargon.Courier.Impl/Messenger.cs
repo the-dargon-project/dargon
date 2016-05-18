@@ -31,7 +31,7 @@ namespace Dargon.Courier {
          e.Message.ReceiverId = destination;
          e.Reliable = reliable;
 
-         await outboundMessageEventPoster.PostAsync(e);
+         await outboundMessageEventPoster.PostAsync(e).ConfigureAwait(false);
 
          e.Message.Body = null;
          e.Message.ReceiverId = Guid.Empty;

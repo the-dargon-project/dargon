@@ -1,5 +1,4 @@
 ﻿using Dargon.Courier.ServiceTier.Server;
-using Dargon.Courier.TestUtilities;
 using Dargon.Ryu;
 using NMockito;
 using System;
@@ -9,6 +8,7 @@ using Dargon.Commons;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.ServiceTier.Client;
+using Dargon.Courier.TransitTier;
 using NMockito.Utilities;
 using Xunit;
 
@@ -24,12 +24,14 @@ namespace Dargon.Courier.ServiceTier {
 
       [Fact]
       public void Run() {
-         courierContainer.GetOrThrow<ManagementObjectRegistry>()
+         courierContainer.GetOrThrow<ManagementObjectService>()
                          .RegisterService(new TestMob());
          var managementObjectDirectoryService = courierContainer.GetOrThrow<ManagementObjectService>();
 
-         var mobIds = managementObjectDirectoryService.EnumerateManagementObjectIds();
-         AssertSequenceEquals(Guid.Parse(kTestMobGuid).Wrap(), mobIds);
+         var mobIdentifierDtos = managementObjectDirectoryService.EnumerateManagementObjects().ToList();
+         AssertEquals(1, mobIdentifierDtos.Count);
+         AssertEquals(Guid.Parse(kTestMobGuid), mobIdentifierDtos[0].Id);
+         AssertEquals(typeof(TestMob).FullName, mobIdentifierDtos[0].FullName);
 
          var mobDescription = managementObjectDirectoryService.GetManagementObjectDescription(Guid.Parse(kTestMobGuid));
          AssertEquals(1, mobDescription.Methods.Count);

@@ -33,7 +33,7 @@ namespace Dargon.Courier.ServiceTier.Server {
          }
       }
 
-      public async Task HandleInvocationRequestAsync(InboundMessageEvent<RmiRequestDto> e) {
+      public async Task HandleInvocationRequestAsync(IInboundMessageEvent<RmiRequestDto> e) {
          var request = e.Body;
          object service;
          if (!services.TryGetValue(request.ServiceId, out service)) {
@@ -61,7 +61,7 @@ namespace Dargon.Courier.ServiceTier.Server {
          await RespondSuccess(e, outParameters.Select(p => args[p.Position]).ToArray(), result);
       }
 
-      private Task RespondSuccess(InboundMessageEvent<RmiRequestDto> e, object[] outParameters, object result) {
+      private Task RespondSuccess(IInboundMessageEvent<RmiRequestDto> e, object[] outParameters, object result) {
          return messenger.SendReliableAsync(
             new RmiResponseDto {
                InvocationId = e.Body.InvocationId,
@@ -72,7 +72,7 @@ namespace Dargon.Courier.ServiceTier.Server {
             e.Sender.Identity.Id);
       }
 
-      private Task RespondError(InboundMessageEvent<RmiRequestDto> e, Exception ex) {
+      private Task RespondError(IInboundMessageEvent<RmiRequestDto> e, Exception ex) {
          return messenger.SendReliableAsync(
             new RmiResponseDto {
                InvocationId = e.Body.InvocationId,

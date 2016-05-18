@@ -1,4 +1,4 @@
-﻿{
+{
     "version": "1.0.0-*",
     "description": "Dargon.Hydrous.Impl Class Library",
     "authors": [ "Warty" ],
@@ -6,15 +6,22 @@
     "projectUrl": "",
     "licenseUrl": "",
 
+    "compilationOptions": {
+        "emitEntryPoint": true 
+    },
+
     "dependencies": {
-        "Dargon.Commons": "",
-        "Dargon.Courier.Api": "",
-        "Dargon.Courier.Impl": "",
-        "Dargon.Vox": ""
+        "Dargon.Commons": "*",
+        "Dargon.Courier.Api": "*",
+        "Dargon.Courier.Impl": "*",
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Ryu.Impl": "*",
+        "Dargon.Vox": "*"
     },
 
     "frameworks": {
         "net451": {
         }
-    }
+    },
+    "userSecretsId": "aspnet-Dargon.Hydrous.Impl-20160517010505"
 }

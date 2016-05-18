@@ -1,10 +1,9 @@
 ﻿using Dargon.Commons;
-using Dargon.Courier.TransitTier;
+using Dargon.Commons.Collections;
 using System.IO;
 using System.Threading.Tasks;
-using Dargon.Commons.Collections;
 
-namespace Dargon.Courier.TestUtilities {
+namespace Dargon.Courier.TransitTier {
    public class TestTransport : ITransport {
       private readonly ConcurrentSet<IAsyncPoster<InboundDataEvent>> inboundDataEventPosters = new ConcurrentSet<IAsyncPoster<InboundDataEvent>>();
 

@@ -1,17 +1,18 @@
 ﻿{
     "frameworks": {
-        "net451": { }
+        "net451": {
+        }
     },
 
     "dependencies": {
-        "Dargon.Courier.Api": "",
-        "Dargon.Courier.Impl": "",
-        "Dargon.Ryu.Api": "",
-        "Dargon.Ryu.Impl": "",
-        "NMockito": ""
+        "Dargon.Courier.Api": "*",
+        "Dargon.Courier.Impl": "*",
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Ryu.Impl": "*",
+        "NMockito": "*",
+        "xunit": "2.2.0-beta2-build3279", 
+        "dotnet-test-xunit": "1.0.0-rc3-build10019"
     },
 
-    "compilationOptions": {
-        "emitEntryPoint": true
-    }
+    "testRunner": "xunit"
 }

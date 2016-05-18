@@ -15,7 +15,7 @@ namespace Dargon.Courier.ServiceTier.Client {
          this.messenger = messenger;
       }
 
-      public async Task HandleInvocationResponse(InboundMessageEvent<RmiResponseDto> x) {
+      public async Task HandleInvocationResponse(IInboundMessageEvent<RmiResponseDto> x) {
          await Task.Yield();
 
          var response = x.Body;

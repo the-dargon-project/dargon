@@ -3,7 +3,7 @@ using Dargon.Courier.AsyncPrimitives;
 using Dargon.Ryu;
 using NMockito;
 using System.Threading.Tasks;
-using Dargon.Courier.TestUtilities;
+using Dargon.Courier.TransitTier;
 using Xunit;
 
 namespace Dargon.Courier {
@@ -17,39 +17,44 @@ namespace Dargon.Courier {
          receiverContainer = new CourierContainerFactory(new RyuFactory().Create()).Create(transport);
       }
 
-      [Fact(Timeout = 10000)]
+      [Fact]
       public async Task BroadcastTest() {
-         var str = CreatePlaceholder<string>();
+         using (var timeout = new CancellationTokenSource(10000)) {
+            var str = CreatePlaceholder<string>();
 
-         var latch = new AsyncLatch();
-         var router = receiverContainer.GetOrThrow<InboundMessageRouter>();
-         router.RegisterHandler<string>(async x => {
-            await Task.Yield();
+            var latch = new AsyncLatch();
+            var router = receiverContainer.GetOrThrow<InboundMessageRouter>();
+            router.RegisterHandler<string>(async x => {
+               await Task.Yield();
 
-            AssertEquals(str, x.Body);
-            latch.Set();
-         });
+               AssertEquals(str, x.Body);
+               latch.Set();
+            });
 
-         await senderContainer.GetOrThrow<Messenger>().BroadcastAsync(str);
-         await latch.WaitAsync();
+            await senderContainer.GetOrThrow<Messenger>().BroadcastAsync(str);
+            await latch.WaitAsync(timeout.Token);
+         }
       }
 
-      [Fact(Timeout = 10000)]
+      [Fact]
       public async Task ReliableTest() {
-         var str = CreatePlaceholder<string>();
+         using (var timeout = new CancellationTokenSource(10000)) {
 
-         var latch = new AsyncLatch();
-         var router = receiverContainer.GetOrThrow<InboundMessageRouter>();
-         router.RegisterHandler<string>(async x => {
-            await Task.Yield();
+            var str = CreatePlaceholder<string>();
 
-            AssertEquals(str, x.Body);
-            latch.Set();
-         });
+            var latch = new AsyncLatch();
+            var router = receiverContainer.GetOrThrow<InboundMessageRouter>();
+            router.RegisterHandler<string>(async x => {
+               await Task.Yield();
 
-         var messenger = senderContainer.GetOrThrow<Messenger>();
-         await messenger.SendReliableAsync(str, receiverContainer.GetOrThrow<Identity>().Id);
-         await latch.WaitAsync();
+               AssertEquals(str, x.Body);
+               latch.Set();
+            });
+
+            var messenger = senderContainer.GetOrThrow<Messenger>();
+            await messenger.SendReliableAsync(str, receiverContainer.GetOrThrow<Identity>().Id);
+            await latch.WaitAsync(timeout.Token);
+         }
       }
    }
 }

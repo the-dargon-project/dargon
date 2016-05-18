@@ -27,38 +27,20 @@ namespace Dargon.Courier {
    }
 
    public interface IInboundMessageEvent<out T> {
-      void AddRef();
-      void ReleaseRef();
-
       InboundPacketEvent PacketEvent { get; }
 
       MessageDto Message { get; }
       T Body { get; }
       PeerContext Sender { get; }
+      Guid SenderId { get; }
    }
 
-   public class InboundMessageEvent<T> :IInboundMessageEvent<T>, InternalRoutableInboundMessageEvent {
+   public class InboundMessageEvent<T> : IInboundMessageEvent<T>, InternalRoutableInboundMessageEvent {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
       private readonly IObjectPool<InboundMessageEvent<T>> eventPool;
-      private int refCount = 0;
 
       public InboundMessageEvent(IObjectPool<InboundMessageEvent<T>> eventPool) {
          this.eventPool = eventPool;
-      }
-
-      ~InboundMessageEvent() {
-         logger.Warn($"InboundMessageEvent of {typeof(T).FullName} leaked!");
-         refCount = 0;
-         eventPool.ReturnObject(this);
-      }
-
-      public void AddRef() => Interlocked.Increment(ref refCount);
-
-      public void ReleaseRef() {
-         if (Interlocked.Decrement(ref refCount) == 0) {
-            PacketEvent = null;
-            eventPool.ReturnObject(this);
-         }
       }
 
       public InboundPacketEvent PacketEvent { get; set; }
@@ -66,6 +48,7 @@ namespace Dargon.Courier {
       public MessageDto Message => (MessageDto) PacketEvent.Packet.Payload;
       public T Body => (T)Message.Body;
       public PeerContext Sender { get; set; }
+      public Guid SenderId => Sender.Identity.Id;
 
       object InternalRoutableInboundMessageEvent.Body => Body;
    }

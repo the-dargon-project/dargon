@@ -68,12 +68,7 @@ namespace Dargon.Courier.AsyncPrimitives {
             var inboundMessageEvent = pool.TakeObject();
             inboundMessageEvent.PacketEvent = e;
 
-            inboundMessageEvent.AddRef();
-
             await dispatcher.DispatchAsync(inboundMessageEvent);
-
-            // clears and returns self to pool when ref hits 0.
-            inboundMessageEvent.ReleaseRef();
          }
       }
    }

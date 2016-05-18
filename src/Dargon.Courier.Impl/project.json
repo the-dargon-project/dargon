@@ -2,10 +2,10 @@
     "version": "1.0.0-*",
 
     "dependencies": {
-        "Dargon.Commons": "",
-        "Dargon.Courier.Api": "",
-        "Dargon.Ryu.Api": "",
-        "Dargon.Vox": "",
+        "Dargon.Commons": "*",
+        "Dargon.Courier.Api": "*",
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Vox": "*",
         "Fody": "1.29.4",
         "NLombok.Fody": "0.0.5",
         "NLog": "3.1.0",
