@@ -2,8 +2,8 @@
     "version": "1.0.0-*",
 
     "dependencies": {
-        "Dargon.Commons": "",
-        "Dargon.Ryu.Api": ""
+        "Dargon.Commons": "*",
+        "Dargon.Ryu.Api": "*"
     },
 
     "frameworks": {
