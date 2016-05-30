@@ -3,6 +3,7 @@ using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Exceptions;
 using Dargon.Courier.ServiceTier.Vox;
 using Dargon.Vox.Utilities;
+using NLog;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -10,6 +11,8 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.ServiceTier.Server {
    public class LocalServiceRegistry {
+      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
       private readonly IncrementalDictionary<Guid, object> services = new IncrementalDictionary<Guid, object>();
       private readonly Messenger messenger;
 
@@ -34,6 +37,7 @@ namespace Dargon.Courier.ServiceTier.Server {
       }
 
       public async Task HandleInvocationRequestAsync(IInboundMessageEvent<RmiRequestDto> e) {
+         logger.Debug($"Received RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)}");
          var request = e.Body;
          object service;
          if (!services.TryGetValue(request.ServiceId, out service)) {

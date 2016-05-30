@@ -1,42 +1,56 @@
-﻿using Dargon.Courier.Vox;
+﻿using Dargon.Commons.Collections;
+using Dargon.Courier.RoutingTier;
+using Dargon.Courier.TransportTier;
+using Dargon.Courier.Vox;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
-using Dargon.Commons.Pooling;
 
 namespace Dargon.Courier {
    public class Messenger {
-      private readonly IObjectPool<OutboundMessageEvent> outboundMessageEventPool;
-      private readonly IAsyncPoster<OutboundMessageEvent> outboundMessageEventPoster;
+      private readonly Identity identity;
+      private readonly IConcurrentSet<ITransport> transports;
+      private readonly RoutingTable routingTable;
 
-      public Messenger(IObjectPool<OutboundMessageEvent> outboundMessageEventPool, IAsyncPoster<OutboundMessageEvent> outboundMessageEventPoster) {
-         this.outboundMessageEventPool = outboundMessageEventPool;
-         this.outboundMessageEventPoster = outboundMessageEventPoster;
+      public Messenger(Identity identity, IConcurrentSet<ITransport> transports, RoutingTable routingTable) {
+         this.identity = identity;
+         this.transports = transports;
+         this.routingTable = routingTable;
       }
 
       public Task BroadcastAsync<T>(T payload) {
-         return HelperAsync(payload, Guid.Empty, false);
+         var message = new MessageDto {
+            Body = payload,
+            ReceiverId = Guid.Empty,
+            SenderId = identity.Id
+         };
+         return Task.WhenAll(transports.Select(t => t.SendMessageBroadcastAsync(message)));
       }
 
-      public Task SendAsync<T>(T payload, Guid destination) {
-         return HelperAsync(payload, destination, false);
+      public async Task SendUnreliableAsync<T>(T payload, Guid destination) {
+         IRoutingContext routingContext;
+         if (routingTable.TryGetRoutingContext(destination, out routingContext)) {
+            await routingContext.SendUnreliableAsync(
+               destination,
+               new MessageDto {
+                  Body = payload,
+                  ReceiverId = destination,
+                  SenderId = identity.Id
+               });
+         }
       }
 
-      public Task SendReliableAsync<T>(T payload, Guid destination) {
-         return HelperAsync(payload, destination, true);
-      }
-
-      private async Task HelperAsync(object payload, Guid destination, bool reliable) {
-         var e = outboundMessageEventPool.TakeObject();
-         e.Message.Body = payload;
-         e.Message.ReceiverId = destination;
-         e.Reliable = reliable;
-
-         await outboundMessageEventPoster.PostAsync(e).ConfigureAwait(false);
-
-         e.Message.Body = null;
-         e.Message.ReceiverId = Guid.Empty;
-         e.Reliable = false;
-         outboundMessageEventPool.ReturnObject(e);
+      public async Task SendReliableAsync<T>(T payload, Guid destination) {
+         IRoutingContext routingContext;
+         if (routingTable.TryGetRoutingContext(destination, out routingContext)) {
+            await routingContext.SendReliableAsync(
+               destination,
+               new MessageDto {
+                  Body = payload,
+                  ReceiverId = destination,
+                  SenderId = identity.Id
+               }).ConfigureAwait(false);
+         }
       }
    }
 }

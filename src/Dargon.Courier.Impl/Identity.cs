@@ -11,6 +11,17 @@ namespace Dargon.Courier {
       public Guid Id { get; set; }
       public string Name { get; set; }
 
+      public bool Matches(Guid id, IdentityMatchingScope matchingScope) {
+         bool result = false;
+         if (matchingScope >= IdentityMatchingScope.LocalIdentity) {
+            result |= id == Id;
+         }
+         if (matchingScope >= IdentityMatchingScope.Broadcast) {
+            result |= id == Guid.Empty;
+         }
+         return result;
+      }
+
       public void Update(Identity identity) {
          Id = identity.Id;
          Name = identity.Name;

@@ -5,9 +5,12 @@ using Dargon.Courier.ServiceTier.Vox;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
+using NLog;
 
 namespace Dargon.Courier.ServiceTier.Client {
    public class RemoteServiceInvoker {
+      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
       private readonly ConcurrentDictionary<Guid, AsyncBox<RmiResponseDto>> responseBoxes = new ConcurrentDictionary<Guid,AsyncBox<RmiResponseDto>>();
       private readonly Messenger messenger;
 
@@ -36,13 +39,21 @@ namespace Dargon.Courier.ServiceTier.Client {
             ServiceId = serviceInfo.ServiceId
          };
 
+         logger.Debug($"Sending RMI {invocationId.ToString("n").Substring(0, 6)} Request on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}");
+
          var responseBox = new AsyncBox<RmiResponseDto>();
          responseBoxes.AddOrThrow(invocationId, responseBox);
 
-         await messenger.SendReliableAsync(request, serviceInfo.Peer.Identity.Id);
+         await messenger.SendReliableAsync(request, serviceInfo.Peer.Identity.Id).ConfigureAwait(false);
+
+         logger.Debug($"Sent RMI {invocationId.ToString("n").Substring(0, 6)} Request on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}");
 
          // response box removed by HandleInvocationResponse - don't cleanup
-         return await responseBox.GetResultAsync();
+         var result = await responseBox.GetResultAsync().ConfigureAwait(false);
+
+         logger.Debug($"Received RMI {invocationId.ToString("n").Substring(0, 6)} Response on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}");
+
+         return result;
       }
    }
 }

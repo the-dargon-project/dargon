@@ -1,0 +1,217 @@
+﻿using Dargon.Commons;
+using Dargon.Commons.Collections;
+using Dargon.Commons.Exceptions;
+using Dargon.Courier.AsyncPrimitives;
+using Dargon.Courier.PeeringTier;
+using Dargon.Courier.RoutingTier;
+using Dargon.Courier.TransportTier.Tcp.Vox;
+using Dargon.Courier.Vox;
+using Nito.AsyncEx;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
+using NLog;
+using static Dargon.Commons.Channels.ChannelsExtensions;
+
+namespace Dargon.Courier.TransportTier.Tcp.Server {
+   public class TcpRoutingContext : IRoutingContext {
+      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
+      private readonly ConcurrentQueue<MessageDto> outboundMessageQueue = new ConcurrentQueue<MessageDto>();
+      private readonly ConcurrentDictionary<MessageDto, AsyncLatch> sendCompletionLatchByMessage = new ConcurrentDictionary<MessageDto, AsyncLatch>();
+      private readonly AsyncSemaphore outboundMessageSignal = new AsyncSemaphore(0);
+      private readonly AsyncLock writerLock = new AsyncLock();
+      private readonly CancellationTokenSource shutdownCancellationTokenSource = new CancellationTokenSource();
+
+      private readonly TcpTransport tcpTransport;
+      private readonly Socket client;
+      private readonly InboundMessageDispatcher inboundMessageDispatcher;
+      private readonly Identity localIdentity;
+      private readonly NetworkStream ns;
+      private readonly PeerTable peerTable;
+      private readonly RoutingTable routingTable;
+      private Identity remoteIdentity;
+      private bool isHandshakeComplete = false;
+      private Task runAsyncInnerTask;
+      private volatile bool isShutdown = false;
+
+      public TcpRoutingContext(TcpTransport tcpTransport, Socket client, InboundMessageDispatcher inboundMessageDispatcher, Identity localIdentity, RoutingTable routingTable, PeerTable peerTable) {
+         logger.Debug($"Constructing TcpRoutingContext for client {client.RemoteEndPoint}, localId: {localIdentity}");
+
+         if (localIdentity == null) throw new ArgumentNullException(nameof(localIdentity));
+         this.tcpTransport = tcpTransport;
+         this.client = client;
+         this.inboundMessageDispatcher = inboundMessageDispatcher;
+         this.localIdentity = localIdentity;
+         this.peerTable = peerTable;
+         this.routingTable = routingTable;
+         this.ns = new NetworkStream(client);
+      }
+
+      public async Task RunAsync() {
+         Debug($"Entered RunAsync.");
+         runAsyncInnerTask = RunAsyncHelper();
+         await runAsyncInnerTask;
+         Debug($"Left RunAsync.");
+      }
+
+      private async Task RunAsyncHelper() {
+         try {
+            await Task.WhenAny(
+               shutdownCancellationTokenSource.Token.AsTask(),
+               Task.WhenAll(
+               Go(async () => {
+                  var remoteToLocalHandshake = (HandshakeDto)await PayloadUtils.ReadPayloadAsync(ns);
+                  remoteIdentity = remoteToLocalHandshake.Identity;
+               }),
+               Go(async () => {
+                  var localToRemoteHandshake = new HandshakeDto { Identity = localIdentity };
+                  await PayloadUtils.WritePayloadAsync(ns, localToRemoteHandshake, writerLock);
+               })));
+
+            if (shutdownCancellationTokenSource.IsCancellationRequested) {
+               return;
+            }
+
+            isHandshakeComplete = true;
+
+            var readerTask = RunReaderAsync(shutdownCancellationTokenSource.Token).Forgettable();
+            var writerTask = RunWriterAsync(shutdownCancellationTokenSource.Token).Forgettable();
+
+            tcpTransport.SomethingToDoWithRoutingAndStarting(remoteIdentity.Id, this);
+            routingTable.Register(remoteIdentity.Id, this);
+
+            await peerTable.GetOrAdd(remoteIdentity.Id).HandleInboundPeerIdentityUpdate(remoteIdentity).ConfigureAwait(false);
+
+            try {
+               await Task.WhenAny(
+                  readerTask, 
+                  writerTask, 
+                  shutdownCancellationTokenSource.Token.AsTask()
+               ).ConfigureAwait(false);
+               shutdownCancellationTokenSource.Cancel();
+            } catch (OperationCanceledException) when (isShutdown) { }
+         } catch (Exception e) {
+            Debug($"RunAsync threw {e}");
+         } finally {
+            if (remoteIdentity != null) {
+               tcpTransport.SomethingToDoWithRoutingAndEnding(remoteIdentity.Id, this);
+            }
+         }
+      }
+
+      private async Task RunReaderAsync(CancellationToken token) {
+         Debug($"Entered RunReaderAsync.");
+         try {
+            while (!isShutdown) {
+               var payload = await PayloadUtils.ReadPayloadAsync(ns, token).ConfigureAwait(false);
+               if (payload is MessageDto) {
+                  inboundMessageDispatcher.DispatchAsync((MessageDto)payload).Forget();
+               }
+            }
+         } catch (ObjectDisposedException) when (isShutdown) {
+         } catch (TaskCanceledException) when (isShutdown) {
+         } catch (IOException) when (isShutdown) {
+         } catch (Exception e) {
+            Debug($"RunReaderAsync threw {e}");
+         }
+         Debug($"Exiting RunReaderAsync.");
+      }
+
+      private async Task RunWriterAsync(CancellationToken token) {
+         Debug($"Entered runWriterAsync.");
+         while (!isShutdown) {
+            try {
+               await outboundMessageSignal.WaitAsync(token).ConfigureAwait(false);
+               Go(async () => {
+                  Debug($"Entered message writer task.");
+                  MessageDto message;
+                  if (!outboundMessageQueue.TryDequeue(out message)) {
+                     throw new InvalidStateException();
+                  }
+                  Debug($"Writing message {message} destination {message.ReceiverId.ToString("n").Substring(0, 6)}.");
+                  await PayloadUtils.WritePayloadAsync(ns, message, writerLock, token).ConfigureAwait(false);
+                  Debug($"Wrote message {message} destination {message.ReceiverId.ToString("n").Substring(0, 6)}.");
+                  sendCompletionLatchByMessage[message].Set();
+                  Debug($"Exiting message writer task.");
+               }).Forget();
+            } catch (ObjectDisposedException) when (isShutdown) {
+            } catch (TaskCanceledException) when (isShutdown) {
+            } catch (IOException) when (isShutdown) {
+            } catch (Exception e) {
+               Debug($"runWriterAsync threw {e}");
+            }
+         }
+         Debug($"exiting runWriterAsync");
+      }
+
+      public int Weight { get; }
+
+      public Task SendBroadcastAsync(MessageDto message) {
+         return SendHelperAsync(Guid.Empty, message);
+      }
+
+      public Task SendUnreliableAsync(Guid destination, MessageDto message) {
+         return SendHelperAsync(destination, message);
+      }
+
+      public Task SendReliableAsync(Guid destination, MessageDto message) {
+         return SendHelperAsync(destination, message);
+      }
+
+      private async Task SendHelperAsync(Guid destination, MessageDto message) {
+         Debug(
+            $"Sending to {destination.ToString("n").Substring(0, 6)} message {message}. " + Environment.NewLine + 
+            $"clientIdentity matches destination: {remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)}");
+         if (!isHandshakeComplete || !remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)) {
+            return;
+         }
+
+         var completionLatch = new AsyncLatch();
+         sendCompletionLatchByMessage.AddOrThrow(message, completionLatch);
+
+         outboundMessageQueue.Enqueue(message);
+         outboundMessageSignal.Release();
+
+         Debug($"Awaiting completion for send to {destination.ToString("n").Substring(0, 6)} message {message}.");
+         await completionLatch.WaitAsync().ConfigureAwait(false);
+         sendCompletionLatchByMessage.RemoveOrThrow(message, completionLatch);
+
+         Debug($"Completed send to {destination.ToString("n").Substring(0, 6)} message {message}.");
+      }
+
+      private static object aLock = new object();
+      private static List<Guid> guids = new List<Guid>();
+
+      private void Debug(string message) {
+         // yes this is ghetto
+         lock (aLock) {
+            if (!guids.Contains(localIdentity.Id)) {
+               guids.Add(localIdentity.Id);
+            }
+            Console.BackgroundColor = guids.IndexOf(localIdentity.Id) == 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkCyan;
+            logger.Debug($"[{localIdentity.Id.ToString("n").Substring(0, 6)} / {isHandshakeComplete}] {message}");
+            logger.Factory.Flush();
+            Console.BackgroundColor = ConsoleColor.Black;
+         }
+      }
+
+      public async Task ShutdownAsync() {
+         isShutdown = true;
+         try {
+            client.Shutdown(SocketShutdown.Both);
+         } catch (SocketException) {
+            // other side closed first
+         }
+         client.Close();
+         client.Dispose();
+         ns.Dispose();
+         shutdownCancellationTokenSource.Cancel();
+         await runAsyncInnerTask;
+      }
+   }
+}

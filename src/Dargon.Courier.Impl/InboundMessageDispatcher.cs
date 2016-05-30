@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Dargon.Courier.AsyncPrimitives;
+using Dargon.Commons.Pooling;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.Vox;
+using Dargon.Vox.Utilities;
 
 namespace Dargon.Courier {
    public class InboundMessageDispatcher {
@@ -16,21 +17,48 @@ namespace Dargon.Courier {
          this.inboundMessageRouter = inboundMessageRouter;
       }
 
-      public async Task DispatchAsync<T>(InboundMessageEvent<T> e) {
-         var message = e.Message;
-         if (message.ReceiverId != Guid.Empty &&
-             message.ReceiverId != identity.Id) {
+      public async Task DispatchAsync(MessageDto message) {
+         bool a = identity.Matches(message.SenderId, IdentityMatchingScope.LocalIdentity);
+         bool b = !identity.Matches(message.ReceiverId, IdentityMatchingScope.Broadcast);
+         if (a || b) {
             return;
          }
 
-         var peer = peerTable.GetOrAdd(message.SenderId);
-         await peer.WaitForDiscoveryAsync();
+         PeerContext peerContext = null;
+         if (message.SenderId != Guid.Empty) {
+            peerContext = peerTable.GetOrAdd(message.SenderId);
+            await peerContext.WaitForDiscoveryAsync();
+         }
 
-         e.Sender = peer;
+         await RouteAsyncVisitor.Visit(inboundMessageRouter, message, peerContext);
+      }
 
-         await inboundMessageRouter.RouteAsync(e);
+      private static class RouteAsyncVisitor {
+         private delegate Task VisitorFunc(InboundMessageRouter router, MessageDto message, PeerContext peer);
 
-         e.Sender = null;
+         private static readonly IGenericFlyweightFactory<VisitorFunc> visitorFactory
+            = GenericFlyweightFactory.ForMethod<VisitorFunc>(
+               typeof(Inner<>),
+               nameof(Inner<object>.Visit));
+
+         public static Task Visit(InboundMessageRouter router, MessageDto message, PeerContext peer) {
+            return visitorFactory.Get(message.Body.GetType())(router, message, peer);
+         }
+
+         private static class Inner<T> {
+            private static readonly IObjectPool<InboundMessageEvent<T>> eventPool = ObjectPool.Create<InboundMessageEvent<T>>(() => new InboundMessageEvent<T>());
+
+            public static async Task Visit(InboundMessageRouter router, MessageDto message, PeerContext peer) {
+               var e = eventPool.TakeObject();
+               e.Message = message;
+               e.Sender = peer;
+
+               await router.RouteAsync(e);
+
+               e.Message = null;
+               eventPool.ReturnObject(e);
+            }
+         }
       }
    }
 }

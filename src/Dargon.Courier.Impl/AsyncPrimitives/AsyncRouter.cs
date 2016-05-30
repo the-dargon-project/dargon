@@ -1,12 +1,10 @@
-﻿using System;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
-using Dargon.Commons;
-using Dargon.Commons.Collections;
+﻿using Dargon.Commons.Collections;
 using Dargon.Commons.Pooling;
 using Dargon.Courier.Vox;
 using Dargon.Vox.Utilities;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Dargon.Courier.AsyncPrimitives {
    public class AsyncRouter<TInput, TPassed> {
@@ -37,55 +35,6 @@ namespace Dargon.Courier.AsyncPrimitives {
 
       public class ConcurrentTypeToDispatcherDictionary<TPassed> : IncrementalDictionary<Type, ConcurrentSet<Func<TPassed, Task>>> {
 
-      }
-   }
-
-   public class InboundPayloadEventRouter : AsyncRouter<InboundPayloadEvent, InboundPayloadEvent> {
-      public InboundPayloadEventRouter() : base(x => x.Payload.GetType(), x => x) { }
-   }
-
-   public class InboundPacketEventRouter : AsyncRouter<InboundPacketEvent, InboundPacketEvent> {
-      public InboundPacketEventRouter() : base(x => x.Packet.Payload.GetType(), x => x) { }
-   }
-
-   public class NongenericInboundMessageToGenericDispatchInvoker {
-      private delegate Task VisitAsyncFunc(InboundPacketEvent e, InboundMessageDispatcher dispatcher);
-      private readonly IGenericFlyweightFactory<VisitAsyncFunc> visitorInvokers
-         = GenericFlyweightFactory.ForMethod<VisitAsyncFunc>(
-            typeof(DispatchVisitor<>), nameof(DispatchVisitor<object>.Visit));
-
-      public Task InvokeDispatchAsync(InboundPacketEvent e, InboundMessageDispatcher dispatcher) {
-         var message = (MessageDto)e.Packet.Payload;
-         return visitorInvokers.Get(message.Body.GetType())(e, dispatcher);
-      }
-
-      private static class DispatchVisitor<T> {
-         private static readonly IObjectPool<InboundMessageEvent<T>> pool =
-            ObjectPool.Create<InboundMessageEvent<T>>(
-               pool => new InboundMessageEvent<T>(pool));
-
-         public static async Task Visit(InboundPacketEvent e, InboundMessageDispatcher dispatcher) {
-            var inboundMessageEvent = pool.TakeObject();
-            inboundMessageEvent.PacketEvent = e;
-
-            await dispatcher.DispatchAsync(inboundMessageEvent);
-         }
-      }
-   }
-
-   public class InboundMessageRouter {
-      private readonly Inner inner = new Inner();
-
-      public void RegisterHandler<T>(Func<IInboundMessageEvent<T>, Task> handler) {
-         inner.RegisterHandler<T>(x => handler((IInboundMessageEvent<T>)x));
-      }
-
-      public Task RouteAsync<T>(InboundMessageEvent<T> x) {
-         return inner.TryRouteAsync(x);
-      }
-
-      private class Inner : AsyncRouter<InternalRoutableInboundMessageEvent, InternalRoutableInboundMessageEvent> {
-         public Inner() : base(x => x.Body.GetType(), x => x) {}
       }
    }
 }

@@ -5,9 +5,13 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Dargon.Courier.ServiceTier.Vox;
+using NLog;
+using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.ServiceTier.Client {
    public class RemoteServiceProxyInvocationInterceptor : IInterceptor {
+      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
       private readonly RemoveServiceInfo remoteServiceInfo;
       private readonly RemoteServiceInvoker remoteServiceInvoker;
 
@@ -17,9 +21,13 @@ namespace Dargon.Courier.ServiceTier.Client {
       }
 
       public void Intercept(IInvocation invocation) {
-         RmiResponseDto responseDto;
+         RmiResponseDto responseDto = null;
          try {
-            responseDto = InterceptAsync(invocation.Method, invocation.Arguments).Result;
+            Go(async () => {
+               logger.Debug($"At intercept async for invocation on method {invocation.Method.Name} for service {remoteServiceInfo.ServiceType.Name}");
+               responseDto = await InterceptAsync(invocation.Method, invocation.Arguments).ConfigureAwait(false);
+               logger.Debug($"Completing Intercept async for invocation on method {invocation.Method.Name} for service {remoteServiceInfo.ServiceType.Name}");
+            }).ConfigureAwait(false).GetAwaiter().GetResult();
          } catch (AggregateException ae) {
             if (ae.InnerExceptions.Count == 1) {
                ExceptionDispatchInfo.Capture(ae.InnerExceptions[0]).Throw();
@@ -43,11 +51,12 @@ namespace Dargon.Courier.ServiceTier.Client {
          }
       }
 
-      public Task<RmiResponseDto> InterceptAsync(MethodInfo methodInfo, object[] methodArguments) {
-         return remoteServiceInvoker.Invoke(
+      public async Task<RmiResponseDto> InterceptAsync(MethodInfo methodInfo, object[] methodArguments) {
+         var result = await remoteServiceInvoker.Invoke(
             remoteServiceInfo,
             methodInfo,
-            methodArguments);
+            methodArguments).ConfigureAwait(false);
+         return result;
       }
    }
 }

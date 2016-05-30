@@ -15,7 +15,7 @@ namespace Dargon.Courier.AsyncPrimitives {
       }
 
       public async Task WaitAsync(CancellationToken token = default(CancellationToken)) {
-         await semaphore.WaitAsync(token);
+         await semaphore.WaitAsync(token).ConfigureAwait(false);
          semaphore.Release(1);
       }
    }

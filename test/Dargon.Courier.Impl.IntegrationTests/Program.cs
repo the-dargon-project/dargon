@@ -1,4 +1,6 @@
-﻿using Dargon.Commons;
+﻿using System;
+using System.Threading;
+using Dargon.Commons;
 using Dargon.Courier.ServiceTier;
 using Dargon.Courier.Utilities;
 using NLog;
@@ -13,12 +15,25 @@ namespace Dargon.Courier {
       public static void RunTests() {
          InitializeLogging();
 
+         Console.BufferHeight = 21337;
+
          new BloomFilterTests().CanHaveNegligibleFalseCollisionRate();
          new BloomFilterTests().PerformanceTest();
-         new MessagingTests().BroadcastTest().Wait();
-         new MessagingTests().ReliableTest().Wait();
-         new ServiceTests().Run();
-         new ManagementTests().Run();
+
+         foreach (var messageTestType in new[] { typeof(LocalMessagingTests), typeof(TcpMessagingTests), typeof(UdpMessagingTests) }) {
+            Console.Title = messageTestType.FullName;
+            ((MessagingTestsBase)Activator.CreateInstance(messageTestType)).BroadcastTest().Wait();
+            Console.Title += " !@#!# ";
+            ((MessagingTestsBase)Activator.CreateInstance(messageTestType)).ReliableTest().Wait();
+         }
+
+         foreach (var serviceTestType in new[] { typeof(LocalServiceTests), typeof(TcpServiceTests), typeof(UdpServiceTests) }) {
+            ((ServiceTestsBase)Activator.CreateInstance(serviceTestType)).RunAsync().Wait();
+         }
+
+         foreach (var managementTestType in new[] { typeof(LocalManagementTests), typeof(TcpManagementTests), typeof(UdpManagementTests) }) {
+            ((ManagementTestsBase)Activator.CreateInstance(managementTestType)).RunAsync().Wait();
+         }
       }
 
       private static void InitializeLogging() {

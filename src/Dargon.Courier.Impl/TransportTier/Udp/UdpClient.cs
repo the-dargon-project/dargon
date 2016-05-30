@@ -1,58 +1,59 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using Dargon.Commons;
+using Dargon.Commons.Pooling;
+using Nito.AsyncEx;
+using NLog;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using Dargon.Commons;
-using Dargon.Commons.Pooling;
-using Nito.AsyncEx;
-using NLog;
 
-namespace Dargon.Courier.TransitTier {
-   public class UdpTransport : ITransport {
-      public const int kMaximumTransportSize = 8192;
+namespace Dargon.Courier.TransportTier.Udp {
+   public class UdpClient {
       private const int kPort = 21337;
       private static readonly IPAddress kMulticastAddress = IPAddress.Parse("235.13.33.37");
       private static readonly IPEndPoint kSendEndpoint = new IPEndPoint(kMulticastAddress, kPort);
       private static readonly IPEndPoint kReceiveEndpoint = new IPEndPoint(IPAddress.Any, kPort);
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-      private readonly List<Socket> sockets;
-      private readonly IObjectPool<InboundDataEvent> inboundDataEventPool; 
-      private readonly IObjectPool<AsyncAutoResetEvent> asyncAutoResetEventPool; 
-      private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool; 
-      private readonly IObjectPool<SocketAsyncEventArgs> receiveArgsPool;
-      private IAsyncPoster<InboundDataEvent> inboundDataEventPoster;
-      private IAsyncSubscriber<MemoryStream> outboundDataSubscriber;
+      private readonly IObjectPool<InboundDataEvent> inboundSomethingEventPool = ObjectPool.Create(() => new InboundDataEvent());
+      private readonly IObjectPool<AsyncAutoResetEvent> asyncAutoResetEventPool = ObjectPool.Create(() => new AsyncAutoResetEvent());
+      private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool = ObjectPool.Create(() => new SocketAsyncEventArgs());
 
-      private UdpTransport(List<Socket> sockets) {
+      private readonly List<Socket> sockets;
+      private readonly IObjectPool<SocketAsyncEventArgs> receiveArgsPool;
+
+      private volatile bool isShutdown = false;
+      private UdpDispatcher udpDispatcher;
+
+      private UdpClient(List<Socket> sockets) {
          this.sockets = sockets;
-         this.inboundDataEventPool = ObjectPool.Create(() => new InboundDataEvent());
-         this.asyncAutoResetEventPool = ObjectPool.Create(() => new AsyncAutoResetEvent());
-         this.sendArgsPool = ObjectPool.Create(() => new SocketAsyncEventArgs());
          this.receiveArgsPool = ObjectPool.Create(() => {
             return new SocketAsyncEventArgs {
                RemoteEndPoint = kReceiveEndpoint
             }.With(x => {
-               x.SetBuffer(new byte[kMaximumTransportSize], 0, kMaximumTransportSize);
+               x.SetBuffer(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize);
                x.Completed += HandleReceiveCompleted;
             });
          });
       }
 
-      public void Start(IAsyncPoster<InboundDataEvent> inboundDataEventPoster, IAsyncSubscriber<MemoryStream> outboundDataSubscriber) {
-         this.inboundDataEventPoster = inboundDataEventPoster;
-         this.outboundDataSubscriber = outboundDataSubscriber;
-
+      public void StartReceiving(UdpDispatcher udpDispatcher) {
+         this.udpDispatcher = udpDispatcher;
          sockets.ForEach(BeginReceive);
-         outboundDataSubscriber.Subscribe(HandleOutboundDataSendAsync);
       }
 
       private void BeginReceive(Socket socket) {
          var e = receiveArgsPool.TakeObject();
          e.AcceptSocket = socket;
-         socket.ReceiveFromAsync(e);
+
+         try {
+            socket.ReceiveFromAsync(e);
+         } catch (ObjectDisposedException) when (isShutdown) {
+            // socket was probably shut down
+         }
       }
 
       private void HandleReceiveCompleted(object sender, SocketAsyncEventArgs e) {
@@ -61,35 +62,47 @@ namespace Dargon.Courier.TransitTier {
       }
 
       private async Task HandleReceiveCompletedHelperAsync(SocketAsyncEventArgs e) {
-         logger.Error($"Received from {e.RemoteEndPoint} {e.BytesTransferred} bytes!");
-         var inboundDataEvent = inboundDataEventPool.TakeObject();
-         inboundDataEvent.Data = e.Buffer;
-         await inboundDataEventPoster.PostAsync(inboundDataEvent);
+         logger.Debug($"Received from {e.RemoteEndPoint} {e.BytesTransferred} bytes!");
+         var inboundSomethingEvent = inboundSomethingEventPool.TakeObject();
+         inboundSomethingEvent.Data = e.Buffer;
+
+         await udpDispatcher.InboundSomethingEventHandlerAsync(inboundSomethingEvent);
+
          receiveArgsPool.ReturnObject(e);
-         inboundDataEventPool.ReturnObject(inboundDataEvent);
+         inboundSomethingEventPool.ReturnObject(inboundSomethingEvent);
       }
 
-      public Task HandleOutboundDataSendAsync(IAsyncSubscriber<MemoryStream> subscriber, MemoryStream payload) {
-         logger.Error($"Sending {payload.Length} bytes!");
+      public Task BroadcastAsync(MemoryStream ms, int offset, int length) {
+         logger.Debug($"Sending {length} bytes!");
          var sync = asyncAutoResetEventPool.TakeObject();
          foreach (var socket in sockets) {
             var e = sendArgsPool.TakeObject();
             e.RemoteEndPoint = kSendEndpoint;
-            e.SetBuffer(payload.GetBuffer(), 0, (int)payload.Length);
+            e.SetBuffer(ms.GetBuffer(), 0, length);
             e.Completed += (sender, args) => {
                e.Dispose();
                sync.Set();
             };
-            if (!socket.SendToAsync(e)) {
-               // Completed synchronously. e.Completed won't be called.
-               sendArgsPool.ReturnObject(e);
-               sync.Set();
-            }
+            try {
+               if (!socket.SendToAsync(e)) {
+                  // Completed synchronously. e.Completed won't be called.
+                  sendArgsPool.ReturnObject(e);
+                  sync.Set();
+               }
+            } catch (ObjectDisposedException) when (isShutdown) { }
          }
          return sync.WaitAsync();
       }
 
-      public static UdpTransport Create() {
+      public void Shutdown() {
+         isShutdown = true;
+         foreach (var socket in sockets) {
+            socket.Close();
+            socket.Dispose();
+         }
+      }
+
+      public static UdpClient Create() {
          var sockets = new List<Socket>();
          foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces()) {
             if (!networkInterface.SupportsMulticast ||
@@ -99,7 +112,7 @@ namespace Dargon.Courier.TransitTier {
             if (ipv4Properties != null)
                sockets.Add(CreateSocket(ipv4Properties.Index));
          }
-         return new UdpTransport(sockets);
+         return new UdpClient(sockets);
       }
 
       private static Socket CreateSocket(long adapterIndex) {
@@ -113,12 +126,6 @@ namespace Dargon.Courier.TransitTier {
          socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, (int)IPAddress.HostToNetworkOrder(adapterIndex));
          socket.Bind(new IPEndPoint(IPAddress.Any, kPort));
          return socket;
-      }
-
-      public void Dispose() {
-         foreach (var socket in sockets) {
-            socket.Dispose();
-         }
       }
    }
 }
