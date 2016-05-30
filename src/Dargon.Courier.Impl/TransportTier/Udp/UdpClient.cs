@@ -12,27 +12,26 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class UdpClient {
-      private const int kPort = 21337;
-      private static readonly IPAddress kMulticastAddress = IPAddress.Parse("235.13.33.37");
-      private static readonly IPEndPoint kSendEndpoint = new IPEndPoint(kMulticastAddress, kPort);
-      private static readonly IPEndPoint kReceiveEndpoint = new IPEndPoint(IPAddress.Any, kPort);
+//      private const int kPort = 21337;
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
       private readonly IObjectPool<InboundDataEvent> inboundSomethingEventPool = ObjectPool.Create(() => new InboundDataEvent());
       private readonly IObjectPool<AsyncAutoResetEvent> asyncAutoResetEventPool = ObjectPool.Create(() => new AsyncAutoResetEvent());
       private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool = ObjectPool.Create(() => new SocketAsyncEventArgs());
-
+      
+      private readonly UdpTransportConfiguration configuration;
       private readonly List<Socket> sockets;
       private readonly IObjectPool<SocketAsyncEventArgs> receiveArgsPool;
 
       private volatile bool isShutdown = false;
       private UdpDispatcher udpDispatcher;
 
-      private UdpClient(List<Socket> sockets) {
+      private UdpClient(UdpTransportConfiguration configuration, List<Socket> sockets) {
+         this.configuration = configuration;
          this.sockets = sockets;
          this.receiveArgsPool = ObjectPool.Create(() => {
             return new SocketAsyncEventArgs {
-               RemoteEndPoint = kReceiveEndpoint
+               RemoteEndPoint = configuration.ReceiveEndpoint
             }.With(x => {
                x.SetBuffer(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize);
                x.Completed += HandleReceiveCompleted;
@@ -77,7 +76,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          var sync = asyncAutoResetEventPool.TakeObject();
          foreach (var socket in sockets) {
             var e = sendArgsPool.TakeObject();
-            e.RemoteEndPoint = kSendEndpoint;
+            e.RemoteEndPoint = configuration.SendEndpoint;
             e.SetBuffer(ms.GetBuffer(), 0, length);
             e.Completed += (sender, args) => {
                e.Dispose();
@@ -102,7 +101,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
       }
 
-      public static UdpClient Create() {
+      public static UdpClient Create(UdpTransportConfiguration udpTransportConfiguration) {
          var sockets = new List<Socket>();
          foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces()) {
             if (!networkInterface.SupportsMulticast ||
@@ -110,21 +109,21 @@ namespace Dargon.Courier.TransportTier.Udp {
                 networkInterface.IsReceiveOnly) continue;
             var ipv4Properties = networkInterface.GetIPProperties()?.GetIPv4Properties();
             if (ipv4Properties != null)
-               sockets.Add(CreateSocket(ipv4Properties.Index));
+               sockets.Add(CreateSocket(ipv4Properties.Index, udpTransportConfiguration));
          }
-         return new UdpClient(sockets);
+         return new UdpClient(udpTransportConfiguration, sockets);
       }
 
-      private static Socket CreateSocket(long adapterIndex) {
+      private static Socket CreateSocket(long adapterIndex, UdpTransportConfiguration udpTransportConfiguration) {
          var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) {
             DontFragment = false,
             MulticastLoopback = true
          };
          socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
-         socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(kMulticastAddress));
+         socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(udpTransportConfiguration.MulticastAddress));
          socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, 1); //0: localhost, 1: lan (via switch)
          socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, (int)IPAddress.HostToNetworkOrder(adapterIndex));
-         socket.Bind(new IPEndPoint(IPAddress.Any, kPort));
+         socket.Bind(new IPEndPoint(IPAddress.Any, udpTransportConfiguration.ReceiveEndpoint.Port));
          return socket;
       }
    }

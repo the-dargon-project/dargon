@@ -1,20 +1,43 @@
-﻿using System.Threading.Tasks;
-using Castle.DynamicProxy;
+﻿using Castle.DynamicProxy;
 using Dargon.Commons.Collections;
 using Dargon.Courier.AsyncPrimitives;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
+using Dargon.Courier.ServiceTier;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.ServiceTier.Vox;
 using Dargon.Courier.TransportTier;
-using Dargon.Courier.TransportTier.Udp;
 using Dargon.Ryu;
 using Fody.Constructors;
 using NLog;
+using System.Threading.Tasks;
 
 namespace Dargon.Courier {
+   public class CourierBuilder {
+      private readonly ConcurrentSet<ITransportFactory> transportFactories = new ConcurrentSet<ITransportFactory>();
+      private readonly IRyuContainer parentContainer;
+
+      private CourierBuilder(IRyuContainer parentContainer) {
+         this.parentContainer = parentContainer;
+      }
+
+      public CourierBuilder UseTransport(ITransportFactory transportFactory) {
+         this.transportFactories.TryAdd(transportFactory);
+         return this;
+      }
+
+      public async Task<CourierFacade> BuildAsync() {
+         var courierContainerFactory = new CourierContainerFactory(parentContainer);
+         var courierContainer = await courierContainerFactory.CreateAsync(transportFactories);
+         return courierContainer.GetOrThrow<CourierFacade>();
+      }
+
+      public static CourierBuilder Create() => Create(new RyuFactory().Create());
+      public static CourierBuilder Create(IRyuContainer container) => new CourierBuilder(container);
+   }
+
    [RequiredFieldsConstructor]
    public class CourierContainerFactory {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -25,11 +48,7 @@ namespace Dargon.Courier {
          this.root = root;
       }
 
-      public Task<IRyuContainer> CreateAsync() {
-         return CreateAsync(new UdpTransportFactory());
-      }
-
-      public async Task<IRyuContainer> CreateAsync(ITransportFactory transportFactory) {
+      public async Task<IRyuContainer> CreateAsync(IReadOnlySet<ITransportFactory> transportFactories) {
          var container = root.CreateChildContainer();
          var proxyGenerator = container.GetOrDefault<ProxyGenerator>() ?? new ProxyGenerator();
          
@@ -41,18 +60,18 @@ namespace Dargon.Courier {
          var inboundMessageRouter = new InboundMessageRouter();
          var inboundMessageDispatcher = new InboundMessageDispatcher(identity, peerTable, inboundMessageRouter);
 
-         var transport = await transportFactory.CreateAsync(identity, routingTable, peerTable, inboundMessageDispatcher);
          var transports = new ConcurrentSet<ITransport>();
-         transports.TryAdd(transport);
+         foreach (var transportFactory in transportFactories) {
+            var transport = await transportFactory.CreateAsync(identity, routingTable, peerTable, inboundMessageDispatcher);
+            transports.TryAdd(transport);
+         }
 
-         var facade = new CourierFacade(transports);
          var messenger = new Messenger(identity, transports, routingTable);
 
          container.Set(identity);
          container.Set(routingTable);
          container.Set(peerTable);
          container.Set(inboundMessageRouter);
-         container.Set(facade);
          container.Set(messenger);
 
          //----------------------------------------------------------------------------------------
@@ -70,7 +89,12 @@ namespace Dargon.Courier {
          // Management Tier - DMI
          //----------------------------------------------------------------------------------------
          var managementObjectService = new ManagementObjectService();
+         localServiceRegistry.RegisterService<IManagementObjectService>(managementObjectService);
          container.Set(managementObjectService);
+
+         var facade = new CourierFacade(transports, container);
+         container.Set(facade);
+
          return container;
       }
    }

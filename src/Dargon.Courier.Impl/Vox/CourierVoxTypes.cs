@@ -1,4 +1,5 @@
-﻿using Dargon.Courier.ServiceTier.Client;
+﻿using Dargon.Courier.ManagementTier;
+using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Vox;
 using Dargon.Courier.TransportTier.Tcp.Vox;
 using Dargon.Courier.Vox;
@@ -26,6 +27,13 @@ namespace Dargon.Courier.TransportTier.Udp.Vox {
          Register<RmiRequestDto>(serviceBaseId + 0);
          Register<RmiResponseDto>(serviceBaseId + 1);
          Register<RemoteException>(serviceBaseId + 2);
+
+         // Management
+         var managementBaseId = 40;
+         Register<ManagementObjectIdentifierDto>(managementBaseId + 0);
+         Register<ManagementObjectStateDto>(managementBaseId + 1);
+         Register<MethodDescriptionDto>(managementBaseId + 2);
+         Register<ParameterDescriptionDto>(managementBaseId + 3);
       }
    }
 }

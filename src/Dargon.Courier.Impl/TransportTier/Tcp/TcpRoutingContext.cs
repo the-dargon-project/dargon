@@ -27,6 +27,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       private readonly AsyncLock writerLock = new AsyncLock();
       private readonly CancellationTokenSource shutdownCancellationTokenSource = new CancellationTokenSource();
 
+      private readonly TcpTransportConfiguration configuration;
       private readonly TcpTransport tcpTransport;
       private readonly Socket client;
       private readonly InboundMessageDispatcher inboundMessageDispatcher;
@@ -39,10 +40,10 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       private Task runAsyncInnerTask;
       private volatile bool isShutdown = false;
 
-      public TcpRoutingContext(TcpTransport tcpTransport, Socket client, InboundMessageDispatcher inboundMessageDispatcher, Identity localIdentity, RoutingTable routingTable, PeerTable peerTable) {
+      public TcpRoutingContext(TcpTransportConfiguration configuration, TcpTransport tcpTransport, Socket client, InboundMessageDispatcher inboundMessageDispatcher, Identity localIdentity, RoutingTable routingTable, PeerTable peerTable) {
          logger.Debug($"Constructing TcpRoutingContext for client {client.RemoteEndPoint}, localId: {localIdentity}");
-
-         if (localIdentity == null) throw new ArgumentNullException(nameof(localIdentity));
+         
+         this.configuration = configuration;
          this.tcpTransport = tcpTransport;
          this.client = client;
          this.inboundMessageDispatcher = inboundMessageDispatcher;
@@ -87,6 +88,8 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
 
             await peerTable.GetOrAdd(remoteIdentity.Id).HandleInboundPeerIdentityUpdate(remoteIdentity).ConfigureAwait(false);
 
+            configuration.HandleRemoteHandshakeCompletion(remoteIdentity);
+
             try {
                await Task.WhenAny(
                   readerTask, 
@@ -115,18 +118,22 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                }
             }
          } catch (ObjectDisposedException) when (isShutdown) {
+            // shutdown
          } catch (TaskCanceledException) when (isShutdown) {
+            // shutdown
          } catch (IOException) when (isShutdown) {
+            // shutdown
          } catch (Exception e) {
             Debug($"RunReaderAsync threw {e}");
          }
          Debug($"Exiting RunReaderAsync.");
+         ShutdownAsync().Forget();
       }
 
       private async Task RunWriterAsync(CancellationToken token) {
          Debug($"Entered runWriterAsync.");
-         while (!isShutdown) {
-            try {
+         try {
+            while (!isShutdown) {
                await outboundMessageSignal.WaitAsync(token).ConfigureAwait(false);
                Go(async () => {
                   Debug($"Entered message writer task.");
@@ -140,14 +147,18 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                   sendCompletionLatchByMessage[message].Set();
                   Debug($"Exiting message writer task.");
                }).Forget();
-            } catch (ObjectDisposedException) when (isShutdown) {
-            } catch (TaskCanceledException) when (isShutdown) {
-            } catch (IOException) when (isShutdown) {
-            } catch (Exception e) {
-               Debug($"runWriterAsync threw {e}");
             }
+         } catch (ObjectDisposedException) when (isShutdown) {
+            // shutdown
+         } catch (TaskCanceledException) when (isShutdown) {
+            // shutdown
+         } catch (IOException) when (isShutdown) {
+            // shutdown
+         } catch (Exception e) {
+            Debug($"runWriterAsync threw {e}");
          }
          Debug($"exiting runWriterAsync");
+         ShutdownAsync().Forget();
       }
 
       public int Weight { get; }
@@ -202,6 +213,8 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       }
 
       public async Task ShutdownAsync() {
+         if (isShutdown) return;
+
          isShutdown = true;
          try {
             client.Shutdown(SocketShutdown.Both);

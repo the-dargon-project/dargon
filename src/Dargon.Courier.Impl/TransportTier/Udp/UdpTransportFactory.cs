@@ -5,6 +5,12 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class UdpTransportFactory : ITransportFactory {
+      private readonly UdpTransportConfiguration configuration;
+
+      public UdpTransportFactory(UdpTransportConfiguration configuration = null) {
+         this.configuration = configuration ?? UdpTransportConfiguration.Default;
+      }
+
       public Task<ITransport> CreateAsync(Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher) {
          var duplicateFilter = new DuplicateFilter();
          duplicateFilter.Initialize();
@@ -12,7 +18,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          var shutdownCts = new CancellationTokenSource();
 
          var acknowledgementCoordinator = new AcknowledgementCoordinator();
-         var client = UdpClient.Create();
+         var client = UdpClient.Create(configuration);
          var payloadSender = new PayloadSender(client);
          var packetSender = new PacketSender(payloadSender, acknowledgementCoordinator, shutdownCts.Token);
          var messageSender = new MessageSender(identity, packetSender);

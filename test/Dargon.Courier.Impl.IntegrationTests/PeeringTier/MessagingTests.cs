@@ -1,26 +1,23 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
-using Dargon.Courier.AsyncPrimitives;
-using Dargon.Courier.TransportTier.Test;
-using Dargon.Ryu;
-using NMockito;
 using System.Threading;
 using System.Threading.Tasks;
-using Dargon.Courier.PeeringTier;
-using Dargon.Courier.RoutingTier;
-using Dargon.Courier.TransportTier.Tcp.Server;
+using Dargon.Courier.AsyncPrimitives;
+using Dargon.Courier.TransportTier.Tcp;
+using Dargon.Courier.TransportTier.Test;
 using Dargon.Courier.TransportTier.Udp;
+using NMockito;
 using Xunit;
 
-namespace Dargon.Courier {
+namespace Dargon.Courier.PeeringTier {
    public abstract class MessagingTestsBase : NMockitoInstance {
-      private IRyuContainer senderContainer;
-      private IRyuContainer receiverContainer;
+      private CourierFacade senderFacade;
+      private CourierFacade receiverFacade;
 
-      public void Setup(IRyuContainer senderContainer, IRyuContainer receiverContainer) {
-         this.senderContainer = senderContainer;
-         this.receiverContainer = receiverContainer;
+      public void Setup(CourierFacade senderFacade, CourierFacade receiverFacade) {
+         this.senderFacade = senderFacade;
+         this.receiverFacade = receiverFacade;
       }
 
       [Fact]
@@ -30,8 +27,7 @@ namespace Dargon.Courier {
                var str = CreatePlaceholder<string>();
 
                var latch = new AsyncLatch();
-               var router = receiverContainer.GetOrThrow<InboundMessageRouter>();
-               router.RegisterHandler<string>(async x => {
+               receiverFacade.InboundMessageRouter.RegisterHandler<string>(async x => {
                   await Task.Yield();
 
                   AssertEquals(str, x.Body);
@@ -39,21 +35,21 @@ namespace Dargon.Courier {
                });
 
                // await discovery between nodes
-               await receiverContainer.GetOrThrow<PeerTable>().GetOrAdd(senderContainer.GetOrThrow<Identity>().Id).WaitForDiscoveryAsync(timeout.Token);
-               await senderContainer.GetOrThrow<PeerTable>().GetOrAdd(receiverContainer.GetOrThrow<Identity>().Id).WaitForDiscoveryAsync(timeout.Token);
+               await receiverFacade.PeerTable.GetOrAdd(senderFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token);
+               await senderFacade.PeerTable.GetOrAdd(receiverFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token);
 
-               await senderContainer.GetOrThrow<Messenger>().BroadcastAsync(str);
+               await senderFacade.Messenger.BroadcastAsync(str);
                await latch.WaitAsync(timeout.Token);
             }
          } catch (Exception e) {
             Console.WriteLine("Threw " + e);
             throw;
          } finally {
-            await receiverContainer.GetOrThrow<CourierFacade>().ShutdownAsync();
-            await senderContainer.GetOrThrow<CourierFacade>().ShutdownAsync();
+            await receiverFacade.ShutdownAsync();
+            await senderFacade.ShutdownAsync();
 
-            AssertEquals(0, receiverContainer.GetOrThrow<RoutingTable>().Enumerate().Count());
-            AssertEquals(0, senderContainer.GetOrThrow<RoutingTable>().Enumerate().Count());
+            AssertEquals(0, receiverFacade.RoutingTable.Enumerate().Count());
+            AssertEquals(0, senderFacade.RoutingTable.Enumerate().Count());
          }
       }
 
@@ -65,7 +61,7 @@ namespace Dargon.Courier {
                var str = CreatePlaceholder<string>();
 
                var latch = new AsyncLatch();
-               var router = receiverContainer.GetOrThrow<InboundMessageRouter>();
+               var router = receiverFacade.InboundMessageRouter;
                router.RegisterHandler<string>(async x => {
                   await Task.Yield();
 
@@ -73,45 +69,64 @@ namespace Dargon.Courier {
                   latch.Set();
                });
 
-               await receiverContainer.GetOrThrow<PeerTable>().GetOrAdd(senderContainer.GetOrThrow<Identity>().Id).WaitForDiscoveryAsync(timeout.Token);
-               await senderContainer.GetOrThrow<PeerTable>().GetOrAdd(receiverContainer.GetOrThrow<Identity>().Id).WaitForDiscoveryAsync(timeout.Token);
-               var messenger = senderContainer.GetOrThrow<Messenger>();
-               await messenger.SendReliableAsync(str, receiverContainer.GetOrThrow<Identity>().Id);
+               await receiverFacade.PeerTable.GetOrAdd(senderFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token);
+               await senderFacade.PeerTable.GetOrAdd(receiverFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token);
+
+               await senderFacade.Messenger.SendReliableAsync(str, receiverFacade.Identity.Id);
                await latch.WaitAsync(timeout.Token);
             }
          } catch (Exception e) {
             Console.WriteLine("Threw " + e);
             throw;
          } finally {
-            await receiverContainer.GetOrThrow<CourierFacade>().ShutdownAsync();
-            await senderContainer.GetOrThrow<CourierFacade>().ShutdownAsync();
+            await receiverFacade.ShutdownAsync();
+            await senderFacade.ShutdownAsync();
+
+            AssertEquals(0, receiverFacade.RoutingTable.Enumerate().Count());
+            AssertEquals(0, senderFacade.RoutingTable.Enumerate().Count());
          }
       }
    }
 
    public class LocalMessagingTests : MessagingTestsBase {
       public LocalMessagingTests() {
-         var root = new RyuFactory().Create();
          var testTransportFactory = new TestTransportFactory();
-         var senderContainer = new CourierContainerFactory(root).CreateAsync(testTransportFactory).Result;
-         var receiverContainer = new CourierContainerFactory(root).CreateAsync(testTransportFactory).Result;
-         Setup(senderContainer, receiverContainer);
+
+         var senderfacade = CourierBuilder.Create()
+                                          .UseTransport(testTransportFactory)
+                                          .BuildAsync().Result;
+
+         var receiverFacade = CourierBuilder.Create()
+                                            .UseTransport(testTransportFactory)
+                                            .BuildAsync().Result;
+
+         Setup(senderfacade, receiverFacade);
       }
    }
 
    public class UdpMessagingTests : MessagingTestsBase {
       public UdpMessagingTests() {
-         var senderContainer = new CourierContainerFactory(new RyuFactory().Create()).CreateAsync(new UdpTransportFactory()).Result;
-         var receiverContainer = new CourierContainerFactory(new RyuFactory().Create()).CreateAsync(new UdpTransportFactory()).Result;
-         Setup(senderContainer, receiverContainer);
+         var senderFacade = CourierBuilder.Create()
+                                          .UseUdpMulticastTransport()
+                                          .BuildAsync().Result;
+         var receiverFacade = CourierBuilder.Create()
+                                            .UseUdpMulticastTransport()
+                                            .BuildAsync().Result;
+         Setup(senderFacade, receiverFacade);
       }
    }
 
    public class TcpMessagingTests : MessagingTestsBase {
       public TcpMessagingTests() {
-         var senderContainer = new CourierContainerFactory(new RyuFactory().Create()).CreateAsync(TcpTransportFactory.CreateClient(IPAddress.Loopback, 21337)).Result;
-         var receiverContainer = new CourierContainerFactory(new RyuFactory().Create()).CreateAsync(TcpTransportFactory.CreateServer(21337)).Result;
-         Setup(senderContainer, receiverContainer);
+         var senderFacade = CourierBuilder.Create()
+                                          .UseTcpClientTransport(IPAddress.Loopback, 21337)
+                                          .BuildAsync().Result;
+
+         var receiverFacade = CourierBuilder.Create()
+                                            .UseTcpServerTransport(21337)
+                                            .BuildAsync().Result;
+
+         Setup(senderFacade, receiverFacade);
       }
    }
 }

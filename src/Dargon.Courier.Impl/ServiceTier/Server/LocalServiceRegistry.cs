@@ -21,8 +21,11 @@ namespace Dargon.Courier.ServiceTier.Server {
       }
 
       public void RegisterService(object service) {
+         RegisterService(service.GetType(), service);
+      }
+
+      public void RegisterService(Type serviceType, object service) {
          Guid serviceId;
-         var serviceType = service.GetType();
          if (!serviceType.TryGetInterfaceGuid(out serviceId)) {
             throw new InvalidOperationException($"Service of type {serviceType.FullName} does not have default service id.");
          }
@@ -41,6 +44,7 @@ namespace Dargon.Courier.ServiceTier.Server {
          var request = e.Body;
          object service;
          if (!services.TryGetValue(request.ServiceId, out service)) {
+            logger.Debug($"Unable to handle RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)} - service not found.");
             await RespondError(e, new ServiceUnavailableException(request));
             return;
          }
@@ -66,6 +70,7 @@ namespace Dargon.Courier.ServiceTier.Server {
       }
 
       private Task RespondSuccess(IInboundMessageEvent<RmiRequestDto> e, object[] outParameters, object result) {
+         logger.Debug($"Successfully handled RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)}.");
          return messenger.SendReliableAsync(
             new RmiResponseDto {
                InvocationId = e.Body.InvocationId,
@@ -77,6 +82,7 @@ namespace Dargon.Courier.ServiceTier.Server {
       }
 
       private Task RespondError(IInboundMessageEvent<RmiRequestDto> e, Exception ex) {
+         logger.Debug($"Threw when handling RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)}.");
          return messenger.SendReliableAsync(
             new RmiResponseDto {
                InvocationId = e.Body.InvocationId,

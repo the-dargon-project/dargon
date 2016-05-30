@@ -1,7 +1,6 @@
 ﻿using Castle.Core.Internal;
 using Dargon.Commons;
 using Dargon.Commons.Utilities;
-using Dargon.Vox;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,13 +14,6 @@ namespace Dargon.Courier.ManagementTier {
       IEnumerable<ManagementObjectIdentifierDto> EnumerateManagementObjects();
       ManagementObjectStateDto GetManagementObjectDescription(Guid mobId);
       object InvokeManagedOperation(string mobFullName, string methodName, object[] args);
-   }
-
-   public class ManagementObjectDescription {
-      public Guid Id { get; set; }
-      public string Name { get; set; }
-      public Type Type { get; set; }
-      public object Instance { get; set; }
    }
 
    public class ManagementObjectService : IManagementObjectService {
@@ -93,29 +85,5 @@ namespace Dargon.Courier.ManagementTier {
          public MultiValueDictionary<string, MethodInfo> InvokableMethodsByName { get; set; }
          public object Instance { get; set; }
       }
-   }
-   
-   [AutoSerializable]
-   public class ManagementObjectIdentifierDto {
-      public Guid Id { get; set; }
-      public string FullName { get; set; }
-   }
-
-   [AutoSerializable]
-   public class ManagementObjectStateDto {
-      public IReadOnlyList<MethodDescriptionDto> Methods { get; set; }
-   }
-
-   [AutoSerializable]
-   public class MethodDescriptionDto {
-      public string Name { get; set; }
-      public IReadOnlyList<ParameterDescriptionDto> Parameters { get; set; }
-      public Type ReturnType { get; set; }
-   }
-
-   [AutoSerializable]
-   public class ParameterDescriptionDto {
-      public string Name { get; set; }
-      public Type Type { get; set; }
    }
 }

@@ -1,0 +1,18 @@
+﻿{
+    "version": "1.0.0-*",
+
+    "dependencies": {
+        "Dargon.Courier.Api": "*",
+        "Dargon.Courier.Impl": "*"
+    },
+
+    "frameworks": {
+        "net451": {
+
+        }
+    },
+
+    "buildOptions": {
+        "emitEntryPoint": true
+    }
+}

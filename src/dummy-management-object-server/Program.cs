@@ -1,29 +1,47 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using System.Threading;
 using Dargon.Commons;
-using Dargon.Repl;
+using Dargon.Courier;
+using Dargon.Courier.TransportTier.Tcp;
+using Dargon.Courier.Vox;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
 using NLog.Targets.Wrappers;
 
-namespace Dargon.Courier.Management.UI {
-   public class Program {
+namespace dummy_management_object_server {
+   [Guid("E6867903-3222-40ED-94BB-3C2C0FDB891B")]
+   public class TestMob {
+      private int counter = 0;
+
+      [ManagedOperation]
+      public int GetNext() {
+         return counter++;
+      }
+
+      [ManagedOperation]
+      public MessageDto GetMessage() => new MessageDto {
+         Body = new List<object> { 1, 2, 3 },
+         ReceiverId = Guid.NewGuid(),
+         SenderId = Guid.NewGuid()
+      };
+
+      [ManagedOperation]
+      public string SayHello(string name) => $"Hello, {name}!";
+   }
+
+   public static class Program {
       public static void Main() {
          InitializeLogging();
+         var courierFacade = CourierBuilder.Create()
+                                           .UseTcpServerTransport(21337)
+                                           .BuildAsync().Result;
+         var testMob = new TestMob();
+         courierFacade.ManagementObjectService.RegisterService(testMob);
 
-         var dispatcher = new DispatcherCommand("root");
-         dispatcher.RegisterCommand(new UseCommand());
-         dispatcher.RegisterCommand(new FetchMobsCommand());
-         dispatcher.RegisterCommand(new FetchOperationsCommand());
-         dispatcher.RegisterCommand(new ChangeDirectoryCommand());
-         dispatcher.RegisterCommand(new ListDirectoryCommand());
-         dispatcher.RegisterCommand(new InvokeCommand());
-         dispatcher.RegisterCommand(new TreeCommand());
-         dispatcher.RegisterCommand(new ExitCommand());
-         new ReplCore(dispatcher).Run();
+         new CountdownEvent(1).Wait();
       }
 
       private static void InitializeLogging() {

@@ -1,29 +1,24 @@
-﻿{
-  "version": "1.0.0-*",
-  "description": "Dargon Management Interface",
-  "authors": [ "Warty" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
-
-  "compilationOptions": {
-    "emitEntryPoint": true
-  },
-
-    "dependencies": {
-        "Dargon.Courier.Api": "",
-        "Dargon.Courier.Impl": "",
-        "Dargon.Ryu.Api": "",
-        "Dargon.Ryu.Impl": "",
-        "Dargon.Repl": ""
+{
+    "frameworks": {
+        "net451": {
+            "frameworkAssemblies": {
+                "System.ObjectModel": "",
+                "System.Windows.Forms": ""
+            }
+        }
     },
 
-  "frameworks": {
-    "net451": {
-        "frameworkAssemblies": {
-            "System.ObjectModel": "4.0.0.0",
-            "System.Windows.Forms": "4.0.0.0"
-        }
+    "dependencies": {
+        "Dargon.Courier.Api": "*",
+        "Dargon.Courier.Impl": "*",
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Ryu.Impl": "*",
+        "Dargon.Repl": "*",
+        "xunit": "2.1.0",
+        "Newtonsoft.Json": "*"
+    },
+
+    "buildOptions": {
+        "emitEntryPoint": true
     }
-  }
 }
