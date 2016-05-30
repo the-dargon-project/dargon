@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using Dargon.Courier.AsyncPrimitives;
 using Dargon.Courier.TransportTier.Test;
@@ -7,6 +8,7 @@ using NMockito;
 using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Courier.PeeringTier;
+using Dargon.Courier.RoutingTier;
 using Dargon.Courier.TransportTier.Tcp.Server;
 using Dargon.Courier.TransportTier.Udp;
 using Xunit;
@@ -49,6 +51,9 @@ namespace Dargon.Courier {
          } finally {
             await receiverContainer.GetOrThrow<CourierFacade>().ShutdownAsync();
             await senderContainer.GetOrThrow<CourierFacade>().ShutdownAsync();
+
+            AssertEquals(0, receiverContainer.GetOrThrow<RoutingTable>().Enumerate().Count());
+            AssertEquals(0, senderContainer.GetOrThrow<RoutingTable>().Enumerate().Count());
          }
       }
 

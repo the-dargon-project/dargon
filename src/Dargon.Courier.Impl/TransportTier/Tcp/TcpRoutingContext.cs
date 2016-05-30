@@ -99,6 +99,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             Debug($"RunAsync threw {e}");
          } finally {
             if (remoteIdentity != null) {
+               routingTable.Unregister(remoteIdentity.Id, this);
                tcpTransport.SomethingToDoWithRoutingAndEnding(remoteIdentity.Id, this);
             }
          }

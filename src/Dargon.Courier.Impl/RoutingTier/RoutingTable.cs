@@ -1,6 +1,7 @@
 ﻿using Dargon.Commons;
 using Dargon.Commons.Collections;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Dargon.Courier.RoutingTier {
@@ -33,5 +34,7 @@ namespace Dargon.Courier.RoutingTier {
          context = null;
          return false;
       }
+
+      public IEnumerable<IRoutingContext> Enumerate() => routingContextByPeerId.Values.SelectMany(routingContexts => routingContexts);
    }
 }
