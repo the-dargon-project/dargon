@@ -1,4 +1,5 @@
 ﻿using Dargon.Courier.ManagementTier;
+using Dargon.Courier.ManagementTier.Vox;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Vox;
 using Dargon.Courier.TransportTier.Tcp.Vox;
@@ -33,7 +34,8 @@ namespace Dargon.Courier.TransportTier.Udp.Vox {
          Register<ManagementObjectIdentifierDto>(managementBaseId + 0);
          Register<ManagementObjectStateDto>(managementBaseId + 1);
          Register<MethodDescriptionDto>(managementBaseId + 2);
-         Register<ParameterDescriptionDto>(managementBaseId + 3);
+         Register<PropertyDescriptionDto>(managementBaseId + 3);
+         Register<ParameterDescriptionDto>(managementBaseId + 4);
       }
    }
 }

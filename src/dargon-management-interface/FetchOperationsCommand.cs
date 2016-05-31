@@ -19,6 +19,10 @@ namespace Dargon.Courier.Management.UI {
             var methodNode = ReplGlobals.Current.GetOrAddChild(method.Name);
             methodNode.MethodDto = method;
          }
+         foreach (var property in desc.Properties) {
+            var propertyNode = ReplGlobals.Current.GetOrAddChild(property.Name);
+            propertyNode.PropertyDto = property;
+         }
          return 0;
       }
    }

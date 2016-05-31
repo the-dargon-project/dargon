@@ -1,5 +1,7 @@
 ﻿using System;
 
 namespace Dargon.Courier {
-   public class ManagedOperationAttribute : Attribute { }
+   [AttributeUsage(AttributeTargets.Method)]
+   public class ManagedOperationAttribute : Attribute {
+   }
 }

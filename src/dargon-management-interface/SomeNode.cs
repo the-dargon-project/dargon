@@ -2,6 +2,7 @@
 using Dargon.Courier.ManagementTier;
 using System.Collections.Generic;
 using System.Linq;
+using Dargon.Courier.ManagementTier.Vox;
 
 namespace Dargon.Courier.Management.UI {
    public class SomeNode { 
@@ -11,6 +12,7 @@ namespace Dargon.Courier.Management.UI {
 
       public ManagementObjectIdentifierDto MobDto { get; set; }
       public MethodDescriptionDto MethodDto { get; set; }
+      public PropertyDescriptionDto PropertyDto { get; set; }
 
       public bool TryGetChild(string name, out SomeNode child) {
          child = Children.FirstOrDefault(c => c.Name == name);

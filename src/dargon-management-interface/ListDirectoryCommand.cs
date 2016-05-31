@@ -21,6 +21,18 @@ namespace Dargon.Courier.Management.UI {
          PrettyPrint.List(
             ReplGlobals.Current.Children,
             new PrettyFormatter<SomeNode> {
+               GetBackground = n => {
+                  if (n.PropertyDto != null) {
+                     if (n.PropertyDto.HasGetter && n.PropertyDto.HasSetter) {
+                        return ConsoleColor.Magenta;
+                     } else if (n.PropertyDto.HasGetter) {
+                        return ConsoleColor.Cyan;
+                     } else if (n.PropertyDto.HasSetter) {
+                        return ConsoleColor.Red;
+                     }
+                  }
+                  return ConsoleColor.Black;
+               }
             });
 
          return 0;

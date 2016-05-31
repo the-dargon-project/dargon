@@ -28,32 +28,80 @@ namespace Dargon.Courier.Management.UI {
                return Convert.ChangeType(arg, p.Type);
             });
 
-         Console.WriteLine($"Invokeing {methodName} with params ({parameters.Join(", ")}.");
+         Console.WriteLine($"Invoking {methodName} with params ({parameters.Join(", ")}).");
 
          var mobDto = methodNode.Parent.MobDto;
          var result = ReplGlobals.ManagementObjectService.InvokeManagedOperation(mobDto.FullName, methodName, parameters);
 
          Console.WriteLine("Result: ");
-         PrintResult(result);
+         ReplUtils.PrettyPrint(result);
          return 0;
       }
+   }
 
-      private void PrintResult(object result) {
-         if (result == null) {
-            Console.WriteLine("[null]");
-         } else if (result is string || result.GetType().IsValueType) {
-            Console.WriteLine(result);
-         } else {
-            var toString = result.GetType().GetMethod("ToString");
-            if (toString.DeclaringType != typeof(object)) {
-               Console.WriteLine(result);
-            } else {
-               string json = JsonConvert.SerializeObject(
-                  result, Formatting.Indented,
-                  new JsonConverter[] { new StringEnumConverter() });
-               Console.WriteLine(json);
-            }
+   public class SetCommand : ICommand {
+      public string Name => "set";
+
+      public int Eval(string args) {
+         string propertyName;
+         args = Tokenizer.Next(args, out propertyName);
+
+         SomeNode propertyNode;
+         if (!ReplGlobals.Current.TryGetChild(propertyName, out propertyNode)) {
+            throw new Exception($"Couldn't find property of name {propertyNode}.");
          }
+
+         var propertyDto = propertyNode.PropertyDto;
+
+         if (!propertyDto.HasSetter) {
+            throw new Exception($"Property {propertyName} does not have a setter.");
+         }
+
+         string valueString;
+         Tokenizer.Next(args, out valueString);
+         object value = Convert.ChangeType(valueString, propertyDto.Type);
+
+         var parameters = new[] { value };
+
+         Console.WriteLine($"Invoking {propertyName} setter with params ({parameters.Join(", ")}.");
+
+         var mobDto = propertyNode.Parent.MobDto;
+         var result = ReplGlobals.ManagementObjectService.InvokeManagedOperation(mobDto.FullName, propertyName, parameters);
+
+         Console.WriteLine("Result: ");
+         ReplUtils.PrettyPrint(result);
+         return 0;
+      }
+   }
+
+   public class GetCommand : ICommand {
+      public string Name => "get";
+
+      public int Eval(string args) {
+         string propertyName;
+         args = Tokenizer.Next(args, out propertyName);
+
+         SomeNode propertyNode;
+         if (!ReplGlobals.Current.TryGetChild(propertyName, out propertyNode)) {
+            throw new Exception($"Couldn't find property of name {propertyNode}.");
+         }
+
+         var propertyDto = propertyNode.PropertyDto;
+
+         if (!propertyDto.HasGetter) {
+            throw new Exception($"Property {propertyName} does not have a getter.");
+         }
+
+         var parameters = new object[0];
+
+         Console.WriteLine($"Invoking {propertyName} getter with params ({parameters.Join(", ")}.");
+
+         var mobDto = propertyNode.Parent.MobDto;
+         var result = ReplGlobals.ManagementObjectService.InvokeManagedOperation(mobDto.FullName, propertyName, parameters);
+
+         Console.WriteLine("Result: ");
+         ReplUtils.PrettyPrint(result);
+         return 0;
       }
    }
 }

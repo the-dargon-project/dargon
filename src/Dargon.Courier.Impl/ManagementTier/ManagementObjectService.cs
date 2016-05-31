@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Dargon.Commons.Collections;
+using Dargon.Courier.ManagementTier.Vox;
 
 namespace Dargon.Courier.ManagementTier {
    [Guid("776C1CEC-44DE-40CA-9ED4-0F942BC3A8DC")]
@@ -49,21 +50,38 @@ namespace Dargon.Courier.ManagementTier {
             invokableMethodsByName.Add(method.Name, method);
          }
 
+         var properties = mobInstance.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                                     .Where(property => property.HasAttribute<ManagedPropertyAttribute>());
+         var propertyDescriptions = new List<PropertyDescriptionDto>();
+         var invokablePropertiesByName = new Dictionary<string, PropertyInfo>();
+         foreach (var property in properties) {
+            propertyDescriptions.Add(
+               new PropertyDescriptionDto {
+                  Name = property.Name,
+                  Type = property.PropertyType,
+                  HasGetter = property.CanRead,
+                  HasSetter = property.CanWrite
+               });
+            invokablePropertiesByName.Add(property.Name, property);
+         }
+
          var context = new ManagementObjectContext {
             IdentifierDto = new ManagementObjectIdentifierDto {
                FullName = mobFullName,
                Id = mobId
             },
             StateDto = new ManagementObjectStateDto {
-               Methods = methodDescriptions
+               Methods = methodDescriptions,
+               Properties = propertyDescriptions
             },
             InvokableMethodsByName = invokableMethodsByName,
+            InvokablePropertiesByName = invokablePropertiesByName,
             Instance = mobInstance
          };
          mobIdByFullName.AddOrThrow(mobFullName, mobId);
          mobContextById.AddOrThrow(mobId, context);
       }
-
+      
       public IEnumerable<ManagementObjectIdentifierDto> EnumerateManagementObjects() {
          return mobContextById.Values.Select(v => v.IdentifierDto);
       }
@@ -74,8 +92,17 @@ namespace Dargon.Courier.ManagementTier {
 
       public object InvokeManagedOperation(string mobFullName, string methodName, object[] args) {
          var mobContext = mobContextById[mobIdByFullName[mobFullName]];
-         var method = mobContext.InvokableMethodsByName.Get(methodName)
-                                .First(m => m.GetParameters().Length == args.Length);
+         MethodInfo method = mobContext.InvokableMethodsByName.GetValueOrDefault(methodName)
+                                      ?.FirstOrDefault(m => m.GetParameters().Length == args.Length);
+         if (method == null) {
+            var property = mobContext.InvokablePropertiesByName[methodName];
+            if (args.Any()) {
+               method = property.GetSetMethod();
+            } else {
+               method = property.GetGetMethod();
+            }
+         }
+
          return method.Invoke(mobContext.Instance, args);
       }
 
@@ -83,6 +110,7 @@ namespace Dargon.Courier.ManagementTier {
          public ManagementObjectIdentifierDto IdentifierDto { get; set; }
          public ManagementObjectStateDto StateDto { get; set; }
          public MultiValueDictionary<string, MethodInfo> InvokableMethodsByName { get; set; }
+         public Dictionary<string, PropertyInfo> InvokablePropertiesByName { get; set; }
          public object Instance { get; set; }
       }
    }

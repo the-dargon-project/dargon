@@ -21,6 +21,8 @@ namespace Dargon.Courier.Management.UI {
          dispatcher.RegisterCommand(new ChangeDirectoryCommand());
          dispatcher.RegisterCommand(new ListDirectoryCommand());
          dispatcher.RegisterCommand(new InvokeCommand());
+         dispatcher.RegisterCommand(new SetCommand());
+         dispatcher.RegisterCommand(new GetCommand());
          dispatcher.RegisterCommand(new TreeCommand());
          dispatcher.RegisterCommand(new ExitCommand());
          new ReplCore(dispatcher).Run();

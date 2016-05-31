@@ -14,11 +14,9 @@ using NLog.Targets.Wrappers;
 namespace dummy_management_object_server {
    [Guid("E6867903-3222-40ED-94BB-3C2C0FDB891B")]
    public class TestMob {
-      private int counter = 0;
-
       [ManagedOperation]
       public int GetNext() {
-         return counter++;
+         return Current++;
       }
 
       [ManagedOperation]
@@ -30,6 +28,9 @@ namespace dummy_management_object_server {
 
       [ManagedOperation]
       public string SayHello(string name) => $"Hello, {name}!";
+
+      [ManagedProperty]
+      public int Current { get; set; }
    }
 
    public static class Program {
