@@ -7,5 +7,6 @@ namespace Dargon.Courier.ManagementTier {
    public class ManagementObjectStateDto {
       public IReadOnlyList<MethodDescriptionDto> Methods { get; set; }
       public IReadOnlyList<PropertyDescriptionDto> Properties { get; set; }
+      public IReadOnlyList<DataSetDescriptionDto> DataSets { get; set; }
    }
 }

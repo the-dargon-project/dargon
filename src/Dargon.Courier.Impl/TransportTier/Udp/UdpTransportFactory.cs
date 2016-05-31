@@ -2,6 +2,10 @@
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
 using System.Threading.Tasks;
+using Dargon.Courier.AuditingTier;
+using Dargon.Courier.ManagementTier;
+using Dargon.Courier.TransportTier.Udp.Management;
+using Dargon.Ryu;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class UdpTransportFactory : ITransportFactory {
@@ -11,18 +15,26 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.configuration = configuration ?? UdpTransportConfiguration.Default;
       }
 
-      public Task<ITransport> CreateAsync(Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher) {
+      public Task<ITransport> CreateAsync(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
          var duplicateFilter = new DuplicateFilter();
          duplicateFilter.Initialize();
 
-         var shutdownCts = new CancellationTokenSource();
+         var inboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kInboundBytes);
+         var outboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kOutboundBytes);
+         var resendsAggregator = auditService.GetAggregator<int>(DataSetNames.kResends);
+         var tossedCounter = auditService.GetCounter(DataSetNames.kTossed);
+         var duplicatesReceivedCounter = auditService.GetCounter(DataSetNames.kDuplicatesReceived);
+         var announcementsReceivedCounter = auditService.GetCounter(DataSetNames.kAnnouncementsReceived);
 
+         mobOperations.RegisterService(new UdpDebugMob());
+
+         var shutdownCts = new CancellationTokenSource();
          var acknowledgementCoordinator = new AcknowledgementCoordinator();
-         var client = UdpClient.Create(configuration);
+         var client = UdpClient.Create(configuration, inboundBytesAggregator, outboundBytesAggregator);
          var payloadSender = new PayloadSender(client);
-         var packetSender = new PacketSender(payloadSender, acknowledgementCoordinator, shutdownCts.Token);
+         var packetSender = new PacketSender(payloadSender, acknowledgementCoordinator, shutdownCts.Token, resendsAggregator);
          var messageSender = new MessageSender(identity, packetSender);
-         var udpDispatcher = new UdpDispatcher(identity, client, messageSender, duplicateFilter, payloadSender, acknowledgementCoordinator, routingTable, peerTable, inboundMessageDispatcher);
+         var udpDispatcher = new UdpDispatcher(identity, client, messageSender, duplicateFilter, payloadSender, acknowledgementCoordinator, routingTable, peerTable, inboundMessageDispatcher, announcementsReceivedCounter, tossedCounter, duplicatesReceivedCounter);
          var announcer = new Announcer(identity, payloadSender, shutdownCts.Token);
          announcer.Initialize();
          var udpFacade = new UdpFacade(client, udpDispatcher, shutdownCts);

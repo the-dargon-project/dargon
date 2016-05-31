@@ -1,4 +1,5 @@
-﻿using Castle.DynamicProxy;
+﻿using System.Threading;
+using Castle.DynamicProxy;
 using Dargon.Commons.Collections;
 using Dargon.Courier.AsyncPrimitives;
 using Dargon.Courier.ManagementTier;
@@ -13,6 +14,8 @@ using Dargon.Ryu;
 using Fody.Constructors;
 using NLog;
 using System.Threading.Tasks;
+using Dargon.Courier.AuditingTier;
+using Dargon.Courier.TransportTier.Udp.Management;
 
 namespace Dargon.Courier {
    public class CourierBuilder {
@@ -51,7 +54,18 @@ namespace Dargon.Courier {
       public async Task<IRyuContainer> CreateAsync(IReadOnlySet<ITransportFactory> transportFactories) {
          var container = root.CreateChildContainer();
          var proxyGenerator = container.GetOrDefault<ProxyGenerator>() ?? new ProxyGenerator();
-         
+         var shutdownCancellationTokenSource = new CancellationTokenSource();
+
+         // Auditing Subsystem
+         var auditService = new AuditService(shutdownCancellationTokenSource.Token);
+         auditService.Initialize();
+
+         // management tier containers
+         var mobContextContainer = new MobContextContainer();
+         var mobContextFactory = new MobContextFactory(auditService);
+         var mobOperations = new MobOperations(mobContextFactory, mobContextContainer);
+
+         // Other Courier Stuff
          var identity = Identity.Create();
          var routingTable = new RoutingTable();
          var peerDiscoveryEventBus = new AsyncBus<PeerDiscoveryEvent>();
@@ -62,7 +76,7 @@ namespace Dargon.Courier {
 
          var transports = new ConcurrentSet<ITransport>();
          foreach (var transportFactory in transportFactories) {
-            var transport = await transportFactory.CreateAsync(identity, routingTable, peerTable, inboundMessageDispatcher);
+            var transport = await transportFactory.CreateAsync(mobOperations, identity, routingTable, peerTable, inboundMessageDispatcher, auditService);
             transports.TryAdd(transport);
          }
 
@@ -86,10 +100,11 @@ namespace Dargon.Courier {
          container.Set(remoteServiceProxyContainer);
 
          //----------------------------------------------------------------------------------------
-         // Management Tier - DMI
+         // Management Tier - DMI - Services
          //----------------------------------------------------------------------------------------
-         var managementObjectService = new ManagementObjectService();
+         var managementObjectService = new ManagementObjectService(mobContextContainer, mobOperations);
          localServiceRegistry.RegisterService<IManagementObjectService>(managementObjectService);
+         container.Set(mobOperations);
          container.Set(managementObjectService);
 
          var facade = new CourierFacade(transports, container);

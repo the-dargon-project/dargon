@@ -23,6 +23,7 @@ namespace Dargon.Courier.Management.UI {
          dispatcher.RegisterCommand(new InvokeCommand());
          dispatcher.RegisterCommand(new SetCommand());
          dispatcher.RegisterCommand(new GetCommand());
+         dispatcher.RegisterCommand(new GraphCommand());
          dispatcher.RegisterCommand(new TreeCommand());
          dispatcher.RegisterCommand(new ExitCommand());
          new ReplCore(dispatcher).Run();

@@ -9,10 +9,10 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Dargon.Courier.AuditingTier;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class UdpClient {
-//      private const int kPort = 21337;
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
       private readonly IObjectPool<InboundDataEvent> inboundSomethingEventPool = ObjectPool.Create(() => new InboundDataEvent());
@@ -21,14 +21,19 @@ namespace Dargon.Courier.TransportTier.Udp {
       
       private readonly UdpTransportConfiguration configuration;
       private readonly List<Socket> sockets;
+      private readonly AuditAggregator<double> inboundBytesAggregator;
+      private readonly AuditAggregator<double> outboundBytesAggregator;
+
       private readonly IObjectPool<SocketAsyncEventArgs> receiveArgsPool;
 
       private volatile bool isShutdown = false;
       private UdpDispatcher udpDispatcher;
 
-      private UdpClient(UdpTransportConfiguration configuration, List<Socket> sockets) {
+      private UdpClient(UdpTransportConfiguration configuration, List<Socket> sockets, AuditAggregator<double> inboundBytesAggregator, AuditAggregator<double> outboundBytesAggregator) {
          this.configuration = configuration;
          this.sockets = sockets;
+         this.inboundBytesAggregator = inboundBytesAggregator;
+         this.outboundBytesAggregator = outboundBytesAggregator;
          this.receiveArgsPool = ObjectPool.Create(() => {
             return new SocketAsyncEventArgs {
                RemoteEndPoint = configuration.ReceiveEndpoint
@@ -69,9 +74,12 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          receiveArgsPool.ReturnObject(e);
          inboundSomethingEventPool.ReturnObject(inboundSomethingEvent);
+
+         // analytics
+         inboundBytesAggregator.Put(e.BytesTransferred);
       }
 
-      public Task BroadcastAsync(MemoryStream ms, int offset, int length) {
+      public async Task BroadcastAsync(MemoryStream ms, int offset, int length) {
          logger.Debug($"Sending {length} bytes!");
          var sync = asyncAutoResetEventPool.TakeObject();
          foreach (var socket in sockets) {
@@ -90,7 +98,10 @@ namespace Dargon.Courier.TransportTier.Udp {
                }
             } catch (ObjectDisposedException) when (isShutdown) { }
          }
-         return sync.WaitAsync();
+         await sync.WaitAsync();
+
+         // analytics
+         outboundBytesAggregator.Put(length);
       }
 
       public void Shutdown() {
@@ -101,7 +112,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
       }
 
-      public static UdpClient Create(UdpTransportConfiguration udpTransportConfiguration) {
+      public static UdpClient Create(UdpTransportConfiguration udpTransportConfiguration, AuditAggregator<double> inboundBytesAggregator, AuditAggregator<double> outboundBytesAggregator) {
          var sockets = new List<Socket>();
          foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces()) {
             if (!networkInterface.SupportsMulticast ||
@@ -111,7 +122,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             if (ipv4Properties != null)
                sockets.Add(CreateSocket(ipv4Properties.Index, udpTransportConfiguration));
          }
-         return new UdpClient(udpTransportConfiguration, sockets);
+         return new UdpClient(udpTransportConfiguration, sockets, inboundBytesAggregator, outboundBytesAggregator);
       }
 
       private static Socket CreateSocket(long adapterIndex, UdpTransportConfiguration udpTransportConfiguration) {

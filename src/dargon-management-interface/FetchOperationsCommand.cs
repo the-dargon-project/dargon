@@ -23,6 +23,10 @@ namespace Dargon.Courier.Management.UI {
             var propertyNode = ReplGlobals.Current.GetOrAddChild(property.Name);
             propertyNode.PropertyDto = property;
          }
+         foreach (var dataSet in desc.DataSets) {
+            var dataSetNode = ReplGlobals.Current.GetOrAddChild(dataSet.Name);
+            dataSetNode.DataSetDto = dataSet;
+         }
          return 0;
       }
    }

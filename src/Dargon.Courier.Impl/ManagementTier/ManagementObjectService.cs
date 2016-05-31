@@ -6,8 +6,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Dargon.Commons.Collections;
+using Dargon.Courier.AuditingTier.Utilities;
 using Dargon.Courier.ManagementTier.Vox;
+using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.ManagementTier {
    [Guid("776C1CEC-44DE-40CA-9ED4-0F942BC3A8DC")]
@@ -15,103 +18,37 @@ namespace Dargon.Courier.ManagementTier {
       IEnumerable<ManagementObjectIdentifierDto> EnumerateManagementObjects();
       ManagementObjectStateDto GetManagementObjectDescription(Guid mobId);
       object InvokeManagedOperation(string mobFullName, string methodName, object[] args);
+      ManagementDataSetDto<T> GetManagedDataSet<T>(string mobFullName, string dataSetName);
    }
 
    public class ManagementObjectService : IManagementObjectService {
-      private readonly ConcurrentDictionary<string, Guid> mobIdByFullName = new ConcurrentDictionary<string, Guid>();
-      private readonly ConcurrentDictionary<Guid, ManagementObjectContext> mobContextById = new ConcurrentDictionary<Guid, ManagementObjectContext>();
-      
-      public void RegisterService(object service) {
-         Guid serviceId;
-         if (!service.GetType().TryGetInterfaceGuid(out serviceId)) {
-            throw new InvalidOperationException($"Mob of type {service.GetType().FullName} does not have default service id.");
-         }
-         RegisterService(serviceId, service);
+      private readonly MobContextContainer mobContextContainer;
+      private readonly MobOperations mobOperations;
+
+      public ManagementObjectService(MobContextContainer mobContextContainer, MobOperations mobOperations) {
+         this.mobContextContainer = mobContextContainer;
+         this.mobOperations = mobOperations;
       }
 
-      public void RegisterService(Guid mobId, object mobInstance) {
-         RegisterService(mobId, mobInstance, mobInstance.GetType().FullName);
-      }
-
-      public void RegisterService(Guid mobId, object mobInstance, string mobFullName) {
-         var methods = mobInstance.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                                  .Where(method => method.HasAttribute<ManagedOperationAttribute>());
-
-         var methodDescriptions = new List<MethodDescriptionDto>();
-         var invokableMethodsByName = new MultiValueDictionary<string, MethodInfo>();
-         foreach (var method in methods) {
-            methodDescriptions.Add(
-               new MethodDescriptionDto {
-                  Name = method.Name,
-                  Parameters = method.GetParameters().Map(
-                     p => new ParameterDescriptionDto { Name = p.Name, Type = p.ParameterType }),
-                  ReturnType = method.ReturnType
-               });
-            invokableMethodsByName.Add(method.Name, method);
-         }
-
-         var properties = mobInstance.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                                     .Where(property => property.HasAttribute<ManagedPropertyAttribute>());
-         var propertyDescriptions = new List<PropertyDescriptionDto>();
-         var invokablePropertiesByName = new Dictionary<string, PropertyInfo>();
-         foreach (var property in properties) {
-            propertyDescriptions.Add(
-               new PropertyDescriptionDto {
-                  Name = property.Name,
-                  Type = property.PropertyType,
-                  HasGetter = property.CanRead,
-                  HasSetter = property.CanWrite
-               });
-            invokablePropertiesByName.Add(property.Name, property);
-         }
-
-         var context = new ManagementObjectContext {
-            IdentifierDto = new ManagementObjectIdentifierDto {
-               FullName = mobFullName,
-               Id = mobId
-            },
-            StateDto = new ManagementObjectStateDto {
-               Methods = methodDescriptions,
-               Properties = propertyDescriptions
-            },
-            InvokableMethodsByName = invokableMethodsByName,
-            InvokablePropertiesByName = invokablePropertiesByName,
-            Instance = mobInstance
-         };
-         mobIdByFullName.AddOrThrow(mobFullName, mobId);
-         mobContextById.AddOrThrow(mobId, context);
-      }
-      
       public IEnumerable<ManagementObjectIdentifierDto> EnumerateManagementObjects() {
-         return mobContextById.Values.Select(v => v.IdentifierDto);
+         return mobContextContainer.Enumerate().Select(context => context.IdentifierDto);
       }
 
       public ManagementObjectStateDto GetManagementObjectDescription(Guid mobId) {
-         return mobContextById[mobId].StateDto;
+         return mobContextContainer.Get(mobId).StateDto;
       }
 
       public object InvokeManagedOperation(string mobFullName, string methodName, object[] args) {
-         var mobContext = mobContextById[mobIdByFullName[mobFullName]];
-         MethodInfo method = mobContext.InvokableMethodsByName.GetValueOrDefault(methodName)
-                                      ?.FirstOrDefault(m => m.GetParameters().Length == args.Length);
-         if (method == null) {
-            var property = mobContext.InvokablePropertiesByName[methodName];
-            if (args.Any()) {
-               method = property.GetSetMethod();
-            } else {
-               method = property.GetGetMethod();
-            }
-         }
-
-         return method.Invoke(mobContext.Instance, args);
+         return mobOperations.InvokeManagedOperation(mobFullName, methodName, args);
       }
 
-      private class ManagementObjectContext {
-         public ManagementObjectIdentifierDto IdentifierDto { get; set; }
-         public ManagementObjectStateDto StateDto { get; set; }
-         public MultiValueDictionary<string, MethodInfo> InvokableMethodsByName { get; set; }
-         public Dictionary<string, PropertyInfo> InvokablePropertiesByName { get; set; }
-         public object Instance { get; set; }
+      public ManagementDataSetDto<T> GetManagedDataSet<T>(string mobFullName, string dataSetName) {
+         var mobContext = mobContextContainer.Get(mobFullName);
+         var dataSet = (DataPointCircularBuffer<T>)mobContext.DataSetBuffersByAlias[dataSetName];
+         var dataPoints = dataSet.ToArray();
+         return new ManagementDataSetDto<T> {
+            DataPoints = dataPoints
+         };
       }
    }
 }

@@ -29,6 +29,7 @@ namespace Dargon.Courier {
       public Messenger Messenger => container.GetOrThrow<Messenger>();
       public LocalServiceRegistry LocalServiceRegistry => container.GetOrThrow<LocalServiceRegistry>();
       public RemoteServiceProxyContainer RemoteServiceProxyContainer => container.GetOrThrow<RemoteServiceProxyContainer>();
+      public MobOperations MobOperations => container.GetOrThrow<MobOperations>();
       public ManagementObjectService ManagementObjectService => container.GetOrThrow<ManagementObjectService>();
 
       public async Task ShutdownAsync() {

@@ -15,7 +15,7 @@
         "Dargon.Ryu.Impl": "*",
         "Dargon.Repl": "*",
         "xunit": "2.1.0",
-        "Newtonsoft.Json": "*"
+        "Newtonsoft.Json": "*",
     },
 
     "buildOptions": {

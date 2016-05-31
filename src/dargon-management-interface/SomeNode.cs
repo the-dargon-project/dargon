@@ -13,6 +13,7 @@ namespace Dargon.Courier.Management.UI {
       public ManagementObjectIdentifierDto MobDto { get; set; }
       public MethodDescriptionDto MethodDto { get; set; }
       public PropertyDescriptionDto PropertyDto { get; set; }
+      public DataSetDescriptionDto DataSetDto { get; set; }
 
       public bool TryGetChild(string name, out SomeNode child) {
          child = Children.FirstOrDefault(c => c.Name == name);

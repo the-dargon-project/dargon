@@ -11,7 +11,8 @@
         "NLombok.Fody": "0.0.5",
         "NLog": "3.1.0",
         "Nito.AsyncEx": "3.0.1",
-        "Castle.Core": "3.3.3"
+        "Castle.Core": "3.3.3",
+        "xunit": "2.1.0"
     },
 
     "frameworks": {

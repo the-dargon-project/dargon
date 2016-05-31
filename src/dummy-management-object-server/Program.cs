@@ -1,15 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Threading;
-using Dargon.Commons;
+﻿using Dargon.Commons;
 using Dargon.Courier;
+using Dargon.Courier.ManagementTier;
 using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Courier.Vox;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
 using NLog.Targets.Wrappers;
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Threading;
+using Dargon.Courier.TransportTier.Udp;
 
 namespace dummy_management_object_server {
    [Guid("E6867903-3222-40ED-94BB-3C2C0FDB891B")]
@@ -31,16 +33,23 @@ namespace dummy_management_object_server {
 
       [ManagedProperty]
       public int Current { get; set; }
+
+      [ManagedProperty(IsDataSource = true)]
+      public int Sin => (int)(100 * Math.Sin(DateTime.Now.ToUnixTimeMilliseconds() * Math.PI * 2.0 / 30000) + 50);
+
+      [ManagedProperty(IsDataSource = true)]
+      public bool BoolSin => (100 * Math.Sin(DateTime.Now.ToUnixTimeMilliseconds() * Math.PI * 2.0 / 30000) + 50) > 50;
    }
 
    public static class Program {
       public static void Main() {
          InitializeLogging();
          var courierFacade = CourierBuilder.Create()
+                                           .UseUdpMulticastTransport()
                                            .UseTcpServerTransport(21337)
                                            .BuildAsync().Result;
          var testMob = new TestMob();
-         courierFacade.ManagementObjectService.RegisterService(testMob);
+         courierFacade.MobOperations.RegisterService(testMob);
 
          new CountdownEvent(1).Wait();
       }

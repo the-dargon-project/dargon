@@ -22,16 +22,20 @@ namespace Dargon.Courier.Management.UI {
             ReplGlobals.Current.Children,
             new PrettyFormatter<SomeNode> {
                GetBackground = n => {
+                  var color = ConsoleColor.Black;
                   if (n.PropertyDto != null) {
                      if (n.PropertyDto.HasGetter && n.PropertyDto.HasSetter) {
-                        return ConsoleColor.Magenta;
+                        color = ConsoleColor.DarkMagenta;
                      } else if (n.PropertyDto.HasGetter) {
-                        return ConsoleColor.Cyan;
+                        color = ConsoleColor.DarkCyan;
                      } else if (n.PropertyDto.HasSetter) {
-                        return ConsoleColor.Red;
+                        color = ConsoleColor.DarkRed;
                      }
                   }
-                  return ConsoleColor.Black;
+                  if (n.DataSetDto != null) {
+                     color |= (ConsoleColor)8;
+                  }
+                  return color;
                }
             });
 

@@ -1,17 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Dargon.Courier.AuditingTier;
+using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
 using Dargon.Courier.TransportTier.Udp;
 using Dargon.Courier.Vox;
+using Dargon.Ryu;
 
 namespace Dargon.Courier.TransportTier.Test {
    public class TestTransportFactory : ITransportFactory {
       private readonly object synchronization = new object();
       private readonly List<TestTransport> transports = new List<TestTransport>();
 
-      public async Task<ITransport> CreateAsync(Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher) {
+      public async Task<ITransport> CreateAsync(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
          var transport = new TestTransport(this, identity, routingTable, peerTable, inboundMessageDispatcher);
          transports.Add(transport);
 

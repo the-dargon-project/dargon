@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Dargon.Commons.Pooling;
+using Dargon.Courier.AuditingTier;
 using Dargon.Vox.Utilities;
 using NLog;
 
@@ -26,10 +27,13 @@ namespace Dargon.Courier.TransportTier.Udp {
       private readonly RoutingTable routingTable;
       private readonly PeerTable peerTable;
       private readonly InboundMessageDispatcher inboundMessageDispatcher;
+      private readonly AuditCounter announcementsReceivedCounter;
+      private readonly AuditCounter tossedCounter;
+      private readonly AuditCounter duplicateReceivesCounter;
 
       private volatile bool isShutdown = false;
 
-      public UdpDispatcher(Identity identity, UdpClient udpClient, MessageSender messageSender, DuplicateFilter duplicateFilter, PayloadSender payloadSender, AcknowledgementCoordinator acknowledgementCoordinator, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher) {
+      public UdpDispatcher(Identity identity, UdpClient udpClient, MessageSender messageSender, DuplicateFilter duplicateFilter, PayloadSender payloadSender, AcknowledgementCoordinator acknowledgementCoordinator, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditCounter announcementsReceivedCounter, AuditCounter tossedCounter, AuditCounter duplicateReceivesCounter) {
          this.identity = identity;
          this.udpClient = udpClient;
          this.messageSender = messageSender;
@@ -39,6 +43,9 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.routingTable = routingTable;
          this.peerTable = peerTable;
          this.inboundMessageDispatcher = inboundMessageDispatcher;
+         this.announcementsReceivedCounter = announcementsReceivedCounter;
+         this.tossedCounter = tossedCounter;
+         this.duplicateReceivesCounter = duplicateReceivesCounter;
       }
 
       public async Task InboundSomethingEventHandlerAsync(InboundDataEvent e) {
@@ -67,6 +74,8 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       private async Task HandleAnnouncementAsync(AnnouncementDto x) {
+         announcementsReceivedCounter.Increment();
+
          var peerIdentity = x.Identity;
          var peerId = peerIdentity.Id;
          bool isNewlyDiscoveredRoute = false;
@@ -85,11 +94,13 @@ namespace Dargon.Courier.TransportTier.Udp {
 
       private async Task HandlePacketDtoAsync(PacketDto x) {
          if (!identity.Matches(x.ReceiverId, IdentityMatchingScope.Broadcast)) {
+            tossedCounter.Increment();
             return;
          }
 
          if (x.IsReliable()) {
             if (!duplicateFilter.IsNew(x.Id)) {
+               duplicateReceivesCounter.Increment();
                return;
             }
             await payloadSender.SendAsync(AcknowledgementDto.Create(x.Id));
