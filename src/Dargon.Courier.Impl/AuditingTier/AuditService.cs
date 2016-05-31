@@ -8,7 +8,7 @@ using Dargon.Courier.AuditingTier.Utilities;
 namespace Dargon.Courier.AuditingTier {
    public class AuditService {
       private const int kLogExpirationMillis = 30 * 60 * 1000;
-      private const int kUpdateIntervalMillis = 5000;
+      private const int kUpdateIntervalMillis = 1000;
       private const int kLogLength = kLogExpirationMillis / kUpdateIntervalMillis;
 
       private readonly ConcurrentDictionary<string, object> aggregatorsByName = new ConcurrentDictionary<string, object>();
