@@ -62,6 +62,8 @@ namespace NMockito.Placeholders {
                case nameof(Int32): return (int)(1 + counter % (UInt32.MaxValue - 1));
                case nameof(UInt64): return (ulong)(1 + counter);
                case nameof(Int64): return (long)(1 + counter);
+               case nameof(Single): return (float)(1 + counter);
+               case nameof(Double): return (double)(1 + counter);
                case nameof(Boolean): return counter % 2 == 0;
                case nameof(Guid): return new Guid(1 + counter, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             }

@@ -2,7 +2,11 @@
     "version": "0.0.0",
 
     "frameworks": {
-        "net451": { }
+        "net451": {
+            "frameworkAssemblies": {
+                "System.Runtime": "*"
+            }
+        }
     },
     
     "dependencies": {
@@ -10,3 +14,4 @@
        "xunit": "2.1.0-rc2-build3176"
     }
 }
+
