@@ -30,7 +30,6 @@ namespace Dargon.Repl {
    }
 
    public class PrettyFormatter<T> {
-
       public Func<T, string> GetName { get; set; } = (T t) => t.ToString();
       public Func<T, ConsoleColor> GetForeground { get; set; } = (T t) => ConsoleHelpers.DefaultForegroundColor;
       public Func<T, ConsoleColor> GetBackground { get; set; } = (T t) => ConsoleHelpers.DefaultBackgroundColor;
@@ -76,8 +75,9 @@ namespace Dargon.Repl {
          formatter = formatter ?? new PrettyFormatter<T>();
          foreach (var value in input.OrderBy(x => formatter.GetName(x))) {
             using (new ConsoleColorSwitch().To(formatter.GetForeground(value), formatter.GetBackground(value))) {
-               Console.WriteLine(formatter.GetName(value));
+               Console.Write(formatter.GetName(value));
             }
+            Console.WriteLine();
          }
       }
    }
