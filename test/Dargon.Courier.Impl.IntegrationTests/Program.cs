@@ -19,6 +19,9 @@ namespace Dargon.Courier {
 
          Console.BufferHeight = 21337;
 
+         new UdpMessagingTests().LargeObjectTest().Wait();
+         return;
+
          new BloomFilterTests().CanHaveNegligibleFalseCollisionRate();
          new BloomFilterTests().PerformanceTest();
 
@@ -47,7 +50,7 @@ namespace Dargon.Courier {
             Layout = "${longdate}|${level}|${logger}|${message} ${exception:format=tostring}"
          };
 
-#if !DEBUG
+#if !DEBUG || TRUE
          debuggerTarget = new AsyncTargetWrapper(debuggerTarget);
          consoleTarget = new AsyncTargetWrapper(consoleTarget);
 #else

@@ -66,11 +66,11 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       private async Task HandleReceiveCompletedHelperAsync(SocketAsyncEventArgs e) {
-         logger.Debug($"Received from {e.RemoteEndPoint} {e.BytesTransferred} bytes!");
+//         logger.Debug($"Received from {e.RemoteEndPoint} {e.BytesTransferred} bytes!");
          var inboundSomethingEvent = inboundSomethingEventPool.TakeObject();
          inboundSomethingEvent.Data = e.Buffer;
 
-         await udpDispatcher.InboundSomethingEventHandlerAsync(inboundSomethingEvent);
+         await udpDispatcher.HandleInboundDataEventAsync(inboundSomethingEvent).ConfigureAwait(false);
 
          receiveArgsPool.ReturnObject(e);
          inboundSomethingEventPool.ReturnObject(inboundSomethingEvent);
@@ -80,7 +80,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public async Task BroadcastAsync(MemoryStream ms, int offset, int length) {
-         logger.Debug($"Sending {length} bytes!");
+//         logger.Debug($"Sending {length} bytes!");
          var sync = asyncAutoResetEventPool.TakeObject();
          foreach (var socket in sockets) {
             var e = sendArgsPool.TakeObject();

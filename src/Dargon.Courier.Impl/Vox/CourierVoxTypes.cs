@@ -19,6 +19,7 @@ namespace Dargon.Courier.TransportTier.Udp.Vox {
          Register<AcknowledgementDto>(udpBaseId + 1);
          Register<AnnouncementDto>(udpBaseId + 2);
          Register<Identity>(udpBaseId + 3);
+         Register<MultiPartChunkDto>(udpBaseId + 4);
 
          // Tcp
          var tcpBaseId = 20;

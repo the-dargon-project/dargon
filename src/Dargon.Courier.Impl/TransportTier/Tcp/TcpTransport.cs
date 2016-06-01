@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.Collections;
 using Dargon.Commons.Exceptions;
+using Dargon.Courier.AuditingTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
 using Dargon.Courier.Vox;
@@ -19,22 +20,24 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
       private readonly CancellationTokenSource shutdownCancellationTokenSource = new CancellationTokenSource();
-      private readonly ConcurrentSet<TcpRoutingContext> routingContexts = new ConcurrentSet<TcpRoutingContext>();
-      private readonly ConcurrentDictionary<Guid, TcpRoutingContext> clientRoutingContextsByClientId = new Commons.Collections.ConcurrentDictionary<Guid, TcpRoutingContext>();
       private readonly TcpTransportConfiguration configuration;
       private readonly Identity identity;
       private readonly RoutingTable routingTable;
       private readonly PeerTable peerTable;
       private readonly InboundMessageDispatcher inboundMessageDispatcher;
+      private readonly TcpRoutingContextContainer tcpRoutingContextContainer;
+      private readonly PayloadUtils payloadUtils;
       private Task runAsyncTask;
       private Socket __listenerSocket;
 
-      public TcpTransport(TcpTransportConfiguration configuration, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher) {
+      public TcpTransport(TcpTransportConfiguration configuration, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, TcpRoutingContextContainer tcpRoutingContextContainer, PayloadUtils payloadUtils) {
          this.configuration = configuration;
          this.identity = identity;
          this.routingTable = routingTable;
          this.peerTable = peerTable;
          this.inboundMessageDispatcher = inboundMessageDispatcher;
+         this.tcpRoutingContextContainer = tcpRoutingContextContainer;
+         this.payloadUtils = payloadUtils;
       }
 
       public void Initialize() {
@@ -68,8 +71,8 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                   logger.Debug($"Got client socket from {client.RemoteEndPoint}.");
                   Console.BackgroundColor = ConsoleColor.Black;
 
-                  var routingContext = new TcpRoutingContext(configuration, this, client, inboundMessageDispatcher, identity, routingTable, peerTable);
-                  routingContexts.TryAdd(routingContext);
+                  var routingContext = new TcpRoutingContext(configuration, tcpRoutingContextContainer, client, inboundMessageDispatcher, identity, routingTable, peerTable, payloadUtils);
+                  tcpRoutingContextContainer.AddOrThrow(routingContext);
                   routingContext.RunAsync().Forget();
                }
             } catch (SocketException) {
@@ -87,8 +90,8 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                client.Connect(configuration.RemoteEndpoint);
 
-               var routingContext = new TcpRoutingContext(configuration, this, client, inboundMessageDispatcher, identity, routingTable, peerTable);
-               routingContexts.TryAdd(routingContext);
+               var routingContext = new TcpRoutingContext(configuration, tcpRoutingContextContainer, client, inboundMessageDispatcher, identity, routingTable, peerTable, payloadUtils);
+               tcpRoutingContextContainer.AddOrThrow(routingContext);
                await routingContext.RunAsync().ConfigureAwait(false);
             } catch (SocketException) {
                await Task.Delay(kConnectionRetryIntervalMillis);
@@ -96,30 +99,22 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          }
       }
 
-      public void SomethingToDoWithRoutingAndStarting(Guid clientId, TcpRoutingContext routingContext) {
-         clientRoutingContextsByClientId.AddOrThrow(clientId, routingContext);
-      }
-
-      public void SomethingToDoWithRoutingAndEnding(Guid clientId, TcpRoutingContext routingContext) {
-         clientRoutingContextsByClientId.RemoveOrThrow(clientId, routingContext);
-      }
-
       public Task SendMessageBroadcastAsync(MessageDto message) {
          return Task.WhenAll(
-            clientRoutingContextsByClientId.Values.Select(
+            tcpRoutingContextContainer.Enumerate().Select(
                clientRoutingContext => clientRoutingContext.SendBroadcastAsync(message)));
       }
 
       public async Task SendMessageReliableAsync(Guid destination, MessageDto message) {
          TcpRoutingContext clientRoutingContext;
-         if (clientRoutingContextsByClientId.TryGetValue(destination, out clientRoutingContext)) {
+         if (tcpRoutingContextContainer.TryGetByRemoteId(destination, out clientRoutingContext)) {
             await clientRoutingContext.SendReliableAsync(destination, message);
          }
       }
 
       public async Task SendMessageUnreliableAsync(Guid destination, MessageDto message) {
          TcpRoutingContext clientRoutingContext;
-         if (clientRoutingContextsByClientId.TryGetValue(destination, out clientRoutingContext)) {
+         if (tcpRoutingContextContainer.TryGetByRemoteId(destination, out clientRoutingContext)) {
             await clientRoutingContext.SendUnreliableAsync(destination, message);
          }
       }
@@ -128,7 +123,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          shutdownCancellationTokenSource.Cancel();
          __listenerSocket?.Close();
          __listenerSocket?.Dispose();
-         await Task.WhenAll(routingContexts.Select(rc => rc.ShutdownAsync()));
+         await tcpRoutingContextContainer.ShutdownAsync();
          await runAsyncTask;
       }
    }

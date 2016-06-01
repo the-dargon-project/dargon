@@ -25,6 +25,8 @@ namespace Dargon.Courier.TransportTier.Udp {
          var tossedCounter = auditService.GetCounter(DataSetNames.kTossed);
          var duplicatesReceivedCounter = auditService.GetCounter(DataSetNames.kDuplicatesReceived);
          var announcementsReceivedCounter = auditService.GetCounter(DataSetNames.kAnnouncementsReceived);
+         var multiPartChunksSentCounter = auditService.GetCounter(DataSetNames.kMultiPartChunksSent);
+         var multiPartChunksReceivedAggregator = auditService.GetAggregator<int>(DataSetNames.kMultiPartChunksBytesReceived);
 
          mobOperations.RegisterService(new UdpDebugMob());
 
@@ -32,9 +34,11 @@ namespace Dargon.Courier.TransportTier.Udp {
          var acknowledgementCoordinator = new AcknowledgementCoordinator();
          var client = UdpClient.Create(configuration, inboundBytesAggregator, outboundBytesAggregator);
          var payloadSender = new PayloadSender(client);
-         var packetSender = new PacketSender(payloadSender, acknowledgementCoordinator, shutdownCts.Token, resendsAggregator);
+         var packetSender = new PacketSender(payloadSender, acknowledgementCoordinator, shutdownCts.Token, resendsAggregator, client, multiPartChunksSentCounter);
          var messageSender = new MessageSender(identity, packetSender);
-         var udpDispatcher = new UdpDispatcher(identity, client, messageSender, duplicateFilter, payloadSender, acknowledgementCoordinator, routingTable, peerTable, inboundMessageDispatcher, announcementsReceivedCounter, tossedCounter, duplicatesReceivedCounter);
+         var multiPartPacketReassembler = new MultiPartPacketReassembler();
+         var udpDispatcher = new UdpDispatcher(identity, client, messageSender, duplicateFilter, payloadSender, acknowledgementCoordinator, routingTable, peerTable, inboundMessageDispatcher, multiPartPacketReassembler, announcementsReceivedCounter, tossedCounter, duplicatesReceivedCounter, multiPartChunksReceivedAggregator);
+         multiPartPacketReassembler.SetUdpDispatcher(udpDispatcher);
          var announcer = new Announcer(identity, payloadSender, shutdownCts.Token);
          announcer.Initialize();
          var udpFacade = new UdpFacade(client, udpDispatcher, shutdownCts);

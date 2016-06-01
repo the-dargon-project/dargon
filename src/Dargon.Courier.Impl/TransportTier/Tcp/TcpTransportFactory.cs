@@ -1,11 +1,11 @@
-﻿using System.Net;
-using System.Threading.Tasks;
-using Dargon.Courier.AuditingTier;
+﻿using Dargon.Courier.AuditingTier;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
+using Dargon.Courier.TransportTier.Tcp.Management;
 using Dargon.Courier.TransportTier.Tcp.Server;
-using Dargon.Ryu;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace Dargon.Courier.TransportTier.Tcp {
    public class TcpTransportHandshakeCompletionEventArgs {
@@ -43,8 +43,14 @@ namespace Dargon.Courier.TransportTier.Tcp {
       }
 
       public Task<ITransport> CreateAsync(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
-         var transport = new TcpTransport(configuration, identity, routingTable, peerTable, inboundMessageDispatcher);
+         var inboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kInboundBytes);
+         var outboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kOutboundBytes);
+
+         var tcpRoutingContextContainer = new TcpRoutingContextContainer();
+         var payloadUtils = new PayloadUtils(inboundBytesAggregator, outboundBytesAggregator);
+         var transport = new TcpTransport(configuration, identity, routingTable, peerTable, inboundMessageDispatcher, tcpRoutingContextContainer, payloadUtils);
          transport.Initialize();
+         mobOperations.RegisterService(new TcpDebugMob(tcpRoutingContextContainer));
          return Task.FromResult<ITransport>(transport);
       }
 

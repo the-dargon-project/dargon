@@ -1,10 +1,11 @@
 using Dargon.Commons;
 using Dargon.Courier.Vox;
 using System.Threading.Tasks;
+using Dargon.Courier.TransportTier.Udp.Vox;
 
 namespace Dargon.Courier.PacketTier {
    public class Announcer {
-      private const int kAnnounceIntervalMillis = 100;
+      private const int kAnnounceIntervalMillis = 1000;
       private readonly Identity identity;
       private readonly OutboundPayloadEventEmitter outboundPayloadEventEmitter;
 

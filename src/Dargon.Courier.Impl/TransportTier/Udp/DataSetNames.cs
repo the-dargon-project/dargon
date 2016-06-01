@@ -11,5 +11,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       public const string kTossed = "courier.transport.udp.tossed";
       public const string kDuplicatesReceived = "courier.transport.udp.duplicatesReceived";
       public const string kAnnouncementsReceived = "courier.transport.udp.announcementsReceived";
+      public const string kMultiPartChunksSent = "courier.transport.udp.multiPartChunksSent";
+      public const string kMultiPartChunksBytesReceived = "courier.transport.udp.multiPartChunksBytesReceived";
    }
 }

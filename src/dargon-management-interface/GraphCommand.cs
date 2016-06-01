@@ -14,8 +14,12 @@ namespace Dargon.Courier.Management.UI {
       private const char kLowerBlock = '\u2584';
       private const char kUpperBlock = '\u2580';
       private const char kFullBlock = '\u2588';
+      private const char kVPipe = '\u2502';
+      private const char kHPipe = '\u2500';
+      private const char kHDoublePipe = '\u2550';
+      private const char kLTQuad = '\u2518';
 
-      private delegate void EvalHelperFunc(SomeNode dataSetNode, DataSetDescriptionDto dataSetDto, bool plotDerivative);
+      private delegate void EvalHelperFunc(SomeNode dataSetNode, DataSetDescriptionDto dataSetDto, bool plotDerivative, Func<DateTime, bool> windowFilter);
 
       private static readonly IGenericFlyweightFactory<EvalHelperFunc> evalHelperFactory
          = GenericFlyweightFactory.ForMethod<EvalHelperFunc>(
@@ -37,12 +41,21 @@ namespace Dargon.Courier.Management.UI {
          }
 
          bool plotDerivative = false;
+         Func<DateTime, bool> windowFilter = dt => true;
          while (!string.IsNullOrWhiteSpace(args)) {
             string flag;
             args = Tokenizer.Next(args, out flag);
             switch (flag) {
                case "-d":
                   plotDerivative = true;
+                  break;
+               case "-w":
+                  string previousSecondsAcceptedString;
+                  args = Tokenizer.Next(args, out previousSecondsAcceptedString);
+
+                  int previousSecondsAccepted = int.Parse(previousSecondsAcceptedString);
+                  var cutoff = DateTime.Now - TimeSpan.FromSeconds(previousSecondsAccepted);
+                  windowFilter = dt => dt > cutoff;
                   break;
             }
          }
@@ -58,7 +71,7 @@ namespace Dargon.Courier.Management.UI {
             throw new Exception($"Node {dataSetName} is not a data source.");
          }
 
-         evalHelperFactory.Get(dataSetDto.ElementType)(dataSetNode, dataSetDto, plotDerivative);
+         evalHelperFactory.Get(dataSetDto.ElementType)(dataSetNode, dataSetDto, plotDerivative, windowFilter);
          return 0;
       }
 
@@ -119,7 +132,7 @@ namespace Dargon.Courier.Management.UI {
          public double Value { get; set; }
       }
 
-      private static void EvalHelper<T>(SomeNode dataSetNode, DataSetDescriptionDto dataSetDto, bool plotDerivative) {
+      private static void EvalHelper<T>(SomeNode dataSetNode, DataSetDescriptionDto dataSetDto, bool plotDerivative, Func<DateTime, bool> windowFilter) {
          var mobNode = dataSetNode.Parent;
          var mobDto = mobNode.MobDto;
          var dataSet = ReplGlobals.ManagementObjectService.GetManagedDataSet<T>(mobDto.FullName, dataSetNode.Name);
@@ -136,14 +149,15 @@ namespace Dargon.Courier.Management.UI {
                   Min = stat.Value.Min,
                   Sum = stat.Value.Sum
                }
-            });
+            }).Where(p => windowFilter(p.Time)).ToArray();
             MultiPlot(title, doubleStats, plotDerivative);
          } else if (typeof(T) == typeof(AggregateStatistics<double>)) {
             var stats = (DataPoint<AggregateStatistics<double>>[])(object)dataSet.DataPoints;
+            stats = stats.Where(p => windowFilter(p.Time)).ToArray();
             MultiPlot(title, stats, plotDerivative);
          } else {
             // dataset of ints or doubles
-            var dataPoints = dataSet.DataPoints.Map(p => new PlotPoint { Time = p.Time, Value = Convert.ToDouble(p.Value) });
+            var dataPoints = dataSet.DataPoints.Map(p => new PlotPoint { Time = p.Time, Value = Convert.ToDouble(p.Value) }).Where(p => windowFilter(p.Time)).ToArray();
             int renderWidth = Console.WindowWidth;
             int renderHeight = Console.WindowHeight - 8;
 
@@ -176,8 +190,8 @@ namespace Dargon.Courier.Management.UI {
 
          if (title.Length < renderWidth) {
             title = " " + title + " ";
-            title = title.PadLeft(title.Length + (renderWidth - title.Length) / 2, '=');
-            title = title.PadRight(renderWidth, '=');
+            title = title.PadLeft(title.Length + (renderWidth - title.Length) / 2, kHDoublePipe);
+            title = title.PadRight(renderWidth, kHDoublePipe);
          }
 
          Console.SetCursorPosition(0, plotsTop);
@@ -237,14 +251,6 @@ namespace Dargon.Courier.Management.UI {
 
          int renderLeft = Console.CursorLeft;
          int renderTop = Console.CursorTop;
-
-         if (title.Length < renderWidth) {
-            title = title.PadLeft(title.Length + (renderWidth - title.Length) / 2);
-            title = title.PadRight(renderWidth);
-         }
-
-         Console.SetCursorPosition(renderLeft, renderTop);
-         Console.Write(title);
          
          var minValue = points.Min(p => p.Value);
          var maxValue = points.Max(p => p.Value);
@@ -266,6 +272,15 @@ namespace Dargon.Courier.Management.UI {
          var gw = renderWidth - rightAxisPadding;
          var gh = renderHeight - 4;
          var doubleGh = gh * 2; // used as we support drawing on lower and upper halves of character
+
+         if (title.Length < renderWidth) {
+            title = title.PadLeft(title.Length + (gw - title.Length) / 2);
+            title = title.PadRight(gw);
+         }
+
+         Console.SetCursorPosition(renderLeft, renderTop);
+         Console.Write(title);
+
          int[] upperBuffer = new int[gw * gh];
          int[] lowerBuffer = new int[gw * gh];
          for (int i = 0; i < points.Count; i++) {
@@ -309,7 +324,7 @@ namespace Dargon.Courier.Management.UI {
                }
             }
             Console.SetCursorPosition(renderLeft + gw, renderTop + y + 1);
-            Console.Write("|");
+            Console.Write(kVPipe);
             if (y == 0) {
                Console.Write(maxLabel);
             } else if (y == gh - 1) {
@@ -318,7 +333,7 @@ namespace Dargon.Courier.Management.UI {
          }
 
          Console.SetCursorPosition(renderLeft, renderTop + gh + 1);
-         Console.Write("-".Repeat(gw) + "+");
+         Console.Write(new String(kHPipe, gw) + kLTQuad);
          var minTimeString = TimeToRelativeString(minTime);
          var maxTimeString = TimeToRelativeString(maxTime);
 
@@ -326,7 +341,7 @@ namespace Dargon.Courier.Management.UI {
          Console.Write(minTimeString + " ".Repeat(gw - minTimeString.Length - maxTimeString.Length + 1) + maxTimeString);
 
          Console.SetCursorPosition(renderLeft, renderTop + gh + 3);
-         var statisticsString = $"^: {NumberToLabelString(points.Max(p => p.Value))}, v: {NumberToLabelString(points.Min(p => p.Value))},  : {NumberToLabelString(points.Sum(p => p.Value) / points.Count)}";
+         var statisticsString = $"^: {NumberToLabelString(points.Max(p => p.Value))}, v: {NumberToLabelString(points.Min(p => p.Value))}, {kMu}: {NumberToLabelString(points.Sum(p => p.Value) / points.Count)}";
          Console.Write(statisticsString.PadRight(renderWidth - 1).Substring(0, renderWidth - 1));
 
          Trace.Assert(Console.CursorTop == renderTop + renderHeight - 1);

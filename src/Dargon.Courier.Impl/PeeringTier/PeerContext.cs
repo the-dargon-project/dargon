@@ -29,7 +29,7 @@ namespace Dargon.Courier.PeeringTier {
       public async Task HandleInboundPeerIdentityUpdate(Identity identity) {
          await Task.Yield();
 
-         logger.Trace($"Got announcement from peer {identity}!");
+//         logger.Trace($"Got announcement from peer {identity}!");
          Identity.Update(identity);
 
          if (!Discovered) {

@@ -21,7 +21,7 @@ namespace Dargon.Courier.ManagementTier {
       [Fact]
       public async Task RunAsync() {
          try {
-            courierFacade.ManagementObjectService.RegisterService(new TestMob());
+            courierFacade.MobOperations.RegisterService(new TestMob());
             var managementObjectService = courierFacade.ManagementObjectService;
 
             var mobIdentifierDtos = managementObjectService.EnumerateManagementObjects().ToList();

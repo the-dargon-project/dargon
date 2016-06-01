@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class Announcer {
-      private const int kAnnounceIntervalMillis = 100;
+      private const int kAnnounceIntervalMillis = 500;
       private readonly Identity identity;
       private readonly PayloadSender payloadSender;
       private readonly CancellationToken shutdownCancellationToken;

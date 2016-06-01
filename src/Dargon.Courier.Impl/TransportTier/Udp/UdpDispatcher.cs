@@ -6,8 +6,11 @@ using Dargon.Courier.Vox;
 using Dargon.Vox;
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.IO;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
+using Dargon.Commons;
 using Dargon.Commons.Pooling;
 using Dargon.Courier.AuditingTier;
 using Dargon.Vox.Utilities;
@@ -27,13 +30,15 @@ namespace Dargon.Courier.TransportTier.Udp {
       private readonly RoutingTable routingTable;
       private readonly PeerTable peerTable;
       private readonly InboundMessageDispatcher inboundMessageDispatcher;
+      private readonly MultiPartPacketReassembler multiPartPacketReassembler;
       private readonly AuditCounter announcementsReceivedCounter;
       private readonly AuditCounter tossedCounter;
       private readonly AuditCounter duplicateReceivesCounter;
+      private readonly AuditAggregator<int> multiPartChunksBytesReceivedAggregator;
 
       private volatile bool isShutdown = false;
 
-      public UdpDispatcher(Identity identity, UdpClient udpClient, MessageSender messageSender, DuplicateFilter duplicateFilter, PayloadSender payloadSender, AcknowledgementCoordinator acknowledgementCoordinator, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditCounter announcementsReceivedCounter, AuditCounter tossedCounter, AuditCounter duplicateReceivesCounter) {
+      public UdpDispatcher(Identity identity, UdpClient udpClient, MessageSender messageSender, DuplicateFilter duplicateFilter, PayloadSender payloadSender, AcknowledgementCoordinator acknowledgementCoordinator, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, MultiPartPacketReassembler multiPartPacketReassembler, AuditCounter announcementsReceivedCounter, AuditCounter tossedCounter, AuditCounter duplicateReceivesCounter, AuditAggregator<int> multiPartChunksBytesReceivedAggregator) {
          this.identity = identity;
          this.udpClient = udpClient;
          this.messageSender = messageSender;
@@ -43,15 +48,17 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.routingTable = routingTable;
          this.peerTable = peerTable;
          this.inboundMessageDispatcher = inboundMessageDispatcher;
+         this.multiPartPacketReassembler = multiPartPacketReassembler;
          this.announcementsReceivedCounter = announcementsReceivedCounter;
          this.tossedCounter = tossedCounter;
          this.duplicateReceivesCounter = duplicateReceivesCounter;
+         this.multiPartChunksBytesReceivedAggregator = multiPartChunksBytesReceivedAggregator;
       }
 
-      public async Task InboundSomethingEventHandlerAsync(InboundDataEvent e) {
+      public async Task HandleInboundDataEventAsync(InboundDataEvent e) {
          await Task.Yield();
 
-         object payload;
+         object payload = null;
          try {
             payload = Deserialize.From(e.Data);
          } catch (Exception ex) {
@@ -103,7 +110,7 @@ namespace Dargon.Courier.TransportTier.Udp {
                duplicateReceivesCounter.Increment();
                return;
             }
-            await payloadSender.SendAsync(AcknowledgementDto.Create(x.Id));
+            payloadSender.SendAsync(AcknowledgementDto.Create(x.Id)).Forget();
          }
 
          RoutingContext peerRoutingContext;
@@ -111,7 +118,13 @@ namespace Dargon.Courier.TransportTier.Udp {
             peerRoutingContext.Weight++;
          }
 
-         await inboundMessageDispatcher.DispatchAsync(x.Message);
+         if (x.Message.Body is MultiPartChunkDto) {
+            var chunk = (MultiPartChunkDto)x.Message.Body;
+            multiPartChunksBytesReceivedAggregator.Put(chunk.BodyLength);
+            multiPartPacketReassembler.HandleInboundMultiPartChunk(chunk);
+         } else {
+            await inboundMessageDispatcher.DispatchAsync(x.Message).ConfigureAwait(false);
+         }
       }
 
       public void Shutdown() {
