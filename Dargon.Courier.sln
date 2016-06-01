@@ -91,6 +91,9 @@ EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Vox.UnitTests", "dependencies\vox\test\Dargon.Vox.UnitTests\Dargon.Vox.UnitTests.xproj", "{94A50AF5-E6BE-40E6-92B6-05E4689EA93F}"
 EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
