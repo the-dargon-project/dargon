@@ -121,6 +121,16 @@ namespace Dargon.Courier.TransportTier.Udp {
             var ipv4Properties = networkInterface.GetIPProperties()?.GetIPv4Properties();
             if (ipv4Properties != null)
                sockets.Add(CreateSocket(ipv4Properties.Index, udpTransportConfiguration));
+
+            var ni = networkInterface;
+            if (ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet) {
+               Console.WriteLine(ni.Name);
+               foreach (UnicastIPAddressInformation ip in ni.GetIPProperties().UnicastAddresses) {
+                  if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
+                     Console.WriteLine(ip.Address.ToString());
+                  }
+               }
+            }
          }
          return new UdpClient(udpTransportConfiguration, sockets, inboundBytesAggregator, outboundBytesAggregator);
       }
