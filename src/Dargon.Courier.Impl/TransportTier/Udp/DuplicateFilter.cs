@@ -26,14 +26,16 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
       }
 
-      public bool IsNew(Guid id) {
+      public async Task<bool> IsNewAsync(Guid id) {
          foreach (var filter in bloomFilters) {
-            if (filter.Test(id)) {
+            if (await filter.TestAsync(id)) {
+               Console.WriteLine("Passed A");
                return false;
             }
          }
          var currentFilter = bloomFilters[epoch % bloomFilters.Length];
-         return currentFilter.SetAndTest(id);
+         Console.WriteLine("Passed To B");
+         return await currentFilter.SetAndTestAsync(id);
       }
    }
 }

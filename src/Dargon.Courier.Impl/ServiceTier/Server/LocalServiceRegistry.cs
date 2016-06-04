@@ -59,7 +59,14 @@ namespace Dargon.Courier.ServiceTier.Server {
             result = method.Invoke(service, args);
             var task = result as Task;
             if (task != null) {
-               result = ((dynamic)task).Result;
+               result = null;
+               await task;
+               if (task.GetType().IsGenericType) {
+                  var taskResult = task.GetType().GetProperty("Result").GetValue(task);
+                  if (taskResult.GetType().Name != "VoidTaskResult") {
+                     result = taskResult;
+                  }
+               }
             }
          } catch (Exception ex) {
             await RespondError(e, ex);

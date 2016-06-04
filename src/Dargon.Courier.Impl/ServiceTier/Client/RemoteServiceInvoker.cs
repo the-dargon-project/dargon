@@ -22,8 +22,10 @@ namespace Dargon.Courier.ServiceTier.Client {
          await Task.Yield();
 
          var response = x.Body;
+         logger.Warn($"Handling invocation response for {response.InvocationId}.");
          AsyncBox<RmiResponseDto> responseBox;
          if (!responseBoxes.TryRemove(response.InvocationId, out responseBox)) {
+            logger.Warn($"Could not find response box for invocation id {response.InvocationId}.");
             throw new InvalidStateException();
          }
          responseBox.SetResult(response);

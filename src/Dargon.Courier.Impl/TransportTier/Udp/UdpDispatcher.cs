@@ -14,6 +14,8 @@ using Dargon.Commons;
 using Dargon.Commons.Pooling;
 using Dargon.Courier.AuditingTier;
 using Dargon.Vox.Utilities;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using NLog;
 
 namespace Dargon.Courier.TransportTier.Udp {
@@ -106,11 +108,15 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
 
          if (x.IsReliable()) {
-            if (!duplicateFilter.IsNew(x.Id)) {
+            if (!await duplicateFilter.IsNewAsync(x.Id)) {
                duplicateReceivesCounter.Increment();
                return;
             }
             payloadSender.SendAsync(AcknowledgementDto.Create(x.Id)).Forget();
+         }
+
+         if (x.Message.Body.GetType().FullName.Contains("Service")) {
+            logger.Warn($"Routing packet {x.Id} Reliable: {x.IsReliable()} Body: {JsonConvert.SerializeObject(x.Message.Body, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() })}");
          }
 
          RoutingContext peerRoutingContext;

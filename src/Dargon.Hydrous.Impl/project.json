@@ -7,7 +7,8 @@
     "licenseUrl": "",
 
     "compilationOptions": {
-        "emitEntryPoint": true 
+        "allowUnsafe": true,
+        "emitEntryPoint": true
     },
 
     "dependencies": {
@@ -16,12 +17,19 @@
         "Dargon.Courier.Impl": "*",
         "Dargon.Ryu.Api": "*",
         "Dargon.Ryu.Impl": "*",
-        "Dargon.Vox": "*"
+        "Dargon.Vox": "*",
+        "NLombok.Fody": "0.0.5"
     },
 
     "frameworks": {
         "net451": {
         }
     },
+
+    "scripts": {
+        "prebuild": [ "" ],
+        "postbuild": [ "powershell ../../../FodyDnx/src/exec-fody-weavers.ps1 -ProjectDir %cd%" ]
+    },
+
     "userSecretsId": "aspnet-Dargon.Hydrous.Impl-20160517010505"
 }

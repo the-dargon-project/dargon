@@ -22,12 +22,28 @@ namespace Dargon.Courier.ServiceTier.Client {
 
       public void Intercept(IInvocation invocation) {
          RmiResponseDto responseDto = null;
+         var method = invocation.Method;
+
+         var executorTask = Go(async () => {
+            logger.Debug($"At intercept async for invocation on method {method.Name} for service {remoteServiceInfo.ServiceType.Name}");
+            responseDto = await InterceptAsync(method, invocation.Arguments).ConfigureAwait(false);
+            logger.Debug($"Completing Intercept async for invocation on method {method.Name} for service {remoteServiceInfo.ServiceType.Name}");
+         });
+         
+         if (typeof(Task).IsAssignableFrom(method.ReturnType)) {
+            invocation.ReturnValue = Go(async () => {
+               await executorTask.ConfigureAwait(false);
+               var ex = responseDto.Exception as Exception;
+               if (ex != null) {
+                  throw ex;
+               }
+               return responseDto.ReturnValue;
+            });
+            return;
+         }
+
          try {
-            Go(async () => {
-               logger.Debug($"At intercept async for invocation on method {invocation.Method.Name} for service {remoteServiceInfo.ServiceType.Name}");
-               responseDto = await InterceptAsync(invocation.Method, invocation.Arguments).ConfigureAwait(false);
-               logger.Debug($"Completing Intercept async for invocation on method {invocation.Method.Name} for service {remoteServiceInfo.ServiceType.Name}");
-            }).ConfigureAwait(false).GetAwaiter().GetResult();
+            executorTask.Wait();
          } catch (AggregateException ae) {
             if (ae.InnerExceptions.Count == 1) {
                ExceptionDispatchInfo.Capture(ae.InnerExceptions[0]).Throw();
@@ -38,7 +54,8 @@ namespace Dargon.Courier.ServiceTier.Client {
          }
 
          invocation.ReturnValue = responseDto.ReturnValue;
-         var parameters = invocation.Method.GetParameters();
+
+         var parameters = method.GetParameters();
          var outValues = responseDto.Outs;
          for (int i = 0, outIndex = 0; i < parameters.Length && outIndex < outValues.Length; i++) {
             if (parameters[i].IsOut) {

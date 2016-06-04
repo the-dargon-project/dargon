@@ -16,11 +16,16 @@ using NLog.Config;
 using NLog.Targets;
 using NLog.Targets.Wrappers;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Courier.Vox;
+using Dargon.Hydrous.Impl.BinaryLogNamespaceThing;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 using SCG = System.Collections.Generic;
 
@@ -67,6 +72,7 @@ namespace Dargon.Hydrous.Impl {
          Register<ElectDto>(0);
          Register<LeaderHeartBeatDto>(1);
          Register<RepartitionCompleteDto>(2);
+         Register<BinaryLogEntry>(3);
       }
    }
 
@@ -85,7 +91,17 @@ namespace Dargon.Hydrous.Impl {
    public class RepartitionHaltDto { }
 
    [AutoSerializable]
-   public class RepartitionCompleteDto { }
+   public class RepartitionCompleteDto {
+      public RepartitionCompleteDto() { }
+
+      public RepartitionCompleteDto(Guid[] rankedCohortIds, SCG.IReadOnlyDictionary<int, IReadOnlySet<int>> partitionIdsByRank) {
+         RankedCohortIds = rankedCohortIds;
+         PartitionIdsByRank = partitionIdsByRank;
+      }
+
+      public SCG.IReadOnlyList<Guid> RankedCohortIds { get; set; }
+      public SCG.IReadOnlyDictionary<int, IReadOnlySet<int>> PartitionIdsByRank { get; set; }
+   }
 
    [AutoSerializable]
    public class RequestDto<K, V> {
@@ -105,17 +121,41 @@ namespace Dargon.Hydrous.Impl {
    [AutoSerializable]
    public class EntryUpdateDto { }
 
+
+   [AutoSerializable]
+   public class SOmethingToDoWithHeyIhaveThisTHing {
+      public int Progress { get; set; }
+   }
+
+   [AutoSerializable]
+   public class SomethingToDoWithHeyWeHaveUpdatesHereYouGo {
+      public int Progress { get; set; }
+   }
+
+   [AutoSerializable]
+   public class SomethingToDoWithHeyINeedThisUpdateKthxDto {
+      public int Progress { get; set; }
+   }
+
+   [AutoSerializable]
+   public class SomethingToDoWithReplicationCompletionDto {
+      public int Progress { get; set; }
+   }
+
    public class CacheRoot<K, V> {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
       public static void StartLocalCluster() {
+         int port = 21337;
+
          Func<CourierFacade> buildCourier = () => CourierBuilder.Create()
                                                                 .UseUdpMulticastTransport()
+                                                                .UseTcpServerTransport(port++)
                                                                 .BuildAsync().Result;
          StartNewCohort(buildCourier);
-         StartNewCohort(buildCourier);
-         StartNewCohort(buildCourier);
-         StartNewCohort(buildCourier);
+//         StartNewCohort(buildCourier);
+//         StartNewCohort(buildCourier);
+//         StartNewCohort(buildCourier);
          new CountdownEvent(1).Wait();
       }
 
@@ -124,12 +164,18 @@ namespace Dargon.Hydrous.Impl {
          var courier = buildCourier();
          var identity = courier.Identity;
          var router = courier.InboundMessageRouter;
-         var staticConfiguration = new StaticConfiguration { LocalId = identity.Id };
+         string cacheName = "my-cache";
+         var cacheNameMd5 = new MD5CryptoServiceProvider().ComputeHash(Encoding.UTF8.GetBytes(cacheName));
+         var cacheGuid = new Guid(cacheNameMd5.SubArray(0, 16));
+         var staticConfiguration = new StaticConfiguration { CacheId = cacheGuid, LocalId = identity.Id };
+         var liveConfiguration = new LiveConfiguration();
          var program = new Program(staticConfiguration, courier);
 
          var clusterMessenger = new ClusterMessenger(courier);
 
-         var phaseContext = new PhaseContext("MAIN", null, courier, clusterMessenger);
+         var slaveBinaryLogContainer = new SlaveBinaryLogContainer();
+
+         var phaseContext = new PhaseContext("MAIN", null, courier, clusterMessenger, staticConfiguration, liveConfiguration, slaveBinaryLogContainer);
          phaseContext.TransitionAsync(new IndeterminatePhase()).Forget();
 
          router.RegisterHandler<ElectDto>(SomeCloningProxy<ElectDto>(phaseContext));
@@ -141,6 +187,9 @@ namespace Dargon.Hydrous.Impl {
 
          var someRepartitioningService = new SomeRepartitioningService();
          courier.LocalServiceRegistry.RegisterService<ISomeRepartitioningService>(someRepartitioningService);
+
+         var someReplicationService = new SomeReplicationService(slaveBinaryLogContainer);
+         courier.LocalServiceRegistry.RegisterService<ISomeReplicationService>(someReplicationService);
       }
 
       public static Func<IInboundMessageEvent<T>, Task> SomeCloningProxy<T>(PhaseContext phaseContext) {
@@ -156,6 +205,11 @@ namespace Dargon.Hydrous.Impl {
       }
 
       public class StaticConfiguration {
+         /// <summary>
+         /// Unique id based on cache name
+         /// </summary>
+         public Guid CacheId { get; set; }
+
          /// <summary>
          /// Default: 10 to get 2^10 Blocks.
          /// The top BlockCountPower bits of a key's hash determine
@@ -185,7 +239,7 @@ namespace Dargon.Hydrous.Impl {
          public Guid[] CohortIdsByRank { get; set; }
          public int CohortCount => CohortIdsByRank.Length;
          public int PartitionCount => CohortCount;
-         public SCG.Dictionary<int, HashSet<int>> PartitionsIdsByRank { get; set; }
+         public SCG.IReadOnlyDictionary<int, IReadOnlySet<int>> PartitionsIdsByRank { get; set; }
       }
 
       public interface ICache {
@@ -266,6 +320,9 @@ namespace Dargon.Hydrous.Impl {
          public PeerTable PeerTable => Courier.PeerTable;
          public RemoteServiceProxyContainer RemoteServiceProxyContainer => Courier.RemoteServiceProxyContainer;
          public PhaseContextChannels Channels => Context.Channels;
+         public StaticConfiguration StaticConfiguration => Context.StaticConfiguration;
+         public LiveConfiguration LiveConfiguration => Context.LiveConfiguration;
+         public SlaveBinaryLogContainer SlaveBinaryLogContainer => Context.SlaveBinaryLogContainer;
 
          public void Log(string s) => Context.Log(s);
       }
@@ -281,11 +338,14 @@ namespace Dargon.Hydrous.Impl {
          private PhaseBase currentPhase = null;
          private int generationCounter = 0;
 
-         public PhaseContext(string contextName, PhaseContext parentPhaseContext, CourierFacade courier, ClusterMessenger messenger) {
+         public PhaseContext(string contextName, PhaseContext parentPhaseContext, CourierFacade courier, ClusterMessenger messenger, StaticConfiguration staticConfiguration, LiveConfiguration liveConfiguration, SlaveBinaryLogContainer slaveBinaryLogContainer) {
             this.contextName = contextName;
             this.parentPhaseContext = parentPhaseContext;
             Courier = courier;
             Messenger = messenger;
+            StaticConfiguration = staticConfiguration;
+            LiveConfiguration = liveConfiguration;
+            SlaveBinaryLogContainer = slaveBinaryLogContainer;
          }
 
          public async Task TransitionAsync(PhaseBase nextPhase) {
@@ -319,7 +379,7 @@ namespace Dargon.Hydrous.Impl {
          }
 
          public Task ForkAsync(string name, PhaseBase nextPhase) {
-            var newPhaseContext = new PhaseContext(name, this, Courier, Messenger);
+            var newPhaseContext = new PhaseContext(name, this, Courier, Messenger, StaticConfiguration, LiveConfiguration, SlaveBinaryLogContainer);
             childContexts.AddOrThrow(newPhaseContext);
             Messenger.AddForkOrThrow(newPhaseContext);
             return newPhaseContext.TransitionAsync(nextPhase);
@@ -336,6 +396,9 @@ namespace Dargon.Hydrous.Impl {
          public CourierFacade Courier { get; }
          public ClusterMessenger Messenger { get; }
          public PhaseContextChannels Channels { get; } = new PhaseContextChannels();
+         public StaticConfiguration StaticConfiguration { get; }
+         public LiveConfiguration LiveConfiguration { get; }
+         public SlaveBinaryLogContainer SlaveBinaryLogContainer { get; }
 
          public Task ProcessInboundMessageAsync<T>(IInboundMessageEvent<T> inboundMessageEvent) {
             return Task.WhenAll(
@@ -378,7 +441,7 @@ namespace Dargon.Hydrous.Impl {
       }
 
       public class ElectionCandidatePhase : PhaseBase {
-         private const int kDefaultTicksToVictory = 10;
+         private const int kDefaultTicksToVictory = 3;
 
          private readonly IReadOnlySet<Guid> cohortIds;
          private readonly int ticksToVictory;
@@ -510,7 +573,15 @@ namespace Dargon.Hydrous.Impl {
          public override async Task RunAsync() {
             while (IsRunning) {
                await new Select {
-                  Case(Channels.RepartitionComplete, () => TransitionAsync(new CohortMainLoopPhase(leaderId, cohortIds))),
+                  Case(Channels.RepartitionComplete, async x => {
+                     var binaryLog = new BinaryLog();
+                     var rankedCohortIds = x.Body.RankedCohortIds.ToArray();
+                     LiveConfiguration.LocalRank = Array.IndexOf(rankedCohortIds, Identity.Id);
+                     LiveConfiguration.CohortIdsByRank = rankedCohortIds;
+                     LiveConfiguration.PartitionsIdsByRank = x.Body.PartitionIdsByRank;
+
+                     await TransitionAsync(new CohortMainLoopPhase(leaderId));
+                  }),
                   Case(Channels.LeaderHeartBeat, () => {}),
                   Case(Time.After(5000), () => TransitionAsync(new IndeterminatePhase()))
                };
@@ -520,14 +591,151 @@ namespace Dargon.Hydrous.Impl {
 
       public class CohortMainLoopPhase : PhaseBase {
          private readonly Guid leaderId;
-         private readonly IReadOnlySet<Guid> cohortIds;
+         private readonly BinaryLog someBinaryLogThing = new BinaryLog();
+         private Task replicationFromOthersTask;
 
-         public CohortMainLoopPhase(Guid leaderId, IReadOnlySet<Guid> cohortIds) {
+         // HACK
+         private int[] partitionIdsImInvolvedIn;
+         private int partitionIOwn;
+         private Guid[] slaveCohortIds;
+         private SCG.IReadOnlyDictionary<Guid, SomeCohortContext> slaveCohortContextsById;
+
+         public CohortMainLoopPhase(Guid leaderId) {
             this.leaderId = leaderId;
-            this.cohortIds = cohortIds;
          }
 
-         public override string Description => $"[CohortMainLoop Leader={leaderId}, Cohorts[{cohortIds.Count}]={cohortIds.Join(", ")}]";
+         public override string Description => $"[CohortMainLoop Leader={leaderId}, RankedCohorts[{LiveConfiguration.CohortIdsByRank.Length}]={LiveConfiguration.CohortIdsByRank.Join(", ")}]";
+
+         public override Task HandleEnterAsync() {
+            // we'll obviously clean this up later.
+            partitionIdsImInvolvedIn = Enumerable.Range(0, StaticConfiguration.Redundancy)
+                                               .Select(i => (i + LiveConfiguration.LocalRank) % LiveConfiguration.CohortCount)
+                                               .ToArray();
+
+            partitionIOwn = partitionIdsImInvolvedIn[0];
+
+            slaveCohortIds = Enumerable.Range(1, StaticConfiguration.Redundancy - 1)
+                                       .Select(i => (LiveConfiguration.LocalRank - i + LiveConfiguration.CohortCount) % LiveConfiguration.CohortCount)
+                                       .Select(cohortRank => LiveConfiguration.CohortIdsByRank[cohortRank])
+                                       .ToArray();
+
+            slaveCohortContextsById = slaveCohortIds.ToDictionary(
+               cohortId => cohortId,
+               cohortId => new SomeCohortContext {
+                  ReplicationState = new CohortReplicationState(),
+                  ReplicationService = RemoteServiceProxyContainer.Get<ISomeReplicationService>(PeerTable.GetOrAdd(cohortId))
+               });
+
+            var partitionGuidsById = Enumerable.Range(0, LiveConfiguration.PartitionCount)
+                                               .ToDictionary(
+                                                  partitionId => partitionId,
+                                                  partitionId => SomeHelperClass.AddToGuidSomehow(StaticConfiguration.CacheId, partitionId));
+
+            var partitionIOwnGuid = partitionGuidsById[partitionIOwn];
+
+            var slaveBinaryLogsByPartitionId = Enumerable.Range(0, LiveConfiguration.PartitionCount)
+                                                    .ToDictionary(
+                                                       partitionId => partitionId,
+                                                       partitionId => new BinaryLog());
+
+            foreach (var partitionIdImInvolvedIn in partitionIdsImInvolvedIn) {
+               var partitionGuid = partitionGuidsById[partitionIdImInvolvedIn];
+               var slaveBinaryLog = slaveBinaryLogsByPartitionId[partitionIdImInvolvedIn];
+               Log("I am in partition guid " + partitionGuid);
+               SlaveBinaryLogContainer.AddOrThrow(partitionGuid, slaveBinaryLog);
+            }
+
+            Log("I own partition guid " + partitionIOwnGuid);
+
+            foreach (var cohortId in LiveConfiguration.CohortIdsByRank) {
+               Log($"I know about cohort {cohortId}.");
+               if (slaveCohortIds.Contains(cohortId)) {
+                  Log($"Is my slave");
+               }
+               if (Identity.Id == cohortId) {
+                  Log($"Is me");
+               }
+            }
+
+            //HACK - makes there something to replicate
+            Go(async () => {
+               int i = 0;
+               while (true) {
+                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
+//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
+//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
+//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
+//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
+                  await Task.Delay(10000).ConfigureAwait(false);
+//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
+//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
+//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
+//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
+//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
+//                  return;
+               }
+            }).Forget();
+
+            // Leader logic
+            Go(async () => {
+               await Task.Delay(5000);
+
+               while (true) {
+                  try {
+                     Log("Entered main loop iteration");
+                     // sync log entries
+                     foreach (var kvp in slaveCohortContextsById) {
+                        var cohortId = kvp.Key;
+                        var cohortContext = kvp.Value;
+
+                        var nextEntryIdToSync = cohortContext.ReplicationState.NextEntryIdToSync;
+                        var entriesThatNeedToBSynced = await someBinaryLogThing.GetEntriesFrom(nextEntryIdToSync).ConfigureAwait(false);
+
+                        if (entriesThatNeedToBSynced.Any()) {
+                           try {
+                              await cohortContext.ReplicationService.SyncAsync(partitionIOwnGuid, entriesThatNeedToBSynced).ConfigureAwait(false);
+                              await cohortContext.ReplicationState.UpdateNextEntryIdToSync(entriesThatNeedToBSynced.Last().Id + 1).ConfigureAwait(false);
+                              Log($"Got cohort {cohortId.ToShortString()} synced to {entriesThatNeedToBSynced.Last().Id}.");
+                           } catch (RemoteException e) {
+                              logger.Error("Something bad happened at sync.", e);
+                           }
+                        }
+                     }
+
+                     // advance commit pointer
+                     var greatestFullySyncedEntryId = slaveCohortContextsById.Values.Min(x => x.ReplicationState.NextEntryIdToSync) - 1;
+                     if (greatestFullySyncedEntryId > await someBinaryLogThing.GetGreatestCommittedEntryId().ConfigureAwait(false)) {
+                        await someBinaryLogThing.UpdateGreatestCommittedEntryId(greatestFullySyncedEntryId);
+                     }
+
+                     // sync commit pointer
+                     foreach (var kvp in slaveCohortContextsById) {
+                        var cohortId = kvp.Key;
+                        var cohortContext = kvp.Value;
+
+                        var greatestCommittedEntryId = await someBinaryLogThing.GetGreatestCommittedEntryId().ConfigureAwait(false);
+
+                        if (cohortContext.ReplicationState.GreatestCommittedEntryId < greatestCommittedEntryId) {
+                           try {
+                              await cohortContext.ReplicationService.CommitAsync(partitionIOwnGuid, greatestCommittedEntryId).ConfigureAwait(false);
+                              await cohortContext.ReplicationState.UpdateGreatestCommittedEntryId(greatestCommittedEntryId).ConfigureAwait(false);
+                              Log($"Got cohort {cohortId.ToShortString()} commit to {greatestCommittedEntryId}.");
+                              Console.Title = ($"Got cohort {cohortId.ToShortString()} commit to {greatestCommittedEntryId}.");
+                           } catch (RemoteException e) {
+                              logger.Error("Something bad happened at commit.", e);
+                           }
+                        }
+                     }
+
+                     await Task.Delay(1000).ConfigureAwait(false);
+                  } catch (Exception e) {
+                     logger.Error("We threw a ", e);
+                  }
+               }
+            }).Forget();
+
+            return base.HandleEnterAsync();
+         }
 
          public override async Task RunAsync() {
             while (IsRunning) {
@@ -536,6 +744,11 @@ namespace Dargon.Hydrous.Impl {
                   Case(Time.After(5000), () => TransitionAsync(new IndeterminatePhase()))
                };
             }
+         }
+
+         public class SomeCohortContext {
+            public CohortReplicationState ReplicationState { get; set; }
+            public ISomeReplicationService ReplicationService { get; set; }
          }
       }
 
@@ -563,13 +776,28 @@ namespace Dargon.Hydrous.Impl {
                }
             });
 
+            // repartition logic
             var rankedCohorts = new SortedSet<Guid>(cohortIds).ToArray();
             foreach (var cohort in rankedCohorts) {
                var cohortPeerContext = PeerTable.GetOrAdd(cohort);
                var haves = RemoteServiceProxyContainer.Get<ISomeRepartitioningService>(cohortPeerContext);
             }
 
-            await Messenger.SendToClusterReliableAsync(cohortIds, new RepartitionCompleteDto());
+            // divvy up responsibility for data partitions
+            LiveConfiguration.LocalRank = Array.IndexOf(rankedCohorts, Identity.Id);
+            LiveConfiguration.CohortIdsByRank = rankedCohorts;
+            var partitionIdsByRank = new SCG.Dictionary<int, IReadOnlySet<int>>();
+            foreach (var cohortRank in Enumerable.Range(0, rankedCohorts.Length)) {
+               partitionIdsByRank.Add(
+                  cohortRank,
+                  new HashSet<int>(
+                     Enumerable.Range(0, StaticConfiguration.Redundancy)
+                               .Select(j => (cohortRank + j) % rankedCohorts.Length)
+                     ));
+            }
+            LiveConfiguration.PartitionsIdsByRank = partitionIdsByRank;
+
+            await Messenger.SendToClusterReliableAsync(cohortIds, new RepartitionCompleteDto(rankedCohorts, partitionIdsByRank));
             await TransitionAsync(new CoordinatorMainLoopPhase(cohortIds));
          }
 
@@ -661,6 +889,30 @@ namespace Dargon.Hydrous.Impl {
       public class SomeRepartitioningService : ISomeRepartitioningService {
          public SCG.IReadOnlyList<HaveDto> GetHaves() {
             return new SCG.List<HaveDto>();
+         }
+      }
+
+      [Guid("61701EB0-3648-4505-9CEB-C9A78AF906A4")]
+      public interface ISomeReplicationService {
+         Task SyncAsync(Guid binaryLogId, SCG.IReadOnlyList<BinaryLogEntry> newLogEntries);
+         Task CommitAsync(Guid binaryLogId, int entryId);
+      }
+
+      public class SomeReplicationService : ISomeReplicationService {
+         private readonly SlaveBinaryLogContainer slaveBinaryLogContainer;
+
+         public SomeReplicationService(SlaveBinaryLogContainer slaveBinaryLogContainer) {
+            this.slaveBinaryLogContainer = slaveBinaryLogContainer;
+         }
+
+         public Task SyncAsync(Guid binaryLogId, SCG.IReadOnlyList<BinaryLogEntry> newLogEntries) {
+            var binaryLog = slaveBinaryLogContainer.GetOrThrow(binaryLogId);
+            return binaryLog.SomethingToDoWithSyncing(newLogEntries);
+         }
+
+         public Task CommitAsync(Guid binaryLogId, int entryId) {
+            var binaryLog = slaveBinaryLogContainer.GetOrThrow(binaryLogId);
+            return binaryLog.UpdateGreatestCommittedEntryId(entryId);
          }
       }
 
