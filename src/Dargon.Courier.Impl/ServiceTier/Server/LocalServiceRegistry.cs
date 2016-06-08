@@ -29,10 +29,10 @@ namespace Dargon.Courier.ServiceTier.Server {
          if (!serviceType.TryGetInterfaceGuid(out serviceId)) {
             throw new InvalidOperationException($"Service of type {serviceType.FullName} does not have default service id.");
          }
-         RegisterService(serviceId, service);
+         RegisterService(serviceId, serviceType, service);
       }
 
-      public void RegisterService(Guid id, object service) {
+      public void RegisterService(Guid id, Type serviceType, object service) {
          var existingService = services.GetOrAdd(id, _ => service);
          if (existingService != service) {
             throw new InvalidOperationException($"Already have service registered for id {id}: {existingService}.");

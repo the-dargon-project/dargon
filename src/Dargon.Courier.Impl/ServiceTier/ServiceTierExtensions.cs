@@ -9,5 +9,9 @@ namespace Dargon.Courier.ServiceTier {
       public static void RegisterService<TServiceInterface>(this LocalServiceRegistry localServiceRegistry, TServiceInterface implementation) {
          localServiceRegistry.RegisterService(typeof(TServiceInterface), implementation);
       }
+
+      public static void RegisterService<TServiceInterface>(this LocalServiceRegistry localServiceRegistry, Guid serviceGuid, TServiceInterface implementation) {
+         localServiceRegistry.RegisterService(serviceGuid, typeof(TServiceInterface), implementation);
+      }
    }
 }

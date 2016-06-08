@@ -6,7 +6,10 @@ using Dargon.Courier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.ServiceTier;
 using Dargon.Courier.ServiceTier.Client;
+using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Courier.TransportTier.Udp;
+using Dargon.Courier.Vox;
+using Dargon.Hydrous.Impl.BinaryLogNamespaceThing;
 using Dargon.Ryu;
 using Dargon.Vox;
 using Fody.Constructors;
@@ -16,16 +19,15 @@ using NLog.Config;
 using NLog.Targets;
 using NLog.Targets.Wrappers;
 using System;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Dargon.Courier.TransportTier.Tcp;
-using Dargon.Courier.Vox;
-using Dargon.Hydrous.Impl.BinaryLogNamespaceThing;
+using Dargon.Courier.AsyncPrimitives;
+using Dargon.Vox.Utilities;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 using SCG = System.Collections.Generic;
 
@@ -114,13 +116,15 @@ namespace Dargon.Hydrous.Impl {
       public int BlockId { get; set; }
    }
 
-   public interface IEntryOperation<K, V> {
-      K Key { get; }
-   }
-
    [AutoSerializable]
    public class EntryUpdateDto { }
 
+   [AutoSerializable]
+   public class EntryDto<K, V> {
+      public K Key { get; set; }
+      public V Value { get; set; }
+      public bool Exists { get; set; }
+   }
 
    [AutoSerializable]
    public class SOmethingToDoWithHeyIhaveThisTHing {
@@ -169,13 +173,15 @@ namespace Dargon.Hydrous.Impl {
          var cacheGuid = new Guid(cacheNameMd5.SubArray(0, 16));
          var staticConfiguration = new StaticConfiguration { CacheId = cacheGuid, LocalId = identity.Id };
          var liveConfiguration = new LiveConfiguration();
-         var program = new Program(staticConfiguration, courier);
+         var partitioner = new Partitioner(staticConfiguration, liveConfiguration);
 
          var clusterMessenger = new ClusterMessenger(courier);
 
          var slaveBinaryLogContainer = new SlaveBinaryLogContainer();
+         var something = new Something();
+         var inboundExecutionContextChannel = something.GetChannelOfCacheId(cacheGuid);
 
-         var phaseContext = new PhaseContext("MAIN", null, courier, clusterMessenger, staticConfiguration, liveConfiguration, slaveBinaryLogContainer);
+         var phaseContext = new PhaseContext("MAIN", null, cacheGuid, courier, clusterMessenger, staticConfiguration, liveConfiguration, slaveBinaryLogContainer, inboundExecutionContextChannel, partitioner);
          phaseContext.TransitionAsync(new IndeterminatePhase()).Forget();
 
          router.RegisterHandler<ElectDto>(SomeCloningProxy<ElectDto>(phaseContext));
@@ -190,6 +196,9 @@ namespace Dargon.Hydrous.Impl {
 
          var someReplicationService = new SomeReplicationService(slaveBinaryLogContainer);
          courier.LocalServiceRegistry.RegisterService<ISomeReplicationService>(someReplicationService);
+
+         var cacheService = new CacheService<K,V>(something);
+         courier.LocalServiceRegistry.RegisterService<ICacheService<K, V>>(cacheGuid, cacheService);
       }
 
       public static Func<IInboundMessageEvent<T>, Task> SomeCloningProxy<T>(PhaseContext phaseContext) {
@@ -253,44 +262,143 @@ namespace Dargon.Hydrous.Impl {
          public void Put(K key, V value) => inner[key] = value;
       }
 
+      public enum EntryOperationType {
+         Read,
+         Put
+      }
+
+      public interface IEntryOperation {
+         K Key { get; }
+         EntryOperationType Type { get; }
+      }
+
+      public interface IEntryOperation<TResult> : IEntryOperation {
+         Task<TResult> ExecuteAsync(Entry entry);
+      }
+
+      public class EntryReadOperation : IEntryOperation<Entry> {
+         public K Key { get; set; }
+         public EntryOperationType Type => EntryOperationType.Read;
+
+         public Task<Entry> ExecuteAsync(Entry entry) {
+            return Task.FromResult(entry);
+         }
+      }
+
+      public class EntryPutOperation : IEntryOperation<Entry> {
+         public K Key { get; set; }
+         public V Value { get; set; }
+         public EntryOperationType Type => EntryOperationType.Put;
+         public Task<Entry> ExecuteAsync(Entry entry) {
+            var oldEntry = entry.DeepCloneSerializable();
+            entry.Value = Value;
+            return Task.FromResult(oldEntry);
+         }
+      }
+
+      public interface IEntryOperationExecutionContext {
+         IEntryOperation Operation { get; }
+         Task ExecuteAsync(Entry entry);
+      }
+
+      public class EntryOperationExecutionContext<TResult> : IEntryOperationExecutionContext {
+         public AsyncBox<TResult> ResultBox { get; } = new AsyncBox<TResult>();
+         IEntryOperation IEntryOperationExecutionContext.Operation => Operation;
+         public IEntryOperation<TResult> Operation { get; set; }
+
+         public async Task ExecuteAsync(Entry entry) {
+            var result = await Operation.ExecuteAsync(entry);
+            ResultBox.SetResult(result);
+         }
+      }
+
+      [AutoSerializable]
+      public class Entry {
+         private V value;
+
+         public K Key { get; private set; }
+         public V Value { get { return value; } set { SetValue(value); } }
+         public bool Exists { get; private set; }
+         public bool IsDirty { get; set; }
+
+         private void SetValue(V newValue) {
+            value = newValue;
+            IsDirty = true;
+            Exists = true;
+         }
+
+         public static Entry Create(K key) => new Entry { Key = key };
+      }
+
+      public class Something {
+         private readonly ConcurrentDictionary<Guid, Channel<IEntryOperationExecutionContext>> executionContextChannelByCacheId = new ConcurrentDictionary<Guid, Channel<IEntryOperationExecutionContext>>();
+
+         public Task SomethingToDoWithAddingAExecutionContextToAChannel(Guid cacheId, IEntryOperationExecutionContext executionContext) {
+            return GetChannelOfCacheId(cacheId).WriteAsync(executionContext);
+         }
+
+         public Channel<IEntryOperationExecutionContext> GetChannelOfCacheId(Guid cacheId) {
+            return executionContextChannelByCacheId.GetOrAdd(
+               cacheId,
+               add => ChannelFactory.Nonblocking<IEntryOperationExecutionContext>());
+         }
+      }
+
+      public class SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton {
+         private readonly AsyncAutoResetEvent operationAvailableSignal = new AsyncAutoResetEvent(false);
+         private readonly ConcurrentQueue<IEntryOperationExecutionContext> readOperationExecutionContextQueue = new ConcurrentQueue<IEntryOperationExecutionContext>();
+         private readonly ConcurrentQueue<IEntryOperationExecutionContext> putOperationExecutionContextQueue = new ConcurrentQueue<IEntryOperationExecutionContext>();
+         
+         public async Task RunAsync() {
+            var entry = new Entry();
+            while (true) {
+               await operationAvailableSignal.WaitAsync();
+               ProcessReadsAsync(entry.DeepCloneSerializable()).Forget();
+               await ProcessPutsAsync(entry);
+            }
+         }
+
+         private async Task ProcessReadsAsync(Entry entry) {
+            IEntryOperationExecutionContext executionContext;
+            var readExecutionContexts = new SCG.List<IEntryOperationExecutionContext>();
+            while (readOperationExecutionContextQueue.TryDequeue(out executionContext)) {
+               readExecutionContexts.Add(executionContext);
+            }
+            await Task.WhenAll(readExecutionContexts.Map(ec => ec.ExecuteAsync(entry)));
+         }
+
+         private async Task ProcessPutsAsync(Entry entry) {
+            IEntryOperationExecutionContext executionContext;
+            while (putOperationExecutionContextQueue.TryDequeue(out executionContext)) {
+               await executionContext.ExecuteAsync(entry);
+            }
+         }
+
+         public Task<TResult> EnqueueOperationAndGetResultAsync<TResult>(IEntryOperation<TResult> entryOperation) {
+            var executionContext = new EntryOperationExecutionContext<TResult> {
+               Operation = entryOperation
+            };
+            switch (executionContext.Operation.Type) {
+               case EntryOperationType.Read:
+                  readOperationExecutionContextQueue.Enqueue(executionContext);
+                  break;
+               case EntryOperationType.Put:
+                  putOperationExecutionContextQueue.Enqueue(executionContext);
+                  break;
+            }
+            operationAvailableSignal.Set();
+            return executionContext.ResultBox.GetResultAsync();
+         }
+      }
+
+      public class CacheRequestContext {
+
+      }
+
       public interface IMessenger {
          Task SendToCluster<T>(T val);
          Task SendToCohortReliable<T>(Guid dest, T val);
          Task SendToCohortUnreliable<T>(Guid dest, T val);
-      }
-
-      [RequiredFieldsConstructor]
-      public class EntryOperationProcesserService {
-         private readonly Synchronizer synchronizer = null;
-         private readonly Partitioner partitioner = null;
-         private readonly LocalCache[] blockCaches = null;
-         private int requestsInProgress = 0;
-
-         public void StartProcessingRequest(RequestDto<K, V> request) {
-            Interlocked.Increment(ref requestsInProgress);
-            ProcessRequestAsync(request.Operation).Forget();
-         }
-
-         internal async Task ProcessRequestAsync(IEntryOperation<K, V> entryOperation) {
-            try {
-               using (await synchronizer.Small()) {
-                  var key = entryOperation.Key;
-                  if (partitioner.IsLocallyMasteredKey(key)) { } else { }
-               }
-            } finally {
-               Interlocked.Decrement(ref requestsInProgress);
-            }
-         }
-
-         public async Task WaitForRequestCompletionsAsync() {
-            while (requestsInProgress != 0) {
-               await Task.Yield();
-            }
-         }
-      }
-
-      public class SomeEntryContainerThing {
-
       }
 
       public abstract class PhaseBase {
@@ -314,6 +422,7 @@ namespace Dargon.Hydrous.Impl {
          }
 
          public PhaseContext Context { get; set; }
+         public Guid CacheId => Context.CacheId;
          public CourierFacade Courier => Context.Courier;
          public ClusterMessenger Messenger => Context.Messenger;
          public Identity Identity => Courier.Identity;
@@ -323,6 +432,8 @@ namespace Dargon.Hydrous.Impl {
          public StaticConfiguration StaticConfiguration => Context.StaticConfiguration;
          public LiveConfiguration LiveConfiguration => Context.LiveConfiguration;
          public SlaveBinaryLogContainer SlaveBinaryLogContainer => Context.SlaveBinaryLogContainer;
+         public Partitioner Partitioner => Context.Partitioner;
+
 
          public void Log(string s) => Context.Log(s);
       }
@@ -338,14 +449,17 @@ namespace Dargon.Hydrous.Impl {
          private PhaseBase currentPhase = null;
          private int generationCounter = 0;
 
-         public PhaseContext(string contextName, PhaseContext parentPhaseContext, CourierFacade courier, ClusterMessenger messenger, StaticConfiguration staticConfiguration, LiveConfiguration liveConfiguration, SlaveBinaryLogContainer slaveBinaryLogContainer) {
+         public PhaseContext(string contextName, PhaseContext parentPhaseContext, Guid cacheId, CourierFacade courier, ClusterMessenger messenger, StaticConfiguration staticConfiguration, LiveConfiguration liveConfiguration, SlaveBinaryLogContainer slaveBinaryLogContainer, Channel<IEntryOperationExecutionContext> inboundExecutionContextChannel, Partitioner partitioner) {
             this.contextName = contextName;
             this.parentPhaseContext = parentPhaseContext;
+            CacheId = cacheId;
             Courier = courier;
             Messenger = messenger;
+            Channels = new PhaseContextChannels(inboundExecutionContextChannel);
             StaticConfiguration = staticConfiguration;
             LiveConfiguration = liveConfiguration;
             SlaveBinaryLogContainer = slaveBinaryLogContainer;
+            Partitioner = partitioner;
          }
 
          public async Task TransitionAsync(PhaseBase nextPhase) {
@@ -379,7 +493,7 @@ namespace Dargon.Hydrous.Impl {
          }
 
          public Task ForkAsync(string name, PhaseBase nextPhase) {
-            var newPhaseContext = new PhaseContext(name, this, Courier, Messenger, StaticConfiguration, LiveConfiguration, SlaveBinaryLogContainer);
+            var newPhaseContext = new PhaseContext(name, this, CacheId, Courier, Messenger, StaticConfiguration, LiveConfiguration, SlaveBinaryLogContainer, Channels.InboundExecutionContextChannel, Partitioner);
             childContexts.AddOrThrow(newPhaseContext);
             Messenger.AddForkOrThrow(newPhaseContext);
             return newPhaseContext.TransitionAsync(nextPhase);
@@ -393,12 +507,14 @@ namespace Dargon.Hydrous.Impl {
             }
          }
 
+         public Guid CacheId { get; }
          public CourierFacade Courier { get; }
          public ClusterMessenger Messenger { get; }
-         public PhaseContextChannels Channels { get; } = new PhaseContextChannels();
+         public PhaseContextChannels Channels { get; }
          public StaticConfiguration StaticConfiguration { get; }
          public LiveConfiguration LiveConfiguration { get; }
          public SlaveBinaryLogContainer SlaveBinaryLogContainer { get; }
+         public Partitioner Partitioner { get; set; }
 
          public Task ProcessInboundMessageAsync<T>(IInboundMessageEvent<T> inboundMessageEvent) {
             return Task.WhenAll(
@@ -418,6 +534,11 @@ namespace Dargon.Hydrous.Impl {
       }
 
       public class PhaseContextChannels {
+         public PhaseContextChannels(Channel<IEntryOperationExecutionContext> inboundExecutionContextChannel) {
+            InboundExecutionContextChannel = inboundExecutionContextChannel;
+         }
+
+         public Channel<IEntryOperationExecutionContext> InboundExecutionContextChannel { get; set; }
          public Channel<IInboundMessageEvent<LeaderHeartBeatDto>> LeaderHeartBeat { get; } = ChannelFactory.Blocking<IInboundMessageEvent<LeaderHeartBeatDto>>();
          public Channel<IInboundMessageEvent<RepartitionCompleteDto>> RepartitionComplete { get; } = ChannelFactory.Blocking<IInboundMessageEvent<RepartitionCompleteDto>>();
          public Channel<IInboundMessageEvent<ElectDto>> Elect { get; } = ChannelFactory.Blocking<IInboundMessageEvent<ElectDto>>();
@@ -590,8 +711,19 @@ namespace Dargon.Hydrous.Impl {
       }
 
       public class CohortMainLoopPhase : PhaseBase {
+         private delegate Task VisitorFunc(CohortMainLoopPhase self, IEntryOperationExecutionContext entryOperation);
+         private static readonly IGenericFlyweightFactory<VisitorFunc> processInboundExecutionContextVisitors
+             = GenericFlyweightFactory.ForMethod<VisitorFunc>(
+                typeof(CohortMainLoopPhase),
+                nameof(ProcessInboundExecutionContextVisitor));
+
+         private static Task ProcessInboundExecutionContextVisitor<TResult>(CohortMainLoopPhase self, IEntryOperationExecutionContext executionContext) {
+            return self.ProcessInboundExecutionContextAsync((EntryOperationExecutionContext<TResult>)executionContext);
+         }
+
          private readonly Guid leaderId;
          private readonly BinaryLog someBinaryLogThing = new BinaryLog();
+         private readonly ConcurrentDictionary<K, SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton> somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingletonByKey = new ConcurrentDictionary<K, SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton>();
          private Task replicationFromOthersTask;
 
          // HACK
@@ -599,6 +731,7 @@ namespace Dargon.Hydrous.Impl {
          private int partitionIOwn;
          private Guid[] slaveCohortIds;
          private SCG.IReadOnlyDictionary<Guid, SomeCohortContext> slaveCohortContextsById;
+         private SCG.IReadOnlyDictionary<int, ICacheService<K, V>> cohortCacheServicesByRank;
 
          public CohortMainLoopPhase(Guid leaderId) {
             this.leaderId = leaderId;
@@ -625,6 +758,14 @@ namespace Dargon.Hydrous.Impl {
                   ReplicationState = new CohortReplicationState(),
                   ReplicationService = RemoteServiceProxyContainer.Get<ISomeReplicationService>(PeerTable.GetOrAdd(cohortId))
                });
+
+            cohortCacheServicesByRank = Enumerable.Range(0, LiveConfiguration.CohortCount)
+                                                  .ToDictionary(
+                                                     cohortRank => cohortRank,
+                                                     cohortRank => RemoteServiceProxyContainer.Get<ICacheService<K, V>>(
+                                                        PeerTable.GetOrAdd(LiveConfiguration.CohortIdsByRank[cohortRank])
+                                                        )
+               );
 
             var partitionGuidsById = Enumerable.Range(0, LiveConfiguration.PartitionCount)
                                                .ToDictionary(
@@ -656,25 +797,6 @@ namespace Dargon.Hydrous.Impl {
                   Log($"Is me");
                }
             }
-
-            //HACK - makes there something to replicate
-            Go(async () => {
-               int i = 0;
-               while (true) {
-                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
-//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
-//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
-//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
-//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
-                  await Task.Delay(10000).ConfigureAwait(false);
-//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
-//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
-//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
-//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
-//                  await someBinaryLogThing.AppendAsync("entry" + i++).ConfigureAwait(false);
-//                  return;
-               }
-            }).Forget();
 
             // Leader logic
             Go(async () => {
@@ -741,9 +863,43 @@ namespace Dargon.Hydrous.Impl {
             while (IsRunning) {
                await new Select {
                   Case(Channels.LeaderHeartBeat, () => {}),
-                  Case(Time.After(5000), () => TransitionAsync(new IndeterminatePhase()))
+                  Case(Time.After(5000), () => TransitionAsync(new IndeterminatePhase())),
+                  Case(Channels.InboundExecutionContextChannel, x => {
+                     var tResult = x.GetType().GetGenericArguments()[0];
+                     processInboundExecutionContextVisitors.Get(tResult)(this, x);
+                  })
                };
             }
+         }
+
+         public async Task ProcessInboundExecutionContextAsync<TResult>(EntryOperationExecutionContext<TResult> executionContext) {
+            var isReadOperation = executionContext.Operation.Type == EntryOperationType.Read;
+
+            var partitionId = Partitioner.ComputePartitionId(executionContext.Operation.Key);
+            if (!partitionIdsImInvolvedIn.Contains(partitionId)) {
+               await HandleEntryOperationExecutionProxy(executionContext, isReadOperation);
+            } else if (partitionIOwn != partitionId && !isReadOperation) {
+               await HandleEntryOperationExecutionProxy(executionContext, false);
+               return;
+            } else if (isReadOperation) {
+               var somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton = somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingletonByKey.GetOrAdd(
+                  executionContext.Operation.Key,
+                  add => new SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton());
+
+               var result = await somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton.EnqueueOperationAndGetResultAsync(executionContext.Operation);
+               executionContext.ResultBox.SetResult(result);
+            } else {
+               someBinaryLogThing.AppendAsync()
+            }
+         }
+
+         private async Task HandleEntryOperationExecutionProxy<TResult>(EntryOperationExecutionContext<TResult> executionContext, bool includeProxyToSlaves) {
+            var partitionId = Partitioner.ComputePartitionId(executionContext.Operation.Key);
+            var cohortRankOffset = includeProxyToSlaves ? StaticRandom.Next(StaticConfiguration.Redundancy) : 0;
+            int peerRankToDispatchTo = (partitionId + cohortRankOffset) % LiveConfiguration.CohortCount;
+            var peerCacheService = cohortCacheServicesByRank[peerRankToDispatchTo];
+            var result = await peerCacheService.ProcessEntryOperationAsync(CacheId, executionContext.Operation);
+            executionContext.ResultBox.SetResult(result);
          }
 
          public class SomeCohortContext {
@@ -869,18 +1025,6 @@ namespace Dargon.Hydrous.Impl {
          }
       }
 
-      [RequiredFieldsConstructor]
-      public class Program {
-         private readonly StaticConfiguration staticConfiguration;
-         private readonly CourierFacade courier;
-         private int currentEpochId = -1;
-
-         public Program(StaticConfiguration staticConfiguration, CourierFacade courier) {
-            this.staticConfiguration = staticConfiguration;
-            this.courier = courier;
-         }
-      }
-
       [Guid("811366D4-8959-4EE6-8FB7-2BDDF3C44C21")]
       public interface ISomeRepartitioningService {
          SCG.IReadOnlyList<HaveDto> GetHaves();
@@ -916,15 +1060,40 @@ namespace Dargon.Hydrous.Impl {
          }
       }
 
+      [Guid("0B94DAF3-7FD6-4414-A668-43FA0DDB0B48")]
+      public interface ICacheService<K, V> {
+         Task<TResult> ProcessEntryOperationAsync<TResult>(Guid cacheId, IEntryOperation<TResult> entryOperation);
+      }
+
+      public class CacheService<K, V> : ICacheService<K, V> {
+         private readonly Something something;
+
+         public CacheService(Something something) {
+            this.something = something;
+         }
+
+         public async Task<TResult> ProcessEntryOperationAsync<TResult>(Guid cacheId, IEntryOperation<TResult> entryOperation) {
+            var executionContext = new EntryOperationExecutionContext<TResult> {
+               Operation = entryOperation
+            };
+            await something.SomethingToDoWithAddingAExecutionContextToAChannel(cacheId, executionContext).ConfigureAwait(false);
+            return await executionContext.ResultBox.GetResultAsync().ConfigureAwait(false);
+         }
+      }
+
       //         private async Task ProcessEntryUpdateDtoAsync(EntryUpdateDto message) {
       //            throw new NotImplementedException();
       //         }
 
-      [RequiredFieldsConstructor]
       public class Partitioner {
          private const int kHashBitCount = 32;
-         private readonly StaticConfiguration staticConfiguration = null;
-         private readonly LiveConfiguration liveConfiguration = null;
+         private readonly StaticConfiguration staticConfiguration;
+         private readonly LiveConfiguration liveConfiguration;
+
+         public Partitioner(StaticConfiguration staticConfiguration, LiveConfiguration liveConfiguration) {
+            this.staticConfiguration = staticConfiguration;
+            this.liveConfiguration = liveConfiguration;
+         }
 
          public int ComputeBlockId(K key) {
             var hash = (uint)key.GetHashCode();
