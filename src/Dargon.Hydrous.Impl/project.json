@@ -31,5 +31,7 @@
         "postbuild": [ "powershell ../../../FodyDnx/src/exec-fody-weavers.ps1 -ProjectDir %cd%" ]
     },
 
+    "exclude": [ "**/Vox/**/*.cs" ],
+
     "userSecretsId": "aspnet-Dargon.Hydrous.Impl-20160517010505"
 }
