@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
@@ -43,6 +44,7 @@ namespace NMockito {
          where TOuterException : Exception
          where TInnerException : Exception;
       void AssertSequenceEquals<T>(IEnumerable<T> a, IEnumerable<T> b);
+      void AssertCollectionDeepEquals<T>(IEnumerable<T> expected, IEnumerable<T> actual);
       AssertWithAction Assert(Action action);
       TMock Assert<TMock>(TMock mock) where TMock : class;
 
