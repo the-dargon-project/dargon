@@ -10,8 +10,8 @@ using Dargon.Vox;
 namespace Dargon.Courier.TransportTier.Udp.Vox {
    public class CourierVoxTypes : VoxTypes {
       public CourierVoxTypes() : base(0) {
-         // Courier Core
-         Register<MessageDto>(0);
+         // Courier Core (starts at 1 - note can't use 0 as that's TNull in Vox).
+         Register<MessageDto>(1);
 
          // Udp
          var udpBaseId = 10;

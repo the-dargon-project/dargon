@@ -23,12 +23,12 @@ namespace Dargon.Courier.ServiceTier.Client {
          return new RemoteException(sb.ToString());
       }
 
-      public void Serialize(ISlotWriter writer) {
-         writer.WriteString(0, Message);
+      public void Serialize(IBodyWriter writer) {
+         writer.Write(Message);
       }
 
-      public void Deserialize(ISlotReader reader) {
-         GetType().GetField("_message", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, reader.ReadString(0));
+      public void Deserialize(IBodyReader reader) {
+         GetType().GetField("_message", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, reader.Read<string>());
       }
    }
 }

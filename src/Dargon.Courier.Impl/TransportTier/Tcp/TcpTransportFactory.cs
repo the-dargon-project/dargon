@@ -50,7 +50,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
          var payloadUtils = new PayloadUtils(inboundBytesAggregator, outboundBytesAggregator);
          var transport = new TcpTransport(configuration, identity, routingTable, peerTable, inboundMessageDispatcher, tcpRoutingContextContainer, payloadUtils);
          transport.Initialize();
-         mobOperations.RegisterService(new TcpDebugMob(tcpRoutingContextContainer));
+         mobOperations.RegisterMob(new TcpDebugMob(tcpRoutingContextContainer));
          return Task.FromResult<ITransport>(transport);
       }
 

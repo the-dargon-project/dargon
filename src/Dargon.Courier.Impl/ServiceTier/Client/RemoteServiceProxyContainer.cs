@@ -6,7 +6,7 @@ using System;
 
 namespace Dargon.Courier.ServiceTier.Client {
    public class RemoteServiceProxyContainer {
-      private readonly ConcurrentDictionary<Type, object> servicesByType = new ConcurrentDictionary<Type, object>();
+      private readonly ConcurrentDictionary<Tuple<Type, Guid>, object> servicesByTypeAndPeerId = new ConcurrentDictionary<Tuple<Type, Guid>, object>();
       private readonly ProxyGenerator proxyGenerator;
       private readonly RemoteServiceInvoker remoteServiceInvoker;
 
@@ -24,9 +24,10 @@ namespace Dargon.Courier.ServiceTier.Client {
       }
 
       public T Get<T>(Guid serviceId, PeerContext peer) {
-         return (T)servicesByType.GetOrAdd(
-            typeof(T),
+         var result = (T)servicesByTypeAndPeerId.GetOrAdd(
+            Tuple.Create(typeof(T), peer.Identity.Id),
             add => CreateInvocationProxy<T>(serviceId, peer));
+         return result;
       }
 
       private T CreateInvocationProxy<T>(Guid serviceId, PeerContext peer) {

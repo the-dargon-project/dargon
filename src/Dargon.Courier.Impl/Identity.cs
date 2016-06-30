@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using Dargon.Commons.Exceptions;
 using Dargon.Vox;
 
 namespace Dargon.Courier {
@@ -8,7 +9,13 @@ namespace Dargon.Courier {
    /// </summary>
    [AutoSerializable]
    public class Identity {
-      public Guid Id { get; set; }
+      public Identity() { }
+
+      public Identity(Guid id) {
+         Id = id;
+      }
+
+      public Guid Id { get; private set; }
       public string Name { get; set; }
 
       public bool Matches(Guid id, IdentityMatchingScope matchingScope) {
@@ -23,15 +30,16 @@ namespace Dargon.Courier {
       }
 
       public void Update(Identity identity) {
-         Id = identity.Id;
+         if (Id != identity.Id) {
+            throw new InvalidStateException($"Identity Update Id Mismatch: {identity} vs {Id}");
+         }
          Name = identity.Name;
       }
 
-      public static Identity Create() {
-         var id = Guid.NewGuid();
+      public static Identity Create(Guid? forceId = null) {
+         var id = forceId ?? Guid.NewGuid();
          var hostName = Dns.GetHostName();
-         return new Identity {
-            Id = id,
+         return new Identity(id) {
             Name = $"{hostName}:{id.ToString("N").Substring(8)}"
          };
       }

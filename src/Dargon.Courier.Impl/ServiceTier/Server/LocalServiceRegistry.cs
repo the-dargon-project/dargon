@@ -8,12 +8,13 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Dargon.Courier.Utilities;
 
 namespace Dargon.Courier.ServiceTier.Server {
    public class LocalServiceRegistry {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-      private readonly IncrementalDictionary<Guid, object> services = new IncrementalDictionary<Guid, object>();
+      private readonly CopyOnAddDictionary<Guid, object> services = new CopyOnAddDictionary<Guid, object>();
       private readonly Messenger messenger;
 
       public LocalServiceRegistry(Messenger messenger) {
@@ -56,18 +57,7 @@ namespace Dargon.Courier.ServiceTier.Server {
          object result;
          var args = request.MethodArguments;
          try {
-            result = method.Invoke(service, args);
-            var task = result as Task;
-            if (task != null) {
-               result = null;
-               await task;
-               if (task.GetType().IsGenericType) {
-                  var taskResult = task.GetType().GetProperty("Result").GetValue(task);
-                  if (taskResult.GetType().Name != "VoidTaskResult") {
-                     result = taskResult;
-                  }
-               }
-            }
+            result = await TaskUtilities.UnboxValueIfTaskAsync(method.Invoke(service, args));
          } catch (Exception ex) {
             await RespondError(e, ex);
             return;
@@ -77,7 +67,7 @@ namespace Dargon.Courier.ServiceTier.Server {
       }
 
       private Task RespondSuccess(IInboundMessageEvent<RmiRequestDto> e, object[] outParameters, object result) {
-         logger.Debug($"Successfully handled RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)}.");
+         logger.Debug($"Successfully handled RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)}. Sending return {result?.ToString() ?? "[null]"}.");
          return messenger.SendReliableAsync(
             new RmiResponseDto {
                InvocationId = e.Body.InvocationId,
@@ -89,7 +79,7 @@ namespace Dargon.Courier.ServiceTier.Server {
       }
 
       private Task RespondError(IInboundMessageEvent<RmiRequestDto> e, Exception ex) {
-         logger.Debug($"Threw when handling RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)}.");
+         logger.Debug($"Threw when handling RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)}. Error: {ex}.");
          return messenger.SendReliableAsync(
             new RmiResponseDto {
                InvocationId = e.Body.InvocationId,

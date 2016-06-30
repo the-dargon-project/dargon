@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Dargon.Commons.Collections;
 using Dargon.Courier.ManagementTier.Vox;
 using Dargon.Commons;
+using Dargon.Courier.Utilities;
 
 namespace Dargon.Courier.ManagementTier {
    public class MobOperations {
@@ -17,12 +18,12 @@ namespace Dargon.Courier.ManagementTier {
          this.mobContextContainer = mobContextContainer;
       }
 
-      public void RegisterService(Guid mobId, object mobInstance, string mobFullName) {
+      public void RegisterMob(Guid mobId, object mobInstance, string mobFullName) {
          var mobContext = mobContextFactory.Create(mobId, mobInstance, mobFullName);
          mobContextContainer.Add(mobContext);
       }
 
-      public object InvokeManagedOperation(string mobFullName, string methodName, object[] args) {
+      public Task<object> InvokeManagedOperationAsync(string mobFullName, string methodName, object[] args) {
          var mobContext = mobContextContainer.Get(mobFullName);
          MethodInfo method = mobContext.InvokableMethodsByName.GetValueOrDefault(methodName)
                                       ?.FirstOrDefault(m => m.GetParameters().Length == args.Length);
@@ -35,7 +36,7 @@ namespace Dargon.Courier.ManagementTier {
             }
          }
 
-         return method.Invoke(mobContext.Instance, args);
+         return TaskUtilities.UnboxValueIfTaskAsync(method.Invoke(mobContext.Instance, args));
       }
    }
 }

@@ -31,7 +31,7 @@ namespace Dargon.Courier.Management.UI {
          Console.WriteLine($"Invoking {methodName} with params ({parameters.Join(", ")}).");
 
          var mobDto = methodNode.Parent.MobDto;
-         var result = ReplGlobals.ManagementObjectService.InvokeManagedOperation(mobDto.FullName, methodName, parameters);
+         var result = ReplGlobals.ManagementObjectService.InvokeManagedOperationAsync(mobDto.FullName, methodName, parameters).Result;
 
          Console.WriteLine("Result: ");
          ReplUtils.PrettyPrint(result);
@@ -66,7 +66,7 @@ namespace Dargon.Courier.Management.UI {
          Console.WriteLine($"Invoking {propertyName} setter with params ({parameters.Join(", ")}.");
 
          var mobDto = propertyNode.Parent.MobDto;
-         var result = ReplGlobals.ManagementObjectService.InvokeManagedOperation(mobDto.FullName, propertyName, parameters);
+         var result = ReplGlobals.ManagementObjectService.InvokeManagedOperationAsync(mobDto.FullName, propertyName, parameters).Result;
 
          Console.WriteLine("Result: ");
          ReplUtils.PrettyPrint(result);
@@ -97,7 +97,7 @@ namespace Dargon.Courier.Management.UI {
          Console.WriteLine($"Invoking {propertyName} getter with params ({parameters.Join(", ")}.");
 
          var mobDto = propertyNode.Parent.MobDto;
-         var result = ReplGlobals.ManagementObjectService.InvokeManagedOperation(mobDto.FullName, propertyName, parameters);
+         var result = ReplGlobals.ManagementObjectService.InvokeManagedOperationAsync(mobDto.FullName, propertyName, parameters).Result;
 
          Console.WriteLine("Result: ");
          ReplUtils.PrettyPrint(result);

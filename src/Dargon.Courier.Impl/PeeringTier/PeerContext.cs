@@ -1,3 +1,4 @@
+using System;
 using Dargon.Courier.AsyncPrimitives;
 using Dargon.Courier.TransportTier.Udp.Vox;
 using Nito.AsyncEx;
@@ -13,14 +14,15 @@ namespace Dargon.Courier.PeeringTier {
       private readonly PeerTable peerTable;
       private readonly IAsyncPoster<PeerDiscoveryEvent> peerDiscoveryEventPoster;
 
-      public PeerContext(PeerTable peerTable, IAsyncPoster<PeerDiscoveryEvent> peerDiscoveryEventPoster) {
+      public PeerContext(PeerTable peerTable, Guid peerId, IAsyncPoster<PeerDiscoveryEvent> peerDiscoveryEventPoster) {
          this.peerTable = peerTable;
          this.peerDiscoveryEventPoster = peerDiscoveryEventPoster;
+         this.Identity = new Identity(peerId);
       }
 
       public PeerTable PeerTable => peerTable;
       public bool Discovered { get; private set; }
-      public Identity Identity { get; } = new Identity();
+      public Identity Identity { get; }
 
       public Task WaitForDiscoveryAsync(CancellationToken cancellationToken = default(CancellationToken)) {
          return discoveryLatch.WaitAsync(cancellationToken);

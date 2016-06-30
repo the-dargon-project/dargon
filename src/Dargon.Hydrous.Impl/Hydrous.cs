@@ -3,6 +3,7 @@ using Dargon.Commons.Channels;
 using Dargon.Commons.Collections;
 using Dargon.Commons.Exceptions;
 using Dargon.Courier;
+using Dargon.Courier.AsyncPrimitives;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.ServiceTier;
 using Dargon.Courier.ServiceTier.Client;
@@ -12,22 +13,20 @@ using Dargon.Courier.Vox;
 using Dargon.Hydrous.Impl.BinaryLogNamespaceThing;
 using Dargon.Ryu;
 using Dargon.Vox;
-using Fody.Constructors;
+using Dargon.Vox.Utilities;
 using Nito.AsyncEx;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
 using NLog.Targets.Wrappers;
 using System;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Dargon.Courier.AsyncPrimitives;
-using Dargon.Vox.Utilities;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 using SCG = System.Collections.Generic;
 
@@ -83,9 +82,35 @@ namespace Dargon.Hydrous.Impl {
          var executionContext = new CacheRoot<K, V>.EntryOperationExecutionContext<TResult> {
             Operation = entryOperation
          };
-         await inboundExecutionContextChannel.WriteAsync(executionContext);
+         await inboundExecutionContextChannel.WriteAsync(executionContext).ConfigureAwait(false);
          return await executionContext.ResultBox.GetResultAsync().ConfigureAwait(false);
       }
+   }
+
+   public class CacheDebugMob<K, V> {
+      private readonly ICacheService<K, V> cacheService;
+      private readonly CacheRoot<K, V>.Partitioner partitioner;
+
+      public CacheDebugMob(ICacheService<K, V> cacheService, CacheRoot<K, V>.Partitioner partitioner) {
+         this.cacheService = cacheService;
+         this.partitioner = partitioner;
+      }
+
+      [ManagedOperation]
+      public async Task<Entry<K, V>> Get(K key) {
+         return await cacheService.ProcessEntryOperationAsync(new EntryReadOperation<K, V> { Key = key }).ConfigureAwait(false);
+      }
+
+      [ManagedOperation]
+      public async Task<Entry<K, V>> Put(K key, V value) {
+         return await cacheService.ProcessEntryOperationAsync(new EntryPutOperation<K, V> { Key = key, Value = value }).ConfigureAwait(false);
+      }
+
+      [ManagedOperation]
+      public int GetPartitionIndex(K key) => partitioner.ComputePartitionIndex(key);
+
+      [ManagedOperation]
+      public int GetBlockId(K key) => partitioner.ComputeBlockId(key);
    }
 
    public class HydarVoxTypes : VoxTypes {
@@ -141,14 +166,7 @@ namespace Dargon.Hydrous.Impl {
 
    [AutoSerializable]
    public class EntryUpdateDto { }
-
-   [AutoSerializable]
-   public class EntryDto<K, V> {
-      public K Key { get; set; }
-      public V Value { get; set; }
-      public bool Exists { get; set; }
-   }
-
+   
    [AutoSerializable]
    public class SOmethingToDoWithHeyIhaveThisTHing {
       public int Progress { get; set; }
@@ -184,6 +202,7 @@ namespace Dargon.Hydrous.Impl {
          Exists = true;
       }
 
+      public override string ToString() => $"[Entry K={Key}, V={Value}]";
       public static Entry<K, V> Create(K key) => new Entry<K, V> { Key = key };
    }
 
@@ -219,10 +238,14 @@ namespace Dargon.Hydrous.Impl {
       public V Value { get; set; }
       public EntryOperationType Type => EntryOperationType.Put;
       public Task<Entry<K, V>> ExecuteAsync(Entry<K, V> entry) {
-         logger.Debug($"Exec Put {{ K = {Key}, V = {Value} }}");
+         logger.Debug($"Exec Put {{ K = {Key}, V = {Value} }} on {entry}");
 
          var oldEntry = entry.DeepCloneSerializable();
+         logger.Debug($"Exec Put cloned to {oldEntry}.");
+
          entry.Value = Value;
+
+         logger.Debug($"Exec Put returning {oldEntry}.");
          return Task.FromResult(oldEntry);
       }
    }
@@ -233,14 +256,17 @@ namespace Dargon.Hydrous.Impl {
       public static void StartLocalCluster() {
          int port = 21337;
 
-         Func<CourierFacade> buildCourier = () => CourierBuilder.Create()
-                                                                .UseUdpMulticastTransport()
-                                                                .UseTcpServerTransport(port++)
-                                                                .BuildAsync().Result;
-         StartNewCohort(buildCourier);
-//         StartNewCohort(buildCourier);
-//         StartNewCohort(buildCourier);
-//         StartNewCohort(buildCourier);
+         Func<Guid?, Func<CourierFacade>> buildCourier = forceId => () => CourierBuilder.Create()
+                                                                                       .ForceIdentity(forceId)
+                                                                                       .UseUdpMulticastTransport()
+                                                                                       .UseTcpServerTransport(port++)
+                                                                                       .BuildAsync().Result;
+         StartNewCohort(buildCourier(Guid.Parse("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")));
+         Thread.Sleep(2000);
+         StartNewCohort(buildCourier(Guid.Parse("22222222-2222-2222-2222-222222222222")));
+         //         StartNewCohort(buildCourier);
+         //         StartNewCohort(buildCourier);
+         //         StartNewCohort(buildCourier);
          new CountdownEvent(1).Wait();
       }
 
@@ -279,6 +305,7 @@ namespace Dargon.Hydrous.Impl {
 
          var cacheService = new CacheService<K, V>(inboundExecutionContextChannel);
          courier.LocalServiceRegistry.RegisterService<ICacheService<K, V>>(cacheGuid, cacheService);
+         courier.MobOperations.RegisterMob(cacheGuid, new CacheDebugMob<K, V>(cacheService, partitioner), $"@Hydar/{cacheName}");
       }
 
       public static Func<IInboundMessageEvent<T>, Task> SomeCloningProxy<T>(PhaseContext phaseContext) {
@@ -344,7 +371,7 @@ namespace Dargon.Hydrous.Impl {
       }
 
       public class LocalCache : ICache {
-         private readonly ConcurrentDictionary<K, V> inner = new ConcurrentDictionary<K, V>();
+         private readonly Commons.Collections.ConcurrentDictionary<K, V> inner = new Commons.Collections.ConcurrentDictionary<K, V>();
          public V Get(K key) => inner[key];
          public void Put(K key, V value) => inner[key] = value;
       }
@@ -360,15 +387,15 @@ namespace Dargon.Hydrous.Impl {
          public IEntryOperation<K, V, TResult> Operation { get; set; }
 
          public async Task ExecuteAsync(Entry<K, V> entry) {
-            var result = await Operation.ExecuteAsync(entry);
+            var result = await Operation.ExecuteAsync(entry).ConfigureAwait(false);
             ResultBox.SetResult(result);
          }
       }
 
       public class SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton {
          private readonly AsyncAutoResetEvent operationAvailableSignal = new AsyncAutoResetEvent(false);
-         private readonly ConcurrentQueue<IEntryOperationExecutionContext> readOperationExecutionContextQueue = new ConcurrentQueue<IEntryOperationExecutionContext>();
-         private readonly ConcurrentQueue<IEntryOperationExecutionContext> putOperationExecutionContextQueue = new ConcurrentQueue<IEntryOperationExecutionContext>();
+         private readonly Commons.Collections.ConcurrentQueue<IEntryOperationExecutionContext> readOperationExecutionContextQueue = new Commons.Collections.ConcurrentQueue<IEntryOperationExecutionContext>();
+         private readonly Commons.Collections.ConcurrentQueue<IEntryOperationExecutionContext> putOperationExecutionContextQueue = new Commons.Collections.ConcurrentQueue<IEntryOperationExecutionContext>();
          
          public void Initialize() {
             RunAsync().Forget();
@@ -377,9 +404,9 @@ namespace Dargon.Hydrous.Impl {
          public async Task RunAsync() {
             var entry = new Entry<K, V>();
             while (true) {
-               await operationAvailableSignal.WaitAsync();
+               await operationAvailableSignal.WaitAsync().ConfigureAwait(false);
                ProcessReadsAsync(entry.DeepCloneSerializable()).Forget();
-               await ProcessPutsAsync(entry);
+               await ProcessPutsAsync(entry).ConfigureAwait(false);
             }
          }
 
@@ -389,13 +416,16 @@ namespace Dargon.Hydrous.Impl {
             while (readOperationExecutionContextQueue.TryDequeue(out executionContext)) {
                readExecutionContexts.Add(executionContext);
             }
-            await Task.WhenAll(readExecutionContexts.Map(ec => ec.ExecuteAsync(entry)));
+
+            logger.Info($"Processing {readExecutionContexts.Count} reads on entry {entry}.");
+            await Task.WhenAll(readExecutionContexts.Map(ec => ec.ExecuteAsync(entry))).ConfigureAwait(false);
          }
 
          private async Task ProcessPutsAsync(Entry<K, V> entry) {
             IEntryOperationExecutionContext executionContext;
             while (putOperationExecutionContextQueue.TryDequeue(out executionContext)) {
-               await executionContext.ExecuteAsync(entry);
+               logger.Info($"Processing put on entry {entry}.");
+               await executionContext.ExecuteAsync(entry).ConfigureAwait(false);
             }
          }
 
@@ -424,12 +454,12 @@ namespace Dargon.Hydrous.Impl {
          public IEntryOperation<K, V, TResult> EntryOperation { get; set; }
          public AsyncBox<TResult> ResultBox { get; set; }
 
-         public void Serialize(ISlotWriter writer) {
-            writer.WriteObject(0, (object)EntryOperation);
+         public void Serialize(IBodyWriter writer) {
+            writer.Write(EntryOperation);
          }
 
-         public void Deserialize(ISlotReader reader) {
-            EntryOperation = (IEntryOperation<K, V, TResult>)reader.ReadObject(0); 
+         public void Deserialize(IBodyReader reader) {
+            EntryOperation = reader.Read<IEntryOperation<K, V, TResult>>();
          }
       }
 
@@ -511,7 +541,7 @@ namespace Dargon.Hydrous.Impl {
             Log($"Begin transition from ({currentPhase?.Generation ?? -1}) {currentPhase?.Description ?? "[null]"} to ({nextPhase.Generation}) {nextPhase.Description}.");
 
             if (lastPhase != null) {
-               await lastPhase.HandleLeaveAsync();
+               await lastPhase.HandleLeaveAsync().ConfigureAwait(false);
                lastPhase.IsRunning = false;
             }
 
@@ -558,11 +588,11 @@ namespace Dargon.Hydrous.Impl {
             return Task.WhenAll(
                Go(async () => {
                   if (typeof(T) == typeof(LeaderHeartBeatDto)) {
-                     await Channels.LeaderHeartBeat.WriteAsync((IInboundMessageEvent<LeaderHeartBeatDto>)inboundMessageEvent);
+                     await Channels.LeaderHeartBeat.WriteAsync((IInboundMessageEvent<LeaderHeartBeatDto>)inboundMessageEvent).ConfigureAwait(false);
                   } else if (typeof(T) == typeof(RepartitionCompleteDto)) {
-                     await Channels.RepartitionComplete.WriteAsync((IInboundMessageEvent<RepartitionCompleteDto>)inboundMessageEvent);
+                     await Channels.RepartitionComplete.WriteAsync((IInboundMessageEvent<RepartitionCompleteDto>)inboundMessageEvent).ConfigureAwait(false);
                   } else if (typeof(T) == typeof(ElectDto)) {
-                     await Channels.Elect.WriteAsync((IInboundMessageEvent<ElectDto>)inboundMessageEvent);
+                     await Channels.Elect.WriteAsync((IInboundMessageEvent<ElectDto>)inboundMessageEvent).ConfigureAwait(false);
                   } else {
                      throw new NotSupportedException();
                   }
@@ -615,12 +645,12 @@ namespace Dargon.Hydrous.Impl {
          public override string Description => $"[ElectionCandidate TTV={ticksToVictory}, Cohorts[{cohortIds.Count}]={cohortIds.Join(", ")})]";
 
          public override async Task HandleEnterAsync() {
-            await base.HandleEnterAsync();
+            await base.HandleEnterAsync().ConfigureAwait(false);
 
             await Messenger.SendToClusterAsync(new ElectDto {
                NomineeId = Identity.Id,
                FollowerIds = cohortIds
-            });
+            }).ConfigureAwait(false);
          }
 
          public override async Task RunAsync() {
@@ -753,11 +783,12 @@ namespace Dargon.Hydrous.Impl {
                         cohortId => cohortId,
                         cohortId => {
                            var peerContext = PeerTable.GetOrAdd(cohortId);
-                           return new CohortContext {
-                              ReplicationState = new CohortReplicationState(),
-                              ReplicationService = RemoteServiceProxyContainer.Get<ISomeReplicationService>(peerContext),
-                              CacheService = RemoteServiceProxyContainer.Get<ICacheService<K, V>>(StaticConfiguration.CacheId, peerContext),
-                           };
+                           var cohortContext = new CohortContext(
+                              new CohortReplicationState(),
+                              RemoteServiceProxyContainer.Get<ISomeReplicationService>(peerContext),
+                              RemoteServiceProxyContainer.Get<ICacheService<K, V>>(StaticConfiguration.CacheId, peerContext)
+                           );
+                           return cohortContext;
                         });
 
                      await TransitionAsync(new CohortMainLoopPhase(leaderId));
@@ -791,11 +822,13 @@ namespace Dargon.Hydrous.Impl {
          }
 
          private readonly Guid leaderId;
-         private readonly BinaryLog someBinaryLogThing = new BinaryLog();
-         private readonly ConcurrentDictionary<K, SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton> somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingletonByKey = new ConcurrentDictionary<K, SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton>();
+         private readonly Commons.Collections.ConcurrentDictionary<K, SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton> somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingletonByKey = new Commons.Collections.ConcurrentDictionary<K, SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton>();
+         private readonly Channel<BinaryLogEntry> ledBinaryLogCommittedEntryChannel = ChannelFactory.Nonblocking<BinaryLogEntry>();
+         private readonly BinaryLog ledBinaryLog;
 
          public CohortMainLoopPhase(Guid leaderId) {
             this.leaderId = leaderId;
+            ledBinaryLog = new BinaryLog(ledBinaryLogCommittedEntryChannel);
          }
 
          public override string Description => $"[CohortMainLoop Leader={leaderId}, RankedCohorts[{LiveConfiguration.CohortIdsByRank.Length}]={LiveConfiguration.CohortIdsByRank.Join(", ")}]";
@@ -814,72 +847,86 @@ namespace Dargon.Hydrous.Impl {
                }
             }
 
-            StartReplicaLogic();
+            foreach (var assignedPartitionIndex in LiveConfiguration.AssignedPartitionIndices) {
+               var partitionId = LiveConfiguration.PartitionGuidsByIndex[assignedPartitionIndex];
+
+               if (assignedPartitionIndex == LiveConfiguration.LedPartitionIndex) {
+                  StartReplicaLogic(partitionId, ledBinaryLog, ledBinaryLogCommittedEntryChannel);
+               } else {
+                  var committedEntryChannel = ChannelFactory.Nonblocking<BinaryLogEntry>();
+                  var slaveBinaryLog = new BinaryLog(committedEntryChannel);
+                  StartReplicaLogic(partitionId, slaveBinaryLog, committedEntryChannel);
+               }
+            }
+
             RunLeaderLogicAsync().Forget();
          }
 
-         private void StartReplicaLogic() {
-            foreach (var assignedPartitionIndex in LiveConfiguration.AssignedPartitionIndices) {
-               var partitionGuid = LiveConfiguration.PartitionGuidsByIndex[assignedPartitionIndex];
-               var committedEntryChannel = ChannelFactory.Nonblocking<BinaryLogEntry>();
-               var slaveBinaryLog = new BinaryLog(committedEntryChannel);
+         private void StartReplicaLogic(Guid partitionId, BinaryLog slaveBinaryLog, Channel<BinaryLogEntry> committedEntryChannel) {
+            Log("I am in partition guid " + partitionId);
+            SlaveBinaryLogContainer.AddOrThrow(partitionId, slaveBinaryLog);
 
-               Log("I am in partition guid " + partitionGuid);
-               SlaveBinaryLogContainer.AddOrThrow(partitionGuid, slaveBinaryLog);
-
-               Go(async () => {
-                  while (true) {
-                     var entry = await committedEntryChannel.ReadAsync();
-                     while (true) {
+            Go(async () => {
+               while (true) {
+                  var entry = await committedEntryChannel.ReadAsync();
+                  bool commitSuccessful = false;
+                  while (!commitSuccessful) {
+                     try {
                         Log($"Processing Committed Entry {entry.Id}.");
 
                         var data = entry.Data;
                         var dataType = data.GetType();
                         if (dataType.IsGenericType && dataType.GetGenericTypeDefinition() == typeof(EntryOperationBinaryLogData<>)) {
                            var tResult = dataType.GetGenericArguments()[2];
-                           Log("TRESULT IS " + tResult.FullName);
                            await processCommittedEntryOperationLogDataVisitors.Get(tResult)(this, data);
                         }
+                        commitSuccessful = true;
+                     } catch (Exception e) {
+                        Log($"Entry Process Threw: " + e);
                      }
                   }
-               }).Forget();
-            }
+               }
+            }).Forget();
          }
 
          private async Task ProcessCommittedEntryOperationLogData<TResult>(EntryOperationBinaryLogData<TResult> entryOperationLogData) {
             var entryOperation = entryOperationLogData.EntryOperation;
-            var somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton = somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingletonByKey.GetOrAdd(
-               entryOperation.Key,
+            var somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton = GetOrAddAndInstantiateSomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton(entryOperation.Key);
+            var result = await somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton.EnqueueOperationAndGetResultAsync(entryOperation);
+            entryOperationLogData.ResultBox?.SetResult(result);
+         }
+
+         private SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton GetOrAddAndInstantiateSomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton(K key) {
+            return somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingletonByKey.GetOrAdd(
+               key,
                add => {
                   var instance = new SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton();
                   instance.Initialize();
                   return instance;
                });
-            var result = await somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton.EnqueueOperationAndGetResultAsync(entryOperation);
-            entryOperationLogData.ResultBox?.SetResult(result);
          }
 
          private async Task RunLeaderLogicAsync() {
             await Task.Delay(5000);
 
             // HACK: Make the cluster do something
-            Go(async () => {
-               for (int i = 0;; i++) {
-                  await someBinaryLogThing.AppendAsync(
-                     new EntryOperationBinaryLogData<Entry<K, V>> {
-                        EntryOperation = new EntryPutOperation<K, V> {
-                           Key = (K)(object)(i % 10),
-                           Value = (V)(object)("value " + i)
-                        }
-                     });
-                  await Task.Delay(1000);
-               }
-            }).Forget();
+            //            Go(async () => {
+            //               for (int i = 0;; i++) {
+            //                  await someBinaryLogThing.AppendAsync(
+            //                     new EntryOperationBinaryLogData<Entry<K, V>> {
+            //                        EntryOperation = new EntryPutOperation<K, V> {
+            //                           Key = (K)(object)(i % 10),
+            //                           Value = (V)(object)("value " + i)
+            //                        }
+            //                     });
+            //                  await Task.Delay(10000);
+            //               }
+            //            }).Forget();
 
+            var slaveCohortContextsById = LiveConfiguration.CohortContextsById
+                                                           .Where(kvp => LiveConfiguration.ReplicaCohortIds.Contains(kvp.Key))
+                                                           .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             while (true) {
-               var slaveCohortContextsById = LiveConfiguration.CohortContextsById
-                                                              .Where(kvp => LiveConfiguration.ReplicaCohortIds.Contains(kvp.Key))
-                                                              .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                try {
                   Log("Entered main loop iteration");
                   // sync log entries
@@ -887,7 +934,7 @@ namespace Dargon.Hydrous.Impl {
                      var cohortContext = LiveConfiguration.CohortContextsById[cohortId];
 
                      var nextEntryIdToSync = cohortContext.ReplicationState.NextEntryIdToSync;
-                     var entriesThatNeedToBSynced = await someBinaryLogThing.GetAllEntriesFrom(nextEntryIdToSync).ConfigureAwait(false);
+                     var entriesThatNeedToBSynced = await ledBinaryLog.GetAllEntriesFrom(nextEntryIdToSync).ConfigureAwait(false);
 
                      if (entriesThatNeedToBSynced.Any()) {
                         try {
@@ -902,8 +949,8 @@ namespace Dargon.Hydrous.Impl {
 
                   // advance commit pointer
                   var greatestFullySyncedEntryId = slaveCohortContextsById.Values.Min(x => x.ReplicationState.NextEntryIdToSync) - 1;
-                  if (greatestFullySyncedEntryId > await someBinaryLogThing.GetGreatestCommittedEntryId().ConfigureAwait(false)) {
-                     await someBinaryLogThing.UpdateGreatestCommittedEntryId(greatestFullySyncedEntryId);
+                  if (greatestFullySyncedEntryId > await ledBinaryLog.GetGreatestCommittedEntryId().ConfigureAwait(false)) {
+                     await ledBinaryLog.UpdateGreatestCommittedEntryId(greatestFullySyncedEntryId);
                   }
 
                   // sync commit pointer
@@ -911,7 +958,7 @@ namespace Dargon.Hydrous.Impl {
                      var cohortId = kvp.Key;
                      var cohortContext = kvp.Value;
 
-                     var greatestCommittedEntryId = await someBinaryLogThing.GetGreatestCommittedEntryId().ConfigureAwait(false);
+                     var greatestCommittedEntryId = await ledBinaryLog.GetGreatestCommittedEntryId().ConfigureAwait(false);
 
                      if (cohortContext.ReplicationState.GreatestCommittedEntryId < greatestCommittedEntryId) {
                         try {
@@ -936,9 +983,9 @@ namespace Dargon.Hydrous.Impl {
             while (IsRunning) {
                await new Select {
                   Case(Channels.LeaderHeartBeat, () => {}),
-                  Case(Time.After(5000), () => TransitionAsync(new IndeterminatePhase())),
+                  Case(Time.After(500000), () => TransitionAsync(new IndeterminatePhase())),
                   Case(Channels.InboundExecutionContextChannel, x => {
-                     var tResult = x.GetType().GetGenericArguments()[0];
+                     var tResult = x.GetType().GetGenericArguments()[2];
                      processInboundExecutionContextVisitors.Get(tResult)(this, x);
                   })
                };
@@ -950,15 +997,15 @@ namespace Dargon.Hydrous.Impl {
 
             var partitionId = Partitioner.ComputePartitionIndex(executionContext.Operation.Key);
             if (!LiveConfiguration.AssignedPartitionIndices.Contains(partitionId)) {
+               Log("Proxying inbound entry operation to peer (not assigned partition).");
                await HandleEntryOperationExecutionProxy(executionContext, isReadOperation);
             } else if (LiveConfiguration.LedPartitionIndex != partitionId && !isReadOperation) {
+               Log("Proxying inbound entry operation to peer (don't own partition).");
                await HandleEntryOperationExecutionProxy(executionContext, false);
                return;
             } else if (isReadOperation) {
-               var somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton = somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingletonByKey.GetOrAdd(
-                  executionContext.Operation.Key,
-                  add => new SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton());
-
+               Log("Handling read operation locally.");
+               var somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton = GetOrAddAndInstantiateSomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton(executionContext.Operation.Key);
                var result = await somethingToDoWithEntryOperationChuggingAbstractBeanFactorySingleton.EnqueueOperationAndGetResultAsync(executionContext.Operation);
                executionContext.ResultBox.SetResult(result);
             } else {
@@ -967,7 +1014,8 @@ namespace Dargon.Hydrous.Impl {
                   EntryOperation = executionContext.Operation,
                   ResultBox = executionContext.ResultBox
                };
-               await someBinaryLogThing.AppendAsync(entryOperationLogData);
+               await ledBinaryLog.AppendAsync(entryOperationLogData);
+               Log("Appended new entry to binary log.");
             }
          }
 
@@ -983,9 +1031,15 @@ namespace Dargon.Hydrous.Impl {
       }
 
       public class CohortContext {
-         public CohortReplicationState ReplicationState { get; set; }
-         public ISomeReplicationService ReplicationService { get; set; }
-         public ICacheService<K, V> CacheService { get; set; }
+         public CohortContext(CohortReplicationState replicationState, ISomeReplicationService replicationService, ICacheService<K, V> cacheService) {
+            ReplicationState = replicationState;
+            ReplicationService = replicationService;
+            CacheService = cacheService;
+         }
+
+         public CohortReplicationState ReplicationState { get; }
+         public ISomeReplicationService ReplicationService { get; }
+         public ICacheService<K, V> CacheService { get; }
       }
 
       public class CoordinatorEntryPointPhase : PhaseBase {
@@ -1156,7 +1210,7 @@ namespace Dargon.Hydrous.Impl {
 
          public int ComputeBlockId(K key) {
             var hash = (uint)key.GetHashCode();
-            return (int)(hash >> (kHashBitCount - staticConfiguration.BlockCountPower));
+            return (int)(hash >> (kHashBitCount - staticConfiguration.BlockCountPower - 1));
          }
 
          public int ComputePartitionIndex(K key) => ComputePartitionIndex(ComputeBlockId(key));

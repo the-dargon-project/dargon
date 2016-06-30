@@ -58,23 +58,27 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public async Task HandleInboundDataEventAsync(InboundDataEvent e) {
-         await Task.Yield();
-
-         object payload = null;
          try {
-            payload = Deserialize.From(e.Data);
-         } catch (Exception ex) {
-            if (!isShutdown) {
-               logger.Warn("Error at payload deserialize", ex);
+            await Task.Yield();
+
+            object payload = null;
+            try {
+               payload = Deserialize.From(new MemoryStream(e.Data, false));
+            } catch (Exception ex) {
+               if (!isShutdown) {
+                  logger.Warn("Error at payload deserialize", ex);
+               }
+               return;
             }
-            return;
-         }
-         if (payload is AcknowledgementDto) {
-            await HandleAcknowledgementAsync((AcknowledgementDto)payload);
-         } else if (payload is AnnouncementDto) {
-            await HandleAnnouncementAsync((AnnouncementDto)payload);
-         } else if (payload is PacketDto) {
-            await HandlePacketDtoAsync((PacketDto)payload);
+            if (payload is AcknowledgementDto) {
+               await HandleAcknowledgementAsync((AcknowledgementDto)payload);
+            } else if (payload is AnnouncementDto) {
+               await HandleAnnouncementAsync((AnnouncementDto)payload);
+            } else if (payload is PacketDto) {
+               await HandlePacketDtoAsync((PacketDto)payload);
+            }
+         } catch (Exception ex) {
+            logger.Error("HandleInboundDataAsync threw!", ex);
          }
       }
 
@@ -116,7 +120,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
 
          if (x.Message.Body.GetType().FullName.Contains("Service")) {
-            logger.Warn($"Routing packet {x.Id} Reliable: {x.IsReliable()} Body: {JsonConvert.SerializeObject(x.Message.Body, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() })}");
+            logger.Warn($"Routing packet {x.Id} Reliable: {x.IsReliable()} TBody: {x.Message.Body?.GetType().Name ?? "[null]"} Body: {JsonConvert.SerializeObject(x.Message.Body, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() })}");
          }
 
          RoutingContext peerRoutingContext;

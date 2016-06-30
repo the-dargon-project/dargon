@@ -62,15 +62,17 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
       private void AppendHelper_WriterUnderLock(BinaryLogEntry entry) {
       }
 
-      public async Task SomethingToDoWithSyncing(IReadOnlyList<BinaryLogEntry> e) {
+      public async Task SomethingToDoWithSyncing(IReadOnlyList<BinaryLogEntry> newEntries) {
          using (await synchronization.WriterLockAsync()) {
-            if (entries.Count > 1) {
-               Console.WriteLine("!");
+            foreach (var newEntry in newEntries) {
+               var lastEntryId = entries.LastOrDefault()?.Id ?? -1;
+               var nextEntryId = lastEntryId + 1;
+               if (newEntry.Id == nextEntryId) {
+                  entries.Add(newEntry);
+               } else if (newEntry.Id > nextEntryId) {
+                  throw new InvalidStateException($"Expected next entry of id {nextEntryId} but got {newEntry.Id}.");
+               }
             }
-            if (entries.Count != e.First().Id) {
-               throw new InvalidStateException($"Expected e.First.Id={entries.Count} but got {e.First().Id}.");
-            }
-            entries.AddRange(e);
          }
       }
    }

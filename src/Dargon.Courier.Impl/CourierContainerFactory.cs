@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Castle.DynamicProxy;
 using Dargon.Commons.Collections;
 using Dargon.Courier.AsyncPrimitives;
@@ -21,6 +22,7 @@ namespace Dargon.Courier {
    public class CourierBuilder {
       private readonly ConcurrentSet<ITransportFactory> transportFactories = new ConcurrentSet<ITransportFactory>();
       private readonly IRyuContainer parentContainer;
+      private Guid? forceId;
 
       private CourierBuilder(IRyuContainer parentContainer) {
          this.parentContainer = parentContainer;
@@ -31,9 +33,14 @@ namespace Dargon.Courier {
          return this;
       }
 
+      public CourierBuilder ForceIdentity(Guid? id) {
+         forceId = id;
+         return this;
+      }
+
       public async Task<CourierFacade> BuildAsync() {
          var courierContainerFactory = new CourierContainerFactory(parentContainer);
-         var courierContainer = await courierContainerFactory.CreateAsync(transportFactories);
+         var courierContainer = await courierContainerFactory.CreateAsync(transportFactories, forceId);
          return courierContainer.GetOrThrow<CourierFacade>();
       }
 
@@ -51,7 +58,7 @@ namespace Dargon.Courier {
          this.root = root;
       }
 
-      public async Task<IRyuContainer> CreateAsync(IReadOnlySet<ITransportFactory> transportFactories) {
+      public async Task<IRyuContainer> CreateAsync(IReadOnlySet<ITransportFactory> transportFactories, Guid? forceId = null) {
          var container = root.CreateChildContainer();
          var proxyGenerator = container.GetOrDefault<ProxyGenerator>() ?? new ProxyGenerator();
          var shutdownCancellationTokenSource = new CancellationTokenSource();
@@ -66,10 +73,10 @@ namespace Dargon.Courier {
          var mobOperations = new MobOperations(mobContextFactory, mobContextContainer);
 
          // Other Courier Stuff
-         var identity = Identity.Create();
+         var identity = Identity.Create(forceId);
          var routingTable = new RoutingTable();
          var peerDiscoveryEventBus = new AsyncBus<PeerDiscoveryEvent>();
-         var peerTable = new PeerTable(container, table => new PeerContext(table, peerDiscoveryEventBus));
+         var peerTable = new PeerTable(container, (table, peerId) => new PeerContext(table, peerId, peerDiscoveryEventBus));
 
          var inboundMessageRouter = new InboundMessageRouter();
          var inboundMessageDispatcher = new InboundMessageDispatcher(identity, peerTable, inboundMessageRouter);
@@ -92,7 +99,7 @@ namespace Dargon.Courier {
          // Service Tier - Service Discovery, Remote Method Invocation
          //----------------------------------------------------------------------------------------
          var localServiceRegistry = new LocalServiceRegistry(messenger);
-         var remoteServiceInvoker = new RemoteServiceInvoker(messenger);
+         var remoteServiceInvoker = new RemoteServiceInvoker(identity, messenger);
          var remoteServiceProxyContainer = new RemoteServiceProxyContainer(proxyGenerator, remoteServiceInvoker);
          inboundMessageRouter.RegisterHandler<RmiRequestDto>(localServiceRegistry.HandleInvocationRequestAsync);
          inboundMessageRouter.RegisterHandler<RmiResponseDto>(remoteServiceInvoker.HandleInvocationResponse);

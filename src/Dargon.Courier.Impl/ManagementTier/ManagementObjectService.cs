@@ -17,7 +17,7 @@ namespace Dargon.Courier.ManagementTier {
    public interface IManagementObjectService {
       IEnumerable<ManagementObjectIdentifierDto> EnumerateManagementObjects();
       ManagementObjectStateDto GetManagementObjectDescription(Guid mobId);
-      object InvokeManagedOperation(string mobFullName, string methodName, object[] args);
+      Task<object> InvokeManagedOperationAsync(string mobFullName, string methodName, object[] args);
       ManagementDataSetDto<T> GetManagedDataSet<T>(string mobFullName, string dataSetName);
    }
 
@@ -38,8 +38,8 @@ namespace Dargon.Courier.ManagementTier {
          return mobContextContainer.Get(mobId).StateDto;
       }
 
-      public object InvokeManagedOperation(string mobFullName, string methodName, object[] args) {
-         return mobOperations.InvokeManagedOperation(mobFullName, methodName, args);
+      public Task<object> InvokeManagedOperationAsync(string mobFullName, string methodName, object[] args) {
+         return mobOperations.InvokeManagedOperationAsync(mobFullName, methodName, args);
       }
 
       public ManagementDataSetDto<T> GetManagedDataSet<T>(string mobFullName, string dataSetName) {

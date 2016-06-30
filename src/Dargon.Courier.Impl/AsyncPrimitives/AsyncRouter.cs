@@ -33,7 +33,7 @@ namespace Dargon.Courier.AsyncPrimitives {
          return false;
       }
 
-      public class ConcurrentTypeToDispatcherDictionary<TPassed> : IncrementalDictionary<Type, ConcurrentSet<Func<TPassed, Task>>> {
+      public class ConcurrentTypeToDispatcherDictionary<TPassed> : CopyOnAddDictionary<Type, ConcurrentSet<Func<TPassed, Task>>> {
 
       }
    }

@@ -48,10 +48,10 @@ namespace Dargon.Courier.Management.UI {
          config.AddTarget("debugger", debuggerTarget);
          config.AddTarget("console", consoleTarget);
 
-         var debuggerRule = new LoggingRule("*", LogLevel.Trace, debuggerTarget);
+         var debuggerRule = new LoggingRule("*", LogLevel.Debug, debuggerTarget);
          config.LoggingRules.Add(debuggerRule);
 
-         var consoleRule = new LoggingRule("*", LogLevel.Trace, consoleTarget);
+         var consoleRule = new LoggingRule("*", LogLevel.Debug, consoleTarget);
          config.LoggingRules.Add(consoleRule);
 
          LogManager.Configuration = config;

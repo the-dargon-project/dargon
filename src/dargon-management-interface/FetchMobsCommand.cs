@@ -16,7 +16,7 @@ namespace Dargon.Courier.Management.UI {
          var root = new SomeNode();
 
          foreach (var mob in mobs) {
-            var breadcrumbs = mob.FullName.Split(".");
+            var breadcrumbs = mob.FullName.Split('.', '/');
             var current = root;
             foreach (var breadcrumb in breadcrumbs) {
                current = current.GetOrAddChild(breadcrumb);

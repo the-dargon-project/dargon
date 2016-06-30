@@ -28,7 +28,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          var multiPartChunksSentCounter = auditService.GetCounter(DataSetNames.kMultiPartChunksSent);
          var multiPartChunksReceivedAggregator = auditService.GetAggregator<int>(DataSetNames.kMultiPartChunksBytesReceived);
 
-         mobOperations.RegisterService(new UdpDebugMob());
+         mobOperations.RegisterMob(new UdpDebugMob());
 
          var shutdownCts = new CancellationTokenSource();
          var acknowledgementCoordinator = new AcknowledgementCoordinator();

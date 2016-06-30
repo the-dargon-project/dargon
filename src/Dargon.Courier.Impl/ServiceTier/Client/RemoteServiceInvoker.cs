@@ -12,9 +12,11 @@ namespace Dargon.Courier.ServiceTier.Client {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
       private readonly ConcurrentDictionary<Guid, AsyncBox<RmiResponseDto>> responseBoxes = new ConcurrentDictionary<Guid,AsyncBox<RmiResponseDto>>();
+      private readonly Identity localIdentity;
       private readonly Messenger messenger;
 
-      public RemoteServiceInvoker(Messenger messenger) {
+      public RemoteServiceInvoker(Identity localIdentity, Messenger messenger) {
+         this.localIdentity = localIdentity;
          this.messenger = messenger;
       }
 
@@ -41,7 +43,11 @@ namespace Dargon.Courier.ServiceTier.Client {
             ServiceId = serviceInfo.ServiceId
          };
 
-         logger.Debug($"Sending RMI {invocationId.ToString("n").Substring(0, 6)} Request on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}");
+         logger.Debug($"Sending RMI {invocationId.ToString("n").Substring(0, 6)} Request on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}. Local: {localIdentity.Id.ToString("n").Substring(0, 6)}, Remote: {serviceInfo.Peer.Identity.Id.ToString("n").Substring(0, 6)}");
+
+         if (localIdentity.Id == serviceInfo.Peer.Identity.Id) {
+            throw new ArgumentException("Attempted to perform remote service invocation on self.");
+         }
 
          var responseBox = new AsyncBox<RmiResponseDto>();
          responseBoxes.AddOrThrow(invocationId, responseBox);

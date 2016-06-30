@@ -49,7 +49,7 @@ namespace dummy_management_object_server {
                                            .UseTcpServerTransport(21337)
                                            .BuildAsync().Result;
          var testMob = new TestMob();
-         courierFacade.MobOperations.RegisterService(testMob);
+         courierFacade.MobOperations.RegisterMob(testMob);
 
          new CountdownEvent(1).Wait();
       }

@@ -7,9 +7,9 @@ namespace Dargon.Courier.PeeringTier {
    public class PeerTable {
       private readonly ConcurrentDictionary<Guid, PeerContext> peerContextsById = new ConcurrentDictionary<Guid, PeerContext>();
       private readonly IRyuContainer container;
-      private readonly Func<PeerTable, PeerContext> peerContextFactory;
+      private readonly Func<PeerTable, Guid, PeerContext> peerContextFactory;
 
-      public PeerTable(IRyuContainer container, Func<PeerTable, PeerContext> peerContextFactory) {
+      public PeerTable(IRyuContainer container, Func<PeerTable, Guid, PeerContext> peerContextFactory) {
          this.container = container;
          this.peerContextFactory = peerContextFactory;
       }
@@ -22,7 +22,7 @@ namespace Dargon.Courier.PeeringTier {
          }
 
          return peerContextsById.GetOrAdd(
-            id, add => peerContextFactory(this));
+            id, add => peerContextFactory(this, id));
       }
 
       public IEnumerable<PeerContext> Enumerate() => peerContextsById.Values;

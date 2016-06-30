@@ -4,9 +4,12 @@ using Dargon.Commons.Pooling;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.Vox;
 using Dargon.Vox.Utilities;
+using NLog;
 
 namespace Dargon.Courier {
    public class InboundMessageDispatcher {
+      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
       private readonly Identity identity;
       private readonly PeerTable peerTable;
       private readonly InboundMessageRouter inboundMessageRouter;
@@ -53,7 +56,9 @@ namespace Dargon.Courier {
                e.Message = message;
                e.Sender = peer;
 
-               await router.RouteAsync(e);
+               if (!await router.TryRouteAsync(e)) {
+                  logger.Trace($"Failed to route inbound message of body type {e.Body?.GetType().Name ?? "[null]"}");
+               }
 
                e.Message = null;
                eventPool.ReturnObject(e);

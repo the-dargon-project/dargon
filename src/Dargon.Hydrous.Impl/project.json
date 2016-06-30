@@ -1,12 +1,7 @@
 {
     "version": "1.0.0-*",
-    "description": "Dargon.Hydrous.Impl Class Library",
-    "authors": [ "Warty" ],
-    "tags": [ "" ],
-    "projectUrl": "",
-    "licenseUrl": "",
 
-    "compilationOptions": {
+    "buildOptions": {
         "allowUnsafe": true,
         "emitEntryPoint": true
     },
@@ -31,7 +26,5 @@
         "postbuild": [ "powershell ../../../FodyDnx/src/exec-fody-weavers.ps1 -ProjectDir %cd%" ]
     },
 
-    "exclude": [ "**/Vox/**/*.cs" ],
-
-    "userSecretsId": "aspnet-Dargon.Hydrous.Impl-20160517010505"
+    "exclude": [ "**/Vox/**/*.cs" ]
 }

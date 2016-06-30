@@ -10,7 +10,7 @@ namespace Dargon.Courier {
          inner.RegisterHandler<T>(x => handler((IInboundMessageEvent<T>)x));
       }
 
-      public Task RouteAsync<T>(InboundMessageEvent<T> x) {
+      public Task<bool> TryRouteAsync<T>(InboundMessageEvent<T> x) {
          return inner.TryRouteAsync(x);
       }
 

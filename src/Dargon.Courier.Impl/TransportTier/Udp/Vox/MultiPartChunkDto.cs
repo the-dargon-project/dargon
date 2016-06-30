@@ -13,18 +13,18 @@ namespace Dargon.Courier.TransportTier.Udp.Vox {
       public int BodyOffset { get; set; }
       public int BodyLength { get; set; }
 
-      public void Serialize(ISlotWriter writer) {
-         writer.WriteGuid(0, MultiPartMessageId);
-         writer.WriteNumeric(1, ChunkIndex);
-         writer.WriteNumeric(2, ChunkCount);
-         writer.WriteBytes(3, Body, BodyOffset, BodyLength);
+      public void Serialize(IBodyWriter writer) {
+         writer.Write(MultiPartMessageId);
+         writer.Write(ChunkIndex);
+         writer.Write(ChunkCount);
+         writer.Write(Body, BodyOffset, BodyLength);
       }
 
-      public void Deserialize(ISlotReader reader) {
-         MultiPartMessageId = reader.ReadGuid(0);
-         ChunkIndex = reader.ReadNumeric(1);
-         ChunkCount = reader.ReadNumeric(2);
-         Body = reader.ReadBytes(3);
+      public void Deserialize(IBodyReader reader) {
+         MultiPartMessageId = reader.Read<Guid>();
+         ChunkIndex = reader.Read<int>();
+         ChunkCount = reader.Read<int>();
+         Body = reader.Read<byte[]>();
          BodyOffset = 0;
          BodyLength = Body.Length;
       }

@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Dargon.Courier.ServiceTier.Vox;
+using Dargon.Courier.Utilities;
 using NLog;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 
@@ -31,14 +32,16 @@ namespace Dargon.Courier.ServiceTier.Client {
          });
          
          if (typeof(Task).IsAssignableFrom(method.ReturnType)) {
-            invocation.ReturnValue = Go(async () => {
-               await executorTask.ConfigureAwait(false);
-               var ex = responseDto.Exception as Exception;
-               if (ex != null) {
-                  throw ex;
-               }
-               return responseDto.ReturnValue;
-            });
+            invocation.ReturnValue = TaskUtilities.CastTask(
+               Go(async () => {
+                  await executorTask.ConfigureAwait(false);
+                  var ex = responseDto.Exception as Exception;
+                  if (ex != null) {
+                     throw ex;
+                  }
+                  return responseDto.ReturnValue;
+               }),
+               method.ReturnType);
             return;
          }
 

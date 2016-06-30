@@ -9,16 +9,16 @@ namespace Dargon.Courier.ManagementTier
     public static class ManagementExtensions
     {
 
-      public static void RegisterService(this MobOperations mobOperations, object service) {
-         Guid serviceId;
-         if (!service.GetType().TryGetInterfaceGuid(out serviceId)) {
-            throw new InvalidOperationException($"Mob of type {service.GetType().FullName} does not have default service id.");
+      public static void RegisterMob(this MobOperations mobOperations, object mobInstance) {
+         Guid mobId;
+         if (!mobInstance.GetType().TryGetInterfaceGuid(out mobId)) {
+            throw new InvalidOperationException($"Mob of type {mobInstance.GetType().FullName} does not have default service id.");
          }
-         mobOperations.RegisterService(serviceId, service);
+         RegisterMob(mobOperations, mobId, mobInstance);
       }
 
-      public static void RegisterService(this MobOperations mobOperations, Guid mobId, object mobInstance) {
-         mobOperations.RegisterService(mobId, mobInstance, mobInstance.GetType().FullName);
+      public static void RegisterMob(this MobOperations mobOperations, Guid mobId, object mobInstance) {
+         mobOperations.RegisterMob(mobId, mobInstance, mobInstance.GetType().FullName);
       }
    }
 }
