@@ -35,14 +35,14 @@ namespace Dargon.Courier.Utilities {
       public static async Task<object> UnboxValueIfTaskAsync(object value) {
          var task = value as Task;
          if (task != null) {
-            return await GetTaskResultAsync(task);
+            return await GetTaskResultAsync(task).ConfigureAwait(false);
          }
          return value;
       }
 
       public static async Task<object> GetTaskResultAsync(Task task) {
          object result = null;
-         await task;
+         await task.ConfigureAwait(false);
          if (task.GetType().IsGenericType) {
             var taskResult = task.GetType().GetProperty("Result").GetValue(task);
             if (taskResult.GetType().Name != "VoidTaskResult") {

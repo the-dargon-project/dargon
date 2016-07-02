@@ -3,6 +3,7 @@
 
     "dependencies": {
         "Dargon.Ryu.Api": "*",
+        "Dargon.Vox": "*",
         "Fody": "1.29.4",
         "NLombok.Fody": "0.0.5"
     },

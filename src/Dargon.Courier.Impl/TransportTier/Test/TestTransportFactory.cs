@@ -24,31 +24,31 @@ namespace Dargon.Courier.TransportTier.Test {
 
             var otherTransportNewTransportRoutingContext = new TestRoutingContext(this, identity);
             otherTransport.SetupRoutingContext(otherTransportNewTransportRoutingContext);
-            await otherTransport.PeerTable.GetOrAdd(identity.Id).HandleInboundPeerIdentityUpdate(identity);
+            await otherTransport.PeerTable.GetOrAdd(identity.Id).HandleInboundPeerIdentityUpdate(identity).ConfigureAwait(false);
 
             var newTransportOtherTransportRoutingContext = new TestRoutingContext(this, otherTransport.Identity);
             transport.SetupRoutingContext(newTransportOtherTransportRoutingContext);
-            await transport.PeerTable.GetOrAdd(otherTransport.Identity.Id).HandleInboundPeerIdentityUpdate(otherTransport.Identity);
+            await transport.PeerTable.GetOrAdd(otherTransport.Identity.Id).HandleInboundPeerIdentityUpdate(otherTransport.Identity).ConfigureAwait(false);
          }
 
          return transport;
       }
 
       public async Task SendMessageBroadcastAsync(MessageDto message) {
-         await DispatchOnAllTransports(message);
+         await DispatchOnAllTransports(message).ConfigureAwait(false);
       }
 
       public async Task SendMessageReliableAsync(Guid destination, MessageDto message) {
-         await DispatchOnAllTransports(message);
+         await DispatchOnAllTransports(message).ConfigureAwait(false);
       }
 
       public async Task SendMessageUnreliableAsync(Guid destination, MessageDto message) {
-         await DispatchOnAllTransports(message);
+         await DispatchOnAllTransports(message).ConfigureAwait(false);
       }
 
       private async Task DispatchOnAllTransports(MessageDto message) {
          foreach (var transport in transports) {
-            await transport.InboundMessageDispatcher.DispatchAsync(message);
+            await transport.InboundMessageDispatcher.DispatchAsync(message).ConfigureAwait(false);
          }
       }
    }

@@ -27,7 +27,7 @@ namespace Dargon.Courier.AsyncPrimitives {
          var passedProjection = passedProjector(x);
          ConcurrentSet<Func<TPassed, Task>> handlers;
          if (typeHandlers.TryGetValue(typeProjection, out handlers)) {
-            await Task.WhenAll(handlers.Select(h => h(passedProjection)));
+            await Task.WhenAll(handlers.Select(h => h(passedProjection))).ConfigureAwait(false);
             return true;
          }
          return false;

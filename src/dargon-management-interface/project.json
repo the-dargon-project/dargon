@@ -17,6 +17,7 @@
         "xunit": "2.1.0",
         "Newtonsoft.Json": "*",
         "Dargon.Hydrous.Impl": "*",
+        "Dargon.Hydrous.Impl.FunctionalTests": "*"
     },
 
     "buildOptions": {

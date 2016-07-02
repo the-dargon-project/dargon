@@ -38,7 +38,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
 
       public async Task ShutdownAsync() {
          foreach (TcpRoutingContext routingContext in routingContexts) {
-            await routingContext.ShutdownAsync();
+            await routingContext.ShutdownAsync().ConfigureAwait(false);
          };
       }
    }

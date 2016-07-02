@@ -5,6 +5,7 @@ using Dargon.Courier.ServiceTier.Vox;
 using Dargon.Vox.Utilities;
 using NLog;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -15,9 +16,11 @@ namespace Dargon.Courier.ServiceTier.Server {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
       private readonly CopyOnAddDictionary<Guid, object> services = new CopyOnAddDictionary<Guid, object>();
+      private readonly Identity identity;
       private readonly Messenger messenger;
 
-      public LocalServiceRegistry(Messenger messenger) {
+      public LocalServiceRegistry(Identity identity, Messenger messenger) {
+         this.identity = identity;
          this.messenger = messenger;
       }
 
@@ -41,12 +44,14 @@ namespace Dargon.Courier.ServiceTier.Server {
       }
 
       public async Task HandleInvocationRequestAsync(IInboundMessageEvent<RmiRequestDto> e) {
+         Trace.Assert(e.Message.ReceiverId == identity.Id);
+
          logger.Debug($"Received RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)}");
          var request = e.Body;
          object service;
          if (!services.TryGetValue(request.ServiceId, out service)) {
             logger.Debug($"Unable to handle RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)} - service not found.");
-            await RespondError(e, new ServiceUnavailableException(request));
+            await RespondError(e, new ServiceUnavailableException(request)).ConfigureAwait(false);
             return;
          }
          var typeInfo = service.GetType().GetTypeInfo();
@@ -57,13 +62,13 @@ namespace Dargon.Courier.ServiceTier.Server {
          object result;
          var args = request.MethodArguments;
          try {
-            result = await TaskUtilities.UnboxValueIfTaskAsync(method.Invoke(service, args));
+            result = await TaskUtilities.UnboxValueIfTaskAsync(method.Invoke(service, args)).ConfigureAwait(false);
          } catch (Exception ex) {
-            await RespondError(e, ex);
+            await RespondError(e, ex).ConfigureAwait(false);
             return;
          }
          var outParameters = method.GetParameters().Where(p => p.IsOut);
-         await RespondSuccess(e, outParameters.Select(p => args[p.Position]).ToArray(), result);
+         await RespondSuccess(e, outParameters.Select(p => args[p.Position]).ToArray(), result).ConfigureAwait(false);
       }
 
       private Task RespondSuccess(IInboundMessageEvent<RmiRequestDto> e, object[] outParameters, object result) {

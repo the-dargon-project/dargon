@@ -12,7 +12,7 @@ namespace Dargon.Courier.AsyncPrimitives {
       }
 
       public async Task<T> GetResultAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-         await completionLatch.WaitAsync(cancellationToken);
+         await completionLatch.WaitAsync(cancellationToken).ConfigureAwait(false);
          return result;
       }
    }

@@ -59,7 +59,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       public async Task RunAsync() {
          Debug($"Entered RunAsync.");
          runAsyncInnerTask = RunAsyncHelper();
-         await runAsyncInnerTask;
+         await runAsyncInnerTask.ConfigureAwait(false);
          Debug($"Left RunAsync.");
       }
 
@@ -68,14 +68,14 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             await Task.WhenAny(
                shutdownCancellationTokenSource.Token.AsTask(),
                Task.WhenAll(
-               Go(async () => {
-                  var remoteToLocalHandshake = (HandshakeDto)await payloadUtils.ReadPayloadAsync(ns, shutdownCancellationTokenSource.Token);
-                  remoteIdentity = remoteToLocalHandshake.Identity;
-               }),
-               Go(async () => {
-                  var localToRemoteHandshake = new HandshakeDto { Identity = localIdentity };
-                  await payloadUtils.WritePayloadAsync(ns, localToRemoteHandshake, writerLock, shutdownCancellationTokenSource.Token);
-               })));
+                  Go(async () => {
+                     var remoteToLocalHandshake = (HandshakeDto)await payloadUtils.ReadPayloadAsync(ns, shutdownCancellationTokenSource.Token).ConfigureAwait(false);
+                     remoteIdentity = remoteToLocalHandshake.Identity;
+                  }),
+                  Go(async () => {
+                     var localToRemoteHandshake = new HandshakeDto { Identity = localIdentity };
+                     await payloadUtils.WritePayloadAsync(ns, localToRemoteHandshake, writerLock, shutdownCancellationTokenSource.Token).ConfigureAwait(false);
+                  }))).ConfigureAwait(false);
 
             if (shutdownCancellationTokenSource.IsCancellationRequested) {
                return;
@@ -229,7 +229,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          client.Dispose();
          ns.Dispose();
          shutdownCancellationTokenSource.Cancel();
-         await runAsyncInnerTask;
+         await runAsyncInnerTask.ConfigureAwait(false);
       }
    }
 }

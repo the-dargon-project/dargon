@@ -18,7 +18,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       private readonly AcknowledgementCoordinator acknowledgementCoordinator;
       private readonly CancellationToken shutdownCancellationToken;
       private readonly AuditAggregator<int> resendsAggregator;
-      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.Create(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
+      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
       private readonly UdpClient udpClient;
       private readonly AuditCounter multiPartChunksSentCounter;
 
@@ -32,7 +32,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public async Task SendAsync(PacketDto x) {
-         await Task.Yield();
+         await TaskEx.YieldToThreadPool();
 
          var ms = outboundMemoryStreamPool.TakeObject();
 
@@ -45,10 +45,10 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
 
          if (isMultiPartPacket) {
-            await SendMultiPartAsync(x);
+            await SendMultiPartAsync(x).ConfigureAwait(false);
          } else {
             if (!x.IsReliable()) {
-               await payloadSender.SendAsync(x);
+               await payloadSender.SendAsync(x).ConfigureAwait(false);
             } else {
                using (var acknowledgedCts = new CancellationTokenSource())
                using (var acknowledgedOrShutdownCts = CancellationTokenSource.CreateLinkedTokenSource(acknowledgedCts.Token, shutdownCancellationToken)) {
@@ -62,8 +62,8 @@ namespace Dargon.Courier.TransportTier.Udp {
                   while (!expectation.IsCompleted && !shutdownCancellationToken.IsCancellationRequested) {
                      try {
                         sendCount++;
-                        await payloadSender.SendAsync(x);
-                        await Task.Delay(resendDelay, acknowledgedCts.Token);
+                        await payloadSender.SendAsync(x).ConfigureAwait(false);
+                        await Task.Delay(resendDelay, acknowledgedCts.Token).ConfigureAwait(false);
                      } catch (TaskCanceledException) {
                         // It's on the Task.Delay
                      }
@@ -114,7 +114,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             const int kConcurrencyLimit = 32;
             var sema = new AsyncSemaphore(kConcurrencyLimit);
             for (var i = 0; i < packets.Length; i++) {
-               await sema.WaitAsync(shutdownCancellationToken);
+               await sema.WaitAsync(shutdownCancellationToken).ConfigureAwait(false);
                SendAsync(packets[i]).ContinueWith(
                   t => sema.Release(),
                   shutdownCancellationToken).Forget();

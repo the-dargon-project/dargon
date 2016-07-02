@@ -37,7 +37,7 @@ namespace Dargon.Courier.PeeringTier {
 
                var latch = new AsyncLatch();
                receiverFacade.InboundMessageRouter.RegisterHandler<string>(async x => {
-                  await Task.Yield();
+                  await TaskEx.YieldToThreadPool();
 
                   AssertEquals(str, x.Body);
                   latch.Set();
@@ -54,8 +54,8 @@ namespace Dargon.Courier.PeeringTier {
             Console.WriteLine("Threw " + e);
             throw;
          } finally {
-            await receiverFacade.ShutdownAsync();
-            await senderFacade.ShutdownAsync();
+            await receiverFacade.ShutdownAsync().ConfigureAwait(false);
+            await senderFacade.ShutdownAsync().ConfigureAwait(false);
 
             AssertEquals(0, receiverFacade.RoutingTable.Enumerate().Count());
             AssertEquals(0, senderFacade.RoutingTable.Enumerate().Count());
@@ -71,24 +71,24 @@ namespace Dargon.Courier.PeeringTier {
                var latch = new AsyncLatch();
                var router = receiverFacade.InboundMessageRouter;
                router.RegisterHandler<string>(async x => {
-                  await Task.Yield();
+                  await TaskEx.YieldToThreadPool();
 
                   AssertEquals(str, x.Body);
                   latch.Set();
                });
 
-               await receiverFacade.PeerTable.GetOrAdd(senderFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token);
-               await senderFacade.PeerTable.GetOrAdd(receiverFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token);
+               await receiverFacade.PeerTable.GetOrAdd(senderFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token).ConfigureAwait(false);
+               await senderFacade.PeerTable.GetOrAdd(receiverFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token).ConfigureAwait(false);
 
-               await senderFacade.Messenger.SendReliableAsync(str, receiverFacade.Identity.Id);
-               await latch.WaitAsync(timeout.Token);
+               await senderFacade.Messenger.SendReliableAsync(str, receiverFacade.Identity.Id).ConfigureAwait(false);
+               await latch.WaitAsync(timeout.Token).ConfigureAwait(false);
             }
          } catch (Exception e) {
             Console.WriteLine("Threw " + e);
             throw;
          } finally {
-            await receiverFacade.ShutdownAsync();
-            await senderFacade.ShutdownAsync();
+            await receiverFacade.ShutdownAsync().ConfigureAwait(false);
+            await senderFacade.ShutdownAsync().ConfigureAwait(false);
 
             AssertEquals(0, receiverFacade.RoutingTable.Enumerate().Count());
             AssertEquals(0, senderFacade.RoutingTable.Enumerate().Count());
@@ -116,7 +116,7 @@ namespace Dargon.Courier.PeeringTier {
                var readCompletionLatch = new AsyncLatch();
                var router = receiverFacade.InboundMessageRouter;
                router.RegisterHandler<byte[]>(async x => {
-                  await Task.Yield();
+                  await TaskEx.YieldToThreadPool();
 
                   logger.Info("Received large payload.");
                   var equalityCheckResult = Util.ByteArraysEqual(gigabytePayload, x.Body);

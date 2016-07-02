@@ -22,14 +22,14 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       private async Task RunAnnounceLoopAsync() {
-         await Task.Yield();
+         await TaskEx.YieldToThreadPool();
 
          var announce = new AnnouncementDto { Identity = identity };
 
          while (!shutdownCancellationToken.IsCancellationRequested) {
             try {
-               await payloadSender.SendAsync(announce);
-               await Task.Delay(kAnnounceIntervalMillis, shutdownCancellationToken);
+               await payloadSender.SendAsync(announce).ConfigureAwait(false);
+               await Task.Delay(kAnnounceIntervalMillis, shutdownCancellationToken).ConfigureAwait(false);
             } catch (OperationCanceledException) {
                // shutdown cancellation token cancelled
             }

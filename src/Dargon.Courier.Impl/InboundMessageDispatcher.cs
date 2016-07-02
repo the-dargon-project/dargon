@@ -30,10 +30,10 @@ namespace Dargon.Courier {
          PeerContext peerContext = null;
          if (message.SenderId != Guid.Empty) {
             peerContext = peerTable.GetOrAdd(message.SenderId);
-            await peerContext.WaitForDiscoveryAsync();
+            await peerContext.WaitForDiscoveryAsync().ConfigureAwait(false);
          }
 
-         await RouteAsyncVisitor.Visit(inboundMessageRouter, message, peerContext);
+         await RouteAsyncVisitor.Visit(inboundMessageRouter, message, peerContext).ConfigureAwait(false);
       }
 
       private static class RouteAsyncVisitor {
@@ -49,14 +49,14 @@ namespace Dargon.Courier {
          }
 
          private static class Inner<T> {
-            private static readonly IObjectPool<InboundMessageEvent<T>> eventPool = ObjectPool.Create<InboundMessageEvent<T>>(() => new InboundMessageEvent<T>());
+            private static readonly IObjectPool<InboundMessageEvent<T>> eventPool = ObjectPool.CreateConcurrentQueueBacked(() => new InboundMessageEvent<T>());
 
             public static async Task Visit(InboundMessageRouter router, MessageDto message, PeerContext peer) {
                var e = eventPool.TakeObject();
                e.Message = message;
                e.Sender = peer;
 
-               if (!await router.TryRouteAsync(e)) {
+               if (!await router.TryRouteAsync(e).ConfigureAwait(false)) {
                   logger.Trace($"Failed to route inbound message of body type {e.Body?.GetType().Name ?? "[null]"}");
                }
 

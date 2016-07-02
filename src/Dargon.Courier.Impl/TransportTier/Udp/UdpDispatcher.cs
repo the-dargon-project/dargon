@@ -59,7 +59,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 
       public async Task HandleInboundDataEventAsync(InboundDataEvent e) {
          try {
-            await Task.Yield();
+            await TaskEx.YieldToThreadPool();
 
             object payload = null;
             try {
@@ -71,11 +71,11 @@ namespace Dargon.Courier.TransportTier.Udp {
                return;
             }
             if (payload is AcknowledgementDto) {
-               await HandleAcknowledgementAsync((AcknowledgementDto)payload);
+               await HandleAcknowledgementAsync((AcknowledgementDto)payload).ConfigureAwait(false);
             } else if (payload is AnnouncementDto) {
-               await HandleAnnouncementAsync((AnnouncementDto)payload);
+               await HandleAnnouncementAsync((AnnouncementDto)payload).ConfigureAwait(false);
             } else if (payload is PacketDto) {
-               await HandlePacketDtoAsync((PacketDto)payload);
+               await HandlePacketDtoAsync((PacketDto)payload).ConfigureAwait(false);
             }
          } catch (Exception ex) {
             logger.Error("HandleInboundDataAsync threw!", ex);
@@ -83,7 +83,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       private async Task HandleAcknowledgementAsync(AcknowledgementDto x) {
-         await acknowledgementCoordinator.ProcessAcknowledgementAsync(x.MessageId);
+         await acknowledgementCoordinator.ProcessAcknowledgementAsync(x.MessageId).ConfigureAwait(false);
       }
 
       private async Task HandleAnnouncementAsync(AnnouncementDto x) {
@@ -102,7 +102,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             routingTable.Register(peerId, routingContext);
          }
 
-         await peerTable.GetOrAdd(peerId).HandleInboundPeerIdentityUpdate(peerIdentity);
+         await peerTable.GetOrAdd(peerId).HandleInboundPeerIdentityUpdate(peerIdentity).ConfigureAwait(false);
       }
 
       private async Task HandlePacketDtoAsync(PacketDto x) {
@@ -112,7 +112,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
 
          if (x.IsReliable()) {
-            if (!await duplicateFilter.IsNewAsync(x.Id)) {
+            if (!await duplicateFilter.IsNewAsync(x.Id).ConfigureAwait(false)) {
                duplicateReceivesCounter.Increment();
                return;
             }
@@ -120,7 +120,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
 
          if (x.Message.Body.GetType().FullName.Contains("Service")) {
-            logger.Warn($"Routing packet {x.Id} Reliable: {x.IsReliable()} TBody: {x.Message.Body?.GetType().Name ?? "[null]"} Body: {JsonConvert.SerializeObject(x.Message.Body, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() })}");
+            logger.Info($"Routing packet {x.Id} Reliable: {x.IsReliable()} TBody: {x.Message.Body?.GetType().Name ?? "[null]"} Body: {JsonConvert.SerializeObject(x.Message.Body, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() })}");
          }
 
          RoutingContext peerRoutingContext;

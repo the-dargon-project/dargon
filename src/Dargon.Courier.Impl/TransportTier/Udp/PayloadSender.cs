@@ -11,7 +11,7 @@ using Dargon.Courier.TransportTier.Udp.Vox;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class PayloadSender {
-      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.Create(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
+      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
       private readonly UdpClient udpClient;
 
       public PayloadSender(UdpClient udpClient) {
@@ -33,7 +33,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             throw new AggregateException("Direct deserialize after serialize failed.", e);
          }
 
-         await udpClient.BroadcastAsync(ms, 0, (int)ms.Position);
+         await udpClient.BroadcastAsync(ms, 0, (int)ms.Position).ConfigureAwait(false);
 
          ms.SetLength(0);
          outboundMemoryStreamPool.ReturnObject(ms);

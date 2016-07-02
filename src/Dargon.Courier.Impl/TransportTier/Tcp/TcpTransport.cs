@@ -76,7 +76,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                   routingContext.RunAsync().Forget();
                }
             } catch (SocketException) {
-               await Task.Delay(kConnectionRetryIntervalMillis);
+               await Task.Delay(kConnectionRetryIntervalMillis).ConfigureAwait(false);
             } catch (ObjectDisposedException) {
                // socket disposed
             }
@@ -94,7 +94,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                tcpRoutingContextContainer.AddOrThrow(routingContext);
                await routingContext.RunAsync().ConfigureAwait(false);
             } catch (SocketException) {
-               await Task.Delay(kConnectionRetryIntervalMillis);
+               await Task.Delay(kConnectionRetryIntervalMillis).ConfigureAwait(false);
             }
          }
       }
@@ -108,14 +108,14 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       public async Task SendMessageReliableAsync(Guid destination, MessageDto message) {
          TcpRoutingContext clientRoutingContext;
          if (tcpRoutingContextContainer.TryGetByRemoteId(destination, out clientRoutingContext)) {
-            await clientRoutingContext.SendReliableAsync(destination, message);
+            await clientRoutingContext.SendReliableAsync(destination, message).ConfigureAwait(false);
          }
       }
 
       public async Task SendMessageUnreliableAsync(Guid destination, MessageDto message) {
          TcpRoutingContext clientRoutingContext;
          if (tcpRoutingContextContainer.TryGetByRemoteId(destination, out clientRoutingContext)) {
-            await clientRoutingContext.SendUnreliableAsync(destination, message);
+            await clientRoutingContext.SendUnreliableAsync(destination, message).ConfigureAwait(false);
          }
       }
 
@@ -123,8 +123,8 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          shutdownCancellationTokenSource.Cancel();
          __listenerSocket?.Close();
          __listenerSocket?.Dispose();
-         await tcpRoutingContextContainer.ShutdownAsync();
-         await runAsyncTask;
+         await tcpRoutingContextContainer.ShutdownAsync().ConfigureAwait(false);
+         await runAsyncTask.ConfigureAwait(false);
       }
    }
 }

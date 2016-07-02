@@ -1,8 +1,10 @@
 using System.Threading.Tasks;
 using Dargon.Commons.Exceptions;
+using Dargon.Vox;
 using Nito.AsyncEx;
 
 namespace Dargon.Hydrous.Impl {
+   [AutoSerializable]
    public class CohortReplicationState {
       private readonly AsyncLock asyncLock = new AsyncLock();
 

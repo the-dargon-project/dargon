@@ -15,9 +15,9 @@ namespace Dargon.Courier.TransportTier.Udp {
    public class UdpClient {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-      private readonly IObjectPool<InboundDataEvent> inboundSomethingEventPool = ObjectPool.Create(() => new InboundDataEvent());
-      private readonly IObjectPool<AsyncAutoResetEvent> asyncAutoResetEventPool = ObjectPool.Create(() => new AsyncAutoResetEvent());
-      private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool = ObjectPool.Create(() => new SocketAsyncEventArgs());
+      private readonly IObjectPool<InboundDataEvent> inboundSomethingEventPool = ObjectPool.CreateConcurrentQueueBacked(() => new InboundDataEvent());
+      private readonly IObjectPool<AsyncAutoResetEvent> asyncAutoResetEventPool = ObjectPool.CreateConcurrentQueueBacked(() => new AsyncAutoResetEvent());
+      private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool = ObjectPool.CreateConcurrentQueueBacked(() => new SocketAsyncEventArgs());
       
       private readonly UdpTransportConfiguration configuration;
       private readonly List<Socket> sockets;
@@ -34,7 +34,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.sockets = sockets;
          this.inboundBytesAggregator = inboundBytesAggregator;
          this.outboundBytesAggregator = outboundBytesAggregator;
-         this.receiveArgsPool = ObjectPool.Create(() => {
+         this.receiveArgsPool = ObjectPool.CreateConcurrentQueueBacked(() => {
             return new SocketAsyncEventArgs {
                RemoteEndPoint = configuration.ReceiveEndpoint
             }.With(x => {
@@ -66,6 +66,8 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       private async Task HandleReceiveCompletedHelperAsync(SocketAsyncEventArgs e) {
+         await TaskEx.YieldToThreadPool();
+
 //         logger.Debug($"Received from {e.RemoteEndPoint} {e.BytesTransferred} bytes!");
          var inboundSomethingEvent = inboundSomethingEventPool.TakeObject();
          inboundSomethingEvent.Data = e.Buffer;
@@ -98,7 +100,7 @@ namespace Dargon.Courier.TransportTier.Udp {
                }
             } catch (ObjectDisposedException) when (isShutdown) { }
          }
-         await sync.WaitAsync();
+         await sync.WaitAsync().ConfigureAwait(false);
 
          // analytics
          outboundBytesAggregator.Put(length);

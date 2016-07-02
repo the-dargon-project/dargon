@@ -40,7 +40,7 @@ namespace Dargon.Courier {
 
       public async Task<CourierFacade> BuildAsync() {
          var courierContainerFactory = new CourierContainerFactory(parentContainer);
-         var courierContainer = await courierContainerFactory.CreateAsync(transportFactories, forceId);
+         var courierContainer = await courierContainerFactory.CreateAsync(transportFactories, forceId).ConfigureAwait(false);
          return courierContainer.GetOrThrow<CourierFacade>();
       }
 
@@ -83,7 +83,7 @@ namespace Dargon.Courier {
 
          var transports = new ConcurrentSet<ITransport>();
          foreach (var transportFactory in transportFactories) {
-            var transport = await transportFactory.CreateAsync(mobOperations, identity, routingTable, peerTable, inboundMessageDispatcher, auditService);
+            var transport = await transportFactory.CreateAsync(mobOperations, identity, routingTable, peerTable, inboundMessageDispatcher, auditService).ConfigureAwait(false);
             transports.TryAdd(transport);
          }
 
@@ -98,7 +98,7 @@ namespace Dargon.Courier {
          //----------------------------------------------------------------------------------------
          // Service Tier - Service Discovery, Remote Method Invocation
          //----------------------------------------------------------------------------------------
-         var localServiceRegistry = new LocalServiceRegistry(messenger);
+         var localServiceRegistry = new LocalServiceRegistry(identity, messenger);
          var remoteServiceInvoker = new RemoteServiceInvoker(identity, messenger);
          var remoteServiceProxyContainer = new RemoteServiceProxyContainer(proxyGenerator, remoteServiceInvoker);
          inboundMessageRouter.RegisterHandler<RmiRequestDto>(localServiceRegistry.HandleInvocationRequestAsync);

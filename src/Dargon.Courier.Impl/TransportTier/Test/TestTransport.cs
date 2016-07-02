@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Dargon.Commons;
 using Dargon.Commons.Collections;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
@@ -46,7 +47,7 @@ namespace Dargon.Courier.TransportTier.Test {
       }
 
       public async Task ShutdownAsync() {
-         await Task.Yield();
+         await TaskEx.YieldToThreadPool();
 
          foreach (var routingContext in routingContexts) {
             routingTable.Unregister(routingContext.RemoteIdentity.Id, routingContext);

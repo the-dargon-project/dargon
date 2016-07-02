@@ -34,7 +34,7 @@ namespace Dargon.Courier {
 
       public async Task ShutdownAsync() {
          foreach (var transport in transports) {
-            await transport.ShutdownAsync();
+            await transport.ShutdownAsync().ConfigureAwait(false);
          }
       }
    }

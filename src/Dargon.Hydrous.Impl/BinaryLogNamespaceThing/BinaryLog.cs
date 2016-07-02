@@ -30,7 +30,7 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
             while (greatestCommittedEntryId != entryId) {
                greatestCommittedEntryId++;
                if (hack__committedEntryQueue != null) {
-                  await hack__committedEntryQueue.WriteAsync(entries[greatestCommittedEntryId]);
+                  await hack__committedEntryQueue.WriteAsync(entries[greatestCommittedEntryId]).ConfigureAwait(false);
                }
             }
          }
@@ -42,13 +42,17 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
          }
       }
 
-      public async Task<IReadOnlyList<BinaryLogEntry>> GetAllEntriesFrom(int startingEntryId) {
+      public async Task<IReadOnlyList<BinaryLogEntry>> GetAllEntriesFrom(int startingEntryId, int endingEntryId = -1) {
          using (await synchronization.ReaderLockAsync()) {
             if (entries.None()) {
                return new List<BinaryLogEntry>();
             }
 
-            return entries.Skip(startingEntryId).ToArray();
+            if (endingEntryId == -1) {
+               return entries.Skip(startingEntryId).ToArray();
+            } else {
+               return entries.Skip(startingEntryId).Take(endingEntryId - startingEntryId + 1).ToArray();
+            }
          }
       }
 

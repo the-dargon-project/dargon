@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.AsyncPrimitives {
    public class AsyncProcessor<TInput, TPassed> {
-      private readonly IObjectPool<AsyncState> asyncStatePool = ObjectPool.Create(() => new AsyncState());
+      private readonly IObjectPool<AsyncState> asyncStatePool = ObjectPool.CreateConcurrentQueueBacked(() => new AsyncState());
       private readonly IConcurrentQueue<AsyncState> queue = new ConcurrentQueue<AsyncState>();
       private readonly AsyncSemaphore semaphore = new AsyncSemaphore(0);
       private readonly AsyncRouter<TInput, TPassed> router;
@@ -27,7 +27,7 @@ namespace Dargon.Courier.AsyncPrimitives {
          queue.Enqueue(state);
          semaphore.Release();
 
-         await state.Sync.WaitAsync();
+         await state.Sync.WaitAsync().ConfigureAwait(false);
 
          state.Input = default(TInput);
          asyncStatePool.ReturnObject(state);
@@ -35,15 +35,15 @@ namespace Dargon.Courier.AsyncPrimitives {
 
       private async Task RunProcessLoopAsync() {
          while (true) {
-            await semaphore.WaitAsync();
+            await semaphore.WaitAsync().ConfigureAwait(false);
             AsyncState state;
             if (!queue.TryDequeue(out state)) {
                throw new InvalidStateException();
             }
             try {
-               await router.TryRouteAsync(state.Input);
+               await router.TryRouteAsync(state.Input).ConfigureAwait(false);
             } catch (Exception e) {
-               await HandleExceptionAsync(state.Input, e);
+               await HandleExceptionAsync(state.Input, e).ConfigureAwait(false);
             } finally {
                state.Sync.Set();
             }
@@ -51,7 +51,7 @@ namespace Dargon.Courier.AsyncPrimitives {
       }
 
       protected virtual async Task HandleExceptionAsync(object input, Exception e) {
-         await Console.Error.WriteAsync(e.ToString());
+         await Console.Error.WriteAsync(e.ToString()).ConfigureAwait(false);
       }
 
       private class AsyncState {

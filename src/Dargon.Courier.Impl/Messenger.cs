@@ -36,7 +36,7 @@ namespace Dargon.Courier {
                   Body = payload,
                   ReceiverId = destination,
                   SenderId = identity.Id
-               });
+               }).ConfigureAwait(false);
          }
       }
 

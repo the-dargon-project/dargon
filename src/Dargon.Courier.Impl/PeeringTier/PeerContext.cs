@@ -5,6 +5,7 @@ using Nito.AsyncEx;
 using NLog;
 using System.Threading;
 using System.Threading.Tasks;
+using Dargon.Commons;
 
 namespace Dargon.Courier.PeeringTier {
    public class PeerContext {
@@ -29,7 +30,7 @@ namespace Dargon.Courier.PeeringTier {
       }
 
       public async Task HandleInboundPeerIdentityUpdate(Identity identity) {
-         await Task.Yield();
+         await TaskEx.YieldToThreadPool();
 
 //         logger.Trace($"Got announcement from peer {identity}!");
          Identity.Update(identity);
@@ -40,7 +41,7 @@ namespace Dargon.Courier.PeeringTier {
                   Discovered = true;
                   var discoveryEvent = new PeerDiscoveryEvent { Peer = this };
                   logger.Info("__A");
-                  await peerDiscoveryEventPoster.PostAsync(discoveryEvent);
+                  await peerDiscoveryEventPoster.PostAsync(discoveryEvent).ConfigureAwait(false);
                   logger.Info("__B");
                   discoveryLatch.Set();
                   logger.Info("__C");

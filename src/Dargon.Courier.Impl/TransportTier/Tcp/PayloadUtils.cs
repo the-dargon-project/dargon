@@ -12,7 +12,7 @@ using Nito.AsyncEx;
 
 namespace Dargon.Courier.TransportTier.Tcp {
    public class PayloadUtils {
-      private readonly IObjectPool<MemoryStream> memoryStreamPool = ObjectPool.Create(() => new MemoryStream());
+      private readonly IObjectPool<MemoryStream> memoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream());
       private readonly AuditAggregator<double> inboundBytesAggregator;
       private readonly AuditAggregator<double> outboundBytesAggregator;
 
@@ -25,15 +25,15 @@ namespace Dargon.Courier.TransportTier.Tcp {
          var ms = memoryStreamPool.TakeObject();
          Serialize.To(ms, payload);
          using (await writerLock.LockAsync()) {
-            await WriteMemoryStreamAsync(ns, ms, 0, (int)ms.Position, cancellationToken);
+            await WriteMemoryStreamAsync(ns, ms, 0, (int)ms.Position, cancellationToken).ConfigureAwait(false);
          }
          ms.SetLength(0);
          memoryStreamPool.ReturnObject(ms);
       }
 
       private async Task WriteMemoryStreamAsync(NetworkStream ns, MemoryStream ms, int offset, int length, CancellationToken cancellationToken = default(CancellationToken)) {
-         await ns.WriteAsync(BitConverter.GetBytes(length), 0, sizeof(int), cancellationToken);
-         await ns.WriteAsync(ms.GetBuffer(), offset, length, cancellationToken);
+         await ns.WriteAsync(BitConverter.GetBytes(length), 0, sizeof(int), cancellationToken).ConfigureAwait(false);
+         await ns.WriteAsync(ms.GetBuffer(), offset, length, cancellationToken).ConfigureAwait(false);
          outboundBytesAggregator.Put(sizeof(int) + length);
       }
 
@@ -42,7 +42,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
          await ReadBytesAsync(ns, sizeof(int), lengthBuffer, cancellationToken).ConfigureAwait(false);
 
          var frameLength = BitConverter.ToInt32(lengthBuffer, 0);
-         var frameBytes = await ReadBytesAsync(ns, frameLength, null, cancellationToken);
+         var frameBytes = await ReadBytesAsync(ns, frameLength, null, cancellationToken).ConfigureAwait(false);
          inboundBytesAggregator.Put(sizeof(int) + frameLength);
 
          return Deserialize.From(new MemoryStream(frameBytes, false));

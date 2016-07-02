@@ -29,7 +29,7 @@ namespace Dargon.Courier.AuditingTier {
       private async Task RunAsync() {
          try {
             while (!shutdownCancellationToken.IsCancellationRequested) {
-               await Task.Delay(kUpdateIntervalMillis, shutdownCancellationToken);
+               await Task.Delay(kUpdateIntervalMillis, shutdownCancellationToken).ConfigureAwait(false);
                foreach (var action in updaterActions) {
                   action();
                }
