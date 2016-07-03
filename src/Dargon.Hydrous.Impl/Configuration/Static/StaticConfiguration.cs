@@ -2,11 +2,13 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 using Dargon.Commons;
+using Dargon.Hydrous.Impl.Store;
+using Dargon.Hydrous.Impl.Store.Postgre;
 using Dargon.Vox;
 
 namespace Dargon.Hydrous.Impl {
    [AutoSerializable]
-   public class CacheConfiguration {
+   public class CacheConfiguration<K, V> {
       public CacheConfiguration(string cacheName) {
          CacheName = cacheName;
          CacheId = ComputeCacheId(cacheName);
@@ -23,6 +25,7 @@ namespace Dargon.Hydrous.Impl {
 
       public PartitioningConfiguration PartitioningConfiguration { get; set; } = new PartitioningConfiguration();
       public StaticClusterConfiguration StaticClusterConfiguration { get; set; } = new StaticClusterConfiguration();
+      public ICachePersistenceStrategy<K, V> CachePersistenceStrategy { get; set; } = new NullCachePersistenceStrategy<K, V>();
 
       private static Guid ComputeCacheId(string cacheName) {
          var cacheNameMd5 = new MD5CryptoServiceProvider().ComputeHash(Encoding.UTF8.GetBytes(cacheName));

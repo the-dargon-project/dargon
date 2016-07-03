@@ -2,6 +2,7 @@
    public enum EntryOperationType {
       Read,
       Put,
+      Update,
       ConditionalUpdate
    }
 }

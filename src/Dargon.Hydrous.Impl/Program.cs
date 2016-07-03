@@ -22,7 +22,7 @@ namespace Dargon.Hydrous.Impl {
          this.courier = courier;
       }
 
-      public ICacheFacade<K, V> CreateLocal<K, V>(CacheConfiguration cacheConfiguration) {
+      public ICacheFacade<K, V> CreateLocal<K, V>(CacheConfiguration<K, V> cacheConfiguration) {
          return CacheRoot<K, V>.Create(courier, cacheConfiguration);
       }
    }
@@ -41,7 +41,7 @@ namespace Dargon.Hydrous.Impl {
                                            .BuildAsync().ConfigureAwait(false);
          var cacheInitializer = new CacheInitializer(courier);
          var myCacheFacade = cacheInitializer.CreateLocal<int, string>(
-            new CacheConfiguration("my-cache"));
+            new CacheConfiguration<int, string>("my-cache"));
          var myCache = myCacheFacade.UserCache;
          var entry0 = await myCache.GetAsync(0).ConfigureAwait(false);
          var previous = await myCache.PutAsync(0, "asdf").ConfigureAwait(false);
@@ -66,10 +66,10 @@ namespace Dargon.Hydrous.Impl {
          config.AddTarget("debugger", debuggerTarget);
          config.AddTarget("console", consoleTarget);
 
-         var debuggerRule = new LoggingRule("*", LogLevel.Debug, debuggerTarget);
+         var debuggerRule = new LoggingRule("*", LogLevel.Trace, debuggerTarget);
          config.LoggingRules.Add(debuggerRule);
 
-         var consoleRule = new LoggingRule("*", LogLevel.Debug, consoleTarget);
+         var consoleRule = new LoggingRule("*", LogLevel.Trace, consoleTarget);
          config.LoggingRules.Add(consoleRule);
 
          LogManager.Configuration = config;

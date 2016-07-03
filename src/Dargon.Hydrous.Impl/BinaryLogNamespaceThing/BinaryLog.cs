@@ -14,10 +14,12 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
       private readonly AsyncReaderWriterLock synchronization = new AsyncReaderWriterLock();
       private readonly List<BinaryLogEntry> entries = new List<BinaryLogEntry>();
       private readonly WritableChannel<BinaryLogEntry> hack__committedEntryQueue;
+      private readonly Func<BinaryLogEntry, Task> hack__entrySyncAppendedCallback;
       private int greatestCommittedEntryId = -1;
 
-      public BinaryLog(WritableChannel<BinaryLogEntry> hackCommittedEntryQueue = null) {
+      public BinaryLog(WritableChannel<BinaryLogEntry> hackCommittedEntryQueue = null, Func<BinaryLogEntry, Task> hackEntrySyncAppendedCallback = null) {
          hack__committedEntryQueue = hackCommittedEntryQueue;
+         hack__entrySyncAppendedCallback = hackEntrySyncAppendedCallback;
       }
 
       public async Task UpdateGreatestCommittedEntryId(int entryId) {
@@ -72,6 +74,13 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
                var lastEntryId = entries.LastOrDefault()?.Id ?? -1;
                var nextEntryId = lastEntryId + 1;
                if (newEntry.Id == nextEntryId) {
+                  // Necessary for DB read on prepare and before commit
+                  // to avoid race condition where coordinator processes commit,
+                  // then replica reads from DB and processes commit (double commit).
+                  if (hack__entrySyncAppendedCallback != null) {
+                     await hack__entrySyncAppendedCallback(newEntry).ConfigureAwait(false);
+                  }
+
                   entries.Add(newEntry);
                } else if (newEntry.Id > nextEntryId) {
                   throw new InvalidStateException($"Expected next entry of id {nextEntryId} but got {newEntry.Id}.");
