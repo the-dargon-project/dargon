@@ -4,6 +4,7 @@ using Dargon.Commons.Pooling;
 using Nito.AsyncEx;
 using NLog;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -15,26 +16,31 @@ namespace Dargon.Courier.TransportTier.Udp {
    public class UdpClient {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-      private readonly IObjectPool<InboundDataEvent> inboundSomethingEventPool = ObjectPool.CreateConcurrentQueueBacked(() => new InboundDataEvent());
-      private readonly IObjectPool<AsyncAutoResetEvent> asyncAutoResetEventPool = ObjectPool.CreateConcurrentQueueBacked(() => new AsyncAutoResetEvent());
-      private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool = ObjectPool.CreateConcurrentQueueBacked(() => new SocketAsyncEventArgs());
+      private readonly IObjectPool<InboundDataEvent> inboundSomethingEventPool = ObjectPool.CreateStackBacked(() => new InboundDataEvent());
+      private readonly IObjectPool<AsyncAutoResetEvent> asyncAutoResetEventPool = ObjectPool.CreateStackBacked(() => new AsyncAutoResetEvent());
       
       private readonly UdpTransportConfiguration configuration;
       private readonly List<Socket> sockets;
       private readonly AuditAggregator<double> inboundBytesAggregator;
       private readonly AuditAggregator<double> outboundBytesAggregator;
+      private readonly AuditAggregator<double> inboundReceiveProcessDispatchLatencyAggregator;
 
+      private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool;
       private readonly IObjectPool<SocketAsyncEventArgs> receiveArgsPool;
 
       private volatile bool isShutdown = false;
       private UdpDispatcher udpDispatcher;
 
-      private UdpClient(UdpTransportConfiguration configuration, List<Socket> sockets, AuditAggregator<double> inboundBytesAggregator, AuditAggregator<double> outboundBytesAggregator) {
+      private static int i = 0;
+
+      private UdpClient(UdpTransportConfiguration configuration, List<Socket> sockets, AuditAggregator<double> inboundBytesAggregator, AuditAggregator<double> outboundBytesAggregator, AuditAggregator<double> inboundReceiveProcessDispatchLatencyAggregator) {
          this.configuration = configuration;
          this.sockets = sockets;
          this.inboundBytesAggregator = inboundBytesAggregator;
          this.outboundBytesAggregator = outboundBytesAggregator;
-         this.receiveArgsPool = ObjectPool.CreateConcurrentQueueBacked(() => {
+         this.inboundReceiveProcessDispatchLatencyAggregator = inboundReceiveProcessDispatchLatencyAggregator;
+         this.sendArgsPool = ObjectPool.CreateStackBacked(() => new SocketAsyncEventArgs());
+         this.receiveArgsPool = ObjectPool.CreateStackBacked(() => {
             return new SocketAsyncEventArgs {
                RemoteEndPoint = configuration.ReceiveEndpoint
             }.With(x => {
@@ -62,23 +68,25 @@ namespace Dargon.Courier.TransportTier.Udp {
 
       private void HandleReceiveCompleted(object sender, SocketAsyncEventArgs e) {
          BeginReceive(e.AcceptSocket);
-         HandleReceiveCompletedHelperAsync(e).Forget();
+         HandleReceiveCompletedHelper(e);
       }
 
-      private async Task HandleReceiveCompletedHelperAsync(SocketAsyncEventArgs e) {
-         await TaskEx.YieldToThreadPool();
+      private void HandleReceiveCompletedHelper(SocketAsyncEventArgs e) {
+         // logger.Debug($"Received from {e.RemoteEndPoint} {e.BytesTransferred} bytes!");
+         var sw = new Stopwatch();
+         sw.Start();
 
-//         logger.Debug($"Received from {e.RemoteEndPoint} {e.BytesTransferred} bytes!");
          var inboundSomethingEvent = inboundSomethingEventPool.TakeObject();
          inboundSomethingEvent.Data = e.Buffer;
 
-         await udpDispatcher.HandleInboundDataEventAsync(inboundSomethingEvent).ConfigureAwait(false);
+         udpDispatcher.HandleInboundDataEvent(inboundSomethingEvent);
 
          receiveArgsPool.ReturnObject(e);
          inboundSomethingEventPool.ReturnObject(inboundSomethingEvent);
 
          // analytics
          inboundBytesAggregator.Put(e.BytesTransferred);
+         inboundReceiveProcessDispatchLatencyAggregator.Put(sw.ElapsedMilliseconds);
       }
 
       public async Task BroadcastAsync(MemoryStream ms, int offset, int length) {
@@ -89,13 +97,16 @@ namespace Dargon.Courier.TransportTier.Udp {
             e.RemoteEndPoint = configuration.SendEndpoint;
             e.SetBuffer(ms.GetBuffer(), 0, length);
             e.Completed += (sender, args) => {
+               e.SetBuffer(null, 0, 0);
                e.Dispose();
                sync.Set();
             };
             try {
                if (!socket.SendToAsync(e)) {
                   // Completed synchronously. e.Completed won't be called.
-                  sendArgsPool.ReturnObject(e);
+                  // pooling was leading to leaks?
+                  e.SetBuffer(null, 0, 0);
+                  e.Dispose();
                   sync.Set();
                }
             } catch (ObjectDisposedException) when (isShutdown) { }
@@ -114,7 +125,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
       }
 
-      public static UdpClient Create(UdpTransportConfiguration udpTransportConfiguration, AuditAggregator<double> inboundBytesAggregator, AuditAggregator<double> outboundBytesAggregator) {
+      public static UdpClient Create(UdpTransportConfiguration udpTransportConfiguration, AuditAggregator<double> inboundBytesAggregator, AuditAggregator<double> outboundBytesAggregator, AuditAggregator<double> inboundReceiveProcessDispatchLatencyAggregator) {
          var sockets = new List<Socket>();
          foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces()) {
             if (!networkInterface.SupportsMulticast ||
@@ -134,7 +145,7 @@ namespace Dargon.Courier.TransportTier.Udp {
                }
             }
          }
-         return new UdpClient(udpTransportConfiguration, sockets, inboundBytesAggregator, outboundBytesAggregator);
+         return new UdpClient(udpTransportConfiguration, sockets, inboundBytesAggregator, outboundBytesAggregator, inboundReceiveProcessDispatchLatencyAggregator);
       }
 
       private static Socket CreateSocket(long adapterIndex, UdpTransportConfiguration udpTransportConfiguration) {

@@ -17,7 +17,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       private static readonly TimeSpan kSomethingExpiration = TimeSpan.FromMinutes(5);
 
       private readonly ConcurrentDictionary<Guid, ChunkReassemblyContext> chunkReassemblerContextsByMessageId = new ConcurrentDictionary<Guid, ChunkReassemblyContext>();
-      private readonly IObjectPool<InboundDataEvent> inboundDataEventPool = ObjectPool.CreateConcurrentQueueBacked(() => new InboundDataEvent());
+      private readonly IObjectPool<InboundDataEvent> inboundDataEventPool = ObjectPool.CreateStackBacked(() => new InboundDataEvent());
       private UdpDispatcher dispatcher;
 
       public void SetUdpDispatcher(UdpDispatcher dispatcher) {
@@ -65,15 +65,13 @@ namespace Dargon.Courier.TransportTier.Udp {
             offset += chunk.BodyLength;
          }
 
-         Go(async () => {
-            var e = inboundDataEventPool.TakeObject();
-            e.Data = payloadBytes;
+         var e = inboundDataEventPool.TakeObject();
+         e.Data = payloadBytes;
 
-            await dispatcher.HandleInboundDataEventAsync(e).ConfigureAwait(false);
+         dispatcher.HandleInboundDataEvent(e);
 
-            e.Data = null;
-            inboundDataEventPool.ReturnObject(e);
-         }).Forget();
+         e.Data = null;
+         inboundDataEventPool.ReturnObject(e);
       }
 
       private void RemoveAssemblerFromCache(Guid multiPartMessageId) {

@@ -1,6 +1,6 @@
+using Nito.AsyncEx;
 using System.Threading;
 using System.Threading.Tasks;
-using Nito.AsyncEx;
 
 namespace Dargon.Courier.AsyncPrimitives {
    /// <summary>
@@ -8,15 +8,21 @@ namespace Dargon.Courier.AsyncPrimitives {
    /// of an awaitable once-latch that supports wait cancellation.
    /// </summary>
    public class AsyncLatch {
-      private readonly AsyncSemaphore semaphore = new AsyncSemaphore(0);
+      private readonly TaskCompletionSource tcs = new TaskCompletionSource();
+      private const int kStateUnsignalled = 0;
+      private const int kStateSignalled = 1;
+      private int state = kStateUnsignalled;
 
-      public void Set() {
-         semaphore.Release(1337);
+      public Task WaitAsync(CancellationToken token = default(CancellationToken)) {
+         return Task.WhenAny(
+            token.AsTask(),
+            tcs.Task);
       }
 
-      public async Task WaitAsync(CancellationToken token = default(CancellationToken)) {
-         await semaphore.WaitAsync(token).ConfigureAwait(false);
-         semaphore.Release(1);
+      public void Set() {
+         if (Interlocked.CompareExchange(ref state, kStateSignalled, kStateUnsignalled) == kStateUnsignalled) {
+            tcs.SetResult();
+         }
       }
    }
 }

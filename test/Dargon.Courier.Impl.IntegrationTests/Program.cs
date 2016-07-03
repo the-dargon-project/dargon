@@ -4,6 +4,7 @@ using Dargon.Commons;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.ServiceTier;
+using Dargon.Courier.TransportTier;
 using Dargon.Courier.Utilities;
 using NLog;
 using NLog.Config;
@@ -18,6 +19,10 @@ namespace Dargon.Courier {
          InitializeLogging();
 
          Console.BufferHeight = 21337;
+
+//         new LocalMessagingLoadTests().RunAsync().Wait();
+         new UdpMessagingLoadTests().RunAsync().Wait();
+         return;
 
          new UdpMessagingTests().LargeObjectTest().Wait();
          return;

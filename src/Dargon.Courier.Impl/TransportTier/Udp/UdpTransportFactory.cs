@@ -21,6 +21,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          var inboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kInboundBytes);
          var outboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kOutboundBytes);
+         var inboundReceiveProcessDispatchLatencyAggregator = auditService.GetAggregator<double>(DataSetNames.kInboundProcessDispatchLatency);
          var resendsAggregator = auditService.GetAggregator<int>(DataSetNames.kResends);
          var tossedCounter = auditService.GetCounter(DataSetNames.kTossed);
          var duplicatesReceivedCounter = auditService.GetCounter(DataSetNames.kDuplicatesReceived);
@@ -32,7 +33,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          var shutdownCts = new CancellationTokenSource();
          var acknowledgementCoordinator = new AcknowledgementCoordinator();
-         var client = UdpClient.Create(configuration, inboundBytesAggregator, outboundBytesAggregator);
+         var client = UdpClient.Create(configuration, inboundBytesAggregator, outboundBytesAggregator, inboundReceiveProcessDispatchLatencyAggregator);
          var payloadSender = new PayloadSender(client);
          var packetSender = new PacketSender(payloadSender, acknowledgementCoordinator, shutdownCts.Token, resendsAggregator, client, multiPartChunksSentCounter);
          var messageSender = new MessageSender(identity, packetSender);

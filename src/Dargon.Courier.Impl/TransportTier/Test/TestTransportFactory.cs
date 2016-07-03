@@ -24,11 +24,11 @@ namespace Dargon.Courier.TransportTier.Test {
 
             var otherTransportNewTransportRoutingContext = new TestRoutingContext(this, identity);
             otherTransport.SetupRoutingContext(otherTransportNewTransportRoutingContext);
-            await otherTransport.PeerTable.GetOrAdd(identity.Id).HandleInboundPeerIdentityUpdate(identity).ConfigureAwait(false);
+            otherTransport.PeerTable.GetOrAdd(identity.Id).HandleInboundPeerIdentityUpdate(identity);
 
             var newTransportOtherTransportRoutingContext = new TestRoutingContext(this, otherTransport.Identity);
             transport.SetupRoutingContext(newTransportOtherTransportRoutingContext);
-            await transport.PeerTable.GetOrAdd(otherTransport.Identity.Id).HandleInboundPeerIdentityUpdate(otherTransport.Identity).ConfigureAwait(false);
+            transport.PeerTable.GetOrAdd(otherTransport.Identity.Id).HandleInboundPeerIdentityUpdate(otherTransport.Identity);
          }
 
          return transport;

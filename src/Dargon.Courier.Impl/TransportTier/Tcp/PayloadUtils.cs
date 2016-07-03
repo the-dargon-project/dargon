@@ -12,7 +12,7 @@ using Nito.AsyncEx;
 
 namespace Dargon.Courier.TransportTier.Tcp {
    public class PayloadUtils {
-      private readonly IObjectPool<MemoryStream> memoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream());
+      private readonly IObjectPool<MemoryStream> memoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream());
       private readonly AuditAggregator<double> inboundBytesAggregator;
       private readonly AuditAggregator<double> outboundBytesAggregator;
 

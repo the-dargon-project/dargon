@@ -89,7 +89,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             tcpRoutingContextContainer.AssociateRemoteIdentityOrThrow(remoteIdentity.Id, this);
             routingTable.Register(remoteIdentity.Id, this);
 
-            await peerTable.GetOrAdd(remoteIdentity.Id).HandleInboundPeerIdentityUpdate(remoteIdentity).ConfigureAwait(false);
+            peerTable.GetOrAdd(remoteIdentity.Id).HandleInboundPeerIdentityUpdate(remoteIdentity);
 
             configuration.HandleRemoteHandshakeCompletion(remoteIdentity);
 

@@ -6,7 +6,6 @@ using Nito.AsyncEx;
 
 namespace Dargon.Courier.Utilities {
    public class BloomFilter {
-      private readonly AsyncReaderWriterLock synchronization = new AsyncReaderWriterLock();
       private readonly int bitsPerFilter;
       private readonly int hashCount;
       private readonly ConcurrentBitSet bitSet;
@@ -17,30 +16,26 @@ namespace Dargon.Courier.Utilities {
          bitSet = new ConcurrentBitSet((uint)bitsPerFilter);
       }
 
-      public async Task<bool> TestAsync(Guid guid) {
-         using (await synchronization.ReaderLockAsync()) {
-            var hash1 = guid.GetHashCode();
-            var hash2 = Hash(guid);
-            var bits = Enumerable.Range(1, hashCount)
-                                 .Select(i => (uint)DoubleHashToBitNumber(hash1, hash2, i))
-                                 .Distinct();
-            return bits.All(bitSet.Contains);
-         }
+      public bool Test(Guid guid) {
+         var hash1 = guid.GetHashCode();
+         var hash2 = Hash(guid);
+         var bits = Enumerable.Range(1, hashCount)
+                              .Select(i => (uint)DoubleHashToBitNumber(hash1, hash2, i))
+                              .Distinct();
+         return bits.All(bitSet.Contains);
       }
 
-      public async Task<bool> SetAndTestAsync(Guid guid) {
-         using (await synchronization.WriterLockAsync()) {
-            var hash1 = guid.GetHashCode();
-            var hash2 = Hash(guid);
-            var bits = Enumerable.Range(1, hashCount)
-                                 .Select(i => (uint)DoubleHashToBitNumber(hash1, hash2, i))
-                                 .Distinct();
-            bool result = false;
-            foreach (var bit in bits) {
-               result |= bitSet.TrySet(bit);
-            }
-            return result;
+      public bool SetAndTest(Guid guid) {
+         var hash1 = guid.GetHashCode();
+         var hash2 = Hash(guid);
+         var bits = Enumerable.Range(1, hashCount)
+                              .Select(i => (uint)DoubleHashToBitNumber(hash1, hash2, i))
+                              .Distinct();
+         bool result = false;
+         foreach (var bit in bits) {
+            result |= bitSet.TrySet(bit);
          }
+         return result;
       }
 
       public void Clear() => bitSet.Clear();

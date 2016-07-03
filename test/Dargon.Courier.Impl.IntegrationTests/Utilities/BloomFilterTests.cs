@@ -19,7 +19,7 @@ namespace Dargon.Courier.Utilities {
          var guids = Util.Generate(guidCount, Guid.NewGuid);
          var sw = new Stopwatch();
          sw.Start();
-         guids.ForEach(bit => testObj.SetAndTestAsync(bit).Wait());
+         guids.ForEach(bit => testObj.SetAndTest(bit));
          sw.Stop();
          if (sw.ElapsedMilliseconds > timeAllowed) {
             throw new Exception($"SetAndTest on {guidCount} guids took {sw.ElapsedMilliseconds} > {timeAllowed} millis");
@@ -34,11 +34,11 @@ namespace Dargon.Courier.Utilities {
          AssertEquals(guids.Distinct().Count(), guidCount);
 
          foreach (var guid in guids) {
-            AssertTrue(testObj.SetAndTestAsync(guid).Result);
+            AssertTrue(testObj.SetAndTest(guid));
          }
 
          foreach (var guid in guids) {
-            AssertFalse(testObj.SetAndTestAsync(guid).Result);
+            AssertFalse(testObj.SetAndTest(guid));
          }
       }
    }

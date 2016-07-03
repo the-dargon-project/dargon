@@ -6,6 +6,7 @@ using NLog;
 using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Commons;
+using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.PeeringTier {
    public class PeerContext {
@@ -14,6 +15,10 @@ namespace Dargon.Courier.PeeringTier {
       private readonly AsyncLatch discoveryLatch = new AsyncLatch();
       private readonly PeerTable peerTable;
       private readonly IAsyncPoster<PeerDiscoveryEvent> peerDiscoveryEventPoster;
+
+      private const int kNotDiscovered = 0;
+      private const int kDiscovered = 1;
+      private int discoveryState = kNotDiscovered;
 
       public PeerContext(PeerTable peerTable, Guid peerId, IAsyncPoster<PeerDiscoveryEvent> peerDiscoveryEventPoster) {
          this.peerTable = peerTable;
@@ -29,24 +34,16 @@ namespace Dargon.Courier.PeeringTier {
          return discoveryLatch.WaitAsync(cancellationToken);
       }
 
-      public async Task HandleInboundPeerIdentityUpdate(Identity identity) {
-         await TaskEx.YieldToThreadPool();
-
+      public void HandleInboundPeerIdentityUpdate(Identity identity) {
 //         logger.Trace($"Got announcement from peer {identity}!");
          Identity.Update(identity);
 
-         if (!Discovered) {
-            using (await synchronization.LockAsync()) {
-               if (!Discovered) {
-                  Discovered = true;
-                  var discoveryEvent = new PeerDiscoveryEvent { Peer = this };
-                  logger.Info("__A");
-                  await peerDiscoveryEventPoster.PostAsync(discoveryEvent).ConfigureAwait(false);
-                  logger.Info("__B");
-                  discoveryLatch.Set();
-                  logger.Info("__C");
-               }
-            }
+         if (Interlocked.CompareExchange(ref discoveryState, kDiscovered, kNotDiscovered) == kNotDiscovered) {
+            Go(async () => {
+               var discoveryEvent = new PeerDiscoveryEvent { Peer = this };
+               await peerDiscoveryEventPoster.PostAsync(discoveryEvent).ConfigureAwait(false);
+               discoveryLatch.Set();
+            }).Forget();
          }
       }
    }

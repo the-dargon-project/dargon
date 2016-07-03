@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.AsyncPrimitives {
    public class AsyncProcessor<TInput, TPassed> {
-      private readonly IObjectPool<AsyncState> asyncStatePool = ObjectPool.CreateConcurrentQueueBacked(() => new AsyncState());
+      private readonly IObjectPool<AsyncState> asyncStatePool = ObjectPool.CreateStackBacked(() => new AsyncState());
       private readonly IConcurrentQueue<AsyncState> queue = new ConcurrentQueue<AsyncState>();
       private readonly AsyncSemaphore semaphore = new AsyncSemaphore(0);
       private readonly AsyncRouter<TInput, TPassed> router;

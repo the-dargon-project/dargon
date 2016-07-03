@@ -4,30 +4,24 @@ using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.Collections;
 using Dargon.Commons.Pooling;
+using Dargon.Courier.AsyncPrimitives;
 using Dargon.Courier.TransportTier.Udp.Vox;
 using Nito.AsyncEx;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class AcknowledgementCoordinator {
-      private readonly IObjectPool<AsyncAutoResetEvent> resetEventPool = ObjectPool.CreateConcurrentQueueBacked(() => new AsyncAutoResetEvent());
-      private readonly ConcurrentDictionary<Guid, AsyncAutoResetEvent> resetEventsByAckId = new ConcurrentDictionary<Guid, AsyncAutoResetEvent>();
+      private readonly ConcurrentDictionary<Guid, AsyncLatch> signalsByAckId = new ConcurrentDictionary<Guid, AsyncLatch>();
 
       public async Task Expect(Guid id, CancellationToken cancellationToken) {
-         var sync = resetEventPool.TakeObject();
-         try {
-            if (!resetEventsByAckId.TryAdd(id, sync)) {
-               throw new InvalidOperationException("Attempted to expect on taken guid.");
-            }
-            await sync.WaitAsync(cancellationToken).ConfigureAwait(false);
-         } finally {
-            resetEventPool.ReturnObject(sync);
-         }
+         var sync = new AsyncLatch();
+         signalsByAckId.AddOrThrow(id, sync);
+         await sync.WaitAsync(cancellationToken).ConfigureAwait(false);
       }
 
-      public async Task ProcessAcknowledgementAsync(Guid id) {
-         await TaskEx.YieldToThreadPool();
-         AsyncAutoResetEvent sync;
-         if (resetEventsByAckId.TryRemove(id, out sync)) {
+      public void ProcessAcknowledgement(Guid id) {
+         AsyncLatch sync;
+         if (signalsByAckId.TryRemove(id, out sync)) {
+            Interlocked.Increment(ref DebugRuntimeStats.out_rs_acked);
             sync.Set();
          }
       }

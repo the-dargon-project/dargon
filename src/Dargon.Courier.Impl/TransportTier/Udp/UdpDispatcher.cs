@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.Emit;
+using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.Pooling;
@@ -17,6 +18,7 @@ using Dargon.Vox.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using NLog;
+using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class UdpDispatcher {
@@ -57,10 +59,10 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.multiPartChunksBytesReceivedAggregator = multiPartChunksBytesReceivedAggregator;
       }
 
-      public async Task HandleInboundDataEventAsync(InboundDataEvent e) {
-         try {
-            await TaskEx.YieldToThreadPool();
+      public void HandleInboundDataEvent(InboundDataEvent e) {
+         Interlocked.Increment(ref DebugRuntimeStats.in_de);
 
+         try {
             object payload = null;
             try {
                payload = Deserialize.From(new MemoryStream(e.Data, false));
@@ -71,22 +73,31 @@ namespace Dargon.Courier.TransportTier.Udp {
                return;
             }
             if (payload is AcknowledgementDto) {
-               await HandleAcknowledgementAsync((AcknowledgementDto)payload).ConfigureAwait(false);
+               Interlocked.Increment(ref DebugRuntimeStats.in_ack);
+               HandleAcknowledgement((AcknowledgementDto)payload);
+               Interlocked.Increment(ref DebugRuntimeStats.in_ack_done);
             } else if (payload is AnnouncementDto) {
-               await HandleAnnouncementAsync((AnnouncementDto)payload).ConfigureAwait(false);
+               Interlocked.Increment(ref DebugRuntimeStats.in_ann);
+               HandleAnnouncement((AnnouncementDto)payload);
+               //               Interlocked.Increment(ref ann_out);
             } else if (payload is PacketDto) {
-               await HandlePacketDtoAsync((PacketDto)payload).ConfigureAwait(false);
+               Interlocked.Increment(ref DebugRuntimeStats.in_pac);
+               Go(async () => {
+                  await HandlePacketDtoAsync((PacketDto)payload).ConfigureAwait(false);
+                  Interlocked.Increment(ref DebugRuntimeStats.in_pac_done);
+               }).Forget();
+//               Interlocked.Increment(ref pac_out);
             }
          } catch (Exception ex) {
             logger.Error("HandleInboundDataAsync threw!", ex);
          }
       }
 
-      private async Task HandleAcknowledgementAsync(AcknowledgementDto x) {
-         await acknowledgementCoordinator.ProcessAcknowledgementAsync(x.MessageId).ConfigureAwait(false);
+      private void HandleAcknowledgement(AcknowledgementDto x) {
+         acknowledgementCoordinator.ProcessAcknowledgement(x.MessageId);
       }
 
-      private async Task HandleAnnouncementAsync(AnnouncementDto x) {
+      private void HandleAnnouncement(AnnouncementDto x) {
          announcementsReceivedCounter.Increment();
 
          var peerIdentity = x.Identity;
@@ -102,7 +113,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             routingTable.Register(peerId, routingContext);
          }
 
-         await peerTable.GetOrAdd(peerId).HandleInboundPeerIdentityUpdate(peerIdentity).ConfigureAwait(false);
+         peerTable.GetOrAdd(peerId).HandleInboundPeerIdentityUpdate(peerIdentity);
       }
 
       private async Task HandlePacketDtoAsync(PacketDto x) {
@@ -112,11 +123,13 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
 
          if (x.IsReliable()) {
+            Interlocked.Increment(ref DebugRuntimeStats.in_out_ack);
+            payloadSender.SendAsync(AcknowledgementDto.Create(x.Id)).Forget();
+            Interlocked.Increment(ref DebugRuntimeStats.in_out_ack_done);
             if (!await duplicateFilter.IsNewAsync(x.Id).ConfigureAwait(false)) {
                duplicateReceivesCounter.Increment();
                return;
             }
-            payloadSender.SendAsync(AcknowledgementDto.Create(x.Id)).Forget();
          }
 
          if (x.Message.Body.GetType().FullName.Contains("Service")) {

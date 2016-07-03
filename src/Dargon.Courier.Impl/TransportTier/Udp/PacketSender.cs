@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Dargon.Courier.AsyncPrimitives;
 using Dargon.Courier.Vox;
 using Nito.AsyncEx;
 using static Dargon.Commons.Channels.ChannelsExtensions;
@@ -18,7 +19,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       private readonly AcknowledgementCoordinator acknowledgementCoordinator;
       private readonly CancellationToken shutdownCancellationToken;
       private readonly AuditAggregator<int> resendsAggregator;
-      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
+      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
       private readonly UdpClient udpClient;
       private readonly AuditCounter multiPartChunksSentCounter;
 
@@ -45,29 +46,43 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
 
          if (isMultiPartPacket) {
+            Interlocked.Increment(ref DebugRuntimeStats.out_mpp);
             await SendMultiPartAsync(x).ConfigureAwait(false);
+            Interlocked.Increment(ref DebugRuntimeStats.out_mpp_done);
          } else {
             if (!x.IsReliable()) {
+               Interlocked.Increment(ref DebugRuntimeStats.out_nrs);
                await payloadSender.SendAsync(x).ConfigureAwait(false);
+               Interlocked.Increment(ref DebugRuntimeStats.out_nrs_done);
             } else {
                using (var acknowledgedCts = new CancellationTokenSource())
                using (var acknowledgedOrShutdownCts = CancellationTokenSource.CreateLinkedTokenSource(acknowledgedCts.Token, shutdownCancellationToken)) {
+                  Interlocked.Increment(ref DebugRuntimeStats.out_rs);
                   var expectation = acknowledgementCoordinator.Expect(x.Id, shutdownCancellationToken);
-                  expectation.ContinueWith(state => {
+                  var expectationCancelledAcknowledgeSignal = new AsyncLatch();
+                  Go(async () => {
+                     await expectation.ConfigureAwait(false);
                      acknowledgedCts.Cancel();
-                  }, shutdownCancellationToken).Forget();
+                     expectationCancelledAcknowledgeSignal.Set();
+                  }).Forget();
 
-                  const int resendDelay = 1000;
+                  const int resendDelayBase = 500000;
                   int sendCount = 0;
                   while (!expectation.IsCompleted && !shutdownCancellationToken.IsCancellationRequested) {
+                     Interlocked.Increment(ref DebugRuntimeStats.out_sent);
                      try {
                         sendCount++;
                         await payloadSender.SendAsync(x).ConfigureAwait(false);
+
+                        var resendDelay = Math.Min(8, (1 << (sendCount - 1))) * resendDelayBase;
                         await Task.Delay(resendDelay, acknowledgedCts.Token).ConfigureAwait(false);
                      } catch (TaskCanceledException) {
                         // It's on the Task.Delay
                      }
                   }
+                  await expectationCancelledAcknowledgeSignal.WaitAsync().ConfigureAwait(false);
+                  Interlocked.Increment(ref DebugRuntimeStats.out_rs_done);
+
                   resendsAggregator.Put(sendCount);
                }
             }

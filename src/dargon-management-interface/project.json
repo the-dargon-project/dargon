@@ -15,7 +15,7 @@
         "Dargon.Ryu.Impl": "*",
         "Dargon.Repl": "*",
         "xunit": "2.1.0",
-        "Newtonsoft.Json": "*",
+        "Newtonsoft.Json": "9.0.1",
         "Dargon.Hydrous.Impl": "*",
         "Dargon.Hydrous.Impl.FunctionalTests": "*"
     },

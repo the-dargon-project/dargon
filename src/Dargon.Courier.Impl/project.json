@@ -14,7 +14,7 @@
         "Castle.Core": "3.3.3",
         "xunit": "2.1.0",
         "Microsoft.Extensions.Caching.Memory": "1.0.0-rc2-final",
-        "Newtonsoft.Json": "*"
+        "Newtonsoft.Json": "9.0.1"
     },
 
     "frameworks": {
