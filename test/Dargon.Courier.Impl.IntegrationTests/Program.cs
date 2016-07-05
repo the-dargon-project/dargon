@@ -69,10 +69,10 @@ namespace Dargon.Courier {
          config.AddTarget("debugger", debuggerTarget);
          config.AddTarget("console", consoleTarget);
 
-         var debuggerRule = new LoggingRule("*", LogLevel.Trace, debuggerTarget);
+         var debuggerRule = new LoggingRule("*", LogLevel.Warn, debuggerTarget);
          config.LoggingRules.Add(debuggerRule);
 
-         var consoleRule = new LoggingRule("*", LogLevel.Trace, consoleTarget);
+         var consoleRule = new LoggingRule("*", LogLevel.Warn, consoleTarget);
          config.LoggingRules.Add(consoleRule);
 
          LogManager.Configuration = config;

@@ -14,6 +14,7 @@ using Dargon.Vox;
 namespace Dargon.Hydrous {
    public class Program {
       public static void Main(string[] args) {
+         Console.BufferHeight = Int16.MaxValue - 1;
          new RyuFactory().Create();
          InitializeLogging();
          new WriteBehindFT().RunAsync().Wait();

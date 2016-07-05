@@ -219,6 +219,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             ms.SetLength(0);
             outboundMemoryStreamPool.ReturnObject(ms);
             await SendReliableMultipartPacketAsync(destination, packetDto).ConfigureAwait(false);
+            Interlocked.Increment(ref DebugRuntimeStats.out_rs_done);
             return;
          }
 
@@ -246,7 +247,6 @@ namespace Dargon.Courier.TransportTier.Udp {
                   IsReliable = false
                });
             workSignal.Set();
-            await Task.FromResult(false).ConfigureAwait(false);
          }
       }
 

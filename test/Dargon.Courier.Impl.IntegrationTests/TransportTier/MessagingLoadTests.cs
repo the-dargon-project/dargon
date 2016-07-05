@@ -92,30 +92,30 @@ namespace Dargon.Courier.TransportTier {
 
    public class UdpMessagingLoadTests : MessagingLoadTestsBase {
       public UdpMessagingLoadTests() {
-//         Go(async () => {
-//            var ch = new BlockingChannel<string>();
-//            var l = new AsyncLatch();
-//            Go(async () => {
-//               await l.WaitAsync().ConfigureAwait(false);
-//               for (var i = 0; i < 10; i++) {
-//                  await ch.WriteAsync("asdf").ConfigureAwait(false);
-//                  await Task.Delay(400).ConfigureAwait(false);
-//               }
-//            }).Forget();
-//            ch.EnableDebug();
-//            l.Set();
-//            for (var i = 0; i < 10; i++) {
-//               await new Select {
-//                  Case(Time.After(500), () => {
-//                     Console.WriteLine("Nay!");
-//                  }),
-//                  Case(ch, () => {
-//                     Console.WriteLine("Yay!");
-//                  })
-//               }.WaitAsync().ConfigureAwait(false);
-//            }
-//            while (true) ;
-//         }).Wait();
+         Go(async () => {
+            var ch = new BlockingChannel<string>();
+            var l = new AsyncLatch();
+            Go(async () => {
+               await l.WaitAsync().ConfigureAwait(false);
+               for (var i = 0; i < 10; i++) {
+                  await ch.WriteAsync("asdf").ConfigureAwait(false);
+                  await Task.Delay(400).ConfigureAwait(false);
+               }
+            }).Forget();
+            ch.EnableDebug();
+            l.Set();
+            for (var i = 0; i < 10; i++) {
+               await new Select {
+                  Case(Time.After(500), () => {
+                     Console.WriteLine("Nay!");
+                  }),
+                  Case(ch, () => {
+                     Console.WriteLine("Yay!");
+                  })
+               }.WaitAsync().ConfigureAwait(false);
+            }
+            while (true) ;
+         }).Wait();
          var courierFacades = Util.Generate(
             2,
             i => CourierBuilder.Create()

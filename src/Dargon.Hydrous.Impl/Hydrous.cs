@@ -78,10 +78,7 @@ namespace Dargon.Hydrous.Impl {
             entryOperation.GetType().Name + " " + key,
             $"Via {nameof(ProcessEntryOperationAsync)}");
 
-         var executionContext = new CacheRoot<K, V>.EntryOperationExecutionContext<TResult> {
-            Key = key,
-            Operation = entryOperation
-         };
+         var executionContext = CacheRoot<K, V>.EntryOperationExecutionContext<TResult>.Create(key, entryOperation, operationDiagnosticsTable);
 
          operationDiagnosticsTable.UpdateStatus(entryOperation.Id, 1, "Adding to IEC");
          await inboundExecutionContextChannel.WriteAsync(executionContext).ConfigureAwait(false);
@@ -292,6 +289,7 @@ namespace Dargon.Hydrous.Impl {
             clone.Message = x.Message;
             clone.Sender = x.Sender;
 
+            logger.Info("Processing IME " + clone);
             phaseContext.ProcessInboundMessageAsync(clone).Forget();
          };
       }
@@ -333,19 +331,23 @@ namespace Dargon.Hydrous.Impl {
          IEntryOperation IEntryOperationExecutionContext.Operation => Operation;
          public K Key { get; set; }
          public IEntryOperation<K, V, TResult> Operation { get; set; }
+         public OperationDiagnosticsTable OperationDiagnosticsTable { get; set; }
 
          private EntryOperationExecutionContext() { }
 
          public async Task ExecuteAsync(Entry<K, V> entry) {
+            OperationDiagnosticsTable.UpdateStatus(Operation.Id, 8, "Entering execute async");
             var result = await Operation.ExecuteAsync(entry).ConfigureAwait(false);
+            OperationDiagnosticsTable.UpdateStatus(Operation.Id, 8, "Leaving execute async (*)");
             ResultBox.SetResult(result);
          }
 
-         public static EntryOperationExecutionContext<TResult> Create(K key, IEntryOperation<K, V, TResult> operation) {
+         public static EntryOperationExecutionContext<TResult> Create(K key, IEntryOperation<K, V, TResult> operation, OperationDiagnosticsTable operationDiagnosticsTable) {
             operation.ThrowIfNull(nameof(operation));
             return new EntryOperationExecutionContext<TResult> {
                Key = key,
-               Operation = operation
+               Operation = operation,
+               OperationDiagnosticsTable = operationDiagnosticsTable
             };
          }
       }
@@ -408,9 +410,9 @@ namespace Dargon.Hydrous.Impl {
             IEntryOperationExecutionContext executionContext;
             var readExecutionContexts = new SCG.List<IEntryOperationExecutionContext>();
             while (readOperationExecutionContextQueue.TryDequeue(out executionContext)) {
-               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "Taking Signal");
+               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "READ Taking Signal");
                await operationsAvailableSignal.WaitAsync().ConfigureAwait(false);
-               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "Took Signal");
+               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "READ Took Signal");
 
                readExecutionContexts.Add(executionContext);
             }
@@ -418,7 +420,7 @@ namespace Dargon.Hydrous.Impl {
             logger.Info($"Processing {readExecutionContexts.Count} reads on entry {entry}.");
             await Task.WhenAll(
                readExecutionContexts.Map(async ec => {
-                  operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "Executing (*)");
+                  operationDiagnosticsTable.UpdateStatus(ec.Operation.Id, 7, "READ Executing (*)");
                   await ec.ExecuteAsync(entry).ConfigureAwait(false);
                   return ec.ExecuteAsync(entry);
                })).ConfigureAwait(false);
@@ -430,9 +432,9 @@ namespace Dargon.Hydrous.Impl {
 
             IEntryOperationExecutionContext executionContext;
             while (putOperationExecutionContextQueue.TryDequeue(out executionContext)) {
-               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "Taking Signal");
+               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "PUT Taking Signal");
                await operationsAvailableSignal.WaitAsync().ConfigureAwait(false);
-               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "Took Signal (*)");
+               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "PUT Took Signal (*)");
 
                logger.Info($"Processing put on entry {entry}.");
                await executionContext.ExecuteAsync(entry).ConfigureAwait(false);
@@ -449,9 +451,9 @@ namespace Dargon.Hydrous.Impl {
 
             IEntryOperationExecutionContext executionContext;
             while (conditionalUpdateOperationExecutionContextQueue.TryDequeue(out executionContext)) {
-               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "Taking Signal");
+               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "CU Taking Signal");
                await operationsAvailableSignal.WaitAsync().ConfigureAwait(false);
-               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "Took Signal (*)");
+               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "CU Took Signal (*)");
 
                logger.Info($"Processing conditional update on entry {entry}.");
                await executionContext.ExecuteAsync(entry).ConfigureAwait(false);
@@ -463,9 +465,9 @@ namespace Dargon.Hydrous.Impl {
             }
 
             while (nonconditionalUpdateOperationExecutionContextQueue.TryDequeue(out executionContext)) {
-               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "Taking Signal");
+               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "NCU Taking Signal");
                await operationsAvailableSignal.WaitAsync().ConfigureAwait(false);
-               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "Took Signal (*)");
+               operationDiagnosticsTable.UpdateStatus(executionContext.Operation.Id, 7, "NCU Took Signal (*)");
 
                logger.Info($"Processing nonconditional update on entry {entry}.");
                await executionContext.ExecuteAsync(entry).ConfigureAwait(false);
@@ -477,10 +479,7 @@ namespace Dargon.Hydrous.Impl {
 
          public EntryOperationExecutionContext<TResult> EnqueueOperationAndGetExecutionContext<TResult>(K key, IEntryOperation<K, V, TResult> entryOperation) {
             operationDiagnosticsTable.UpdateStatus(entryOperation.Id, 6, "Enter Op Enqueue");
-            var executionContext = new EntryOperationExecutionContext<TResult> {
-               Key = key,
-               Operation = entryOperation
-            };
+            var executionContext = EntryOperationExecutionContext<TResult>.Create(key, entryOperation, operationDiagnosticsTable);
             switch (executionContext.Operation.Type) {
                case EntryOperationType.Read:
                   operationDiagnosticsTable.UpdateStatus(entryOperation.Id, 6, "Enqueuing to Read");
@@ -719,14 +718,17 @@ namespace Dargon.Hydrous.Impl {
          public override string Description => "[Indeterminate]";
 
          public override async Task RunAsync() {
+            Log("At indeterminate runasync");
             await new Select {
                Case(Time.After(5000), TransitionToElection),
                Case(Channels.Elect, TransitionToElection),
                Case(Channels.LeaderHeartBeat, FailNotImplemented)
             }.WaitAsync().ConfigureAwait(false);
+            Log("Exiting indeterminate runasync");
          }
 
          private Task TransitionToElection() {
+            Log("Transitioning to election");
             IReadOnlySet<Guid> cohortIds = new HashSet<Guid> { Identity.Id };
             return TransitionAsync(new ElectionCandidatePhase(cohortIds));
          }
@@ -1316,7 +1318,7 @@ namespace Dargon.Hydrous.Impl {
 
             heartBeatTask = Go(async () => {
                try {
-                  logger.Log(LogLevel.Fatal, "Entered leader heartbeat task.");
+                  logger.Log(LogLevel.Fatal, "Entered leader heartbeat task for " + Description);
                   while (true) {
                      await Messenger.SendToClusterAsync(new LeaderHeartBeatDto {
                         CohortIds = cohortIds
