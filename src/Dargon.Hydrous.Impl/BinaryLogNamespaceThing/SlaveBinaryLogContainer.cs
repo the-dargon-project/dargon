@@ -1,7 +1,9 @@
-﻿using Dargon.Commons.Collections;
+﻿using Dargon.Commons;
+using Dargon.Commons.Collections;
 using Dargon.Commons.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
    public class SlaveBinaryLogContainer {
@@ -21,7 +23,9 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
       public BinaryLog GetOrThrow(Guid binaryLogId) {
          BinaryLog result;
          if (!binaryLogsById.TryGetValue(binaryLogId, out result)) {
-            throw new KeyNotFoundException($"Couldn't find binary log if id {binaryLogId}.");
+            Console.WriteLine("HAVE " + binaryLogsById.Keys.Join(", "));
+
+            throw new KeyNotFoundException($"Couldn't find binary log of id {binaryLogId}.");
          }
          return result;
       }

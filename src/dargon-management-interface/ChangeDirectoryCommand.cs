@@ -21,6 +21,18 @@ namespace Dargon.Courier.Management.UI {
             throw new Exception("Need to fetch mobs first");
          }
 
+         if (path.StartsWith("!!")) {
+            var nodeName = path.Substring(2);
+            var node = ReplGlobals.Root.RecursivelyDescend(
+               new List<SomeNode>(),
+               AccumulatorInclusion.Include,
+               AccumulatorInclusion.Include,
+               x => x.Children.Count == 0,
+               x => x.Children).First(x => x.Item1.Name.Equals(nodeName, StringComparison.OrdinalIgnoreCase));
+            ReplGlobals.Current = node.Item1;
+            return 0;
+         }
+
          var breadcrumbs = path.Split("/");
          foreach (var breadcrumb in breadcrumbs) {
             if (string.IsNullOrWhiteSpace(breadcrumb)) {

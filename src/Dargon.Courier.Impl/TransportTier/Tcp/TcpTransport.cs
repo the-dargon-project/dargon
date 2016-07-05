@@ -105,20 +105,6 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                clientRoutingContext => clientRoutingContext.SendBroadcastAsync(message)));
       }
 
-      public async Task SendMessageReliableAsync(Guid destination, MessageDto message) {
-         TcpRoutingContext clientRoutingContext;
-         if (tcpRoutingContextContainer.TryGetByRemoteId(destination, out clientRoutingContext)) {
-            await clientRoutingContext.SendReliableAsync(destination, message).ConfigureAwait(false);
-         }
-      }
-
-      public async Task SendMessageUnreliableAsync(Guid destination, MessageDto message) {
-         TcpRoutingContext clientRoutingContext;
-         if (tcpRoutingContextContainer.TryGetByRemoteId(destination, out clientRoutingContext)) {
-            await clientRoutingContext.SendUnreliableAsync(destination, message).ConfigureAwait(false);
-         }
-      }
-
       public async Task ShutdownAsync() {
          shutdownCancellationTokenSource.Cancel();
          __listenerSocket?.Close();

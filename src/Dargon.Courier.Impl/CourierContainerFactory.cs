@@ -2,7 +2,6 @@
 using System.Threading;
 using Castle.DynamicProxy;
 using Dargon.Commons.Collections;
-using Dargon.Courier.AsyncPrimitives;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
@@ -15,6 +14,7 @@ using Dargon.Ryu;
 using Fody.Constructors;
 using NLog;
 using System.Threading.Tasks;
+using Dargon.Commons.AsyncPrimitives;
 using Dargon.Courier.AuditingTier;
 using Dargon.Courier.TransportTier.Udp.Management;
 

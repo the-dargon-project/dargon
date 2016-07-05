@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Dargon.Courier.AsyncPrimitives;
+using Dargon.Commons.AsyncPrimitives;
 
 namespace Dargon.Courier {
    public class InboundMessageRouter {

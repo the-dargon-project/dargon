@@ -7,6 +7,7 @@ using NLog.Config;
 using NLog.Targets;
 using NLog.Targets.Wrappers;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dargon.Hydrous.Impl {
@@ -32,6 +33,7 @@ namespace Dargon.Hydrous.Impl {
          Console.BufferHeight = 21337;
          InitializeLogging();
          RunAsync().Wait();
+         new CountdownEvent(1).Wait();
       }
 
       private static async Task RunAsync() {
@@ -42,9 +44,9 @@ namespace Dargon.Hydrous.Impl {
          var cacheInitializer = new CacheInitializer(courier);
          var myCacheFacade = cacheInitializer.CreateLocal<int, string>(
             new CacheConfiguration<int, string>("my-cache"));
-         var myCache = myCacheFacade.UserCache;
-         var entry0 = await myCache.GetAsync(0).ConfigureAwait(false);
-         var previous = await myCache.PutAsync(0, "asdf").ConfigureAwait(false);
+//         var myCache = myCacheFacade.UserCache;
+//         var entry0 = await myCache.GetAsync(0).ConfigureAwait(false);
+//         var previous = await myCache.PutAsync(0, "asdf").ConfigureAwait(false);
       }
 
       private static void InitializeLogging() {

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using Nito.AsyncEx;
 
 namespace Dargon.Courier.Utilities {
    public class BloomFilter {

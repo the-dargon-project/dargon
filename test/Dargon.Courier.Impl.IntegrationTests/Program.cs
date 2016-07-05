@@ -19,13 +19,17 @@ namespace Dargon.Courier {
          InitializeLogging();
 
          Console.BufferHeight = 21337;
-
+//         new UdpMessagingTests().LargeObjectTest().Wait();
 //         new LocalMessagingLoadTests().RunAsync().Wait();
          new UdpMessagingLoadTests().RunAsync().Wait();
+//         return;
+
+//         new UdpMessagingTests().LargeObjectTest().Wait();
+//         return;
+
+//         new UdpMessagingTests().LargeObjectTest().Wait();
          return;
 
-         new UdpMessagingTests().LargeObjectTest().Wait();
-         return;
 
          new BloomFilterTests().CanHaveNegligibleFalseCollisionRate();
          new BloomFilterTests().PerformanceTest();

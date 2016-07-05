@@ -1,19 +1,21 @@
 ﻿using Dargon.Commons;
+using Dargon.Commons.AsyncPrimitives;
+using static Dargon.Commons.Channels.ChannelsExtensions;
 using Dargon.Courier;
 using Dargon.Hydrous.Impl;
 using Dargon.Hydrous.Impl.Store;
 using Dargon.Hydrous.Impl.Store.Postgre;
 using Dargon.Vox;
-using Nito.AsyncEx;
 using NMockito;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SCG = System.Collections.Generic;
 
 namespace Dargon.Hydrous.Cache {
    public class WriteBehindFT : NMockitoInstance {
-      private const int kRowCount = 1000;
+      private const int kRowCount = 5000;
       private readonly IHitler<int, TestDto> hitler = new PostgresHitler<int, TestDto>("test", StaticTestConfiguration.PostgreConnectionString);
       private readonly SCG.Dictionary<string, int> entryIdsByOriginalName = new SCG.Dictionary<string, int>();
 
@@ -33,7 +35,7 @@ namespace Dargon.Hydrous.Cache {
 
       public async Task RunAsync() {
          await TaskEx.YieldToThreadPool();
-         ThreadPool.SetMaxThreads(128, 128);
+//         ThreadPool.SetMaxThreads(128, 128);
 
          await SetupAsync().ConfigureAwait(false);
 
@@ -41,11 +43,14 @@ namespace Dargon.Hydrous.Cache {
          var cluster = await TestUtils.CreateCluster<int, TestDto>(
             clusterSize,
             () => new CacheConfiguration<int, TestDto>("test-cache") {
-               CachePersistenceStrategy = new WriteBehindCachePersistenceStrategy<int, TestDto>(hitler)
+               CachePersistenceStrategy = new WriteBehindCachePersistenceStrategy<int, TestDto>(hitler),
+               PartitioningConfiguration = new PartitioningConfiguration {
+                  Redundancy = 2
+               }
             }).ConfigureAwait(false);
 
          var workerCount = 4;
-         var sync = new AsyncCountdownEvent(workerCount);
+         var sync = new AsyncCountdownLatch(workerCount);
          var tasks = Util.Generate(
             workerCount,
             async workerId => {
@@ -66,12 +71,17 @@ namespace Dargon.Hydrous.Cache {
          try {
             await Task.WhenAll(tasks).ConfigureAwait(false);
 
-            for (var i = 0; i < kRowCount; i++) {
-               var originalName = "Name" + i;
-               var entryId = entryIdsByOriginalName[originalName];
-               var entry = await cluster[i % clusterSize].UserCache.GetAsync(entryId).ConfigureAwait(false);
-               AssertEquals(originalName + "_".Repeat(clusterSize), entry.Value.Name);
-            }
+            Console.WriteLine("Validating cache state");
+
+            await Task.WhenAll(
+               Util.Generate(
+                  kRowCount,
+                  i => Go(async () => {
+                     var originalName = "Name" + i;
+                     var entryId = entryIdsByOriginalName[originalName];
+                     var entry = await cluster[i % clusterSize].UserCache.GetAsync(entryId).ConfigureAwait(false);
+                     AssertEquals(originalName + "_".Repeat(clusterSize), entry.Value.Name);
+                  }))).ConfigureAwait(false);
 
             await CleanupAsync().ConfigureAwait(false);
          } catch (Exception e) {

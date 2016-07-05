@@ -46,7 +46,10 @@ namespace Dargon.Courier.AuditingTier {
          var dataSetCircularBuffer = new DataPointCircularBuffer<AggregateStatistics<T>>(kLogLength);
          dataSetCircularBuffersByName.AddOrThrow(name, dataSetCircularBuffer);
          updaterActions.TryAdd(() => {
-            dataSetCircularBuffer.Put(aggregator.GetAndReset());
+            var statistics = aggregator.GetAndReset();
+            if (statistics != null) {
+               dataSetCircularBuffer.Put(statistics);
+            }
          });
          return aggregator;
       }

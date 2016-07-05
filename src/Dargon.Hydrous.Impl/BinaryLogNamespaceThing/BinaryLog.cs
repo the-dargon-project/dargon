@@ -1,11 +1,11 @@
 ﻿using Dargon.Commons;
+using Dargon.Commons.AsyncPrimitives;
+using Dargon.Commons.Channels;
 using Dargon.Commons.Exceptions;
-using Nito.AsyncEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Dargon.Commons.Channels;
 
 namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
    public class BinaryLog {
@@ -23,7 +23,7 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
       }
 
       public async Task UpdateGreatestCommittedEntryId(int entryId) {
-         using (await synchronization.WriterLockAsync()) {
+         using (await synchronization.WriterLockAsync().ConfigureAwait(false)) {
             if (greatestCommittedEntryId > entryId) {
                throw new InvalidStateException();
             } else if(entries.Count <= entryId) {
@@ -39,13 +39,13 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
       }
 
       public async Task<int> GetGreatestCommittedEntryId() {
-         using (await synchronization.ReaderLockAsync()) {
+         using (await synchronization.ReaderLockAsync().ConfigureAwait(false)) {
             return greatestCommittedEntryId;
          }
       }
 
       public async Task<IReadOnlyList<BinaryLogEntry>> GetAllEntriesFrom(int startingEntryId, int endingEntryId = -1) {
-         using (await synchronization.ReaderLockAsync()) {
+         using (await synchronization.ReaderLockAsync().ConfigureAwait(false)) {
             if (entries.None()) {
                return new List<BinaryLogEntry>();
             }
@@ -59,7 +59,7 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
       }
 
       public async Task AppendAsync(object data) {
-         using (await synchronization.WriterLockAsync()) {
+         using (await synchronization.WriterLockAsync().ConfigureAwait(false)) {
             var entry = new BinaryLogEntry(entries.Count, data);
             entries.Add(entry);
          }
@@ -69,7 +69,7 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
       }
 
       public async Task SomethingToDoWithSyncing(IReadOnlyList<BinaryLogEntry> newEntries) {
-         using (await synchronization.WriterLockAsync()) {
+         using (await synchronization.WriterLockAsync().ConfigureAwait(false)) {
             foreach (var newEntry in newEntries) {
                var lastEntryId = entries.LastOrDefault()?.Id ?? -1;
                var nextEntryId = lastEntryId + 1;

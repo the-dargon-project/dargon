@@ -8,9 +8,11 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using NLog;
 
 namespace Dargon.Hydrous.Impl.Store.Postgre {
    public class PostgresHitler<K, V> : IHitler<K, V> {
+      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
       private readonly string tableName;
       private readonly string connectionString;
 
@@ -206,11 +208,17 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
       }
 
       private async Task<TResult> ExecCommandAsync<TResult>(Func<NpgsqlCommand, Task<TResult>> callback) {
-         using (var conn = new NpgsqlConnection(connectionString)) {
-            conn.Open();
-            using (var cmd = new NpgsqlCommand()) {
-               cmd.Connection = conn;
-               return await callback(cmd).ConfigureAwait(false);
+         while (true) {
+            try {
+               using (var conn = new NpgsqlConnection(connectionString)) {
+                  conn.Open();
+                  using (var cmd = new NpgsqlCommand()) {
+                     cmd.Connection = conn;
+                     return await callback(cmd).ConfigureAwait(false);
+                  }
+               }
+            } catch (PostgresException e) {
+               logger.Error("Postgres error: ", e);
             }
          }
       }

@@ -25,7 +25,7 @@ namespace Dargon.Hydrous.Impl.Diagnostics {
    }
 
    public class OperationDiagnosticsTable {
-      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+      private static readonly Logger logger = null; //LogManager.GetCurrentClassLogger();
       private readonly ConcurrentDictionary<Guid, OperationDiagnosticStateDto> operationStatesById = new ConcurrentDictionary<Guid, OperationDiagnosticStateDto>();
       private readonly Identity identity;
 
@@ -55,11 +55,11 @@ namespace Dargon.Hydrous.Impl.Diagnostics {
             if (throwOnDuplicate) {
                throw new InvalidStateException("Row already existed");
             } else {
-               logger.Trace($"ODT {identity.Id.ToShortString()} existed, was creating with name={name}, desc={description}");
+               logger?.Trace($"ODT {identity.Id.ToShortString()} existed, was creating with name={name}, desc={description}");
             }
             return false;
          } else {
-            logger.Trace($"ODT {identity.Id.ToShortString()} created with name={name}, desc={description}");
+            logger?.Trace($"ODT {identity.Id.ToShortString()} created with name={name}, desc={description}");
             return true;
          }
       }
@@ -71,7 +71,7 @@ namespace Dargon.Hydrous.Impl.Diagnostics {
          } else {
             state.Statuses[index] = status;
             state.Updated = DateTime.Now;
-            logger.Trace($"ODT {identity.Id.ToShortString()} updated status={status}");
+            logger?.Trace($"ODT {identity.Id.ToShortString()} updated status={status}");
          }
       }
 
@@ -83,7 +83,7 @@ namespace Dargon.Hydrous.Impl.Diagnostics {
          diagnosticState.DestroyedStackTrace = Environment.StackTrace;
 
          operationStatesById.RemoveOrThrow(operationId, diagnosticState);
-         logger.Trace($"ODT {identity.Id.ToShortString()} destroyed");
+         logger?.Trace($"ODT {identity.Id.ToShortString()} destroyed");
       }
 
       public void AppendExtra(Guid operationId, string s) {

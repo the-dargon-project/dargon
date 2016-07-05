@@ -1,6 +1,6 @@
 {
     "frameworks": {
-        "net451": {
+        "net461": {
             "frameworkAssemblies": {
                 "System.ObjectModel": "",
                 "System.Windows.Forms": ""

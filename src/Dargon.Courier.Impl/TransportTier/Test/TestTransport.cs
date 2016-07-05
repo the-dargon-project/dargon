@@ -33,14 +33,6 @@ namespace Dargon.Courier.TransportTier.Test {
          return testTransportFactory.SendMessageBroadcastAsync(message);
       }
 
-      public Task SendMessageReliableAsync(Guid destination, MessageDto message) {
-         return testTransportFactory.SendMessageReliableAsync(destination, message);
-      }
-
-      public Task SendMessageUnreliableAsync(Guid destination, MessageDto message) {
-         return testTransportFactory.SendMessageUnreliableAsync(destination, message);
-      }
-
       public void SetupRoutingContext(TestRoutingContext routingContext) {
          routingContexts.Add(routingContext);
          routingTable.Register(routingContext.RemoteIdentity.Id, routingContext);

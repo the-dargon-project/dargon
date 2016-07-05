@@ -1,7 +1,7 @@
-using System.Threading.Tasks;
+using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Exceptions;
 using Dargon.Vox;
-using Nito.AsyncEx;
+using System.Threading.Tasks;
 
 namespace Dargon.Hydrous.Impl {
    [AutoSerializable]
@@ -12,7 +12,7 @@ namespace Dargon.Hydrous.Impl {
       public int GreatestCommittedEntryId { get; private set; } = -1;
 
       public async Task UpdateNextEntryIdToSync(int nextEntryIdToSync) {
-         using (await asyncLock.LockAsync()) {
+         using (await asyncLock.LockAsync().ConfigureAwait(false)) {
             if (NextEntryIdToSync > nextEntryIdToSync) {
                throw new InvalidStateException();
             }

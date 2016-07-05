@@ -1,7 +1,6 @@
 using Dargon.Commons.Collections;
 using Dargon.Commons.Exceptions;
 using static Dargon.Commons.Channels.ChannelsExtensions;
-using Dargon.Courier.AsyncPrimitives;
 using Dargon.Courier.ServiceTier.Vox;
 using System;
 using System.Diagnostics;
@@ -9,6 +8,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Commons;
+using Dargon.Commons.AsyncPrimitives;
 using NLog;
 
 namespace Dargon.Courier.ServiceTier.Client {

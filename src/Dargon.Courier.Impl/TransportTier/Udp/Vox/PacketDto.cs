@@ -12,5 +12,13 @@ namespace Dargon.Courier.TransportTier.Udp.Vox {
       public MessageDto Message { get; set; }
 
       public bool IsReliable() => (Flags & PacketFlags.Reliable) != 0;
+
+      public static PacketDto Create(Guid sender, Guid receiver, MessageDto message, bool reliable) => new PacketDto {
+         Id = Guid.NewGuid(),
+         SenderId = sender,
+         ReceiverId = receiver,
+         Message = message,
+         Flags = reliable ? PacketFlags.Reliable : PacketFlags.None
+      };
    }
 }

@@ -1,14 +1,14 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.Channels;
 using Dargon.Commons.Collections;
 using Dargon.Courier;
 using Dargon.Vox;
-using Nito.AsyncEx;
 using NMockito;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Dargon.Commons.AsyncPrimitives;
 
 namespace Dargon.Hydrous {
    public class CustomEntryOperationFT : NMockitoInstance {
@@ -21,7 +21,7 @@ namespace Dargon.Hydrous {
          var cluster = await TestUtils.CreateCluster<int, SetBox<int>>(cohortCount).ConfigureAwait(false);
 
          var workerCount = 100;
-         var sync = new AsyncCountdownEvent(workerCount);
+         var sync = new AsyncCountdownLatch(workerCount);
          var tasks = Util.Generate(
             workerCount,
             value => ChannelsExtensions.Go(async () => {

@@ -26,6 +26,18 @@ namespace Dargon.Courier.Management.UI {
          dispatcher.RegisterCommand(new GraphCommand());
          dispatcher.RegisterCommand(new TreeCommand());
          dispatcher.RegisterCommand(new ExitCommand());
+         dispatcher.RegisterCommand(new DispatcherMultiCommand(
+            "a",
+            new[] { "use tcp 127.0.0.1:21337", "fetch-mobs", "cd !!UdpDebugMob", "fetch-ops", "ls" },
+            dispatcher));
+         dispatcher.RegisterCommand(new DispatcherMultiCommand(
+            "aa",
+            new[] { "use tcp 127.0.0.1:21338", "fetch-mobs", "cd !!UdpDebugMob", "fetch-ops", "ls" },
+            dispatcher));
+         dispatcher.RegisterCommand(new DispatcherMultiCommand(
+            "aaa",
+            new[] { "use tcp 127.0.0.1:21339", "fetch-mobs", "cd !!UdpDebugMob", "fetch-ops", "ls" },
+            dispatcher));
          new ReplCore(dispatcher).Run();
       }
 

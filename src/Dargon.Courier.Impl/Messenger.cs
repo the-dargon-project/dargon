@@ -5,6 +5,7 @@ using Dargon.Courier.Vox;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Dargon.Commons.Exceptions;
 
 namespace Dargon.Courier {
    public class Messenger {
@@ -40,16 +41,18 @@ namespace Dargon.Courier {
          }
       }
 
-      public async Task SendReliableAsync<T>(T payload, Guid destination) {
+      public Task SendReliableAsync<T>(T payload, Guid destination) {
          IRoutingContext routingContext;
          if (routingTable.TryGetRoutingContext(destination, out routingContext)) {
-            await routingContext.SendReliableAsync(
+            return routingContext.SendReliableAsync(
                destination,
                new MessageDto {
                   Body = payload,
                   ReceiverId = destination,
                   SenderId = identity.Id
-               }).ConfigureAwait(false);
+               });
+         } else {
+            throw new InvalidStateException("Attempted reliable send peer with no routing context.");
          }
       }
    }

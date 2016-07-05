@@ -1,9 +1,9 @@
 ﻿using Dargon.Commons;
-using Nito.AsyncEx;
 using NMockito;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Dargon.Commons.AsyncPrimitives;
 using Xunit;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 
@@ -19,7 +19,7 @@ namespace Dargon.Hydrous {
          var cluster = await TestUtils.CreateCluster<int, string>(cohortCount).ConfigureAwait(false);
 
          var workerCount = 100;
-         var sync = new AsyncCountdownEvent(workerCount);
+         var sync = new AsyncCountdownLatch(workerCount);
          var tasks = Util.Generate(
             workerCount,
             key => Go(async () => {

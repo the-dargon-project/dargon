@@ -1,23 +1,27 @@
-﻿using System;
-using Dargon.Commons;
+﻿using Dargon.Commons;
+using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Pooling;
-using Nito.AsyncEx;
+using Dargon.Courier.AuditingTier;
 using NLog;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
-using Dargon.Courier.AuditingTier;
+using Dargon.Commons.Collections;
+using Dargon.Commons.Exceptions;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class UdpClient {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
       private readonly IObjectPool<InboundDataEvent> inboundSomethingEventPool = ObjectPool.CreateStackBacked(() => new InboundDataEvent());
-      private readonly IObjectPool<AsyncAutoResetEvent> asyncAutoResetEventPool = ObjectPool.CreateStackBacked(() => new AsyncAutoResetEvent());
+      private readonly IObjectPool<AsyncAutoResetLatch> asyncAutoResetEventPool = ObjectPool.CreateStackBacked(() => new AsyncAutoResetLatch());
       
       private readonly UdpTransportConfiguration configuration;
       private readonly List<Socket> sockets;
@@ -52,7 +56,14 @@ namespace Dargon.Courier.TransportTier.Udp {
 
       public void StartReceiving(UdpDispatcher udpDispatcher) {
          this.udpDispatcher = udpDispatcher;
-         sockets.ForEach(BeginReceive);
+         for (var i = 0; i < 64; i++) {
+            sockets.ForEach(BeginReceive);
+         }
+         for (var i = 0; i < 32; i++) {
+            sockets.ForEach(s => {
+               new Thread(() => TBroadcastStart(s)) { IsBackground = true }.Start();
+            });
+         }
       }
 
       private void BeginReceive(Socket socket) {
@@ -67,54 +78,95 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       private void HandleReceiveCompleted(object sender, SocketAsyncEventArgs e) {
-         BeginReceive(e.AcceptSocket);
+//         BeginReceive(e.AcceptSocket);
          HandleReceiveCompletedHelper(e);
       }
 
       private void HandleReceiveCompletedHelper(SocketAsyncEventArgs e) {
-         // logger.Debug($"Received from {e.RemoteEndPoint} {e.BytesTransferred} bytes!");
+//         logger.Debug($"Received from {e.RemoteEndPoint} {e.BytesTransferred} bytes!");
          var sw = new Stopwatch();
          sw.Start();
 
          var inboundSomethingEvent = inboundSomethingEventPool.TakeObject();
          inboundSomethingEvent.Data = e.Buffer;
 
-         udpDispatcher.HandleInboundDataEvent(inboundSomethingEvent);
+         udpDispatcher.HandleInboundDataEvent(
+            inboundSomethingEvent,
+            () => {
+               inboundSomethingEvent.Data = null;
+               inboundSomethingEventPool.ReturnObject(inboundSomethingEvent);
 
-         receiveArgsPool.ReturnObject(e);
-         inboundSomethingEventPool.ReturnObject(inboundSomethingEvent);
+               // analytics
+               inboundBytesAggregator.Put(e.BytesTransferred);
+               inboundReceiveProcessDispatchLatencyAggregator.Put(sw.ElapsedMilliseconds);
 
-         // analytics
-         inboundBytesAggregator.Put(e.BytesTransferred);
-         inboundReceiveProcessDispatchLatencyAggregator.Put(sw.ElapsedMilliseconds);
+               // return to pool
+               try {
+                  e.AcceptSocket.ReceiveFromAsync(e);
+               } catch (ObjectDisposedException) when (isShutdown) {
+                  // socket was probably shut down
+               }
+               //               receiveArgsPool.ReturnObject(e);
+            });
       }
 
-      public async Task BroadcastAsync(MemoryStream ms, int offset, int length) {
-//         logger.Debug($"Sending {length} bytes!");
-         var sync = asyncAutoResetEventPool.TakeObject();
-         foreach (var socket in sockets) {
-            var e = sendArgsPool.TakeObject();
-            e.RemoteEndPoint = configuration.SendEndpoint;
-            e.SetBuffer(ms.GetBuffer(), 0, length);
-            e.Completed += (sender, args) => {
+      private readonly ConcurrentQueue<Tuple<MemoryStream, int, int, Action>> todo = new ConcurrentQueue<Tuple<MemoryStream, int, int, Action>>();
+      private readonly Semaphore sema = new Semaphore(0, int.MaxValue);
+
+      public void TBroadcastStart(Socket socket) {
+         while (true) {
+            sema.WaitOne();
+            Tuple<MemoryStream, int, int, Action> x;
+            if (!todo.TryDequeue(out x)) {
+               throw new InvalidStateException();
+            }
+            var s = new ManualResetEvent(false);
+            using (var e = new SocketAsyncEventArgs()) {
+               e.RemoteEndPoint = configuration.SendEndpoint;
+               e.SetBuffer(x.Item1.GetBuffer(), x.Item2, x.Item3);
+               e.Completed += (sender, args) => {
+                  s.Set();
+               };
+               try {
+                  if (!socket.SendToAsync(e)) {
+                     // Completed synchronously. e.Completed won't be called.
+                     // pooling was leading to leaks?
+                  } else {
+                     s.WaitOne();
+                  }
+               } catch (ObjectDisposedException) when (isShutdown) { }
+               e.SetBuffer(null, 0, 0);
+               x.Item4();
+               outboundBytesAggregator.Put(x.Item3);
+            }
+         }
+      }
+
+      public void Broadcast(MemoryStream ms, int offset, int length, Action done) {
+         todo.Enqueue(Tuple.Create(ms, offset, length, done));
+         sema.Release();
+         return;
+         var e = new SocketAsyncEventArgs();
+         e.RemoteEndPoint = configuration.SendEndpoint;
+         e.SetBuffer(ms.GetBuffer(), offset, length);
+         e.Completed += (sender, args) => {
+            e.SetBuffer(null, 0, 0);
+            args.Dispose();
+            e.Dispose();
+            outboundBytesAggregator.Put(length);
+            done();
+         };
+         try {
+            var socket = sockets.First();
+            if (!socket.SendToAsync(e)) {
+               // Completed synchronously. e.Completed won't be called.
+               // pooling was leading to leaks?
                e.SetBuffer(null, 0, 0);
                e.Dispose();
-               sync.Set();
-            };
-            try {
-               if (!socket.SendToAsync(e)) {
-                  // Completed synchronously. e.Completed won't be called.
-                  // pooling was leading to leaks?
-                  e.SetBuffer(null, 0, 0);
-                  e.Dispose();
-                  sync.Set();
-               }
-            } catch (ObjectDisposedException) when (isShutdown) { }
-         }
-         await sync.WaitAsync().ConfigureAwait(false);
-
-         // analytics
-         outboundBytesAggregator.Put(length);
+               done();
+               outboundBytesAggregator.Put(length);
+            }
+         } catch (ObjectDisposedException) when (isShutdown) { }
       }
 
       public void Shutdown() {
@@ -131,6 +183,10 @@ namespace Dargon.Courier.TransportTier.Udp {
             if (!networkInterface.SupportsMulticast ||
                 networkInterface.OperationalStatus != OperationalStatus.Up ||
                 networkInterface.IsReceiveOnly) continue;
+
+//             HACK loopback disable
+            if (networkInterface.Name.Contains("3")) continue;
+
             var ipv4Properties = networkInterface.GetIPProperties()?.GetIPv4Properties();
             if (ipv4Properties != null)
                sockets.Add(CreateSocket(ipv4Properties.Index, udpTransportConfiguration));
@@ -155,7 +211,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          };
          socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
          socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(udpTransportConfiguration.MulticastAddress));
-         socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, 1); //0: localhost, 1: lan (via switch)
+         socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, 0); //0: localhost, 1: lan (via switch)
          socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, (int)IPAddress.HostToNetworkOrder(adapterIndex));
          socket.Bind(new IPEndPoint(IPAddress.Any, udpTransportConfiguration.ReceiveEndpoint.Port));
          return socket;

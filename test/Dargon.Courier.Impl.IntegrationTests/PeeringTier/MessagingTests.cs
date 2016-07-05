@@ -7,7 +7,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Commons;
-using Dargon.Courier.AsyncPrimitives;
+using Dargon.Commons.AsyncPrimitives;
 using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Courier.TransportTier.Test;
 using Dargon.Courier.TransportTier.Udp;

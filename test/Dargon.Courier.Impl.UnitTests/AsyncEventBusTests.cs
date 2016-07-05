@@ -1,7 +1,7 @@
 ﻿using NMockito;
 using NMockito.Fluent;
 using System.Threading.Tasks;
-using Dargon.Courier.AsyncPrimitives;
+using Dargon.Commons.AsyncPrimitives;
 using Xunit;
 
 namespace Dargon.Courier {

@@ -13,12 +13,13 @@
         "Dargon.Ryu.Api": "*",
         "Dargon.Ryu.Impl": "*",
         "Dargon.Vox": "*",
+        "Nito.AsyncEx": "3.0.1",
         "NLombok.Fody": "0.0.5",
         "npgsql": "3.1.5"
     },
 
     "frameworks": {
-        "net451": {
+        "net461": {
             "frameworkAssemblies": {
                 "System.Data": "*"
             }

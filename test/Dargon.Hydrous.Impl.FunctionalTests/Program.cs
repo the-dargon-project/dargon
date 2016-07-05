@@ -17,11 +17,12 @@ namespace Dargon.Hydrous {
          new RyuFactory().Create();
          InitializeLogging();
          new WriteBehindFT().RunAsync().Wait();
+         while (true) GC.Collect();
          //         new IdfulValuePostgresOrmFT().RunAsync().Wait();
          //         new IdlessValuePostgresOrmFT().RunAsync().Wait();
          //         new CacheFT().CustomProcessTestAsync().Wait();
-         //          new CacheFT().GetTestAsync().Wait();
-         //          new CacheFT().PutTestAsync().Wait();
+         //                   new CacheGetFT().RunAsync().Wait();
+         //                   new PutFT().PutTestAsync().Wait();
       }
 
       private static void InitializeLogging() {

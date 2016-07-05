@@ -25,6 +25,8 @@ namespace Dargon.Courier.RoutingTier {
       public bool TryGetRoutingContext(Guid peerId, out IRoutingContext context) {
          ConcurrentSet<IRoutingContext> contextsSet;
          if (routingContextByPeerId.TryGetValue(peerId, out contextsSet)) {
+            context = contextsSet.FirstOrDefault();
+            return context != null;
             var contexts = contextsSet.ToList();
             if (contexts.Any()) {
                context = contexts.SelectRandomWeighted(c => c.Weight);

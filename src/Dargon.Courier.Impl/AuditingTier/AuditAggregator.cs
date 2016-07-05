@@ -21,18 +21,23 @@ namespace Dargon.Courier.AuditingTier {
 
       private AggregateStatistics<int> GetAndResetInt() {
          long sum = 0;
-         int min = 0;
+         int min = int.MaxValue;
          int max = 0;
          int count = 0;
          T val;
+         bool noElements = true;
          while (queue.TryDequeue(out val)) {
             var value = (int)(object)val;
             sum += value;
             min = Math.Min(min, value);
             max = Math.Max(max, value);
             count++;
+            noElements = false;
          }
          int average = count == 0 ? 0 : (int)(sum / count);
+         if (noElements) {
+            return null;
+         }
          return new AggregateStatistics<int> {
             Sum = (int)sum,
             Min = min,
@@ -44,18 +49,23 @@ namespace Dargon.Courier.AuditingTier {
 
       private AggregateStatistics<double> GetAndResetDouble() {
          double sum = 0;
-         double min = 0;
+         double min = double.PositiveInfinity;
          double max = 0;
          int count = 0;
          T val;
+         bool noElements = true;
          while (queue.TryDequeue(out val)) {
             var value = (double)(object)val;
             sum += value;
             min = Math.Min(min, value);
             max = Math.Max(max, value);
             count++;
+            noElements = false;
          }
          double average = count == 0 ? 0 : sum / count;
+         if (noElements) {
+            return null;
+         }
          return new AggregateStatistics<double> {
             Sum = (int)sum,
             Min = min,

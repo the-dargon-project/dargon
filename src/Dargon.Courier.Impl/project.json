@@ -10,7 +10,6 @@
         "Fody": "1.29.4",
         "NLombok.Fody": "0.0.5",
         "NLog": "3.1.0",
-        "Nito.AsyncEx": "3.0.1",
         "Castle.Core": "3.3.3",
         "xunit": "2.1.0",
         "Microsoft.Extensions.Caching.Memory": "1.0.0-rc2-final",
@@ -18,7 +17,7 @@
     },
 
     "frameworks": {
-        "net451": {
+        "net461": {
             "frameworkAssemblies": {
                 "System.Threading.Tasks": "",
                 "System.Runtime": ""

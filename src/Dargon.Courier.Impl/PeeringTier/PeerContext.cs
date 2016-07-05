@@ -1,11 +1,9 @@
-using System;
-using Dargon.Courier.AsyncPrimitives;
-using Dargon.Courier.TransportTier.Udp.Vox;
-using Nito.AsyncEx;
+using Dargon.Commons;
+using Dargon.Commons.AsyncPrimitives;
 using NLog;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Dargon.Commons;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.PeeringTier {

@@ -1,28 +1,45 @@
+using Dargon.Commons.Collections;
+using Dargon.Courier.TransportTier.Udp.Vox;
 using System;
 using System.Threading;
-using System.Threading.Tasks;
-using Dargon.Commons;
-using Dargon.Commons.Collections;
-using Dargon.Commons.Pooling;
-using Dargon.Courier.AsyncPrimitives;
-using Dargon.Courier.TransportTier.Udp.Vox;
-using Nito.AsyncEx;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class AcknowledgementCoordinator {
-      private readonly ConcurrentDictionary<Guid, AsyncLatch> signalsByAckId = new ConcurrentDictionary<Guid, AsyncLatch>();
+      private readonly ConcurrentDictionary<Guid, Signal> signalsByAckId = new ConcurrentDictionary<Guid, Signal>();
+      private readonly Identity identity;
 
-      public async Task Expect(Guid id, CancellationToken cancellationToken) {
-         var sync = new AsyncLatch();
-         signalsByAckId.AddOrThrow(id, sync);
-         await sync.WaitAsync(cancellationToken).ConfigureAwait(false);
+      public AcknowledgementCoordinator(Identity identity) {
+         this.identity = identity;
       }
 
-      public void ProcessAcknowledgement(Guid id) {
-         AsyncLatch sync;
-         if (signalsByAckId.TryRemove(id, out sync)) {
+      public Signal Expect(Guid id) {
+         var signal = new Signal();
+         signalsByAckId.AddOrThrow(id, signal);
+         return signal;
+      }
+
+      public void ProcessAcknowledgement(AcknowledgementDto ack) {
+         Signal signal;
+         if (signalsByAckId.TryRemove(ack.MessageId, out signal)) {
             Interlocked.Increment(ref DebugRuntimeStats.out_rs_acked);
-            sync.Set();
+            signal.Set();
+         }
+      }
+
+      public class Signal {
+         private readonly object sync = new object();
+         private bool isSet;
+
+         public void Set() {
+            lock (sync) {
+               isSet = true;
+            }
+         }
+
+         public bool IsSet() {
+            lock (sync) {
+               return isSet;
+            }
          }
       }
    }

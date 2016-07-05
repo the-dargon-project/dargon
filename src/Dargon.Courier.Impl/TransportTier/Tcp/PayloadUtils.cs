@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Pooling;
 using Dargon.Courier.AuditingTier;
 using Dargon.Vox;
-using Nito.AsyncEx;
+using System;
+using System.IO;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Dargon.Courier.TransportTier.Tcp {
    public class PayloadUtils {
@@ -24,7 +22,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
       public async Task WritePayloadAsync(NetworkStream ns, object payload, AsyncLock writerLock, CancellationToken cancellationToken = default(CancellationToken)) {
          var ms = memoryStreamPool.TakeObject();
          Serialize.To(ms, payload);
-         using (await writerLock.LockAsync()) {
+         using (await writerLock.LockAsync(cancellationToken).ConfigureAwait(false)) {
             await WriteMemoryStreamAsync(ns, ms, 0, (int)ms.Position, cancellationToken).ConfigureAwait(false);
          }
          ms.SetLength(0);

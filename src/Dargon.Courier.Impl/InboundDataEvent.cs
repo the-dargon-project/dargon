@@ -21,9 +21,11 @@ namespace Dargon.Courier {
       public MessageDto Message { get; set; }
       public T Body => (T)Message.Body;
       public PeerContext Sender { get; set; }
-      public Guid SenderId => Sender.Identity.Id;
+      public Guid SenderId => Message.SenderId;
 
       object InternalRoutableInboundMessageEvent.Body => Body;
+
+      public override string ToString() => $"[IME {Body}]";
    }
    
    public class OutboundMessageEvent {

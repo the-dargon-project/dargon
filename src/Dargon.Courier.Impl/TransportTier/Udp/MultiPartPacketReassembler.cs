@@ -26,20 +26,21 @@ namespace Dargon.Courier.TransportTier.Udp {
 
       public void HandleInboundMultiPartChunk(MultiPartChunkDto chunk) {
          bool isAdded = false;
+         ChunkReassemblyContext addedChunkReassemblyContext = null;
          var chunkReassemblyContext = chunkReassemblerContextsByMessageId.GetOrAdd(
             chunk.MultiPartMessageId,
             add => {
 //               logger.Info(Thread.CurrentThread.ManagedThreadId + ": " + "NEW " + chunk.MultiPartMessageId + " " + this.GetHashCode());
 
                isAdded = true;
-               return new ChunkReassemblyContext(chunk.ChunkCount);
+               return addedChunkReassemblyContext = new ChunkReassemblyContext(chunk.ChunkCount);
             });
 
 //         if (isAdded) {
 //            logger.Info(Thread.CurrentThread.ManagedThreadId + ": " + chunkReassemblyContext.GetHashCode() + " " + new ChunkReassemblyContext(0).GetHashCode() + "");
 //         }
 
-         if (isAdded) {
+         if (chunkReassemblyContext == addedChunkReassemblyContext) {
             Go(async () => {
                await Task.Delay(kSomethingExpiration).ConfigureAwait(false);
 
@@ -54,7 +55,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       private void ReassembleChunksAndDispatch(IReadOnlyList<MultiPartChunkDto> chunks) {
-         Console.Title = ("Got to reassemble!");
+//         Console.WriteLine(chunks.First().MultiPartMessageId.ToString("n").Substring(0, 6) + " Got to reassemble!");
          RemoveAssemblerFromCache(chunks.First().MultiPartMessageId);
 
          var payloadLength = chunks.Sum(c => c.BodyLength);
@@ -68,10 +69,13 @@ namespace Dargon.Courier.TransportTier.Udp {
          var e = inboundDataEventPool.TakeObject();
          e.Data = payloadBytes;
 
-         dispatcher.HandleInboundDataEvent(e);
-
-         e.Data = null;
-         inboundDataEventPool.ReturnObject(e);
+//         Console.WriteLine(chunks.First().MultiPartMessageId.ToString("n").Substring(0, 6) + " Dispatching to HIDE!");
+         dispatcher.HandleInboundDataEvent(
+            e,
+            () => {
+               e.Data = null;
+               inboundDataEventPool.ReturnObject(e);
+            });
       }
 
       private void RemoveAssemblerFromCache(Guid multiPartMessageId) {
@@ -92,6 +96,9 @@ namespace Dargon.Courier.TransportTier.Udp {
       public MultiPartChunkDto[] AddChunk(MultiPartChunkDto chunk) {
          if (Interlocked.CompareExchange(ref x[chunk.ChunkIndex], chunk, null) == null) {
             var newChunksRemaining = Interlocked.Decrement(ref chunksRemaining);
+            if (newChunksRemaining < 100) {
+//               Console.WriteLine(chunk.MultiPartMessageId.ToString("n").Substring(0, 6) + " MPP REMAINING " + newChunksRemaining);
+            }
             if (newChunksRemaining == 0) {
                return x;
             }

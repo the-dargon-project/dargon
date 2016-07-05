@@ -22,22 +22,16 @@ namespace Dargon.Courier.TransportTier.Udp {
          Interlocked.Increment(ref DebugRuntimeStats.out_ps);
          var ms = outboundMemoryStreamPool.TakeObject();
        
-//         var ms = new MemoryStream();
          Trace.Assert(ms.Position == 0);
-         Serialize.To(ms, payload);
-//         // Validate deserialize works
-//         ms.Position = 0;
-//         try {
-//            var throwaway = Deserialize.From(ms);
-//         } catch (Exception e) {
-//            throw new AggregateException("Direct deserialize after serialize failed.", e);
-//         }
+         await AsyncSerialize.ToAsync(ms, payload).ConfigureAwait(false);
 
-         await udpClient.BroadcastAsync(ms, 0, (int)ms.Position).ConfigureAwait(false);
-
-         ms.SetLength(0);
-         outboundMemoryStreamPool.ReturnObject(ms);
-         Interlocked.Increment(ref DebugRuntimeStats.out_ps_done);
+         udpClient.Broadcast(
+            ms, 0, (int)ms.Position,
+            () => {
+               ms.SetLength(0);
+               outboundMemoryStreamPool.ReturnObject(ms);
+               Interlocked.Increment(ref DebugRuntimeStats.out_ps_done);
+            });
       }
    }
 }
