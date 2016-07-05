@@ -44,6 +44,7 @@ namespace NMockito {
       public Expectation<TOut1, TOut2, TOut3, TResult> Expect<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func) => core.Expect(func);
 
       public void AssertEquals<T>(T expected, T actual) => core.AssertEquals(expected, actual);
+      public void AssertNotEquals<T>(T expected, T actual) => core.AssertNotEquals(expected, actual);
       public void AssertTrue(bool value) => core.AssertTrue(value);
       public void AssertFalse(bool value) => core.AssertFalse(value);
       public void AssertNull(object value) => core.AssertNull(value);
