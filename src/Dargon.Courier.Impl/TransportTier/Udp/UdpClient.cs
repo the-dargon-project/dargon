@@ -116,6 +116,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       public void TBroadcastStart(Socket socket) {
          while (true) {
             sema.WaitOne();
+//            Console.WriteLine("!!!!!!! " + todo.Count);
             Tuple<MemoryStream, int, int, Action> x;
             if (!todo.TryDequeue(out x)) {
                throw new InvalidStateException();

@@ -1178,12 +1178,26 @@ namespace Dargon.Hydrous.Impl {
 
          public override async Task RunAsync() {
             while (IsRunning) {
-               await new Select {
+               await new Select(DispatchContext.kTimesInfinite) {
                   Case(Channels.LeaderHeartBeat, () => {}),
                   Case(Time.After(500000), () => TransitionAsync(new IndeterminatePhase())),
                   Case(Channels.InboundExecutionContextChannel, x => {
-                     var tResult = x.GetType().GetGenericArguments()[2];
-                     processInboundExecutionContextVisitors.Get(tResult)(this, x);
+                     var count = Channels.InboundExecutionContextChannel.Count;
+                     //                     Console.WriteLine(count);
+                     var l = new SCG.List<IEntryOperationExecutionContext>();
+                     l.Add(x);
+                     IEntryOperationExecutionContext additional;
+                     for (var i = 0; i < 1000; i++) {
+                        while (Channels.InboundExecutionContextChannel.TryRead(out additional)) {
+                           l.Add(additional);
+                        }
+                     }
+                     //                     Console.WriteLine("!! " + l.Count);
+                     foreach (var z in l) {
+                        var tResult = z.GetType().GetGenericArguments()[2];
+                        processInboundExecutionContextVisitors.Get(tResult)(this, z);
+                     }
+//                     Console.WriteLine("@@ " + l.Count);
                   }),
                   Case(Channels.CommitOperationProcessed, x => {
                      OperationDiagnosticsTable.AppendExtra(x.Body.OperationId, "Signal from " + x.SenderId.ToShortString());
