@@ -15,7 +15,7 @@ using SCG = System.Collections.Generic;
 
 namespace Dargon.Hydrous.Cache {
    public class WriteBehindFT : NMockitoInstance {
-      private const int kRowCount = 5000;
+      private const int kRowCount = 2000;
       private readonly IHitler<int, TestDto> hitler = new PostgresHitler<int, TestDto>("test", StaticTestConfiguration.PostgreConnectionString);
       private readonly SCG.Dictionary<string, int> entryIdsByOriginalName = new SCG.Dictionary<string, int>();
 
@@ -43,7 +43,7 @@ namespace Dargon.Hydrous.Cache {
          var cluster = await TestUtils.CreateCluster<int, TestDto>(
             clusterSize,
             () => new CacheConfiguration<int, TestDto>("test-cache") {
-               CachePersistenceStrategy = new WriteBehindCachePersistenceStrategy<int, TestDto>(hitler),
+               CachePersistenceStrategy = WriteBehindCachePersistenceStrategy<int, TestDto>.Create(hitler, 5000),
                PartitioningConfiguration = new PartitioningConfiguration {
                   Redundancy = 2
                }
@@ -92,7 +92,7 @@ namespace Dargon.Hydrous.Cache {
 
       [AutoSerializable]
       public class TestDto {
-         public string Name { get; set; }
+         [RequiredColumn] public string Name { get; set; }
          public DateTime Created { get; set; }
          public DateTime Updated { get; set; }
       }

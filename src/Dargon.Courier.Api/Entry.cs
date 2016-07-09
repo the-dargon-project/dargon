@@ -18,7 +18,7 @@ namespace Dargon.Courier {
       }
 
       public override string ToString() => $"[Entry K={Key}, V={Value}]";
-      public static Entry<K, V> Create(K key) => new Entry<K, V> { Key = key };
-      public static Entry<K, V> HACK__Create(K key, V value) => new Entry<K, V> { Key = key, Value = value, IsDirty = false };
+      public static Entry<K, V> CreateNonexistant(K key) => new Entry<K, V> { Key = key };
+      public static Entry<K, V> CreateExistantWithValue(K key, V value) => new Entry<K, V> { Key = key, Value = value, IsDirty = false };
    }
 }

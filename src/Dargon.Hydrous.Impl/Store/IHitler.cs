@@ -1,5 +1,6 @@
-using System.Threading.Tasks;
 using Dargon.Courier;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Dargon.Hydrous.Impl.Store {
    public interface IHitler<K, V> {
@@ -8,5 +9,6 @@ namespace Dargon.Hydrous.Impl.Store {
       Task<Entry<K, V>> GetAsync(K key);
       Task UpdateByDiffAsync(Entry<K, V> existing, Entry<K, V> updated);
       Task PutAsync(K key, V value);
+      Task BatchUpdateAsync(IReadOnlyList<PendingUpdate<K, V>> inputPendingUpdates);
    }
 }

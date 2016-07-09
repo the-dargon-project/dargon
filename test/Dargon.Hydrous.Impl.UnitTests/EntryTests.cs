@@ -23,7 +23,7 @@ namespace Dargon.Hydrous {
                startSync.Wait();
 
                for (var i = 0; i < 10000; i++) {
-                  var entry = Entry<int, string>.Create(123);
+                  var entry = Entry<int, string>.CreateNonexistant(123);
                   entry.Value = "" + ('a' + i % 26);
 
                   var clone = entry.DeepCloneSerializable();

@@ -46,8 +46,9 @@ namespace Dargon.Hydrous.Impl {
          return await cacheService.ProcessEntryOperationAsync(key, operation).ConfigureAwait(false);
       }
 
-      public Task<R> ProcessAsync<R>(K key, IEntryOperation<K, V, R> operation) {
-         return cacheService.ProcessEntryOperationAsync(key, operation);
+      public async Task<R> ProcessAsync<R>(K key, IEntryOperation<K, V, R> operation) {
+         await TaskEx.YieldToThreadPool();
+         return await cacheService.ProcessEntryOperationAsync(key, operation).ConfigureAwait(false);
       }
 
       public async Task<SCG.IReadOnlyDictionary<K, R>> ProcessManyAsync<R>(IReadOnlySet<K> keys, IEntryOperation<K, V, R> operation) {

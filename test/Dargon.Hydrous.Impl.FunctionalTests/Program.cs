@@ -6,7 +6,9 @@ using NLog.Targets;
 using NLog.Targets.Wrappers;
 using System;
 using System.Threading.Tasks;
+using Dargon.Courier;
 using Dargon.Hydrous.Cache;
+using Dargon.Hydrous.Impl.Store;
 using Dargon.Hydrous.Store.Postgre;
 using Dargon.Ryu;
 using Dargon.Vox;
@@ -14,6 +16,73 @@ using Dargon.Vox;
 namespace Dargon.Hydrous {
    public class Program {
       public static void Main(string[] args) {
+//         InitializeLogging();
+//         var hitler = new PostgresHitler<int, WriteBehindFT.TestDto>("test", StaticTestConfiguration.PostgreConnectionString);
+//         hitler.BatchUpdateAsync(
+//            new[] {
+//               new PendingUpdate<int, WriteBehindFT.TestDto> {
+//                  Base = Entry<int, WriteBehindFT.TestDto>.CreateExistantWithValue(
+//                     670997,
+//                     new WriteBehindFT.TestDto {
+//                        Name = "Fred"
+//                     }),
+//                  Updated = Entry<int, WriteBehindFT.TestDto>.CreateExistantWithValue(
+//                     670997,
+//                     new WriteBehindFT.TestDto {
+//                        Name = "FredBanana"
+//                     }),
+//               },
+//               new PendingUpdate<int, WriteBehindFT.TestDto> {
+//                  Base = Entry<int, WriteBehindFT.TestDto>.CreateExistantWithValue(
+//                     670998,
+//                     new WriteBehindFT.TestDto {
+//                        Name = "Banana"
+//                     }),
+//                  Updated = Entry<int, WriteBehindFT.TestDto>.CreateExistantWithValue(
+//                     670998,
+//                     new WriteBehindFT.TestDto {
+//                        Name = "Patata"
+//                     }),
+//               },
+//               new PendingUpdate<int, WriteBehindFT.TestDto> {
+//                  Base = Entry<int, WriteBehindFT.TestDto>.CreateExistantWithValue(
+//                     670999,
+//                     new WriteBehindFT.TestDto {
+//                     }),
+//                  Updated = Entry<int, WriteBehindFT.TestDto>.CreateExistantWithValue(
+//                     670999,
+//                     new WriteBehindFT.TestDto {
+//                     }),
+//               },
+//               new PendingUpdate<int, WriteBehindFT.TestDto> {
+//                  Base = Entry<int, WriteBehindFT.TestDto>.CreateExistantWithValue(
+//                     671000,
+//                     new WriteBehindFT.TestDto {
+//                     }),
+//                  Updated = Entry<int, WriteBehindFT.TestDto>.CreateExistantWithValue(
+//                     671000,
+//                     new WriteBehindFT.TestDto {
+//                     }),
+//               },
+//               new PendingUpdate<int, WriteBehindFT.TestDto> {
+//                  Base = Entry<int, WriteBehindFT.TestDto>.CreateNonexistant(1000000),
+//                  Updated = Entry<int, WriteBehindFT.TestDto>.CreateExistantWithValue(
+//                     1000000,
+//                     new WriteBehindFT.TestDto {
+//                        Name = "asfdoij"
+//                     })
+//               },
+//               new PendingUpdate<int, WriteBehindFT.TestDto> {
+//                  Base = Entry<int, WriteBehindFT.TestDto>.CreateNonexistant(1000001),
+//                  Updated = Entry<int, WriteBehindFT.TestDto>.CreateExistantWithValue(
+//                     1000001,
+//                     new WriteBehindFT.TestDto {
+//                        Name = "asfdoijeqowiuj"
+//                     })
+//               }
+//            }).Wait();
+//         return;
+
          Console.BufferHeight = Int16.MaxValue - 1;
          new RyuFactory().Create();
          InitializeLogging();

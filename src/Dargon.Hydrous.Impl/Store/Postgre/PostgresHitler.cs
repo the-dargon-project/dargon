@@ -3,12 +3,16 @@ using Dargon.Commons.Exceptions;
 using Dargon.Courier;
 using Npgsql;
 using System;
-using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using Dargon.Commons.Collections;
+using Dargon.Commons.Comparers;
 using NLog;
+using SCG = System.Collections.Generic;
 
 namespace Dargon.Hydrous.Impl.Store.Postgre {
    public class PostgresHitler<K, V> : IHitler<K, V> {
@@ -34,7 +38,7 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
             var commandStart = $"INSERT INTO {tableName} (";
             var commandMiddle = ") VALUES (";
             var commandEnd = ") RETURNING *";
-            var insertedColumnNames = new List<string>();
+            var insertedColumnNames = new SCG.List<string>();
 
             foreach (var property in typeof(V).GetProperties()) {
                var columnName = property.Name.ToLower();
@@ -86,7 +90,7 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
             using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false)) {
                var readSuccessful = await reader.ReadAsync().ConfigureAwait(false);
                if (!readSuccessful) {
-                  return Entry<K, V>.Create(key);
+                  return Entry<K, V>.CreateNonexistant(key);
                } else {
                   var entry = ReadToEntry(reader);
                   Trace.Assert(!await reader.ReadAsync().ConfigureAwait(false));
@@ -107,7 +111,7 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
             string commandBegin = $"UPDATE {tableName} SET (";
             string commandMiddle = ") = (";
             string commandEnd = ") WHERE test.id=@id";
-            var updatedColumnNames = new List<string>();
+            var updatedColumnNames = new SCG.List<string>();
 
             var properties = typeof(V).GetProperties();
             foreach (var p in properties) {
@@ -149,6 +153,142 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
          });
       }
 
+      public Task BatchUpdateAsync(SCG.IReadOnlyList<PendingUpdate<K, V>> inputPendingUpdates) {
+         return ExecCommandAsync(async cmd => {
+            var properties = typeof(V).GetProperties();
+            bool hasUpdatedColumn = false;
+            var pendingUpdatesByUpdatedPropertyGroup = new MultiValueDictionary<string[], PendingUpdate<K, V>>(
+               new LambdaEqualityComparer<string[]>(
+                  (a, b) => a.Length == b.Length && a.Zip(b, (aElement, bElement) => aElement == bElement).All(x => x),
+                  a => a.Aggregate(13, (h, x) => h * 17 + x.GetHashCode())
+                  ));
+            var pendingInserts = new SCG.List<PendingUpdate<K, V>>();
+            foreach (var pendingUpdate in inputPendingUpdates) {
+               if (!pendingUpdate.Base.Exists) {
+                  pendingInserts.Add(pendingUpdate);
+               } else {
+                  SortedSet<string> updatedProperties = new SortedSet<string>();
+                  foreach (var p in properties) {
+                     var columnName = p.Name.ToLower();
+                     if (columnName == "updated") {
+                        hasUpdatedColumn = true;
+                        continue;
+                     }
+
+                     if (object.Equals(p.GetValue(pendingUpdate.Base.Value), p.GetValue(pendingUpdate.Updated.Value))) {
+                        continue;
+                     }
+
+                     if (columnName == "id") {
+                        throw new InvalidStateException();
+                     } else {
+                        updatedProperties.Add(p.Name);
+                     }
+                  }
+                  pendingUpdatesByUpdatedPropertyGroup.Add(updatedProperties.ToArray(), pendingUpdate);
+               }
+            }
+
+            var commandTextBuilder = new StringBuilder();
+            /*
+             * INSERT INTO test (id, name, updated) 
+             * SELECT 
+             *    unnest(@ids), unnest(@names), unnest(@updateds) 
+             * ON CONFLICT (id) DO UPDATE 
+             * SET 
+             *    name = excluded.name, updated = excluded.updated
+             */
+            var batchIndex = 0;
+            foreach (var kvp in pendingUpdatesByUpdatedPropertyGroup) {
+               var updatedPropertyNames = kvp.Key;
+               var updatedProperties = updatedPropertyNames.Map(n => typeof(V).GetProperty(n));
+
+               var updatedColumnNames = kvp.Key.Map(x => x.ToLower());
+               var pendingUpdates = kvp.Value.ToArray();
+
+               var additionalColumns = new SCG.List<string>();
+
+               var idParameter = cmd.CreateParameter();
+               idParameter.ParameterName = "id" + batchIndex;
+               idParameter.Value = pendingUpdates.Map(p => p.Base.Key);
+               cmd.Parameters.Add(idParameter);
+
+               if (hasUpdatedColumn) {
+                  var updatedParameter = cmd.CreateParameter();
+                  updatedParameter.ParameterName = "updated" + batchIndex;
+                  updatedParameter.Value = pendingUpdates.Map(p => DateTime.Now);
+                  cmd.Parameters.Add(updatedParameter);
+                  additionalColumns.Add("updated");
+               }
+               
+               for (var i = 0; i < updatedPropertyNames.Length; i++) {
+                  var updatedPropertyName = updatedPropertyNames[i];
+                  var updatedProperty = typeof(V).GetProperty(updatedPropertyName);
+                  var array =  Array.CreateInstance(updatedProperty.PropertyType, pendingUpdates.Length);
+                  for (var j = 0; j < pendingUpdates.Length; j++) {
+                     array.SetValue(updatedProperty.GetValue(pendingUpdates[j].Updated.Value), j);
+                  }
+                  var parameter = cmd.CreateParameter();
+                  parameter.ParameterName = updatedColumnNames[i] + batchIndex;
+                  parameter.Value = array;
+                  cmd.Parameters.Add(parameter);
+               }
+
+               var query = $"UPDATE {tableName} " +
+                           "SET " +
+                           updatedColumnNames.Concat(additionalColumns).Select(n => $"{n} = temp.{n}").Join(", ") + " " +
+                           "FROM ( select " +
+                           updatedColumnNames.Concat("id").Concat(additionalColumns).Select(n => $"unnest(@{n}{batchIndex}) as {n}").Join(", ") +
+                           " ) as temp " +
+                           $"where {tableName}.id = temp.id";
+
+               commandTextBuilder.Append(query);
+               commandTextBuilder.Append("; ");
+               batchIndex++;
+            }
+
+            // inserts;
+            if (pendingInserts.Any()) {
+               var propertyNames = properties.Map(p => p.Name);
+               var columnNames = properties.Map(p => p.Name.ToLower());
+
+               var idParameter = cmd.CreateParameter();
+               idParameter.ParameterName = "id_ins";
+               idParameter.Value = pendingInserts.Map(p => p.Base.Key);
+               cmd.Parameters.Add(idParameter);
+
+               for (var i = 0; i < properties.Length; i++) {
+                  var property = properties[i];
+                  var array = Array.CreateInstance(property.PropertyType, pendingInserts.Count);
+                  for (var j = 0; j < pendingInserts.Count; j++) {
+                     object propertyValue;
+                     if (columnNames[i] == "updated" || columnNames[i] == "created") {
+                        propertyValue = DateTime.Now;
+                     } else {
+                        propertyValue = property.GetValue(pendingInserts[j].Updated.Value);
+                     }
+                     array.SetValue(propertyValue, j);
+                  }
+                  var parameter = cmd.CreateParameter();
+                  parameter.ParameterName = columnNames[i] + "_ins";
+                  parameter.Value = array;
+                  cmd.Parameters.Add(parameter);
+               }
+
+               var query = $"INSERT INTO {tableName} ({columnNames.Concat("id").Join(", ")}) " +
+                           "SELECT " +
+                           columnNames.Concat("id").Select(n => $"unnest(@{n}_ins)").Join(", ") + " " +
+                           "ON CONFLICT (id) DO UPDATE " +
+                           "SET " +
+                           columnNames.Select(n => $"{n} = excluded.{n}").Join(", ");
+               commandTextBuilder.Append(query);
+               commandTextBuilder.Append("; ");
+            }
+            cmd.CommandText = commandTextBuilder.ToString();
+
+            await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+         });
+      }
 
       public Task PutAsync(K key, V value) {
          return ExecCommandAsync(async cmd => {
@@ -158,7 +298,7 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
             string commandRightMiddle = ") ON CONFLICT (id) DO UPDATE SET (";
             string commandRightRightMidle = ") = (";
             string commandEnd = $") WHERE {tableName}.id=@id";
-            var updatedColumnNames = new List<string>();
+            var updatedColumnNames = new SCG.List<string>();
 
             var properties = typeof(V).GetProperties();
             foreach (var p in properties) {
@@ -211,7 +351,7 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
          while (true) {
             try {
                using (var conn = new NpgsqlConnection(connectionString)) {
-                  conn.Open();
+                  await conn.OpenAsync().ConfigureAwait(false);
                   using (var cmd = new NpgsqlCommand()) {
                      cmd.Connection = conn;
                      return await callback(cmd).ConfigureAwait(false);
@@ -219,6 +359,8 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
                }
             } catch (PostgresException e) {
                logger.Error("Postgres error: ", e);
+            } catch (NpgsqlException e) {
+               logger.Error("Npgsql error: ", e);
             }
          }
       }
@@ -229,7 +371,7 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
          foreach (var property in typeof(V).GetProperties()) {
             property.SetValue(value, reader[property.Name.ToLower()]);
          }
-         return Entry<K, V>.HACK__Create(key, value);
+         return Entry<K, V>.CreateExistantWithValue(key, value);
       }
    }
 }
