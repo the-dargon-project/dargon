@@ -100,6 +100,31 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
          });
       }
 
+      public Task<SCG.IReadOnlyDictionary<K, Entry<K, V>>> GetManyAsync(IReadOnlySet<K> keys) {
+         return ExecCommandAsync(async cmd => {
+            // Retrieve all rows
+            cmd.CommandText = $"SELECT * FROM {tableName} WHERE id=ANY(@ids)";
+            var idParameter = cmd.CreateParameter();
+            idParameter.ParameterName = "ids";
+            idParameter.Value = keys.ToArray();
+            cmd.Parameters.Add(idParameter);
+
+            using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false)) {
+               var results = new SCG.Dictionary<K, Entry<K, V>>();
+               while (await reader.ReadAsync().ConfigureAwait(false)) {
+                  var entry = ReadToEntry(reader);
+                  results[entry.Key] = entry;
+               }
+               foreach (var key in keys) {
+                  if (!results.ContainsKey(key)) {
+                     results[key] = Entry<K, V>.CreateNonexistant(key);
+                  }
+               }
+               return (SCG.IReadOnlyDictionary<K, Entry<K, V>>)results;
+            }
+         });
+      }
+
       public Task UpdateByDiffAsync(Entry<K, V> existing, Entry<K, V> updated) {
          Trace.Assert(Equals(existing.Key, updated.Key));
          return UpdateByDiffHelperAsync(existing.Key, existing.Value, updated.Value);
@@ -365,6 +390,8 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
                logger.Error("Postgres error: ", e);
             } catch (NpgsqlException e) {
                logger.Error("Npgsql error: ", e);
+            } catch (TimeoutException) {
+               logger.Error("Npgsql Error Connection Timeout.");
             }
          }
       }
