@@ -28,7 +28,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          while (!shutdownCancellationToken.IsCancellationRequested) {
             try {
-               await payloadSender.SendAsync(announce).ConfigureAwait(false);
+               await payloadSender.BroadcastAsync(announce).ConfigureAwait(false);
                await Task.Delay(kAnnounceIntervalMillis, shutdownCancellationToken).ConfigureAwait(false);
             } catch (OperationCanceledException) {
                // shutdown cancellation token cancelled

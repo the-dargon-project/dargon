@@ -65,7 +65,7 @@ namespace Dargon.Courier.ManagementTier {
    public class UdpManagementTests : ManagementTestsBase {
       public UdpManagementTests() {
          var courierContainer = CourierBuilder.Create()
-                                              .UseUdpMulticastTransport()
+                                              .UseUdpTransport()
                                               .BuildAsync().Result;
 
          Setup(courierContainer);

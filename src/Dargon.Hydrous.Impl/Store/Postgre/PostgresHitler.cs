@@ -352,9 +352,13 @@ namespace Dargon.Hydrous.Impl.Store.Postgre {
             try {
                using (var conn = new NpgsqlConnection(connectionString)) {
                   await conn.OpenAsync().ConfigureAwait(false);
-                  using (var cmd = new NpgsqlCommand()) {
-                     cmd.Connection = conn;
-                     return await callback(cmd).ConfigureAwait(false);
+                  try {
+                     using (var cmd = new NpgsqlCommand()) {
+                        cmd.Connection = conn;
+                        return await callback(cmd).ConfigureAwait(false);
+                     }
+                  } finally {
+                     conn.Close();
                   }
                }
             } catch (PostgresException e) {

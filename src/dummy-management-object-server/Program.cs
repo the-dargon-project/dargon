@@ -45,7 +45,7 @@ namespace dummy_management_object_server {
       public static void Main() {
          InitializeLogging();
          var courierFacade = CourierBuilder.Create()
-                                           .UseUdpMulticastTransport()
+                                           .UseUdpTransport()
                                            .UseTcpServerTransport(21337)
                                            .BuildAsync().Result;
          var testMob = new TestMob();

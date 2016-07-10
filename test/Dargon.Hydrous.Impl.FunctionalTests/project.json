@@ -11,6 +11,8 @@
         "Dargon.Courier.Api": "*",
         "Dargon.Courier.Impl": "*",
         "Dargon.Hydrous.Impl": "*",
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Ryu.Impl": "*",
         "NMockito": "*"
     }
 }

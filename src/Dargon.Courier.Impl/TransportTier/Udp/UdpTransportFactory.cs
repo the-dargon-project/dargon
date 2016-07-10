@@ -16,6 +16,9 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public Task<ITransport> CreateAsync(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
+         // setup identity
+         identity.Properties[UdpConstants.kUnicastPortIdentityPropertyKey] = configuration.UnicastReceiveEndpoint.Port.ToString();
+
          var duplicateFilter = new DuplicateFilter();
          duplicateFilter.Initialize();
 

@@ -1,7 +1,8 @@
-using System;
-using System.Net;
+using Dargon.Commons.Collections;
 using Dargon.Commons.Exceptions;
 using Dargon.Vox;
+using System;
+using System.Net;
 
 namespace Dargon.Courier {
    /// <summary>
@@ -17,6 +18,7 @@ namespace Dargon.Courier {
 
       public Guid Id { get; private set; }
       public string Name { get; set; }
+      public ConcurrentDictionary<string, object> Properties { get; set; } = new ConcurrentDictionary<string, object>();
 
       public bool Matches(Guid id, IdentityMatchingScope matchingScope) {
          bool result = false;

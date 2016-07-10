@@ -27,7 +27,10 @@ namespace Dargon.Hydrous {
          var cohortId = Guid.Parse("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".Replace('x', (cohortNumber + 1).ToString("x")[0]));
          var courier = await CourierBuilder.Create()
                                            .ForceIdentity(cohortId)
-                                           .UseUdpMulticastTransport()
+                                           .UseUdpTransport(
+                                              UdpTransportConfigurationBuilder.Create()
+                                                                              .WithUnicastReceivePort(21338 + cohortNumber)
+                                                                              .Build())
                                            .UseTcpServerTransport(21337 + cohortNumber)
                                            .BuildAsync().ConfigureAwait(false);
          var cacheInitializer = new CacheInitializer(courier);

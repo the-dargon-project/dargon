@@ -119,7 +119,7 @@ namespace Dargon.Courier.TransportTier {
          var courierFacades = Util.Generate(
             2,
             i => CourierBuilder.Create()
-                               .UseUdpMulticastTransport()
+                               .UseUdpTransport()
                                .UseTcpServerTransport(21337 + i)
                                .BuildAsync().Result);
          Setup(courierFacades);

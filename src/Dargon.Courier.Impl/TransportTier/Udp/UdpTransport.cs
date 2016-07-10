@@ -9,6 +9,8 @@ using Dargon.Vox;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Commons.Exceptions;
@@ -89,16 +91,18 @@ namespace Dargon.Courier.TransportTier.Udp {
       private readonly Identity identity;
       private readonly UdpClient udpClient;
       private readonly AcknowledgementCoordinator acknowledgementCoordinator;
+      private readonly UdpClientRemoteInfo remoteInfo;
       private readonly ConcurrentQueue<SendRequest> unhandledSendRequestQueue = new ConcurrentQueue<SendRequest>();
       private readonly AuditCounter resendsCounter;
       private readonly AuditAggregator<int> resendsAggregator;
       private readonly AuditAggregator<double> outboundMessageRateLimitAggregator;
       private readonly AuditAggregator<double> sendQueueDepthAggregator;
 
-      public UdpUnicaster(Identity identity, UdpClient udpClient, AcknowledgementCoordinator acknowledgementCoordinator, AuditCounter resendsCounter, AuditAggregator<int> resendsAggregator, AuditAggregator<double> outboundMessageRateLimitAggregator, AuditAggregator<double> sendQueueDepthAggregator) {
+      public UdpUnicaster(Identity identity, UdpClient udpClient, AcknowledgementCoordinator acknowledgementCoordinator, UdpClientRemoteInfo remoteInfo, AuditCounter resendsCounter, AuditAggregator<int> resendsAggregator, AuditAggregator<double> outboundMessageRateLimitAggregator, AuditAggregator<double> sendQueueDepthAggregator) {
          this.identity = identity;
          this.udpClient = udpClient;
          this.acknowledgementCoordinator = acknowledgementCoordinator;
+         this.remoteInfo = remoteInfo;
          this.resendsCounter = resendsCounter;
          this.resendsAggregator = resendsAggregator;
          this.outboundMessageRateLimitAggregator = outboundMessageRateLimitAggregator;
@@ -139,19 +143,14 @@ namespace Dargon.Courier.TransportTier.Udp {
             SendRequest noncapturedSendRequest;
             bool resendOccurred = false;
 
+            var outboundSendRequests = new List<SendRequest>();
             while (sendsRemaining > 0 &&
                    (inTransportSendRequestQueue.TryDequeue(out noncapturedSendRequest) ||
                     unhandledSendRequestQueue.TryDequeue(out noncapturedSendRequest))) {
                var sendRequest = noncapturedSendRequest;
                if (!sendRequest.IsReliable) {
                   sendsRemaining--;
-                  udpClient.Broadcast(
-                     sendRequest.Data, sendRequest.DataOffset, sendRequest.DataLength,
-                     () => {
-                        Interlocked.Increment(ref DebugRuntimeStats.out_sent);
-                        sendRequest.Data.SetLength(0);
-                        outboundMemoryStreamPool.ReturnObject(sendRequest.Data);
-                     });
+                  outboundSendRequests.Add(sendRequest);
                } else {
                   if (sendRequest.AcknowledgementSignal.IsSet()) {
                      resendsAggregator.Put(sendRequest.SendCount - 1);
@@ -171,18 +170,30 @@ namespace Dargon.Courier.TransportTier.Udp {
                      }
 
                      Interlocked.Increment(ref DebugRuntimeStats.out_sent);
-                     udpClient.Broadcast(
-                        sendRequest.Data, sendRequest.DataOffset, sendRequest.DataLength,
-                        () => {
-                           const int kResendIntervalBase = 500;
-                           var resendDelayMillis = kResendIntervalBase * Math.Min(32, 1 << sendRequest.SendCount);
-                           sendRequest.NextSendTime = DateTime.Now + TimeSpan.FromMilliseconds(resendDelayMillis);
-                           sendRequest.SendCount++;
-                           inTransportSendRequestQueue.Enqueue(sendRequest);
-                        });
+                     outboundSendRequests.Add(sendRequest);
                   }
                }
             }
+
+            udpClient.Unicast(
+               remoteInfo,
+               outboundSendRequests.Map(sr => sr.Data),
+               () => {
+                  foreach (var outboundSendRequest in outboundSendRequests) {
+                     if (!outboundSendRequest.IsReliable) {
+                        Interlocked.Increment(ref DebugRuntimeStats.out_sent);
+                        outboundSendRequest.Data.SetLength(0);
+                        outboundMemoryStreamPool.ReturnObject(outboundSendRequest.Data);
+                     } else {
+                        const int kResendIntervalBase = 500;
+                        var resendDelayMillis = kResendIntervalBase * Math.Min(32, 1 << outboundSendRequest.SendCount);
+                        outboundSendRequest.NextSendTime = DateTime.Now + TimeSpan.FromMilliseconds(resendDelayMillis);
+                        outboundSendRequest.SendCount++;
+                        inTransportSendRequestQueue.Enqueue(outboundSendRequest);
+                     }
+                  }
+               });
+
             pendingRenqueues.ForEach(inTransportSendRequestQueue.Enqueue);
             if (resendOccurred) {
                messageRateBase = Math.Max(messageRateMin, messageRateBase + (messageRate - messageRateBase) / 2);
@@ -190,6 +201,20 @@ namespace Dargon.Courier.TransportTier.Udp {
             }
             lastIterationEndTime = DateTime.Now;
          }
+      }
+
+      public async Task SendAcknowledgementAsync(Guid destination, AcknowledgementDto acknowledgement) {
+         var ms = outboundMemoryStreamPool.TakeObject();
+         ms.SetLength(0);
+         await AsyncSerialize.ToAsync(ms, acknowledgement).ConfigureAwait(false);
+         unhandledSendRequestQueue.Enqueue(
+            new SendRequest {
+               Data = ms,
+               DataOffset = 0,
+               DataLength = (int)ms.Position,
+               IsReliable = false
+            });
+         workSignal.Set();
       }
 
       public Task SendReliableAsync(Guid destination, MessageDto message) {

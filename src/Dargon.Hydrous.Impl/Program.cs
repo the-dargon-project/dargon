@@ -38,7 +38,7 @@ namespace Dargon.Hydrous.Impl {
 
       private static async Task RunAsync() {
          var courier = await CourierBuilder.Create()
-                                           .UseUdpMulticastTransport()
+                                           .UseUdpTransport()
                                            .UseTcpServerTransport(21337)
                                            .BuildAsync().ConfigureAwait(false);
          var cacheInitializer = new CacheInitializer(courier);

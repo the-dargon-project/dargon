@@ -89,11 +89,17 @@ namespace Dargon.Courier.ServiceTier {
    public class UdpServiceTests : ServiceTestsBase {
       public UdpServiceTests() {
          var clientFacade = CourierBuilder.Create()
-                                          .UseUdpMulticastTransport()
+                                          .UseUdpTransport(
+                                             UdpTransportConfigurationBuilder.Create()
+                                                                             .WithUnicastReceivePort(21338)
+                                                                             .Build())
                                           .BuildAsync().Result;
 
          var serverFacade = CourierBuilder.Create()
-                                          .UseUdpMulticastTransport()
+                                          .UseUdpTransport(
+                                             UdpTransportConfigurationBuilder.Create()
+                                                                             .WithUnicastReceivePort(21339)
+                                                                             .Build())
                                           .BuildAsync().Result;
 
          Setup(clientFacade, serverFacade);

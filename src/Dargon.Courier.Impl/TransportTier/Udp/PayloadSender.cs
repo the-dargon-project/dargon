@@ -18,7 +18,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.udpClient = udpClient;
       }
 
-      public async Task SendAsync<T>(T payload) {
+      public async Task BroadcastAsync<T>(T payload) {
          Interlocked.Increment(ref DebugRuntimeStats.out_ps);
          var ms = outboundMemoryStreamPool.TakeObject();
        

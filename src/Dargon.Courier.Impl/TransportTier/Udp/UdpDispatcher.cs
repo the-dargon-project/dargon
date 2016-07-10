@@ -11,6 +11,7 @@ using NLog;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Commons.Exceptions;
@@ -131,6 +132,8 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          returnInboundDataEvent();
 
+//         Console.WriteLine("RECIEFVIED " + JsonConvert.SerializeObject(payload));
+
          try {
             if (payload is AcknowledgementDto) {
                Interlocked.Increment(ref DebugRuntimeStats.in_ack);
@@ -138,11 +141,11 @@ namespace Dargon.Courier.TransportTier.Udp {
                Interlocked.Increment(ref DebugRuntimeStats.in_ack_done);
             } else if (payload is AnnouncementDto) {
                Interlocked.Increment(ref DebugRuntimeStats.in_ann);
-               HandleAnnouncement((AnnouncementDto)payload);
+               HandleAnnouncement(e.RemoteInfo, (AnnouncementDto)payload);
                //               Interlocked.Increment(ref ann_out);
             } else if (payload is PacketDto) {
                Interlocked.Increment(ref DebugRuntimeStats.in_pac);
-               HandlePacketDtoAndDispatchAsync((PacketDto)payload).Forget();
+               HandlePacketDtoAndDispatchAsync(e.RemoteInfo, (PacketDto)payload).Forget();
                Interlocked.Increment(ref DebugRuntimeStats.in_pac_done);
                //               Interlocked.Increment(ref pac_out);
             }
@@ -154,7 +157,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          //         inboundDataEventQueueSemaphore.Release();
       }
 
-      private void HandleAnnouncement(AnnouncementDto x) {
+      private void HandleAnnouncement(UdpClientRemoteInfo remoteInfo, AnnouncementDto x) {
          announcementsReceivedCounter.Increment();
 
          var peerIdentity = x.Identity;
@@ -166,8 +169,16 @@ namespace Dargon.Courier.TransportTier.Udp {
             peerId,
             add => {
                isNewlyDiscoveredRoute = true;
-               addedUnicaster = new UdpUnicaster(identity, udpClient, acknowledgementCoordinator, resendsCounter, resendsAggregator, outboundMessageRateLimitAggregator, sendQueueDepthAggregator);
-               return addedRoutingContext = new RoutingContext(addedUnicaster);
+               var unicastReceivePort = int.Parse((string)x.Identity.Properties[UdpConstants.kUnicastPortIdentityPropertyKey]);
+               var unicastIpAddress = remoteInfo.IPEndpoint.Address;
+               var unicastEndpoint = new IPEndPoint(unicastIpAddress, unicastReceivePort);
+               var unicastRemoteInfo = new UdpClientRemoteInfo {
+                  Socket = remoteInfo.Socket,
+                  IPEndpoint = unicastEndpoint
+               };
+
+               addedUnicaster = new UdpUnicaster(identity, udpClient, acknowledgementCoordinator, unicastRemoteInfo, resendsCounter, resendsAggregator, outboundMessageRateLimitAggregator, sendQueueDepthAggregator);
+               return addedRoutingContext = new RoutingContext( addedUnicaster);
             });
          if (addedRoutingContext == routingContext) {
             addedUnicaster.Initialize();
@@ -179,7 +190,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          peerTable.GetOrAdd(peerId).HandleInboundPeerIdentityUpdate(peerIdentity);
       }
 
-      private Task HandlePacketDtoAndDispatchAsync(PacketDto x) {
+      private Task HandlePacketDtoAndDispatchAsync(UdpClientRemoteInfo remoteInfo, PacketDto x) {
          if (!identity.Matches(x.ReceiverId, IdentityMatchingScope.Broadcast)) {
             tossedCounter.Increment();
             return Task.FromResult(false);
@@ -187,7 +198,13 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          if (x.IsReliable()) {
             Interlocked.Increment(ref DebugRuntimeStats.in_out_ack);
-            payloadSender.SendAsync(AcknowledgementDto.Create(x.Id, identity.Id, x.SenderId)).Forget();
+            var ack = AcknowledgementDto.Create(x.Id, identity.Id, x.SenderId);
+            RoutingContext routingContext;
+            if (routingContextsByPeerId.TryGetValue(x.SenderId, out routingContext)) {
+               routingContext.SendAcknowledgementAsync(x.SenderId, ack);
+            } else {
+               payloadSender.BroadcastAsync(ack).Forget();
+            }
             Interlocked.Increment(ref DebugRuntimeStats.in_out_ack_done);
          }
 
@@ -231,6 +248,10 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
 
          public int Weight { get; set; }
+
+         public Task SendAcknowledgementAsync(Guid destination, AcknowledgementDto acknowledgement) {
+            return unicaster.SendAcknowledgementAsync(destination, acknowledgement);
+         }
 
          public Task SendReliableAsync(Guid destination, MessageDto message) {
             return unicaster.SendReliableAsync(destination, message);
