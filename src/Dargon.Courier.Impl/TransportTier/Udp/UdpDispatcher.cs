@@ -10,6 +10,7 @@ using Newtonsoft.Json.Converters;
 using NLog;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -120,9 +121,13 @@ namespace Dargon.Courier.TransportTier.Udp {
       public void HandleInboundDataEvent(InboundDataEvent e, Action returnInboundDataEvent) {
          Interlocked.Increment(ref DebugRuntimeStats.in_de);
 
-         object payload;
+         List<object> payloads = new List<object>();
          try {
-            payload = Deserialize.From(new MemoryStream(e.Data, false));
+            using (var ms = new MemoryStream(e.Data, e.DataOffset, e.DataLength, false)) {
+               while (ms.Position < ms.Length) {
+                  payloads.Add(Deserialize.From(ms));
+               }
+            }
          } catch (Exception ex) {
             if (!isShutdown) {
                logger.Warn("Error at payload deserialize", ex);
@@ -134,23 +139,25 @@ namespace Dargon.Courier.TransportTier.Udp {
 
 //         Console.WriteLine("RECIEFVIED " + JsonConvert.SerializeObject(payload));
 
-         try {
-            if (payload is AcknowledgementDto) {
-               Interlocked.Increment(ref DebugRuntimeStats.in_ack);
-               acknowledgementCoordinator.ProcessAcknowledgement((AcknowledgementDto)payload);
-               Interlocked.Increment(ref DebugRuntimeStats.in_ack_done);
-            } else if (payload is AnnouncementDto) {
-               Interlocked.Increment(ref DebugRuntimeStats.in_ann);
-               HandleAnnouncement(e.RemoteInfo, (AnnouncementDto)payload);
-               //               Interlocked.Increment(ref ann_out);
-            } else if (payload is PacketDto) {
-               Interlocked.Increment(ref DebugRuntimeStats.in_pac);
-               HandlePacketDtoAndDispatchAsync(e.RemoteInfo, (PacketDto)payload).Forget();
-               Interlocked.Increment(ref DebugRuntimeStats.in_pac_done);
-               //               Interlocked.Increment(ref pac_out);
+         foreach (var payload in payloads) {
+            try {
+               if (payload is AcknowledgementDto) {
+                  Interlocked.Increment(ref DebugRuntimeStats.in_ack);
+                  acknowledgementCoordinator.ProcessAcknowledgement((AcknowledgementDto)payload);
+                  Interlocked.Increment(ref DebugRuntimeStats.in_ack_done);
+               } else if (payload is AnnouncementDto) {
+                  Interlocked.Increment(ref DebugRuntimeStats.in_ann);
+                  HandleAnnouncement(e.RemoteInfo, (AnnouncementDto)payload);
+                  //               Interlocked.Increment(ref ann_out);
+               } else if (payload is PacketDto) {
+                  Interlocked.Increment(ref DebugRuntimeStats.in_pac);
+                  HandlePacketDtoAndDispatchAsync(e.RemoteInfo, (PacketDto)payload).Forget();
+                  Interlocked.Increment(ref DebugRuntimeStats.in_pac_done);
+                  //               Interlocked.Increment(ref pac_out);
+               }
+            } catch (Exception ex) {
+               logger.Error("HandleInboundDataAsync threw!", ex);
             }
-         } catch (Exception ex) {
-            logger.Error("HandleInboundDataAsync threw!", ex);
          }
 
          //         inboundDataEventQueue.Enqueue(Tuple.Create(e, returnInboundDataEvent));
@@ -201,14 +208,14 @@ namespace Dargon.Courier.TransportTier.Udp {
             var ack = AcknowledgementDto.Create(x.Id, identity.Id, x.SenderId);
             RoutingContext routingContext;
             if (routingContextsByPeerId.TryGetValue(x.SenderId, out routingContext)) {
-               routingContext.SendAcknowledgementAsync(x.SenderId, ack);
+               routingContext.SendAcknowledgementAsync(x.SenderId, ack).Forget();
             } else {
                payloadSender.BroadcastAsync(ack).Forget();
             }
             Interlocked.Increment(ref DebugRuntimeStats.in_out_ack_done);
          }
 
-         if (x.Message.Body.GetType().FullName.Contains("Service")) {
+         if (logger.IsDebugEnabled && x.Message.Body.GetType().FullName.Contains("Service")) {
             logger.Debug($"Routing packet {x.Id} Reliable: {x.IsReliable()} TBody: {x.Message.Body?.GetType().Name ?? "[null]"} Body: {JsonConvert.SerializeObject(x.Message.Body, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() })}");
          }
 

@@ -15,7 +15,7 @@ using SCG = System.Collections.Generic;
 
 namespace Dargon.Hydrous.Cache {
    public class WriteBehindFT : NMockitoInstance {
-      private const int kRowCount = 5000;
+      private const int kRowCount = 20000;
       private readonly IHitler<int, TestDto> hitler = new PostgresHitler<int, TestDto>("test", StaticTestConfiguration.PostgreConnectionString);
       private readonly SCG.Dictionary<string, int> entryIdsByOriginalName = new SCG.Dictionary<string, int>();
 

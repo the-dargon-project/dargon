@@ -68,6 +68,8 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          var e = inboundDataEventPool.TakeObject();
          e.Data = payloadBytes;
+         e.DataOffset = 0;
+         e.DataLength = payloadLength;
 
 //         Console.WriteLine(chunks.First().MultiPartMessageId.ToString("n").Substring(0, 6) + " Dispatching to HIDE!");
          dispatcher.HandleInboundDataEvent(

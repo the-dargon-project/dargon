@@ -24,12 +24,33 @@ namespace Dargon.Hydrous.Impl.Diagnostics {
       public ConcurrentDictionary<DateTime, string> Extras { get; set; }
    }
 
-   public class OperationDiagnosticsTable {
+   public interface IOperationDiagnosticsTable {
+      bool TryCreate(Guid operationId, string name, string description);
+      void Create(Guid operationId, string name, string description);
+      void UpdateStatus(Guid operationId, int index, string status);
+      void Destroy(Guid operationId);
+      void AppendExtra(Guid operationId, string s);
+      IEnumerable<OperationDiagnosticStateDto> Enumerate();
+   }
+
+   public class NullOperationDiagnosticsTable : IOperationDiagnosticsTable {
+      public bool TryCreate(Guid operationId, string name, string description) => true;
+      public void Create(Guid operationId, string name, string description) { }
+      public void UpdateStatus(Guid operationId, int index, string status) { }
+      public void Destroy(Guid operationId) { }
+      public void AppendExtra(Guid operationId, string s) { }
+
+      public IEnumerable<OperationDiagnosticStateDto> Enumerate() {
+         throw new InvalidOperationException("Null ODT enumeration returns nothing!");
+      }
+   }
+
+   public class DefaultOperationDiagnosticsTable : IOperationDiagnosticsTable {
       private static readonly Logger logger = null; //LogManager.GetCurrentClassLogger();
       private readonly ConcurrentDictionary<Guid, OperationDiagnosticStateDto> operationStatesById = new ConcurrentDictionary<Guid, OperationDiagnosticStateDto>();
       private readonly Identity identity;
 
-      public OperationDiagnosticsTable(Identity identity) {
+      public DefaultOperationDiagnosticsTable(Identity identity) {
          this.identity = identity;
       }
 

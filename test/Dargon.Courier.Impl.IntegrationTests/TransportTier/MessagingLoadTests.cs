@@ -102,7 +102,6 @@ namespace Dargon.Courier.TransportTier {
                   await Task.Delay(400).ConfigureAwait(false);
                }
             }).Forget();
-            ch.EnableDebug();
             l.Set();
             for (var i = 0; i < 10; i++) {
                await new Select {

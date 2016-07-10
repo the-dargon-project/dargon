@@ -24,9 +24,8 @@ namespace Dargon.Courier.ServiceTier.Client {
          this.messenger = messenger;
       }
 
-      public async Task HandleInvocationResponse(IInboundMessageEvent<RmiResponseDto> x) {
+      public Task HandleInvocationResponse(IInboundMessageEvent<RmiResponseDto> x) {
          Trace.Assert(x.Message.ReceiverId == localIdentity.Id);
-         await TaskEx.YieldToThreadPool();
 
          var response = x.Body;
          logger.Info($"Handling invocation response for {response.InvocationId}.");
@@ -36,6 +35,7 @@ namespace Dargon.Courier.ServiceTier.Client {
             throw new InvalidStateException();
          }
          responseBox.SetResult(response);
+         return Task.CompletedTask;
       }
 
       public async Task<RmiResponseDto> Invoke(RemoveServiceInfo serviceInfo, MethodInfo methodInfo, object[] methodArguments) {

@@ -175,24 +175,26 @@ namespace Dargon.Courier.TransportTier.Udp {
                }
             }
 
-            udpClient.Unicast(
-               remoteInfo,
-               outboundSendRequests.Map(sr => sr.Data),
-               () => {
-                  foreach (var outboundSendRequest in outboundSendRequests) {
-                     if (!outboundSendRequest.IsReliable) {
-                        Interlocked.Increment(ref DebugRuntimeStats.out_sent);
-                        outboundSendRequest.Data.SetLength(0);
-                        outboundMemoryStreamPool.ReturnObject(outboundSendRequest.Data);
-                     } else {
-                        const int kResendIntervalBase = 500;
-                        var resendDelayMillis = kResendIntervalBase * Math.Min(32, 1 << outboundSendRequest.SendCount);
-                        outboundSendRequest.NextSendTime = DateTime.Now + TimeSpan.FromMilliseconds(resendDelayMillis);
-                        outboundSendRequest.SendCount++;
-                        inTransportSendRequestQueue.Enqueue(outboundSendRequest);
+            if (outboundSendRequests.Any()) {
+               udpClient.Unicast(
+                  remoteInfo,
+                  outboundSendRequests.Map(sr => sr.Data),
+                  () => {
+                     foreach (var outboundSendRequest in outboundSendRequests) {
+                        if (!outboundSendRequest.IsReliable) {
+                           Interlocked.Increment(ref DebugRuntimeStats.out_sent);
+                           outboundSendRequest.Data.SetLength(0);
+                           outboundMemoryStreamPool.ReturnObject(outboundSendRequest.Data);
+                        } else {
+                           const int kResendIntervalBase = 3000;
+                           var resendDelayMillis = kResendIntervalBase * Math.Min(32, 1 << outboundSendRequest.SendCount);
+                           outboundSendRequest.NextSendTime = DateTime.Now + TimeSpan.FromMilliseconds(resendDelayMillis);
+                           outboundSendRequest.SendCount++;
+                           inTransportSendRequestQueue.Enqueue(outboundSendRequest);
+                        }
                      }
-                  }
-               });
+                  });
+            }
 
             pendingRenqueues.ForEach(inTransportSendRequestQueue.Enqueue);
             if (resendOccurred) {
