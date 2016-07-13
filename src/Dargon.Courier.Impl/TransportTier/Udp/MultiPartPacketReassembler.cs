@@ -18,9 +18,9 @@ namespace Dargon.Courier.TransportTier.Udp {
 
       private readonly ConcurrentDictionary<Guid, ChunkReassemblyContext> chunkReassemblerContextsByMessageId = new ConcurrentDictionary<Guid, ChunkReassemblyContext>();
       private readonly IObjectPool<InboundDataEvent> inboundDataEventPool = ObjectPool.CreateStackBacked(() => new InboundDataEvent());
-      private UdpDispatcher dispatcher;
+      private IUdpDispatcher dispatcher;
 
-      public void SetUdpDispatcher(UdpDispatcher dispatcher) {
+      public void SetUdpDispatcher(IUdpDispatcher dispatcher) {
          this.dispatcher = dispatcher;
       }
 
@@ -74,7 +74,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 //         Console.WriteLine(chunks.First().MultiPartMessageId.ToString("n").Substring(0, 6) + " Dispatching to HIDE!");
          dispatcher.HandleInboundDataEvent(
             e,
-            () => {
+            _ => {
                e.Data = null;
                inboundDataEventPool.ReturnObject(e);
             });

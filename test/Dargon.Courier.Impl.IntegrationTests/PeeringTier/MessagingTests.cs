@@ -166,10 +166,17 @@ namespace Dargon.Courier.PeeringTier {
    public class UdpMessagingTests : MessagingTestsBase {
       public UdpMessagingTests() {
          var senderFacade = CourierBuilder.Create()
-                                          .UseUdpTransport()
+                                          .UseUdpTransport(
+                                             UdpTransportConfigurationBuilder.Create()
+                                                                             .WithUnicastReceivePort(21338)
+                                                                             .Build())
                                           .BuildAsync().Result;
+
          var receiverFacade = CourierBuilder.Create()
-                                            .UseUdpTransport()
+                                            .UseUdpTransport(
+                                               UdpTransportConfigurationBuilder.Create()
+                                                                               .WithUnicastReceivePort(21339)
+                                                                               .Build())
                                             .BuildAsync().Result;
          Setup(senderFacade, receiverFacade);
       }

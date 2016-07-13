@@ -86,19 +86,20 @@ namespace Dargon.Courier.TransportTier.Udp {
    }
 
    public class UdpUnicaster {
-      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
+      private static readonly IObjectPool<MemoryStream> outboundAcknowledgementMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kAckSerializationBufferSize], 0, UdpConstants.kAckSerializationBufferSize, true, true));
+      private static readonly IObjectPool<MemoryStream> outboundPacketMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
       private readonly AsyncAutoResetLatch workSignal = new AsyncAutoResetLatch();
       private readonly Identity identity;
       private readonly UdpClient udpClient;
       private readonly AcknowledgementCoordinator acknowledgementCoordinator;
       private readonly UdpClientRemoteInfo remoteInfo;
       private readonly ConcurrentQueue<SendRequest> unhandledSendRequestQueue = new ConcurrentQueue<SendRequest>();
-      private readonly AuditCounter resendsCounter;
-      private readonly AuditAggregator<int> resendsAggregator;
-      private readonly AuditAggregator<double> outboundMessageRateLimitAggregator;
-      private readonly AuditAggregator<double> sendQueueDepthAggregator;
+      private readonly IAuditCounter resendsCounter;
+      private readonly IAuditAggregator<int> resendsAggregator;
+      private readonly IAuditAggregator<double> outboundMessageRateLimitAggregator;
+      private readonly IAuditAggregator<double> sendQueueDepthAggregator;
 
-      public UdpUnicaster(Identity identity, UdpClient udpClient, AcknowledgementCoordinator acknowledgementCoordinator, UdpClientRemoteInfo remoteInfo, AuditCounter resendsCounter, AuditAggregator<int> resendsAggregator, AuditAggregator<double> outboundMessageRateLimitAggregator, AuditAggregator<double> sendQueueDepthAggregator) {
+      public UdpUnicaster(Identity identity, UdpClient udpClient, AcknowledgementCoordinator acknowledgementCoordinator, UdpClientRemoteInfo remoteInfo, IAuditCounter resendsCounter, IAuditAggregator<int> resendsAggregator, IAuditAggregator<double> outboundMessageRateLimitAggregator, IAuditAggregator<double> sendQueueDepthAggregator) {
          this.identity = identity;
          this.udpClient = udpClient;
          this.acknowledgementCoordinator = acknowledgementCoordinator;
@@ -129,6 +130,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          var lastIterationEndTime = DateTime.Now;
          var inTransportSendRequestQueue = new ConcurrentQueue<SendRequest>();
          while (true) {
+//            Console.WriteLine(outboundAcknowledgementMemoryStreamPool.Count + " " + outboundPacketMemoryStreamPool.Count);
             await workSignal.WaitAsync().ConfigureAwait(false);
             sendQueueDepthAggregator.Put(unhandledSendRequestQueue.Count);
 
@@ -142,7 +144,6 @@ namespace Dargon.Courier.TransportTier.Udp {
             var pendingRenqueues = new List<SendRequest>();
             SendRequest noncapturedSendRequest;
             bool resendOccurred = false;
-
             var outboundSendRequests = new List<SendRequest>();
             while (sendsRemaining > 0 &&
                    (inTransportSendRequestQueue.TryDequeue(out noncapturedSendRequest) ||
@@ -155,12 +156,12 @@ namespace Dargon.Courier.TransportTier.Udp {
                   if (sendRequest.AcknowledgementSignal.IsSet()) {
                      resendsAggregator.Put(sendRequest.SendCount - 1);
                      sendRequest.Data.SetLength(0);
-                     outboundMemoryStreamPool.ReturnObject(sendRequest.Data);
+                     sendRequest.DataBufferPool.ReturnObject(sendRequest.Data);
                      sendRequest.CompletionSignal.Set();
                      Interlocked.Increment(ref DebugRuntimeStats.out_rs_done);
                      continue;
                   }
-                  if (DateTime.Now < sendRequest.NextSendTime) {
+                  if (iterationStartTime < sendRequest.NextSendTime) {
                      pendingRenqueues.Add(sendRequest);
                   } else {
                      sendsRemaining--;
@@ -180,15 +181,16 @@ namespace Dargon.Courier.TransportTier.Udp {
                   remoteInfo,
                   outboundSendRequests.Map(sr => sr.Data),
                   () => {
+                     var now = DateTime.Now;
                      foreach (var outboundSendRequest in outboundSendRequests) {
                         if (!outboundSendRequest.IsReliable) {
                            Interlocked.Increment(ref DebugRuntimeStats.out_sent);
                            outboundSendRequest.Data.SetLength(0);
-                           outboundMemoryStreamPool.ReturnObject(outboundSendRequest.Data);
+                           outboundSendRequest.DataBufferPool.ReturnObject(outboundSendRequest.Data);
                         } else {
                            const int kResendIntervalBase = 3000;
                            var resendDelayMillis = kResendIntervalBase * Math.Min(32, 1 << outboundSendRequest.SendCount);
-                           outboundSendRequest.NextSendTime = DateTime.Now + TimeSpan.FromMilliseconds(resendDelayMillis);
+                           outboundSendRequest.NextSendTime = now + TimeSpan.FromMilliseconds(resendDelayMillis);
                            outboundSendRequest.SendCount++;
                            inTransportSendRequestQueue.Enqueue(outboundSendRequest);
                         }
@@ -206,7 +208,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public async Task SendAcknowledgementAsync(Guid destination, AcknowledgementDto acknowledgement) {
-         var ms = outboundMemoryStreamPool.TakeObject();
+         var ms = outboundAcknowledgementMemoryStreamPool.TakeObject();
          ms.SetLength(0);
          await AsyncSerialize.ToAsync(ms, acknowledgement).ConfigureAwait(false);
          unhandledSendRequestQueue.Enqueue(
@@ -214,6 +216,7 @@ namespace Dargon.Courier.TransportTier.Udp {
                Data = ms,
                DataOffset = 0,
                DataLength = (int)ms.Position,
+               DataBufferPool = outboundAcknowledgementMemoryStreamPool,
                IsReliable = false
             });
          workSignal.Set();
@@ -233,7 +236,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 
       private async Task SendHelperAsync(Guid destination, MessageDto message, bool reliable) {
          var packetDto = PacketDto.Create(identity.Id, destination, message, reliable);
-         var ms = outboundMemoryStreamPool.TakeObject();
+         var ms = outboundPacketMemoryStreamPool.TakeObject();
          ms.SetLength(0);
          try {
             await AsyncSerialize.ToAsync(ms, packetDto).ConfigureAwait(false);
@@ -244,7 +247,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             }
 
             ms.SetLength(0);
-            outboundMemoryStreamPool.ReturnObject(ms);
+            outboundPacketMemoryStreamPool.ReturnObject(ms);
             await SendReliableMultipartPacketAsync(destination, packetDto).ConfigureAwait(false);
             Interlocked.Increment(ref DebugRuntimeStats.out_rs_done);
             return;
@@ -255,6 +258,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             var acknowlewdgementSignal = acknowledgementCoordinator.Expect(packetDto.Id);
             unhandledSendRequestQueue.Enqueue(
                new SendRequest {
+                  DataBufferPool = outboundPacketMemoryStreamPool,
                   Data = ms,
                   DataOffset = 0,
                   DataLength = (int)ms.Position,
@@ -268,6 +272,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          } else {
             unhandledSendRequestQueue.Enqueue(
                new SendRequest {
+                  DataBufferPool = outboundPacketMemoryStreamPool,
                   Data = ms,
                   DataOffset = 0,
                   DataLength = (int)ms.Position,
@@ -322,6 +327,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public class SendRequest {
+         public IObjectPool<MemoryStream> DataBufferPool { get; set; }
          public MemoryStream Data { get; set; }
          public int DataOffset { get; set; }
          public int DataLength { get; set; }

@@ -71,9 +71,9 @@ namespace Dargon.Courier.ManagementTier {
          dataSetBuffersByAlias = new Dictionary<string, IDataPointCircularBuffer>();
          foreach (var dataSetAttribute in mobInstance.GetType().GetCustomAttributes<ManagedDataSetAttribute>()) {
             // make the audit service create the given data set
-            if (dataSetAttribute.Type == typeof(AuditCounter)) {
+            if (dataSetAttribute.Type == typeof(IAuditCounter)) {
                auditService.GetCounter(dataSetAttribute.LongName);
-            } else if (dataSetAttribute.Type.IsGenericType && dataSetAttribute.Type.GetGenericTypeDefinition() == typeof(AuditAggregator<>)) {
+            } else if (dataSetAttribute.Type.IsGenericType && dataSetAttribute.Type.GetGenericTypeDefinition() == typeof(IAuditAggregator<>)) {
                var elementType = dataSetAttribute.Type.GetGenericArguments()[0];
                getAggregatorVisitors.Get(elementType)(auditService, dataSetAttribute.LongName);
             }

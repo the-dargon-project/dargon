@@ -1,7 +1,15 @@
 ﻿using System.Threading;
 
 namespace Dargon.Courier.AuditingTier {
-   public class AuditCounter {
+   public interface IAuditCounter {
+      void Increment();
+   }
+
+   public class NullAuditCounter : IAuditCounter {
+      public void Increment() { }
+   }
+
+   public class AuditCounterImpl : IAuditCounter {
       private int count;
 
       public void Increment() {

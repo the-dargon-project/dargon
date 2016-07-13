@@ -26,9 +26,13 @@ namespace Dargon.Courier.ServiceTier.Client {
          var method = invocation.Method;
 
          var executorTask = Go(async () => {
-            logger.Debug($"At intercept async for invocation on method {method.Name} for service {remoteServiceInfo.ServiceType.Name}");
+            if (logger.IsDebugEnabled) {
+               logger.Debug($"At intercept async for invocation on method {method.Name} for service {remoteServiceInfo.ServiceType.Name}");
+            }
             responseDto = await InterceptAsync(method, invocation.Arguments).ConfigureAwait(false);
-            logger.Debug($"Completing Intercept async for invocation on method {method.Name} for service {remoteServiceInfo.ServiceType.Name}");
+            if (logger.IsDebugEnabled) {
+               logger.Debug($"Completing Intercept async for invocation on method {method.Name} for service {remoteServiceInfo.ServiceType.Name}");
+            }
          });
          
          if (typeof(Task).IsAssignableFrom(method.ReturnType)) {

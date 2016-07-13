@@ -27,19 +27,16 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public class Signal {
-         private readonly object sync = new object();
-         private bool isSet;
+         private const int kStateUnset = 0;
+         private const int kStateSet = 1;
+         private int state = kStateUnset;
 
          public void Set() {
-            lock (sync) {
-               isSet = true;
-            }
+            Interlocked.CompareExchange(ref state, kStateSet, kStateUnset);
          }
 
          public bool IsSet() {
-            lock (sync) {
-               return isSet;
-            }
+            return Interlocked.CompareExchange(ref state, kStateUnset, kStateUnset) == kStateSet;
          }
       }
    }

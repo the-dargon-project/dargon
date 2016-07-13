@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 namespace Dargon.Courier.TransportTier.Udp {
    public class UdpFacade {
       private readonly UdpClient client;
-      private readonly UdpDispatcher udpDispatcher;
+      private readonly UdpDispatcherImpl udpDispatcher;
       private readonly CancellationTokenSource shutdownCts;
 
-      public UdpFacade(UdpClient client, UdpDispatcher udpDispatcher, CancellationTokenSource shutdownCts) {
+      public UdpFacade(UdpClient client, UdpDispatcherImpl udpDispatcher, CancellationTokenSource shutdownCts) {
          this.client = client;
          this.udpDispatcher = udpDispatcher;
          this.shutdownCts = shutdownCts;

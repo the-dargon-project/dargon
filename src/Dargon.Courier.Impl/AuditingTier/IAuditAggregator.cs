@@ -2,7 +2,15 @@
 using Dargon.Commons.Collections;
 
 namespace Dargon.Courier.AuditingTier {
-   public class AuditAggregator<T> {
+   public interface IAuditAggregator<T> {
+      void Put(T value);
+   }
+
+   public class NullAuditAggregator<T> : IAuditAggregator<T> {
+      public void Put(T value) { }
+   }
+
+   public class DefaultAuditAggregator<T> : IAuditAggregator<T> {
       private readonly IConcurrentQueue<T> queue = new ConcurrentQueue<T>();
 
       public void Put(T value) {

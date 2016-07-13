@@ -19,7 +19,11 @@ using Dargon.Commons.Exceptions;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.TransportTier.Udp {
-   public class UdpDispatcher {
+   public interface IUdpDispatcher {
+      void HandleInboundDataEvent(InboundDataEvent e, Action<InboundDataEvent> returnInboundDataEvent);
+   }
+
+   public class UdpDispatcherImpl : IUdpDispatcher {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
       private readonly ConcurrentDictionary<Guid, RoutingContext> routingContextsByPeerId = new Commons.Collections.ConcurrentDictionary<Guid, RoutingContext>();
 
@@ -32,18 +36,18 @@ namespace Dargon.Courier.TransportTier.Udp {
       private readonly PeerTable peerTable;
       private readonly InboundMessageDispatcher inboundMessageDispatcher;
       private readonly MultiPartPacketReassembler multiPartPacketReassembler;
-      private readonly AuditCounter announcementsReceivedCounter;
-      private readonly AuditCounter resendsCounter;
-      private readonly AuditAggregator<int> resendsAggregator;
-      private readonly AuditCounter tossedCounter;
-      private readonly AuditCounter duplicateReceivesCounter;
-      private readonly AuditAggregator<int> multiPartChunksBytesReceivedAggregator;
-      private readonly AuditAggregator<double> outboundMessageRateLimitAggregator;
-      private readonly AuditAggregator<double> sendQueueDepthAggregator;
+      private readonly IAuditCounter announcementsReceivedCounter;
+      private readonly IAuditCounter resendsCounter;
+      private readonly IAuditAggregator<int> resendsAggregator;
+      private readonly IAuditCounter tossedCounter;
+      private readonly IAuditCounter duplicateReceivesCounter;
+      private readonly IAuditAggregator<int> multiPartChunksBytesReceivedAggregator;
+      private readonly IAuditAggregator<double> outboundMessageRateLimitAggregator;
+      private readonly IAuditAggregator<double> sendQueueDepthAggregator;
 
       private volatile bool isShutdown = false;
 
-      public UdpDispatcher(Identity identity, UdpClient udpClient, DuplicateFilter duplicateFilter, PayloadSender payloadSender, AcknowledgementCoordinator acknowledgementCoordinator, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, MultiPartPacketReassembler multiPartPacketReassembler, AuditCounter announcementsReceivedCounter, AuditCounter resendsCounter, AuditAggregator<int> resendsAggregator, AuditCounter tossedCounter, AuditCounter duplicateReceivesCounter, AuditAggregator<int> multiPartChunksBytesReceivedAggregator, AuditAggregator<double> outboundMessageRateLimitAggregator, AuditAggregator<double> sendQueueDepthAggregator) {
+      public UdpDispatcherImpl(Identity identity, UdpClient udpClient, DuplicateFilter duplicateFilter, PayloadSender payloadSender, AcknowledgementCoordinator acknowledgementCoordinator, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, MultiPartPacketReassembler multiPartPacketReassembler, IAuditCounter announcementsReceivedCounter, IAuditCounter resendsCounter, IAuditAggregator<int> resendsAggregator, IAuditCounter tossedCounter, IAuditCounter duplicateReceivesCounter, IAuditAggregator<int> multiPartChunksBytesReceivedAggregator, IAuditAggregator<double> outboundMessageRateLimitAggregator, IAuditAggregator<double> sendQueueDepthAggregator) {
          this.identity = identity;
          this.udpClient = udpClient;
          this.duplicateFilter = duplicateFilter;
@@ -118,7 +122,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 //         }
 //      }
 
-      public void HandleInboundDataEvent(InboundDataEvent e, Action returnInboundDataEvent) {
+      public void HandleInboundDataEvent(InboundDataEvent e, Action<InboundDataEvent> returnInboundDataEvent) {
          Interlocked.Increment(ref DebugRuntimeStats.in_de);
 
          List<object> payloads = new List<object>();
@@ -135,7 +139,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             return;
          }
 
-         returnInboundDataEvent();
+         returnInboundDataEvent(e);
 
 //         Console.WriteLine("RECIEFVIED " + JsonConvert.SerializeObject(payload));
 
@@ -205,7 +209,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          if (x.IsReliable()) {
             Interlocked.Increment(ref DebugRuntimeStats.in_out_ack);
-            var ack = AcknowledgementDto.Create(x.Id, identity.Id, x.SenderId);
+            var ack = AcknowledgementDto.Create(x.Id);
             RoutingContext routingContext;
             if (routingContextsByPeerId.TryGetValue(x.SenderId, out routingContext)) {
                routingContext.SendAcknowledgementAsync(x.SenderId, ack).Forget();

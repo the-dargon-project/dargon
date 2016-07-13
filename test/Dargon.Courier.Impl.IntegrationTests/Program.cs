@@ -21,10 +21,11 @@ namespace Dargon.Courier {
          Console.BufferHeight = 21337;
 //         new UdpMessagingTests().LargeObjectTest().Wait();
 //         new LocalMessagingLoadTests().RunAsync().Wait();
-         new UdpServiceTests().RunAsync().Wait();
+//         new UdpServiceTests().RunAsync().Wait();
 //         return;
 
 //         new UdpMessagingTests().LargeObjectTest().Wait();
+         new UdpClientTests().Run();
 //         return;
 
 //         new UdpMessagingTests().LargeObjectTest().Wait();

@@ -8,6 +8,7 @@ using Dargon.Hydrous.Impl.Store.Postgre;
 using Dargon.Vox;
 using NMockito;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,6 +40,11 @@ namespace Dargon.Hydrous.Cache {
 
          await SetupAsync().ConfigureAwait(false);
 
+         var sw = new Stopwatch();
+         sw.Start();
+
+         Console.WriteLine(sw.ElapsedMilliseconds + " Starting Cluster");
+
          var clusterSize = 4;
          var cluster = await TestUtils.CreateCluster<int, TestDto>(
             clusterSize,
@@ -50,6 +56,8 @@ namespace Dargon.Hydrous.Cache {
                   Redundancy = 2
                }
             }).ConfigureAwait(false);
+
+         Console.WriteLine(sw.ElapsedMilliseconds + " Started Cluster");
 
          var workerCount = 4;
          var sync = new AsyncCountdownLatch(workerCount);
@@ -68,12 +76,14 @@ namespace Dargon.Hydrous.Cache {
                      AppendToNameOperation.Create("_")
                      ));
                await Task.WhenAll(jobs).ConfigureAwait(false);
+               Console.WriteLine(sw.ElapsedMilliseconds + " Worker " + workerId + " completed");
             });
 
          try {
+            Console.WriteLine(sw.ElapsedMilliseconds + " Awaiting workers");
             await Task.WhenAll(tasks).ConfigureAwait(false);
 
-            Console.WriteLine("Validating cache state");
+            Console.WriteLine(sw.ElapsedMilliseconds + " Validating cache state");
 
             await Task.WhenAll(
                Util.Generate(
@@ -85,7 +95,10 @@ namespace Dargon.Hydrous.Cache {
                      AssertEquals(originalName + "_".Repeat(clusterSize), entry.Value.Name);
                   }))).ConfigureAwait(false);
 
+            Console.WriteLine(sw.ElapsedMilliseconds + " Validation completed");
+
             await CleanupAsync().ConfigureAwait(false);
+            while (true) ;
          } catch (Exception e) {
             Console.WriteLine("Write behind test threw " + e);
             throw;

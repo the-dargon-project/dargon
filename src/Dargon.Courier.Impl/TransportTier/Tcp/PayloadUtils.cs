@@ -11,10 +11,10 @@ using System.Threading.Tasks;
 namespace Dargon.Courier.TransportTier.Tcp {
    public class PayloadUtils {
       private readonly IObjectPool<MemoryStream> memoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream());
-      private readonly AuditAggregator<double> inboundBytesAggregator;
-      private readonly AuditAggregator<double> outboundBytesAggregator;
+      private readonly IAuditAggregator<double> inboundBytesAggregator;
+      private readonly IAuditAggregator<double> outboundBytesAggregator;
 
-      public PayloadUtils(AuditAggregator<double> inboundBytesAggregator, AuditAggregator<double> outboundBytesAggregator) {
+      public PayloadUtils(IAuditAggregator<double> inboundBytesAggregator, IAuditAggregator<double> outboundBytesAggregator) {
          this.inboundBytesAggregator = inboundBytesAggregator;
          this.outboundBytesAggregator = outboundBytesAggregator;
       }

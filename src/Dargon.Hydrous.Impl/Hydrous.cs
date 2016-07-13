@@ -582,10 +582,10 @@ namespace Dargon.Hydrous.Impl {
       public class PhaseContext {
          private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-         private readonly ConcurrentSet<PhaseContext> childContexts = new ConcurrentSet<PhaseContext>();
          private readonly string contextName;
          private readonly PhaseContext parentPhaseContext;
          private PhaseBase currentPhase = null;
+         private PhaseContext childContext = null;
          private int generationCounter = 0;
 
          public PhaseContext(string contextName, Identity identity, PhaseContext parentPhaseContext, Guid cacheId, CourierFacade courier, ClusterMessenger messenger, CacheConfiguration<K, V> cacheConfiguration, LiveClusterConfiguration liveClusterConfiguration, SlaveBinaryLogContainer slaveBinaryLogContainer, Channel<IEntryOperationExecutionContext> inboundExecutionContextChannel, Partitioner partitioner, IOperationDiagnosticsTable operationDiagnosticsTable) {
@@ -639,10 +639,13 @@ namespace Dargon.Hydrous.Impl {
          }
 
          public Task ForkAsync(string name, PhaseBase nextPhase) {
-            var newPhaseContext = new PhaseContext(name, Identity, this, CacheId, Courier, Messenger, CacheConfiguration, LiveClusterConfiguration, SlaveBinaryLogContainer, Channels.InboundExecutionContextChannel, Partitioner, OperationDiagnosticsTable);
-            childContexts.AddOrThrow(newPhaseContext);
-            Messenger.AddForkOrThrow(newPhaseContext);
-            return newPhaseContext.TransitionAsync(nextPhase);
+            if (childContext != null) {
+               throw new InvalidStateException("Only one fork permitted");
+            }
+            var forkContext = new PhaseContext(name, Identity, this, CacheId, Courier, Messenger, CacheConfiguration, LiveClusterConfiguration, SlaveBinaryLogContainer, Channels.InboundExecutionContextChannel, Partitioner, OperationDiagnosticsTable);
+            this.childContext = forkContext;
+            Messenger.AddForkOrThrow(forkContext);
+            return forkContext.TransitionAsync(nextPhase);
          }
 
          public void Log(string s, params object[] args) {
@@ -670,23 +673,28 @@ namespace Dargon.Hydrous.Impl {
          public ICachePersistenceStrategy<K, V> CachePersistenceStrategy => CacheConfiguration.CachePersistenceStrategy;
 
          public Task ProcessInboundMessageAsync<T>(IInboundMessageEvent<T> inboundMessageEvent) {
-            return Task.WhenAll(
-               Go(async () => {
-                  if (typeof(T) == typeof(LeaderHeartBeatDto)) {
-                     await Channels.LeaderHeartBeat.WriteAsync((IInboundMessageEvent<LeaderHeartBeatDto>)inboundMessageEvent).ConfigureAwait(false);
-                  } else if (typeof(T) == typeof(RepartitionCompleteDto)) {
-                     await Channels.RepartitionComplete.WriteAsync((IInboundMessageEvent<RepartitionCompleteDto>)inboundMessageEvent).ConfigureAwait(false);
-                  } else if (typeof(T) == typeof(ElectDto)) {
-                     Log("Processing inbound elect from: " + inboundMessageEvent.SenderId);
-                     await Channels.Elect.WriteAsync((IInboundMessageEvent<ElectDto>)inboundMessageEvent).ConfigureAwait(false);
-                     Log("Processed inbound elect from: " + inboundMessageEvent.SenderId);
-                  } else if (typeof(T) == typeof(CommitOperationProcessedDto)) {
-                     await Channels.CommitOperationProcessed.WriteAsync((IInboundMessageEvent<CommitOperationProcessedDto>)inboundMessageEvent).ConfigureAwait(false);
-                  } else {
-                     throw new NotSupportedException();
-                  }
-               }),
-               Task.WhenAll(childContexts.Select(childContext => childContext.ProcessInboundMessageAsync<T>(inboundMessageEvent))));
+            var mainTask = Go(async () => {
+               if (typeof(T) == typeof(LeaderHeartBeatDto)) {
+                  await Channels.LeaderHeartBeat.WriteAsync((IInboundMessageEvent<LeaderHeartBeatDto>)inboundMessageEvent).ConfigureAwait(false);
+               } else if (typeof(T) == typeof(RepartitionCompleteDto)) {
+                  await Channels.RepartitionComplete.WriteAsync((IInboundMessageEvent<RepartitionCompleteDto>)inboundMessageEvent).ConfigureAwait(false);
+               } else if (typeof(T) == typeof(ElectDto)) {
+                  Log("Processing inbound elect from: " + inboundMessageEvent.SenderId);
+                  await Channels.Elect.WriteAsync((IInboundMessageEvent<ElectDto>)inboundMessageEvent).ConfigureAwait(false);
+                  Log("Processed inbound elect from: " + inboundMessageEvent.SenderId);
+               } else if (typeof(T) == typeof(CommitOperationProcessedDto)) {
+                  await Channels.CommitOperationProcessed.WriteAsync((IInboundMessageEvent<CommitOperationProcessedDto>)inboundMessageEvent).ConfigureAwait(false);
+               } else {
+                  throw new NotSupportedException();
+               }
+            });
+            if (childContext == null) {
+               return mainTask;
+            } else {
+               return Task.WhenAll(
+                  mainTask,
+                  childContext.ProcessInboundMessageAsync<T>(inboundMessageEvent));
+            }
          }
       }
 
@@ -1385,8 +1393,8 @@ namespace Dargon.Hydrous.Impl {
       }
       
       public class ClusterMessenger {
-         private readonly ConcurrentSet<PhaseContext> forkPhaseContexts = new ConcurrentSet<PhaseContext>();
          private readonly CourierFacade courier;
+         private PhaseContext forkContext = null;
 
          public ClusterMessenger(CourierFacade courier) {
             this.courier = courier;
@@ -1413,21 +1421,24 @@ namespace Dargon.Hydrous.Impl {
          }
 
          public void AddForkOrThrow(PhaseContext newPhaseContext) {
-            forkPhaseContexts.AddOrThrow(newPhaseContext);
+            if (this.forkContext != null) {
+               throw new InvalidStateException("Do not support multiple fork contexts");
+            }
+            this.forkContext = newPhaseContext;
          }
          
          // HACK - needs a lot of cleanup =(
          private void SendToForks<T>(Guid? destinationCohortIdOrNullForTheForkCohortId, T payload) {
-            var inboundMessageEvent = new InboundMessageEvent<T> {
-               Message = new MessageDto {
-                  Body = payload,
-                  ReceiverId = Guid.Empty,
-                  SenderId = courier.Identity.Id
-               }
-            };
-            foreach (var forkPhaseContext in forkPhaseContexts) {
-               if (destinationCohortIdOrNullForTheForkCohortId == null || forkPhaseContext.Courier.Identity.Matches(destinationCohortIdOrNullForTheForkCohortId.Value, IdentityMatchingScope.Broadcast)) {
-                  forkPhaseContext.ProcessInboundMessageAsync(inboundMessageEvent).Forget();
+            if (forkContext != null) {
+               var inboundMessageEvent = new InboundMessageEvent<T> {
+                  Message = new MessageDto {
+                     Body = payload,
+                     ReceiverId = Guid.Empty,
+                     SenderId = courier.Identity.Id
+                  }
+               };
+               if (destinationCohortIdOrNullForTheForkCohortId == null || forkContext.Courier.Identity.Matches(destinationCohortIdOrNullForTheForkCohortId.Value, IdentityMatchingScope.Broadcast)) {
+                  forkContext.ProcessInboundMessageAsync(inboundMessageEvent).Forget();
                }
             }
          }

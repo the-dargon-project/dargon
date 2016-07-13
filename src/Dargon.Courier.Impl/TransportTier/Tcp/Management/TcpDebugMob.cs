@@ -3,8 +3,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Dargon.Courier.TransportTier.Tcp.Management {
-   [ManagedDataSet("inbound_bytes", DataSetNames.kInboundBytes, typeof(AuditAggregator<double>))]
-   [ManagedDataSet("outbound_bytes", DataSetNames.kOutboundBytes, typeof(AuditAggregator<double>))]
+   [ManagedDataSet("inbound_bytes", DataSetNames.kInboundBytes, typeof(IAuditAggregator<double>))]
+   [ManagedDataSet("outbound_bytes", DataSetNames.kOutboundBytes, typeof(IAuditAggregator<double>))]
    [Guid("2170CAA2-A8FF-40F2-84F9-ED648B83D0C7")]
    public class TcpDebugMob {
       private readonly TcpRoutingContextContainer tcpRoutingContextContainer;

@@ -28,10 +28,10 @@ namespace Dargon.Courier.ServiceTier.Client {
          Trace.Assert(x.Message.ReceiverId == localIdentity.Id);
 
          var response = x.Body;
-         logger.Info($"Handling invocation response for {response.InvocationId}.");
+         logger.Info("Handling invocation response for {0}.", response.InvocationId);
          AsyncBox<RmiResponseDto> responseBox;
          if (!responseBoxes.TryRemove(response.InvocationId, out responseBox)) {
-            logger.Error($"Could not find response box for invocation id {response.InvocationId}.");
+            logger.Error("Could not find response box for invocation id {0}.", response.InvocationId);
             throw new InvalidStateException();
          }
          responseBox.SetResult(response);
@@ -48,29 +48,32 @@ namespace Dargon.Courier.ServiceTier.Client {
             ServiceId = serviceInfo.ServiceId
          };
 
-         logger.Debug($"Sending RMI {invocationId.ToString("n").Substring(0, 6)} Request on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}. Local: {localIdentity.Id.ToString("n").Substring(0, 6)}, Remote: {serviceInfo.Peer.Identity.Id.ToString("n").Substring(0, 6)}");
+         if (logger.IsDebugEnabled) {
+            logger.Debug($"Sending RMI {invocationId.ToString("n").Substring(0, 6)} Request on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}. Local: {localIdentity.Id.ToString("n").Substring(0, 6)}, Remote: {serviceInfo.Peer.Identity.Id.ToString("n").Substring(0, 6)}");
+         }
 
          if (localIdentity.Id == serviceInfo.Peer.Identity.Id) {
-            logger.Error($"Swallowing as routed to self - RMI {invocationId.ToString("n").Substring(0, 6)} Request on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}. Local: {localIdentity.Id.ToString("n").Substring(0, 6)}, Remote: {serviceInfo.Peer.Identity.Id.ToString("n").Substring(0, 6)}");
+            if (logger.IsErrorEnabled) {
+               logger.Error($"Swallowing as routed to self - RMI {invocationId.ToString("n").Substring(0, 6)} Request on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}. Local: {localIdentity.Id.ToString("n").Substring(0, 6)}, Remote: {serviceInfo.Peer.Identity.Id.ToString("n").Substring(0, 6)}");
+            }
             throw new ArgumentException("Attempted to perform remote service invocation on self.");
          }
 
-         logger.Debug("____A1");
          var responseBox = new AsyncBox<RmiResponseDto>();
          responseBoxes.AddOrThrow(invocationId, responseBox);
 
-         logger.Debug("____A2");
-
          await messenger.SendReliableAsync(request, serviceInfo.Peer.Identity.Id).ConfigureAwait(false);
-         logger.Debug("____A3");
 
-         logger.Debug($"Sent RMI {invocationId.ToString("n").Substring(0, 6)} Request on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}");
+         if (logger.IsDebugEnabled) {
+            logger.Debug($"Sent RMI {invocationId.ToString("n").Substring(0, 6)} Request on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}");
+         }
 
          // response box removed by HandleInvocationResponse - don't cleanup
          var result = await responseBox.GetResultAsync().ConfigureAwait(false);
 
-         logger.Debug($"Received RMI {invocationId.ToString("n").Substring(0, 6)} Response on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}");
-
+         if (logger.IsDebugEnabled) {
+            logger.Debug($"Received RMI {invocationId.ToString("n").Substring(0, 6)} Response on method {methodInfo.Name} for service {serviceInfo.ServiceType.Name}");
+         }
          return result;
       }
    }

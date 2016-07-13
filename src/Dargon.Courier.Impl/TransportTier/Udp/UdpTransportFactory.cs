@@ -42,7 +42,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          var client = UdpClient.Create(configuration, inboundBytesAggregator, outboundBytesAggregator, inboundReceiveProcessDispatchLatencyAggregator);
          var payloadSender = new PayloadSender(client);
          var multiPartPacketReassembler = new MultiPartPacketReassembler();
-         var udpDispatcher = new UdpDispatcher(identity, client, duplicateFilter, payloadSender, acknowledgementCoordinator, routingTable, peerTable, inboundMessageDispatcher, multiPartPacketReassembler, announcementsReceivedCounter, resendsCounter, resendsAggregator, tossedCounter, duplicatesReceivedCounter, multiPartChunksReceivedAggregator, outboundMessageRateLimitAggregator, sendQueueDepthAggregator);
+         var udpDispatcher = new UdpDispatcherImpl(identity, client, duplicateFilter, payloadSender, acknowledgementCoordinator, routingTable, peerTable, inboundMessageDispatcher, multiPartPacketReassembler, announcementsReceivedCounter, resendsCounter, resendsAggregator, tossedCounter, duplicatesReceivedCounter, multiPartChunksReceivedAggregator, outboundMessageRateLimitAggregator, sendQueueDepthAggregator);
          udpDispatcher.Initialize();
          multiPartPacketReassembler.SetUdpDispatcher(udpDispatcher);
          var announcer = new Announcer(identity, payloadSender, shutdownCts.Token);

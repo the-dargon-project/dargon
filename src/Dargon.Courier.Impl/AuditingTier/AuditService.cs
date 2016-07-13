@@ -12,7 +12,7 @@ namespace Dargon.Courier.AuditingTier {
       private const int kLogLength = kLogExpirationMillis / kUpdateIntervalMillis;
 
       private readonly ConcurrentDictionary<string, object> aggregatorsByName = new ConcurrentDictionary<string, object>();
-      private readonly ConcurrentDictionary<string, AuditCounter> countersByName = new ConcurrentDictionary<string, AuditCounter>();
+      private readonly ConcurrentDictionary<string, IAuditCounter> countersByName = new ConcurrentDictionary<string, IAuditCounter>();
       private readonly ConcurrentDictionary<string, IDataPointCircularBuffer> dataSetCircularBuffersByName = new Commons.Collections.ConcurrentDictionary<string, IDataPointCircularBuffer>();
       private readonly ConcurrentSet<Action> updaterActions = new ConcurrentSet<Action>();
 
@@ -37,12 +37,12 @@ namespace Dargon.Courier.AuditingTier {
          } catch (OperationCanceledException) when (shutdownCancellationToken.IsCancellationRequested) { }
       }
 
-      public AuditAggregator<T> GetAggregator<T>(string name) {
-         return (AuditAggregator<T>)aggregatorsByName.GetOrAdd(name, CreateAggregator<T>);
+      public IAuditAggregator<T> GetAggregator<T>(string name) {
+         return (IAuditAggregator<T>)aggregatorsByName.GetOrAdd(name, CreateAggregator<T>);
       }
 
       private object CreateAggregator<T>(string name) {
-         var aggregator = new AuditAggregator<T>();
+         var aggregator = new DefaultAuditAggregator<T>();
          var dataSetCircularBuffer = new DataPointCircularBuffer<AggregateStatistics<T>>(kLogLength);
          dataSetCircularBuffersByName.AddOrThrow(name, dataSetCircularBuffer);
          updaterActions.TryAdd(() => {
@@ -54,12 +54,12 @@ namespace Dargon.Courier.AuditingTier {
          return aggregator;
       }
 
-      public AuditCounter GetCounter(string name) {
+      public IAuditCounter GetCounter(string name) {
          return countersByName.GetOrAdd(name, CreateCounter);
       }
 
-      private AuditCounter CreateCounter(string arg) {
-         var counter = new AuditCounter();
+      private IAuditCounter CreateCounter(string arg) {
+         var counter = new AuditCounterImpl();
          var dataSetCircularBuffer = new DataPointCircularBuffer<int>(kLogLength);
          dataSetCircularBuffersByName.AddOrThrow(arg, dataSetCircularBuffer);
          updaterActions.TryAdd(() => {
