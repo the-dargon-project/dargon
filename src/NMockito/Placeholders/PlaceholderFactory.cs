@@ -18,7 +18,9 @@ namespace NMockito.Placeholders {
       public T CreatePlaceholder<T>() => (T)CreatePlaceholder(typeof(T));
 
       public object CreatePlaceholder(Type type) {
-         if (type.IsArray) {
+         if (type.IsEnum) {
+            return Enum.ToObject(type, CreatePlaceholder(type.GetEnumUnderlyingType()));
+         } else if (type.IsArray) {
             var counter = Interlocked.Increment(ref placeholderCounter);
             var size = (13 * counter) % 7 + 3;
             var elementType = type.GetElementType();
