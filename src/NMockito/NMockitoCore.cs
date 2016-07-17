@@ -35,6 +35,7 @@ namespace NMockito {
       Expectation<TOut1, TOut2, TOut3, TResult> Expect<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func);
 
       void AssertEquals<T>(T expected, T actual);
+      void AssertNotEquals<T>(T expected, T actual);
       void AssertTrue(bool value);
       void AssertFalse(bool value);
       void AssertNull(object value);

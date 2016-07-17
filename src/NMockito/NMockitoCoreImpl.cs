@@ -91,6 +91,7 @@ namespace NMockito {
       public Expectation<TOut1, TOut2, TOut3, TResult> Expect<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func) => expectationFactory.Create<TOut1, TOut2, TOut3, TResult>(func, true);
 
       public void AssertEquals<T>(T expected, T actual) => assertionsProxy.AssertEquals(expected, actual);
+      public void AssertNotEquals<T>(T expected, T actual) => assertionsProxy.AssertNotEquals(expected, actual);
       public void AssertTrue(bool value) => assertionsProxy.AssertTrue(value);
       public void AssertFalse(bool value) => assertionsProxy.AssertFalse(value);
       public void AssertNull(object value) => assertionsProxy.AssertNull(value);

@@ -8,6 +8,7 @@ using Xunit.Abstractions;
 namespace NMockito.Assertions {
    public class AssertionsProxy {
       public void AssertEquals<T>(T expected, T actual) => Assert.Equal(expected, actual);
+      public void AssertNotEquals<T>(T expected, T actual) => Assert.NotEqual(expected, actual);
 
       public void AssertSequenceEquals<T>(IEnumerable<T> expected, IEnumerable<T> actual) {
          Assert.Equal(expected, actual);
@@ -75,8 +76,8 @@ namespace NMockito.Assertions {
                AssertCollectionDeepEquals_AssertElementEquals(aValue, bValue);
             }
          } else if (isUnorderedSetLike) {
-            var aKeys = new HashSet<object>((IEnumerable<object>)a);
-            var bKeys = new HashSet<object>((IEnumerable<object>)b);
+            var aKeys = new HashSet<object>(a.Cast<object>());
+            var bKeys = new HashSet<object>(b.Cast<object>());
             AssertEquals(aKeys.Count, bKeys.Count);
             foreach (var aKey in aKeys) {
                AssertTrue(bKeys.Contains(aKey));
