@@ -1,9 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
-using Dargon.Vox;
+﻿using Dargon.Vox;
 using NLog;
+using System;
+using System.Threading.Tasks;
 
-namespace Dargon.Courier {
+namespace Dargon.Hydrous {
    [AutoSerializable]
    public class PutEntryOperation<K, V> : IEntryOperation<K, V, Entry<K, V>> {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();

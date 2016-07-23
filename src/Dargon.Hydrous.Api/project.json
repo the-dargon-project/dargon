@@ -3,14 +3,12 @@
 
     "buildOptions": {
         "allowUnsafe": true,
-        "emitEntryPoint": true
     },
 
     "dependencies": {
         "Dargon.Commons": "*",
         "Dargon.Courier.Api": "*",
         "Dargon.Courier.Impl": "*",
-        "Dargon.Hydrous.Api": "*",
         "Dargon.Ryu.Api": "*",
         "Dargon.Ryu.Impl": "*",
         "Dargon.Vox": "*",

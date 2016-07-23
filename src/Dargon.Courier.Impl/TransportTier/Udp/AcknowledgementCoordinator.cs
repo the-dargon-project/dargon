@@ -21,7 +21,9 @@ namespace Dargon.Courier.TransportTier.Udp {
       public void ProcessAcknowledgement(AcknowledgementDto ack) {
          Signal signal;
          if (signalsByAckId.TryRemove(ack.MessageId, out signal)) {
+#if DEBUG
             Interlocked.Increment(ref DebugRuntimeStats.out_rs_acked);
+#endif
             signal.Set();
          }
       }

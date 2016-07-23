@@ -56,15 +56,15 @@ namespace Dargon.Courier.TransportTier.Udp {
 
       public void StartReceiving(IUdpDispatcher udpDispatcher) {
          this.udpDispatcher = udpDispatcher;
-         for (var i = 0; i < 64; i++) {
+         for (var i = 0; i < 4; i++) {
             multicastSockets.ForEach(s => BeginReceive(s, configuration.MulticastReceiveEndpoint));
          }
-         for (var i = 0; i < 64; i++) {
+         for (var i = 0; i < 4; i++) {
             unicastSockets.ForEach(s => BeginReceive(s, configuration.UnicastReceiveEndpoint));
          }
-         for (var i = 0; i < 64; i++) {
+         for (var i = 0; i < 4; i++) {
             multicastSockets.ForEach(s => {
-               new Thread(() => BroadcastThreadStart(s)) { IsBackground = true }.Start();
+               new Thread(() => BroadcastThreadStart(s)) { IsBackground = true, Name = $"Udp_Broadcast_{i}" }.Start();
             });
          }
       }
@@ -86,7 +86,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       private void HandleReceiveCompleted(object sender, SocketAsyncEventArgs e) {
-         BeginReceive(e.AcceptSocket, (IPEndPoint)e.UserToken);
+//         BeginReceive(e.AcceptSocket, (IPEndPoint)e.UserToken);
 
          var sw = new Stopwatch();
          sw.Start();
@@ -118,8 +118,17 @@ namespace Dargon.Courier.TransportTier.Udp {
          self.inboundReceiveProcessDispatchLatencyAggregator.Put(sw.ElapsedMilliseconds);
 
          // return to pool
-         e.SetBuffer(null, 0, 0);
-         e.Dispose();
+         //         e.SetBuffer(null, 0, 0);
+         //         e.Dispose();
+
+         // return to pool
+         try {
+            var referenceRemoteEndpoint = (IPEndPoint)e.UserToken;
+            e.RemoteEndPoint = new IPEndPoint(referenceRemoteEndpoint.Address, referenceRemoteEndpoint.Port);
+            e.AcceptSocket.ReceiveFromAsync(e);
+         } catch (ObjectDisposedException) when (self.isShutdown) {
+            // socket was probably shut down
+         }
       }
 
       private readonly ConcurrentQueue<Tuple<MemoryStream, int, int, Action>> todo = new ConcurrentQueue<Tuple<MemoryStream, int, int, Action>>();

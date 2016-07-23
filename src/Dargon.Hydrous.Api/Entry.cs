@@ -1,7 +1,8 @@
-﻿using Dargon.Courier.Store;
+﻿using Dargon.Courier;
+using Dargon.Hydrous.Store;
 using Dargon.Vox;
 
-namespace Dargon.Courier {
+namespace Dargon.Hydrous {
    [AutoSerializable]
    public class Entry<K, V> : IEntry<K, V> {
       private V value;

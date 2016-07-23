@@ -44,6 +44,13 @@ namespace Dargon.Hydrous.Impl.BinaryLogNamespaceThing {
          }
       }
 
+
+      public async Task<int> GetGreatestEntryIdAsync() {
+         using (await synchronization.ReaderLockAsync().ConfigureAwait(false)) {
+            return entries.Last().Id;
+         }
+      }
+
       public async Task<IReadOnlyList<BinaryLogEntry>> GetAllEntriesFrom(int startingEntryId, int endingEntryId = -1) {
          using (await synchronization.ReaderLockAsync().ConfigureAwait(false)) {
             if (entries.None()) {

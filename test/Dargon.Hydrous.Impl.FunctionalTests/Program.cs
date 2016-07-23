@@ -86,8 +86,11 @@ namespace Dargon.Hydrous {
          Console.BufferHeight = Int16.MaxValue - 1;
          new RyuFactory().Create();
          InitializeLogging();
-         new WriteBehindFT().RunAsync().Wait();
-         while (true) GC.Collect();
+//         new SomethingToDoWithEntryOperationChuggingAbstractBeanFactorySingletonTests().RunAsync().Wait();
+//         new SingleNodeSingleWorkerWriteBehindFT().RunAsync().Wait();
+         new MultipleNodeMultipleWorkerWriteBehindFT().RunAsync().Wait();
+//         new WriteBehindFT().RunAsync().Wait();
+//         while (true) GC.Collect();
          //         new IdfulValuePostgresOrmFT().RunAsync().Wait();
          //         new IdlessValuePostgresOrmFT().RunAsync().Wait();
          //         new CacheFT().CustomProcessTestAsync().Wait();

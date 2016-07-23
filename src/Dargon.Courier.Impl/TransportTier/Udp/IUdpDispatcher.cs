@@ -123,11 +123,13 @@ namespace Dargon.Courier.TransportTier.Udp {
 //      }
 
       public void HandleInboundDataEvent(InboundDataEvent e, Action<InboundDataEvent> returnInboundDataEvent) {
+#if DEBUG
          Interlocked.Increment(ref DebugRuntimeStats.in_de);
+#endif
 
          List<object> payloads = new List<object>();
          try {
-            using (var ms = new MemoryStream(e.Data, e.DataOffset, e.DataLength, false)) {
+            using (var ms = new MemoryStream(e.Data, e.DataOffset, e.DataLength, false, true)) {
                while (ms.Position < ms.Length) {
                   payloads.Add(Deserialize.From(ms));
                }
@@ -146,17 +148,27 @@ namespace Dargon.Courier.TransportTier.Udp {
          foreach (var payload in payloads) {
             try {
                if (payload is AcknowledgementDto) {
+#if DEBUG
                   Interlocked.Increment(ref DebugRuntimeStats.in_ack);
+#endif
                   acknowledgementCoordinator.ProcessAcknowledgement((AcknowledgementDto)payload);
+#if DEBUG
                   Interlocked.Increment(ref DebugRuntimeStats.in_ack_done);
+#endif
                } else if (payload is AnnouncementDto) {
+#if DEBUG
                   Interlocked.Increment(ref DebugRuntimeStats.in_ann);
+#endif
                   HandleAnnouncement(e.RemoteInfo, (AnnouncementDto)payload);
                   //               Interlocked.Increment(ref ann_out);
                } else if (payload is PacketDto) {
+#if DEBUG
                   Interlocked.Increment(ref DebugRuntimeStats.in_pac);
+#endif
                   HandlePacketDtoAndDispatchAsync(e.RemoteInfo, (PacketDto)payload).Forget();
+#if DEBUG
                   Interlocked.Increment(ref DebugRuntimeStats.in_pac_done);
+#endif
                   //               Interlocked.Increment(ref pac_out);
                }
             } catch (Exception ex) {
@@ -208,7 +220,9 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
 
          if (x.IsReliable()) {
+#if DEBUG
             Interlocked.Increment(ref DebugRuntimeStats.in_out_ack);
+#endif
             var ack = AcknowledgementDto.Create(x.Id);
             RoutingContext routingContext;
             if (routingContextsByPeerId.TryGetValue(x.SenderId, out routingContext)) {
@@ -216,7 +230,9 @@ namespace Dargon.Courier.TransportTier.Udp {
             } else {
                payloadSender.BroadcastAsync(ack).Forget();
             }
+#if DEBUG
             Interlocked.Increment(ref DebugRuntimeStats.in_out_ack_done);
+#endif
          }
 
          if (logger.IsDebugEnabled && x.Message.Body.GetType().FullName.Contains("Service")) {

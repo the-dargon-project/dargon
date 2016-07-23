@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dargon.Commons.Collections;
+using Dargon.Courier;
 
-namespace Dargon.Courier {
+namespace Dargon.Hydrous {
    public interface ICache<K, V> {
       Task<IReadableEntry<K, V>> GetAsync(K key);
       Task<IReadableEntry<K, V>> PutAsync(K key, V value);

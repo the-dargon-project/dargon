@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Dargon.Vox;
+using System;
 using System.Threading.Tasks;
-using Dargon.Vox;
 
-namespace Dargon.Courier {
+namespace Dargon.Hydrous {
    [AutoSerializable]
    public class ReadEntryOperation<K, V> : IEntryOperation<K, V, Entry<K, V>> {
       public ReadEntryOperation() { }

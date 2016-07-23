@@ -15,10 +15,12 @@ using Dargon.Vox;
 using Dargon.Vox.Utilities;
 using NLog;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Dargon.Courier.TransportTier.Udp;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 using SCG = System.Collections.Generic;
 
@@ -387,16 +389,19 @@ namespace Dargon.Hydrous.Impl {
                   ProcessReadsAsync(baseEntry).Forget();
 
                   // Process writes/modified
-                  var updatedEntry = baseEntry.DeepCloneSerializable();
-                  var entryModified = false;
-                  entryModified |= await ProcessPutsAsync(updatedEntry).ConfigureAwait(false);
-                  entryModified |= await ProcessAllUpdatesAsync(updatedEntry).ConfigureAwait(false);
+                  if (operationsAvailableSignal.TryTake()) {
+                     operationsAvailableSignal.Release();
+                     var updatedEntry = await AsyncClone.CloneAsync(baseEntry).ConfigureAwait(false);
+                     var entryModified = false;
+                     entryModified |= await ProcessPutsAsync(updatedEntry).ConfigureAwait(false);
+                     entryModified |= await ProcessAllUpdatesAsync(updatedEntry).ConfigureAwait(false);
 
-                  // If modified, then persist to backing store
-                  if (entryModified) {
-                     await cachePersistenceStrategy.HandleUpdateAsync(baseEntry, updatedEntry).ConfigureAwait(false);
+                     // If modified, then persist to backing store
+                     if (entryModified) {
+                        await cachePersistenceStrategy.HandleUpdateAsync(baseEntry, updatedEntry).ConfigureAwait(false);
+                     }
+                     baseEntry = updatedEntry;
                   }
-                  baseEntry = updatedEntry;
                } catch (Exception e) {
                   logger.Fatal("Aborting as RunAsync on entry " + baseEntry + " threw", e);
                   throw;
@@ -1011,6 +1016,7 @@ namespace Dargon.Hydrous.Impl {
          }
 
          private async Task EnqueueCommittedEntryOperationLogDataForProcessingAndProcessAsynchronously<TResult>(EntryOperationBinaryLogData<TResult> entryOperationLogData, bool isLocallyLed) {
+            await TaskEx.YieldToThreadPool();
             var entryOperation = entryOperationLogData.EntryOperation;
 
             bool destroyDiagnosticRow = false;
@@ -1132,8 +1138,10 @@ namespace Dargon.Hydrous.Impl {
 
                   // advance commit pointer
                   {
-                     var greatestFullySyncedEntryId = slaveCohortContextsById.Values.Min(x => x.ReplicationState.NextEntryIdToSync) - 1;
                      var greatestCommittedEntryId = await ledBinaryLog.GetGreatestCommittedEntryId().ConfigureAwait(false);
+                     var greatestEntryId = await ledBinaryLog.GetGreatestEntryIdAsync().ConfigureAwait(false);
+                     var greatestFullySyncedEntryId = slaveCohortContextsById.Select(x => x.Value.ReplicationState.NextEntryIdToSync - 1)
+                                                                             .Concat(greatestEntryId).Min();
                      if (greatestFullySyncedEntryId > greatestCommittedEntryId) {
                         var entriesToAdvanceTo = await ledBinaryLog.GetAllEntriesFrom(greatestCommittedEntryId + 1, greatestFullySyncedEntryId).ConfigureAwait(false);
 
@@ -1196,12 +1204,15 @@ namespace Dargon.Hydrous.Impl {
                            l.Add(additional);
                         }
                      }
-                     //                     Console.WriteLine("!! " + l.Count);
+
+//                     Console.WriteLine(DateTime.Now + " !! " + l.Count);
+                     var sw = new Stopwatch();
+                     sw.Start();
                      foreach (var z in l) {
                         var tResult = z.GetType().GetGenericArguments()[2];
                         processInboundExecutionContextVisitors.Get(tResult)(this, z);
                      }
-//                     Console.WriteLine("@@ " + l.Count);
+//                     Console.WriteLine(DateTime.Now + " @@ " + l.Count + " over " + sw.ElapsedMilliseconds + " ms");
                   }),
                   Case(Channels.CommitOperationProcessed, x => {
                      OperationDiagnosticsTable.AppendExtra(x.Body.OperationId, "Signal from " + x.SenderId.ToShortString());
@@ -1213,6 +1224,7 @@ namespace Dargon.Hydrous.Impl {
          }
 
          public async Task ProcessInboundExecutionContextAsync<TResult>(EntryOperationExecutionContext<TResult> executionContext) {
+            await TaskEx.YieldToThreadPool();
             var entryOperation = executionContext.Operation;
             OperationDiagnosticsTable.UpdateStatus(entryOperation.Id, 2, "Processing Inbound Execution Context");
 

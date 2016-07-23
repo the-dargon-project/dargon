@@ -10,6 +10,7 @@
     "dependencies": {
         "Dargon.Courier.Api": "*",
         "Dargon.Courier.Impl": "*",
+        "Dargon.Hydrous.Api": "*",
         "Dargon.Hydrous.Impl": "*",
         "Dargon.Ryu.Api": "*",
         "Dargon.Ryu.Impl": "*",

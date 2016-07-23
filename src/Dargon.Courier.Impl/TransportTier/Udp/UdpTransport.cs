@@ -53,15 +53,23 @@ namespace Dargon.Courier.TransportTier.Udp {
 
    public static class AsyncSerialize {
       static AsyncSerialize() {
-         for (var i = 0; i < Math.Max(4, Environment.ProcessorCount); i++) {
-            new Thread(ProcessorThreadStart) { IsBackground = true }.Start();
+         var workerCount = Math.Max(4, Environment.ProcessorCount);
+         requestQueues = Util.Generate(workerCount, i => new ConcurrentQueue<Tuple<MemoryStream, object, TaskCompletionSource<byte>>>());
+         requestSemaphores = Util.Generate(workerCount, i => new Semaphore(0, int.MaxValue));
+         for (var i = 0; i < workerCount; i++) {
+            var capture = i;
+            new Thread(() => ProcessorThreadStart(requestQueues[capture], requestSemaphores[capture])) {
+               IsBackground = true,
+               Name = $"AsyncSerialize_{i}"
+            }.Start();
          }
       }
 
-      private static readonly ConcurrentQueue<Tuple<MemoryStream, object, TaskCompletionSource<byte>>> requestQueue = new ConcurrentQueue<Tuple<MemoryStream, object, TaskCompletionSource<byte>>>();
-      private static readonly Semaphore requestSemaphore = new Semaphore(0, int.MaxValue);
+      private static readonly ConcurrentQueue<Tuple<MemoryStream, object, TaskCompletionSource<byte>>>[] requestQueues;
+      private static readonly Semaphore[] requestSemaphores;
+      [ThreadStatic] private static uint roundRobinCounter;
 
-      private static void ProcessorThreadStart() {
+      private static void ProcessorThreadStart(ConcurrentQueue<Tuple<MemoryStream, object, TaskCompletionSource<byte>>> requestQueue, Semaphore requestSemaphore) {
          while (true) {
             requestSemaphore.WaitOne();
             Tuple<MemoryStream, object, TaskCompletionSource<byte>> r;
@@ -79,9 +87,49 @@ namespace Dargon.Courier.TransportTier.Udp {
 
       public static Task ToAsync(MemoryStream ms, object x) {
          var tcs = new TaskCompletionSource<byte>(TaskCreationOptions.RunContinuationsAsynchronously);
-         requestQueue.Enqueue(Tuple.Create(ms, x, tcs));
-         requestSemaphore.Release();
+         var i = (roundRobinCounter++) % requestQueues.Length;
+         requestQueues[i].Enqueue(Tuple.Create(ms, x, tcs));
+         requestSemaphores[i].Release();
          return tcs.Task;
+      }
+   }
+
+   public static class AsyncClone {
+      static AsyncClone() {
+         var workerCount = Math.Max(4, Environment.ProcessorCount);
+         requestQueues = Util.Generate(workerCount, i => new ConcurrentQueue<Tuple<object, TaskCompletionSource<object>>>());
+         requestSemaphores = Util.Generate(workerCount, i => new Semaphore(0, int.MaxValue));
+         for (var i = 0; i < workerCount; i++) {
+            var capture = i;
+            new Thread(() => ProcessorThreadStart(requestQueues[capture], requestSemaphores[capture])) { IsBackground = true, Name = $"AsyncClone_{i}" }.Start();
+         }
+      }
+
+      private static readonly ConcurrentQueue<Tuple<object, TaskCompletionSource<object>>>[] requestQueues;
+      private static readonly Semaphore[] requestSemaphores;
+      [ThreadStatic] private static uint roundRobinCounter;
+
+      private static void ProcessorThreadStart(ConcurrentQueue<Tuple<object, TaskCompletionSource<object>>> requestQueue, Semaphore requestSemaphore) {
+         while (true) {
+            requestSemaphore.WaitOne();
+            Tuple<object, TaskCompletionSource<object>> r;
+            if (!requestQueue.TryDequeue(out r)) {
+               throw new InvalidStateException();
+            }
+            try {
+               r.Item2.SetResult(r.Item1.DeepCloneSerializable());
+            } catch (Exception e) {
+               r.Item2.SetException(e);
+            }
+         }
+      }
+
+      public static async Task<T> CloneAsync<T>(T x) {
+         var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+         var i = (roundRobinCounter++) % requestQueues.Length;
+         requestQueues[i].Enqueue(Tuple.Create((object)x, tcs));
+         requestSemaphores[i].Release();
+         return (T)await tcs.Task.ConfigureAwait(false);
       }
    }
 
@@ -158,7 +206,9 @@ namespace Dargon.Courier.TransportTier.Udp {
                      sendRequest.Data.SetLength(0);
                      sendRequest.DataBufferPool.ReturnObject(sendRequest.Data);
                      sendRequest.CompletionSignal.Set();
+#if DEBUG
                      Interlocked.Increment(ref DebugRuntimeStats.out_rs_done);
+#endif
                      continue;
                   }
                   if (iterationStartTime < sendRequest.NextSendTime) {
@@ -170,7 +220,9 @@ namespace Dargon.Courier.TransportTier.Udp {
                         resendOccurred = true;
                      }
 
+#if DEBUG
                      Interlocked.Increment(ref DebugRuntimeStats.out_sent);
+#endif
                      outboundSendRequests.Add(sendRequest);
                   }
                }
@@ -184,7 +236,9 @@ namespace Dargon.Courier.TransportTier.Udp {
                      var now = DateTime.Now;
                      foreach (var outboundSendRequest in outboundSendRequests) {
                         if (!outboundSendRequest.IsReliable) {
+#if DEBUG
                            Interlocked.Increment(ref DebugRuntimeStats.out_sent);
+#endif
                            outboundSendRequest.Data.SetLength(0);
                            outboundSendRequest.DataBufferPool.ReturnObject(outboundSendRequest.Data);
                         } else {
@@ -223,15 +277,21 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public Task SendReliableAsync(Guid destination, MessageDto message) {
+#if DEBUG
          Interlocked.Increment(ref DebugRuntimeStats.out_rs);
+#endif
          return SendHelperAsync(destination, message, true);
          //         Interlocked.Increment(ref DebugRuntimeStats.out_rs_done);
       }
 
       public async Task SendUnreliableAsync(Guid destination, MessageDto message) {
+#if DEBUG
          Interlocked.Increment(ref DebugRuntimeStats.out_nrs);
+#endif
          await SendHelperAsync(destination, message, false).ConfigureAwait(false);
+#if DEBUG
          Interlocked.Increment(ref DebugRuntimeStats.out_nrs_done);
+#endif
       }
 
       private async Task SendHelperAsync(Guid destination, MessageDto message, bool reliable) {
@@ -249,7 +309,9 @@ namespace Dargon.Courier.TransportTier.Udp {
             ms.SetLength(0);
             outboundPacketMemoryStreamPool.ReturnObject(ms);
             await SendReliableMultipartPacketAsync(destination, packetDto).ConfigureAwait(false);
+#if DEBUG
             Interlocked.Increment(ref DebugRuntimeStats.out_rs_done);
+#endif
             return;
          }
 

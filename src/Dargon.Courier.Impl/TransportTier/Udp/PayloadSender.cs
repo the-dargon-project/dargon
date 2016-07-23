@@ -19,7 +19,9 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public async Task BroadcastAsync<T>(T payload) {
+#if DEBUG
          Interlocked.Increment(ref DebugRuntimeStats.out_ps);
+#endif
          var ms = outboundMemoryStreamPool.TakeObject();
        
          Trace.Assert(ms.Position == 0);
@@ -30,7 +32,9 @@ namespace Dargon.Courier.TransportTier.Udp {
             () => {
                ms.SetLength(0);
                outboundMemoryStreamPool.ReturnObject(ms);
+#if DEBUG
                Interlocked.Increment(ref DebugRuntimeStats.out_ps_done);
+#endif
             });
       }
    }

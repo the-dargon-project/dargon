@@ -14,8 +14,8 @@ namespace Dargon.Hydrous {
          Register(101, typeof(IdfulValuePostgresOrmFT.TestDto));
 
          // WriteBehindFT  [200, 300)
-         Register(200, typeof(WriteBehindFT.TestDto));
-         Register(201, typeof(WriteBehindFT.AppendToNameOperation));
+         Register(200, typeof(WriteBehindFTBase.TestDto));
+         Register(201, typeof(WriteBehindFTBase.AppendToNameOperation));
       }
    }
 }

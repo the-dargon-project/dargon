@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class DebugRuntimeStats {
+#if DEBUG
       public static int in_de = 0;
       public static int in_ack = 0;
       public static int in_ack_done = 0;
@@ -40,5 +41,6 @@ namespace Dargon.Courier.TransportTier.Udp {
             }
          }) { IsBackground = true }.Start();
       }
+#endif
    }
 }

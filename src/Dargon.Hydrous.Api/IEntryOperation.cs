@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace Dargon.Courier {
+namespace Dargon.Hydrous {
    public interface IEntryOperation {
       Guid Id { get; }
       EntryOperationType Type { get; }
