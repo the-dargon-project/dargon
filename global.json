@@ -6,6 +6,7 @@
         "dependencies/nmockito/src",
         "dependencies/commons/src",
         "dependencies/vox/src",
+        "dependencies/vox/test",
         "dependencies/repl/src"
     ],
     "sdk": {

@@ -50,8 +50,6 @@ Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "dargon-management-interface
 		AttachLaunchAction = No
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dargon-management-interface_", "..\dargon-management-interface\dargon-management-interface_.csproj", "{79872398-F5A6-4F34-9596-447D1CFBCAB4}"
-EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Repl", "dependencies\repl\src\Dargon.Repl\Dargon.Repl.xproj", "{B8BA80E1-0831-4613-8A80-14E5E34696BD}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Hydrous.Impl", "dependencies\courier\src\Dargon.Hydrous.Impl\Dargon.Hydrous.Impl.xproj", "{3E7B72E8-A156-4205-8A96-848FC6C80966}"
@@ -81,12 +79,12 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Hydrous.Impl.UnitTes
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Hydrous.Impl.FunctionalTests", "dependencies\courier\test\Dargon.Hydrous.Impl.FunctionalTests\Dargon.Hydrous.Impl.FunctionalTests.xproj", "{21E2EE15-621E-4521-8BC0-9C6387ED362F}"
 EndProject
-Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "Dargon.Courier.Impl.IntegrationTests", "dependencies\courier\test\Dargon.Courier.Impl.IntegrationTests\bin\Debug\net461\win7-x64\Dargon.Courier.Impl.IntegrationTests.exe", "{975EE311-5C38-477F-B1B6-1834C721ADAF}"
+Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "Dargon.Hydrous.Impl.FunctionalTests", "dependencies\courier\test\Dargon.Hydrous.Impl.FunctionalTests\bin\Release\net461\win7-x64\Dargon.Hydrous.Impl.FunctionalTests.exe", "{1CFE59F1-4D75-4A55-82B3-5C372E73DEF5}"
 	ProjectSection(DebuggerProjectSystem) = preProject
 		PortSupplier = 00000000-0000-0000-0000-000000000000
-		Executable = V:\my-repositories\dargon\courier\dependencies\courier\test\Dargon.Courier.Impl.IntegrationTests\bin\Debug\net461\win7-x64\Dargon.Courier.Impl.IntegrationTests.exe
+		Executable = V:\my-repositories\dargon\courier\dependencies\courier\test\Dargon.Hydrous.Impl.FunctionalTests\bin\Release\net461\win7-x64\Dargon.Hydrous.Impl.FunctionalTests.exe
 		RemoteMachine = WIN-E5C0B65L3GR
-		StartingDirectory = V:\my-repositories\dargon\courier\dependencies\courier\test\Dargon.Courier.Impl.IntegrationTests\bin\Debug\net461\win7-x64
+		StartingDirectory = V:\my-repositories\dargon\courier\dependencies\courier\test\Dargon.Hydrous.Impl.FunctionalTests\bin\Release\net461\win7-x64
 		Environment = Default
 		LaunchingEngine = 00000000-0000-0000-0000-000000000000
 		UseLegacyDebugEngines = No
@@ -94,18 +92,39 @@ Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "Dargon.Courier.Impl.Integra
 		AttachLaunchAction = No
 	EndProjectSection
 EndProject
-Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "Dargon.Hydrous.Impl.FunctionalTests", "dependencies\courier\test\Dargon.Hydrous.Impl.FunctionalTests\bin\Debug\net461\win7-x64\Dargon.Hydrous.Impl.FunctionalTests.exe", "{6AF7A5C1-C08B-4CBA-93B7-A4600B47B11D}"
+Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "Dargon.Courier.Impl.IntegrationTests", "dependencies\courier\test\Dargon.Courier.Impl.IntegrationTests\bin\Release\net461\win7-x64\Dargon.Courier.Impl.IntegrationTests.exe", "{235C8C38-1E9A-4EEE-B29B-BB8DF51ABAEA}"
 	ProjectSection(DebuggerProjectSystem) = preProject
 		PortSupplier = 00000000-0000-0000-0000-000000000000
-		Executable = V:\my-repositories\dargon\courier\dependencies\courier\test\Dargon.Hydrous.Impl.FunctionalTests\bin\Debug\net461\win7-x64\Dargon.Hydrous.Impl.FunctionalTests.exe
+		Executable = V:\my-repositories\dargon\courier\dependencies\courier\test\Dargon.Courier.Impl.IntegrationTests\bin\Release\net461\win7-x64\Dargon.Courier.Impl.IntegrationTests.exe
 		RemoteMachine = WIN-E5C0B65L3GR
-		StartingDirectory = V:\my-repositories\dargon\courier\dependencies\courier\test\Dargon.Hydrous.Impl.FunctionalTests\bin\Debug\net461\win7-x64
+		StartingDirectory = V:\my-repositories\dargon\courier\dependencies\courier\test\Dargon.Courier.Impl.IntegrationTests\bin\Release\net461\win7-x64
 		Environment = Default
 		LaunchingEngine = 00000000-0000-0000-0000-000000000000
 		UseLegacyDebugEngines = No
 		LaunchSQLEngine = No
 		AttachLaunchAction = No
 	EndProjectSection
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Hydrous.Api", "dependencies\courier\src\Dargon.Hydrous.Api\Dargon.Hydrous.Api.xproj", "{7D178A6D-1368-462D-AF19-5837167DC6C0}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Vox.FunctionalTests", "dependencies\vox\test\Dargon.Vox.FunctionalTests\Dargon.Vox.FunctionalTests.xproj", "{DE606596-8821-4E3E-B0F9-38F4AF083017}"
+EndProject
+Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "Dargon.Vox.FunctionalTests", "dependencies\vox\test\Dargon.Vox.FunctionalTests\bin\Release\net461\win7-x64\Dargon.Vox.FunctionalTests.exe", "{21627405-5C7E-4663-89D8-68A43CA31DD6}"
+	ProjectSection(DebuggerProjectSystem) = preProject
+		PortSupplier = 00000000-0000-0000-0000-000000000000
+		Executable = V:\my-repositories\dargon\courier\dependencies\vox\test\Dargon.Vox.FunctionalTests\bin\Release\net461\win7-x64\Dargon.Vox.FunctionalTests.exe
+		RemoteMachine = WIN-E5C0B65L3GR
+		StartingDirectory = V:\my-repositories\dargon\courier\dependencies\vox\test\Dargon.Vox.FunctionalTests\bin\Release\net461\win7-x64
+		Environment = Default
+		LaunchingEngine = 00000000-0000-0000-0000-000000000000
+		UseLegacyDebugEngines = No
+		LaunchSQLEngine = No
+		AttachLaunchAction = No
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dargon-management-interface_", "..\dargon-management-interface\dargon-management-interface_.csproj", "{79872398-F5A6-4F34-9596-447D1CFBCAB4}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "visual-dargon-management-interface", "dependencies\courier\src\visual-dargon-management-interface\visual-dargon-management-interface.xproj", "{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}"
 EndProject
 Global
 	GlobalSection(Performance) = preSolution
@@ -202,20 +221,14 @@ Global
 		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Debug|x64.Build.0 = Debug|Any CPU
-		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Release|Any CPU.Build.0 = Debug|Any CPU
 		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Release|x64.ActiveCfg = Release|Any CPU
 		{DC6C332E-10DB-4097-8FAF-84F505250A3C}.Release|x64.Build.0 = Release|Any CPU
 		{9F7834D7-F3AF-4691-9D35-E8580BC80D8E}.Debug|Any CPU.ActiveCfg = Release
 		{9F7834D7-F3AF-4691-9D35-E8580BC80D8E}.Debug|x64.ActiveCfg = Release
 		{9F7834D7-F3AF-4691-9D35-E8580BC80D8E}.Release|Any CPU.ActiveCfg = Release
 		{9F7834D7-F3AF-4691-9D35-E8580BC80D8E}.Release|x64.ActiveCfg = Release
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|x64.ActiveCfg = Release|Any CPU
 		{B8BA80E1-0831-4613-8A80-14E5E34696BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B8BA80E1-0831-4613-8A80-14E5E34696BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8BA80E1-0831-4613-8A80-14E5E34696BD}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -284,14 +297,50 @@ Global
 		{21E2EE15-621E-4521-8BC0-9C6387ED362F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{21E2EE15-621E-4521-8BC0-9C6387ED362F}.Release|x64.ActiveCfg = Release|Any CPU
 		{21E2EE15-621E-4521-8BC0-9C6387ED362F}.Release|x64.Build.0 = Release|Any CPU
-		{975EE311-5C38-477F-B1B6-1834C721ADAF}.Debug|Any CPU.ActiveCfg = Release|x64
-		{975EE311-5C38-477F-B1B6-1834C721ADAF}.Debug|x64.ActiveCfg = Release|x64
-		{975EE311-5C38-477F-B1B6-1834C721ADAF}.Release|Any CPU.ActiveCfg = Release|x64
-		{975EE311-5C38-477F-B1B6-1834C721ADAF}.Release|x64.ActiveCfg = Release|x64
-		{6AF7A5C1-C08B-4CBA-93B7-A4600B47B11D}.Debug|Any CPU.ActiveCfg = Release|x64
-		{6AF7A5C1-C08B-4CBA-93B7-A4600B47B11D}.Debug|x64.ActiveCfg = Release|x64
-		{6AF7A5C1-C08B-4CBA-93B7-A4600B47B11D}.Release|Any CPU.ActiveCfg = Release|x64
-		{6AF7A5C1-C08B-4CBA-93B7-A4600B47B11D}.Release|x64.ActiveCfg = Release|x64
+		{1CFE59F1-4D75-4A55-82B3-5C372E73DEF5}.Debug|Any CPU.ActiveCfg = Release|x64
+		{1CFE59F1-4D75-4A55-82B3-5C372E73DEF5}.Debug|x64.ActiveCfg = Release|x64
+		{1CFE59F1-4D75-4A55-82B3-5C372E73DEF5}.Release|Any CPU.ActiveCfg = Release|x64
+		{1CFE59F1-4D75-4A55-82B3-5C372E73DEF5}.Release|x64.ActiveCfg = Release|x64
+		{235C8C38-1E9A-4EEE-B29B-BB8DF51ABAEA}.Debug|Any CPU.ActiveCfg = Release|x64
+		{235C8C38-1E9A-4EEE-B29B-BB8DF51ABAEA}.Debug|x64.ActiveCfg = Release|x64
+		{235C8C38-1E9A-4EEE-B29B-BB8DF51ABAEA}.Release|Any CPU.ActiveCfg = Release|x64
+		{235C8C38-1E9A-4EEE-B29B-BB8DF51ABAEA}.Release|x64.ActiveCfg = Release|x64
+		{7D178A6D-1368-462D-AF19-5837167DC6C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D178A6D-1368-462D-AF19-5837167DC6C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D178A6D-1368-462D-AF19-5837167DC6C0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7D178A6D-1368-462D-AF19-5837167DC6C0}.Debug|x64.Build.0 = Debug|Any CPU
+		{7D178A6D-1368-462D-AF19-5837167DC6C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D178A6D-1368-462D-AF19-5837167DC6C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D178A6D-1368-462D-AF19-5837167DC6C0}.Release|x64.ActiveCfg = Release|Any CPU
+		{7D178A6D-1368-462D-AF19-5837167DC6C0}.Release|x64.Build.0 = Release|Any CPU
+		{DE606596-8821-4E3E-B0F9-38F4AF083017}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE606596-8821-4E3E-B0F9-38F4AF083017}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE606596-8821-4E3E-B0F9-38F4AF083017}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DE606596-8821-4E3E-B0F9-38F4AF083017}.Debug|x64.Build.0 = Debug|Any CPU
+		{DE606596-8821-4E3E-B0F9-38F4AF083017}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE606596-8821-4E3E-B0F9-38F4AF083017}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE606596-8821-4E3E-B0F9-38F4AF083017}.Release|x64.ActiveCfg = Release|Any CPU
+		{DE606596-8821-4E3E-B0F9-38F4AF083017}.Release|x64.Build.0 = Release|Any CPU
+		{21627405-5C7E-4663-89D8-68A43CA31DD6}.Debug|Any CPU.ActiveCfg = Release|x64
+		{21627405-5C7E-4663-89D8-68A43CA31DD6}.Debug|x64.ActiveCfg = Release|x64
+		{21627405-5C7E-4663-89D8-68A43CA31DD6}.Release|Any CPU.ActiveCfg = Release|x64
+		{21627405-5C7E-4663-89D8-68A43CA31DD6}.Release|x64.ActiveCfg = Release|x64
+		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|x64.Build.0 = Debug|Any CPU
+		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|x64.ActiveCfg = Release|Any CPU
+		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|x64.Build.0 = Release|Any CPU
+		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Debug|x64.Build.0 = Debug|Any CPU
+		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Release|x64.ActiveCfg = Release|Any CPU
+		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -308,7 +357,6 @@ Global
 		{907353FD-0387-434C-BDA1-4822A3553A40} = {717230C9-AFBC-456B-A700-9CFC5FB5FDD6}
 		{5DDF8899-F77A-49C9-A814-372388ECF5BD} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
 		{DC6C332E-10DB-4097-8FAF-84F505250A3C} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
 		{B8BA80E1-0831-4613-8A80-14E5E34696BD} = {717230C9-AFBC-456B-A700-9CFC5FB5FDD6}
 		{3E7B72E8-A156-4205-8A96-848FC6C80966} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
 		{832CF5BA-2ABA-4EB2-98DB-07001DB4EA0E} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
@@ -317,5 +365,9 @@ Global
 		{94A50AF5-E6BE-40E6-92B6-05E4689EA93F} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
 		{895884CB-26B5-4F3B-98FB-5C3102F428C0} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
 		{21E2EE15-621E-4521-8BC0-9C6387ED362F} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
+		{7D178A6D-1368-462D-AF19-5837167DC6C0} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
+		{DE606596-8821-4E3E-B0F9-38F4AF083017} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
+		{79872398-F5A6-4F34-9596-447D1CFBCAB4} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
+		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
 	EndGlobalSection
 EndGlobal
