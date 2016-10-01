@@ -95,7 +95,7 @@ namespace Dargon.Ryu.Modules {
                   new RyuType {
                      Type = type,
                      Flags = (additions.Flags & ~removedFlags) | addedFlags,
-                     Activator = (ryu) => ryu.GetOrThrow(additions.RyuType.Type)
+                     Activator = (ryu) => ryu.GetOrActivate(additions.RyuType.Type)
                   });
             }
             return FluentAdditions;
