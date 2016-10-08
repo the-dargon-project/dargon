@@ -7,8 +7,6 @@
         "Dargon.Ryu.Api": "*",
         "Dargon.Ryu.Impl": "*",
         "Dargon.Vox": "*",
-        "Fody": "1.29.4",
-        "NLombok.Fody": "0.0.5",
         "NLog": "3.1.0",
         "Castle.Core": "3.3.3",
         "xunit": "2.1.0",
