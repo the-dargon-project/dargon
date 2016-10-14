@@ -4,9 +4,9 @@
     },
 
     "dependencies": {
-        "Dargon.Ryu.Api": "",
-        "Dargon.Ryu.Impl": "",
-        "NMockito": "",
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Ryu.Impl": "*",
+        "NMockito": "*",
         "xunit": "1.9.2"
     }
 }
