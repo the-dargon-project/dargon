@@ -2,6 +2,9 @@
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
 using System.Threading.Tasks;
+using Dargon.Commons;
+using Dargon.Commons.AsyncPrimitives;
+using Dargon.Commons.Pooling;
 using Dargon.Courier.AuditingTier;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.TransportTier.Udp.Management;
@@ -39,11 +42,13 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          var shutdownCts = new CancellationTokenSource();
          var acknowledgementCoordinator = new AcknowledgementCoordinator(identity);
-         var client = UdpClient.Create(configuration, inboundBytesAggregator, outboundBytesAggregator, inboundReceiveProcessDispatchLatencyAggregator);
+         var udpUnicastScheduler = SchedulerFactory.CreateWithCustomThreadPool($"Courier.Udp({identity.Id.ToShortString()}).Unicast");
+         var sendReceiveBufferPool = ObjectPool.CreateStackBacked(() => new byte[UdpConstants.kMaximumTransportSize]);
+         var client = UdpClient.Create(configuration, udpUnicastScheduler, sendReceiveBufferPool, inboundBytesAggregator, outboundBytesAggregator, inboundReceiveProcessDispatchLatencyAggregator);
          var payloadSender = new PayloadSender(client);
          var multiPartPacketReassembler = new MultiPartPacketReassembler();
-         var udpDispatcher = new UdpDispatcherImpl(identity, client, duplicateFilter, payloadSender, acknowledgementCoordinator, routingTable, peerTable, inboundMessageDispatcher, multiPartPacketReassembler, announcementsReceivedCounter, resendsCounter, resendsAggregator, tossedCounter, duplicatesReceivedCounter, multiPartChunksReceivedAggregator, outboundMessageRateLimitAggregator, sendQueueDepthAggregator);
-         udpDispatcher.Initialize();
+         var udpUnicasterFactory = new UdpUnicasterFactory(identity, client, acknowledgementCoordinator, sendReceiveBufferPool, resendsCounter, resendsAggregator, outboundMessageRateLimitAggregator, sendQueueDepthAggregator);
+         var udpDispatcher = new UdpDispatcherImpl(identity, client, duplicateFilter, payloadSender, acknowledgementCoordinator, routingTable, peerTable, inboundMessageDispatcher, multiPartPacketReassembler, udpUnicasterFactory, announcementsReceivedCounter, tossedCounter, duplicatesReceivedCounter, multiPartChunksReceivedAggregator);
          multiPartPacketReassembler.SetUdpDispatcher(udpDispatcher);
          var announcer = new Announcer(identity, payloadSender, shutdownCts.Token);
          announcer.Initialize();

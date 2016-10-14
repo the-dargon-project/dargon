@@ -43,7 +43,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
          var frameBytes = await ReadBytesAsync(ns, frameLength, null, cancellationToken).ConfigureAwait(false);
          inboundBytesAggregator.Put(sizeof(int) + frameLength);
 
-         return Deserialize.From(new MemoryStream(frameBytes, false));
+         return Deserialize.From(new MemoryStream(frameBytes, 0, frameBytes.Length, false, true));
       }
 
       private async Task<byte[]> ReadBytesAsync(Stream stream, int count, byte[] buffer = null, CancellationToken cancellationToken = default(CancellationToken)) {

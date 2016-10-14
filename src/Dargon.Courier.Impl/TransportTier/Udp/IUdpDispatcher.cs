@@ -9,13 +9,13 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using NLog;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Dargon.Commons.Exceptions;
+using Dargon.Commons.Collections;
+using SCG = System.Collections.Generic;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.TransportTier.Udp {
@@ -25,7 +25,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 
    public class UdpDispatcherImpl : IUdpDispatcher {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-      private readonly ConcurrentDictionary<Guid, RoutingContext> routingContextsByPeerId = new Commons.Collections.ConcurrentDictionary<Guid, RoutingContext>();
+      private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, RoutingContext> routingContextsByPeerId = new Commons.Collections.ConcurrentDictionary<Guid, RoutingContext>();
 
       private readonly Identity identity;
       private readonly UdpClient udpClient;
@@ -36,18 +36,15 @@ namespace Dargon.Courier.TransportTier.Udp {
       private readonly PeerTable peerTable;
       private readonly InboundMessageDispatcher inboundMessageDispatcher;
       private readonly MultiPartPacketReassembler multiPartPacketReassembler;
+      private readonly IUdpUnicasterFactory udpUnicasterFactory;
       private readonly IAuditCounter announcementsReceivedCounter;
-      private readonly IAuditCounter resendsCounter;
-      private readonly IAuditAggregator<int> resendsAggregator;
       private readonly IAuditCounter tossedCounter;
       private readonly IAuditCounter duplicateReceivesCounter;
       private readonly IAuditAggregator<int> multiPartChunksBytesReceivedAggregator;
-      private readonly IAuditAggregator<double> outboundMessageRateLimitAggregator;
-      private readonly IAuditAggregator<double> sendQueueDepthAggregator;
 
       private volatile bool isShutdown = false;
 
-      public UdpDispatcherImpl(Identity identity, UdpClient udpClient, DuplicateFilter duplicateFilter, PayloadSender payloadSender, AcknowledgementCoordinator acknowledgementCoordinator, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, MultiPartPacketReassembler multiPartPacketReassembler, IAuditCounter announcementsReceivedCounter, IAuditCounter resendsCounter, IAuditAggregator<int> resendsAggregator, IAuditCounter tossedCounter, IAuditCounter duplicateReceivesCounter, IAuditAggregator<int> multiPartChunksBytesReceivedAggregator, IAuditAggregator<double> outboundMessageRateLimitAggregator, IAuditAggregator<double> sendQueueDepthAggregator) {
+      public UdpDispatcherImpl(Identity identity, UdpClient udpClient, DuplicateFilter duplicateFilter, PayloadSender payloadSender, AcknowledgementCoordinator acknowledgementCoordinator, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, MultiPartPacketReassembler multiPartPacketReassembler, IUdpUnicasterFactory udpUnicasterFactory, IAuditCounter announcementsReceivedCounter, IAuditCounter tossedCounter, IAuditCounter duplicateReceivesCounter, IAuditAggregator<int> multiPartChunksBytesReceivedAggregator) {
          this.identity = identity;
          this.udpClient = udpClient;
          this.duplicateFilter = duplicateFilter;
@@ -57,77 +54,24 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.peerTable = peerTable;
          this.inboundMessageDispatcher = inboundMessageDispatcher;
          this.multiPartPacketReassembler = multiPartPacketReassembler;
+         this.udpUnicasterFactory = udpUnicasterFactory;
          this.announcementsReceivedCounter = announcementsReceivedCounter;
-         this.resendsCounter = resendsCounter;
-         this.resendsAggregator = resendsAggregator;
          this.tossedCounter = tossedCounter;
          this.duplicateReceivesCounter = duplicateReceivesCounter;
          this.multiPartChunksBytesReceivedAggregator = multiPartChunksBytesReceivedAggregator;
-         this.outboundMessageRateLimitAggregator = outboundMessageRateLimitAggregator;
-         this.sendQueueDepthAggregator = sendQueueDepthAggregator;
       }
 
-      private readonly ConcurrentQueue<Tuple<InboundDataEvent, Action>> inboundDataEventQueue = new Commons.Collections.ConcurrentQueue<Tuple<InboundDataEvent, Action>>();
-      private readonly Semaphore inboundDataEventQueueSemaphore = new Semaphore(0, int.MaxValue);
-
-      public void Initialize() {
-//         for (var i = 0; i < Math.Max(4, Environment.ProcessorCount * 10); i++) {
-//            new Thread(InboundDataEventProcessorThreadStart) { IsBackground = true }.Start();
-//         }
-      }
-
-//      public void InboundDataEventProcessorThreadStart() {
-//         while (true) {
-//            inboundDataEventQueueSemaphore.WaitOne();
-//            Tuple<InboundDataEvent, Action> inboundData;
-//            if (!inboundDataEventQueue.TryDequeue(out inboundData)) {
-//               throw new InvalidStateException();
-//            }
-//
-//            var e = inboundData.Item1;
-//            var freeE = inboundData.Item2;
-//
-//            object payload;
-//            try {
-//               payload = Deserialize.From(new MemoryStream(e.Data, false));
-//            } catch (Exception ex) {
-//               if (!isShutdown) {
-//                  logger.Warn("Error at payload deserialize", ex);
-//               }
-//               return;
-//            }
-//
-//            freeE();
-//
-//            try {
-//               if (payload is AcknowledgementDto) {
-//                  Interlocked.Increment(ref DebugRuntimeStats.in_ack);
-//                  HandleAcknowledgement((AcknowledgementDto)payload);
-//                  Interlocked.Increment(ref DebugRuntimeStats.in_ack_done);
-//               } else if (payload is AnnouncementDto) {
-//                  Interlocked.Increment(ref DebugRuntimeStats.in_ann);
-//                  HandleAnnouncement((AnnouncementDto)payload);
-//                  //               Interlocked.Increment(ref ann_out);
-//               } else if (payload is PacketDto) {
-//                  Interlocked.Increment(ref DebugRuntimeStats.in_pac);
-//                  Go(async () => {
-//                     await HandlePacketDtoAsync((PacketDto)payload).ConfigureAwait(false);
-//                     Interlocked.Increment(ref DebugRuntimeStats.in_pac_done);
-//                  }).Forget();
-//                  //               Interlocked.Increment(ref pac_out);
-//               }
-//            } catch (Exception ex) {
-//               logger.Error("HandleInboundDataAsync threw!", ex);
-//            }
-//         }
-//      }
-
+      /// <summary>
+      /// Processes an inbound data event. 
+      /// This is assumed to be invoked on an IOCP thread so a goal is to do as little as possible.
+      /// </summary>
       public void HandleInboundDataEvent(InboundDataEvent e, Action<InboundDataEvent> returnInboundDataEvent) {
 #if DEBUG
          Interlocked.Increment(ref DebugRuntimeStats.in_de);
 #endif
 
-         List<object> payloads = new List<object>();
+         // Deserialize inbound payloads
+         SCG.List<object> payloads = new SCG.List<object>();
          try {
             using (var ms = new MemoryStream(e.Data, e.DataOffset, e.DataLength, false, true)) {
                while (ms.Position < ms.Length) {
@@ -140,44 +84,104 @@ namespace Dargon.Courier.TransportTier.Udp {
             }
             return;
          }
-
          returnInboundDataEvent(e);
+#if DEBUG
+         Interlocked.Add(ref DebugRuntimeStats.in_payload, payloads.Count);
+#endif
 
-//         Console.WriteLine("RECIEFVIED " + JsonConvert.SerializeObject(payload));
-
+         // Categorize inbound payloads
+         var acknowledgements = new SCG.List<AcknowledgementDto>();
+         var announcements = new SCG.List<AnnouncementDto>();
+         var reliablePackets = new SCG.List<PacketDto>();
+         var unreliablePackets = new SCG.List<PacketDto>();
          foreach (var payload in payloads) {
-            try {
-               if (payload is AcknowledgementDto) {
-#if DEBUG
-                  Interlocked.Increment(ref DebugRuntimeStats.in_ack);
-#endif
-                  acknowledgementCoordinator.ProcessAcknowledgement((AcknowledgementDto)payload);
-#if DEBUG
-                  Interlocked.Increment(ref DebugRuntimeStats.in_ack_done);
-#endif
-               } else if (payload is AnnouncementDto) {
-#if DEBUG
-                  Interlocked.Increment(ref DebugRuntimeStats.in_ann);
-#endif
-                  HandleAnnouncement(e.RemoteInfo, (AnnouncementDto)payload);
-                  //               Interlocked.Increment(ref ann_out);
-               } else if (payload is PacketDto) {
-#if DEBUG
-                  Interlocked.Increment(ref DebugRuntimeStats.in_pac);
-#endif
-                  HandlePacketDtoAndDispatchAsync(e.RemoteInfo, (PacketDto)payload).Forget();
-#if DEBUG
-                  Interlocked.Increment(ref DebugRuntimeStats.in_pac_done);
-#endif
-                  //               Interlocked.Increment(ref pac_out);
+            if (payload is AcknowledgementDto) {
+               acknowledgements.Add((AcknowledgementDto)payload);
+            } else if (payload is AnnouncementDto) {
+               announcements.Add((AnnouncementDto)payload);
+            } else if (payload is PacketDto) {
+               // Filter packets not destined to us.
+               var packet = (PacketDto)payload;
+               if (!identity.Matches(packet.ReceiverId, IdentityMatchingScope.Broadcast)) {
+                  tossedCounter.Increment();
+                  continue;
                }
-            } catch (Exception ex) {
-               logger.Error("HandleInboundDataAsync threw!", ex);
+
+               // Bin into reliable vs unreliable.
+               if (packet.IsReliable()) {
+                  reliablePackets.Add(packet);
+               } else {
+                  unreliablePackets.Add(packet);
+               }
             }
          }
 
-         //         inboundDataEventQueue.Enqueue(Tuple.Create(e, returnInboundDataEvent));
-         //         inboundDataEventQueueSemaphore.Release();
+         // Process acks to prevent resends.
+         foreach (var ack in acknowledgements) {
+#if DEBUG
+            Interlocked.Increment(ref DebugRuntimeStats.in_ack);
+#endif
+            acknowledgementCoordinator.ProcessAcknowledgement(ack);
+#if DEBUG
+            Interlocked.Increment(ref DebugRuntimeStats.in_ack_done);
+#endif
+         }
+
+         // Process announcements as they are necessary for routing.
+         foreach (var announcement in announcements) {
+#if DEBUG
+            Interlocked.Increment(ref DebugRuntimeStats.in_ann);
+#endif
+            HandleAnnouncement(e.RemoteInfo, announcement);
+         }
+
+         // Ack inbound reliable messages to prevent resends.
+         foreach (var packet in reliablePackets) {
+#if DEBUG
+            Interlocked.Increment(ref DebugRuntimeStats.in_out_ack);
+#endif
+            var ack = AcknowledgementDto.Create(packet.Id);
+            RoutingContext routingContext;
+            if (routingContextsByPeerId.TryGetValue(packet.SenderId, out routingContext)) {
+               routingContext.SendAcknowledgementAsync(packet.SenderId, ack).Forget();
+            } else {
+               payloadSender.BroadcastAsync(ack).Forget();
+            }
+#if DEBUG
+            Interlocked.Increment(ref DebugRuntimeStats.in_out_ack_done);
+#endif
+         }
+
+         // Test reliable packets' guids against bloom filter.
+         var isNewByPacketId = duplicateFilter.TestPacketIdsAreNew(new HashSet<Guid>(reliablePackets.Select(p => p.Id)));
+         var standalonePacketsToProcess = new SCG.List<PacketDto>(unreliablePackets);
+         var chunksToProcess = new SCG.List<MultiPartChunkDto>();
+         foreach (var packet in reliablePackets) {
+            // Toss out duplicate packets
+            if (!isNewByPacketId[packet.Id]) {
+               duplicateReceivesCounter.Increment();
+               continue;
+            } 
+
+            // Bin into multipart chunk vs not
+            var multiPartChunk = packet.Message.Body as MultiPartChunkDto;
+            if (multiPartChunk != null) {
+               multiPartChunksBytesReceivedAggregator.Put(multiPartChunk.BodyLength);
+               chunksToProcess.Add(multiPartChunk);
+            } else {
+               standalonePacketsToProcess.Add(packet);
+            }
+         }
+
+         // Kick off async stanadalone packet process on thread pool.
+         foreach (var packet in standalonePacketsToProcess) {
+            inboundMessageDispatcher.DispatchAsync(packet.Message).Forget();
+         }
+
+         // Synchronously handle multipart chunk processing.
+         foreach (var chunk in chunksToProcess) {
+            multiPartPacketReassembler.HandleInboundMultiPartChunk(chunk);
+         }
       }
 
       private void HandleAnnouncement(UdpClientRemoteInfo remoteInfo, AnnouncementDto x) {
@@ -200,8 +204,8 @@ namespace Dargon.Courier.TransportTier.Udp {
                   IPEndpoint = unicastEndpoint
                };
 
-               addedUnicaster = new UdpUnicaster(identity, udpClient, acknowledgementCoordinator, unicastRemoteInfo, resendsCounter, resendsAggregator, outboundMessageRateLimitAggregator, sendQueueDepthAggregator);
-               return addedRoutingContext = new RoutingContext( addedUnicaster);
+               addedUnicaster = udpUnicasterFactory.Create(unicastRemoteInfo);
+               return addedRoutingContext = new RoutingContext(addedUnicaster);
             });
          if (addedRoutingContext == routingContext) {
             addedUnicaster.Initialize();
@@ -211,53 +215,6 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
 
          peerTable.GetOrAdd(peerId).HandleInboundPeerIdentityUpdate(peerIdentity);
-      }
-
-      private Task HandlePacketDtoAndDispatchAsync(UdpClientRemoteInfo remoteInfo, PacketDto x) {
-         if (!identity.Matches(x.ReceiverId, IdentityMatchingScope.Broadcast)) {
-            tossedCounter.Increment();
-            return Task.FromResult(false);
-         }
-
-         if (x.IsReliable()) {
-#if DEBUG
-            Interlocked.Increment(ref DebugRuntimeStats.in_out_ack);
-#endif
-            var ack = AcknowledgementDto.Create(x.Id);
-            RoutingContext routingContext;
-            if (routingContextsByPeerId.TryGetValue(x.SenderId, out routingContext)) {
-               routingContext.SendAcknowledgementAsync(x.SenderId, ack).Forget();
-            } else {
-               payloadSender.BroadcastAsync(ack).Forget();
-            }
-#if DEBUG
-            Interlocked.Increment(ref DebugRuntimeStats.in_out_ack_done);
-#endif
-         }
-
-         if (logger.IsDebugEnabled && x.Message.Body.GetType().FullName.Contains("Service")) {
-            logger.Debug($"Routing packet {x.Id} Reliable: {x.IsReliable()} TBody: {x.Message.Body?.GetType().Name ?? "[null]"} Body: {JsonConvert.SerializeObject(x.Message.Body, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() })}");
-         }
-
-         //         RoutingContext peerRoutingContext;
-         //         if (routingContextsByPeerId.TryGetValue(x.SenderId, out peerRoutingContext)) {
-         //            peerRoutingContext.Weight++;
-         //         }
-
-         if (x.Message.Body is MultiPartChunkDto) {
-            var chunk = (MultiPartChunkDto)x.Message.Body;
-            multiPartChunksBytesReceivedAggregator.Put(chunk.BodyLength);
-            multiPartPacketReassembler.HandleInboundMultiPartChunk(chunk);
-            return Task.FromResult(false);
-         } else {
-            return Go(async () => {
-               if (x.IsReliable() && !await duplicateFilter.IsNewAsync(x.Id).ConfigureAwait(false)) {
-                  duplicateReceivesCounter.Increment();
-                  return;
-               }
-               await inboundMessageDispatcher.DispatchAsync(x.Message).ConfigureAwait(false);
-            });
-         }
       }
 
       public void Shutdown() {

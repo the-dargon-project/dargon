@@ -14,6 +14,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Commons.Exceptions;
+using NLog;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.TransportTier.Udp {
@@ -134,9 +135,11 @@ namespace Dargon.Courier.TransportTier.Udp {
    }
 
    public class UdpUnicaster {
-      private static readonly IObjectPool<MemoryStream> outboundAcknowledgementMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kAckSerializationBufferSize], 0, UdpConstants.kAckSerializationBufferSize, true, true));
-      private static readonly IObjectPool<MemoryStream> outboundPacketMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
+      private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
       private readonly AsyncAutoResetLatch workSignal = new AsyncAutoResetLatch();
+      private readonly IObjectPool<MemoryStream> outboundAcknowledgementMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kAckSerializationBufferSize], 0, UdpConstants.kAckSerializationBufferSize, true, true));
+      private readonly IObjectPool<MemoryStream> outboundPacketMemoryStreamPool;
       private readonly Identity identity;
       private readonly UdpClient udpClient;
       private readonly AcknowledgementCoordinator acknowledgementCoordinator;
@@ -147,7 +150,27 @@ namespace Dargon.Courier.TransportTier.Udp {
       private readonly IAuditAggregator<double> outboundMessageRateLimitAggregator;
       private readonly IAuditAggregator<double> sendQueueDepthAggregator;
 
-      public UdpUnicaster(Identity identity, UdpClient udpClient, AcknowledgementCoordinator acknowledgementCoordinator, UdpClientRemoteInfo remoteInfo, IAuditCounter resendsCounter, IAuditAggregator<int> resendsAggregator, IAuditAggregator<double> outboundMessageRateLimitAggregator, IAuditAggregator<double> sendQueueDepthAggregator) {
+      public class ByteArrayPoolBackedMemoryStreamPool : IObjectPool<MemoryStream> {
+         public ByteArrayPoolBackedMemoryStreamPool(IObjectPool<byte[]> backingPool) {
+            BackingPool = backingPool;
+         }
+
+         public IObjectPool<byte[]> BackingPool { get; }
+         public string Name => BackingPool.Name + "_ms";
+         public int Count => BackingPool.Count;
+
+         public MemoryStream TakeObject() {
+            var buffer = BackingPool.TakeObject();
+            return new MemoryStream(buffer, 0, buffer.Length, true, true);
+         }
+         
+         public void ReturnObject(MemoryStream item) {
+            BackingPool.ReturnObject(item.GetBuffer());
+         }
+      }
+
+      public UdpUnicaster(Identity identity, UdpClient udpClient, AcknowledgementCoordinator acknowledgementCoordinator, IObjectPool<byte[]> sendReceiveBufferPool, UdpClientRemoteInfo remoteInfo, IAuditCounter resendsCounter, IAuditAggregator<int> resendsAggregator, IAuditAggregator<double> outboundMessageRateLimitAggregator, IAuditAggregator<double> sendQueueDepthAggregator) {
+         this.outboundPacketMemoryStreamPool = new ByteArrayPoolBackedMemoryStreamPool(sendReceiveBufferPool);
          this.identity = identity;
          this.udpClient = udpClient;
          this.acknowledgementCoordinator = acknowledgementCoordinator;
@@ -159,44 +182,63 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public void Initialize() {
-         RunAsync().Forget();
-      }
+         RunMessageQueueProcessorAsync().Forget();
 
-      private async Task RunAsync() {
-         const int messageRateMin = 10000;
-         const int deltaMessageRatePerSecond = 1000;
-         var messageRateBase = messageRateMin * 2;
-         var lastResetTime = DateTime.Now;
-
+         // Periodically signal work is available as resends don't signal.
          Go(async () => {
             while (true) {
                workSignal.Set();
                await Task.Delay(100).ConfigureAwait(false);
             }
          }).Forget();
+      }
 
-         var lastIterationEndTime = DateTime.Now;
+      private async Task RunMessageQueueProcessorAsync() {
+         const int rateLimiterBaseRate = 10000;
+         const int rateLimiterRateVelocity = 2000;
+         const int rateLimiterInitialRate = 100000;
+         var rateLimiter = new OutboundMessageRateLimiter(
+            outboundMessageRateLimitAggregator,
+            rateLimiterBaseRate,
+            rateLimiterRateVelocity,
+            rateLimiterInitialRate,
+            0.9);
+
          var inTransportSendRequestQueue = new ConcurrentQueue<SendRequest>();
          while (true) {
-//            Console.WriteLine(outboundAcknowledgementMemoryStreamPool.Count + " " + outboundPacketMemoryStreamPool.Count);
+            // Block until work available is signalled, then compute sends remaining from rate limiter
             await workSignal.WaitAsync().ConfigureAwait(false);
             sendQueueDepthAggregator.Put(unhandledSendRequestQueue.Count);
+            var sendsRemaining = rateLimiter.TakeAndResetOutboundMessagesAvailableCounter();
 
-            var iterationStartTime = DateTime.Now;
-            var messageRate = (int)(messageRateBase + (iterationStartTime - lastResetTime).TotalSeconds * deltaMessageRatePerSecond);
-            outboundMessageRateLimitAggregator.Put(messageRate);
+            // TODO: Analytics on these two things. Pool miss/hit/depth would be useful in general.
+            // Console.WriteLine(outboundAcknowledgementMemoryStreamPool.Count + " " + outboundPacketMemoryStreamPool.Count);
 
-            var dt = iterationStartTime - lastIterationEndTime;
-            var sendsRemaining = (int)Math.Floor(dt.TotalSeconds * messageRate);
+            // The general algorithm consists of three queues:
+            //   1. In-Transport Queue - sends yet to be acknowledged
+            //   2. Request Queue - haven't been sent out yet
+            //   3. Pending Reenqueue Queue - To be readded to in-transport queue
+            // 
+            // The in-transport queue is iterated through. Iterated elements
+            // are either forgotten in response to acknowledgement, resent
+            // presumably in response to packet loss, or thrown into the pending
+            // reenqueue queue otherwise. 
+            //
+            // Then, the request queue may be processed. Unreliable messages are
+            // forgotten after send while reliable messages are thrown into
+            // the pending renqueue queue.
+            //
+            // Finally, the pending reenqueue queue is thrown back into the in-
+            // transport queue.
 
+            var loopStartTime = DateTime.Now;
+            bool droppedPacketDetected = false;
             var pendingRenqueues = new List<SendRequest>();
-            SendRequest noncapturedSendRequest;
-            bool resendOccurred = false;
             var outboundSendRequests = new List<SendRequest>();
+            SendRequest sendRequest;
             while (sendsRemaining > 0 &&
-                   (inTransportSendRequestQueue.TryDequeue(out noncapturedSendRequest) ||
-                    unhandledSendRequestQueue.TryDequeue(out noncapturedSendRequest))) {
-               var sendRequest = noncapturedSendRequest;
+                   (inTransportSendRequestQueue.TryDequeue(out sendRequest) ||
+                    unhandledSendRequestQueue.TryDequeue(out sendRequest))) {
                if (!sendRequest.IsReliable) {
                   sendsRemaining--;
                   outboundSendRequests.Add(sendRequest);
@@ -211,13 +253,13 @@ namespace Dargon.Courier.TransportTier.Udp {
 #endif
                      continue;
                   }
-                  if (iterationStartTime < sendRequest.NextSendTime) {
+                  if (loopStartTime < sendRequest.NextSendTime) {
                      pendingRenqueues.Add(sendRequest);
                   } else {
                      sendsRemaining--;
                      if (sendRequest.SendCount > 0) {
                         resendsCounter.Increment();
-                        resendOccurred = true;
+                        droppedPacketDetected = true;
                      }
 
 #if DEBUG
@@ -242,9 +284,10 @@ namespace Dargon.Courier.TransportTier.Udp {
                            outboundSendRequest.Data.SetLength(0);
                            outboundSendRequest.DataBufferPool.ReturnObject(outboundSendRequest.Data);
                         } else {
-                           const int kResendIntervalBase = 3000;
-                           var resendDelayMillis = kResendIntervalBase * Math.Min(32, 1 << outboundSendRequest.SendCount);
-                           outboundSendRequest.NextSendTime = now + TimeSpan.FromMilliseconds(resendDelayMillis);
+                           const int kResendIntervalBase = 2048;
+                           var maxResendDelayMillis = Math.Min(8000, kResendIntervalBase * (1 << (outboundSendRequest.SendCount >> 3)));
+                           var actualResendDelayMillis = maxResendDelayMillis - StaticRandom.Next(maxResendDelayMillis / 4);
+                           outboundSendRequest.NextSendTime = now + TimeSpan.FromMilliseconds(actualResendDelayMillis);
                            outboundSendRequest.SendCount++;
                            inTransportSendRequestQueue.Enqueue(outboundSendRequest);
                         }
@@ -253,11 +296,9 @@ namespace Dargon.Courier.TransportTier.Udp {
             }
 
             pendingRenqueues.ForEach(inTransportSendRequestQueue.Enqueue);
-            if (resendOccurred) {
-               messageRateBase = Math.Max(messageRateMin, messageRateBase + (messageRate - messageRateBase) / 2);
-               lastResetTime = DateTime.Now;
+            if (droppedPacketDetected) {
+               rateLimiter.HandlePacketLoss();
             }
-            lastIterationEndTime = DateTime.Now;
          }
       }
 
@@ -368,6 +409,7 @@ namespace Dargon.Courier.TransportTier.Udp {
                      ChunkIndex = chunkIndex
                   };
                });
+            logger.Info($"Splitting large payload into {chunks.Length} chunks.");
 
             await Task.WhenAll(
                Util.Generate(

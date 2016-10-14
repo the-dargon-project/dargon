@@ -98,19 +98,14 @@ namespace Dargon.Courier.PeeringTier {
       [Fact]
       public async Task LargeObjectTest() {
          try {
+            ThreadPool.SetMinThreads(128, 128);
             var sw = new Stopwatch();
             sw.Start();
 
-            logger.Info("Building 10MB large payload");
-            var gigabytePayload = new byte[10 * 1000 * 1000]; //Util.Generate(1000 * 1000 * 1000, i => (byte)i);
-            logger.Info("Done building large payload");
-
-            //            var ms = new MemoryStream();
-            //            Serialize.To(ms, new MessageDto { Body = gigabytePayload });
-            //            ms.Position = 0;
-            //            var mDto = (MessageDto)Deserialize.From(ms);
-            //            AssertTrue(Util.ByteArraysEqual(gigabytePayload, (byte[])mDto.Body));
-
+            logger.Info("Building large payload");
+            var payload = new byte[1000 * 1000 * 1000];
+            logger.Info($"Done building large payload. Size: {payload.Length / (1024f * 1024f)} MiB." );
+            
             using (var timeout = new CancellationTokenSource(1000000)) {
                // ensure the serialized object is large.
                var readCompletionLatch = new AsyncLatch();
@@ -119,7 +114,7 @@ namespace Dargon.Courier.PeeringTier {
                   await TaskEx.YieldToThreadPool();
 
                   logger.Info("Received large payload.");
-                  var equalityCheckResult = Util.ByteArraysEqual(gigabytePayload, x.Body);
+                  var equalityCheckResult = Util.ByteArraysEqual(payload, x.Body);
                   logger.Info("Validation result: " + equalityCheckResult);
                   AssertTrue(equalityCheckResult);
                   logger.Info("Validated large payload.");
@@ -130,7 +125,7 @@ namespace Dargon.Courier.PeeringTier {
                await senderFacade.PeerTable.GetOrAdd(receiverFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token);
 
                logger.Info("Sending large payload");
-               await senderFacade.Messenger.SendReliableAsync(gigabytePayload, receiverFacade.Identity.Id);
+               await senderFacade.Messenger.SendReliableAsync(payload, receiverFacade.Identity.Id);
                logger.Info("Sent large payload");
                await readCompletionLatch.WaitAsync(timeout.Token);
             }
@@ -170,6 +165,7 @@ namespace Dargon.Courier.PeeringTier {
                                              UdpTransportConfigurationBuilder.Create()
                                                                              .WithUnicastReceivePort(21338)
                                                                              .Build())
+                                          .UseTcpServerTransport(21337)
                                           .BuildAsync().Result;
 
          var receiverFacade = CourierBuilder.Create()
@@ -177,6 +173,7 @@ namespace Dargon.Courier.PeeringTier {
                                                UdpTransportConfigurationBuilder.Create()
                                                                                .WithUnicastReceivePort(21339)
                                                                                .Build())
+                                            .UseTcpServerTransport(21338)
                                             .BuildAsync().Result;
          Setup(senderFacade, receiverFacade);
       }

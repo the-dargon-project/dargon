@@ -1,6 +1,6 @@
 namespace Dargon.Courier {
    public enum IdentityMatchingScope {
-      LocalIdentity,
-      Broadcast
+      LocalIdentity = 0,
+      Broadcast = 1
    }
 }

@@ -1,11 +1,7 @@
-﻿using Dargon.Commons;
-using Dargon.Commons.AsyncPrimitives;
-using Dargon.Commons.Collections;
-using Dargon.Courier.Utilities;
+﻿using Dargon.Commons.Collections;
 using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Dargon.Commons.Exceptions;
+using System.Linq;
+using SCG = System.Collections.Generic;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class DuplicateFilter {
@@ -50,14 +46,35 @@ namespace Dargon.Courier.TransportTier.Udp {
 //         }) { IsBackground = true }.Start();
       }
 
-      private ConcurrentSet<Guid> cs = new ConcurrentSet<Guid>();
+//      private readonly object synchronization = new object();
+//      private HashSet<Guid> seenIds = new HashSet<Guid>();
+      private ConcurrentSet<Guid> seenIds = new ConcurrentSet<Guid>(1024, 30000);
 
-      public Task<bool> IsNewAsync(Guid id) {
-         return Task.FromResult(cs.TryAdd(id));
-//         var box = new AsyncBox<bool>();
-//         queuedTestOperations.Enqueue(Tuple.Create(id, box));
-//         queuedTestOperationSignal.Release();
-//         return box.GetResultAsync();
+      public SCG.IReadOnlyDictionary<Guid, bool> TestPacketIdsAreNew(IReadOnlySet<Guid> queryIds) {
+         return queryIds.ToDictionary(
+            q => q,
+            seenIds.TryAdd);
+
+//         var results = new SCG.Dictionary<Guid, bool>();
+//
+//         HashSet<Guid> newIdCandidates = new HashSet<Guid>();
+//         foreach (var queryId in queryIds) {
+//            if (seenIds.Contains(queryId)) {
+//               results[queryId] = false;
+//            } else {
+//               newIdCandidates.Add(queryId);
+//            }
+//         }
+//
+//         lock (synchronization) {
+//            var nextSeenIds = new HashSet<Guid>(seenIds);
+//            foreach (var queryId in newIdCandidates) {
+//               results[queryId] = nextSeenIds.Add(queryId);
+//            }
+//            seenIds = nextSeenIds;
+//         }
+//
+//         return results;
       }
    }
 }

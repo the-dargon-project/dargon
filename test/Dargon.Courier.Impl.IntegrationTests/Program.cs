@@ -18,7 +18,7 @@ namespace Dargon.Courier {
       public static void RunTests() {
          InitializeLogging();
 
-         Console.BufferHeight = 21337;
+//         Console.BufferHeight = 21337;
          new UdpMessagingTests().LargeObjectTest().Wait();
 //         new LocalMessagingLoadTests().RunAsync().Wait();
 //         new UdpServiceTests().RunAsync().Wait();
@@ -70,10 +70,10 @@ namespace Dargon.Courier {
          config.AddTarget("debugger", debuggerTarget);
          config.AddTarget("console", consoleTarget);
 
-         var debuggerRule = new LoggingRule("*", LogLevel.Warn, debuggerTarget);
+         var debuggerRule = new LoggingRule("*", LogLevel.Debug, debuggerTarget);
          config.LoggingRules.Add(debuggerRule);
 
-         var consoleRule = new LoggingRule("*", LogLevel.Warn, consoleTarget);
+         var consoleRule = new LoggingRule("*", LogLevel.Debug, consoleTarget);
          config.LoggingRules.Add(consoleRule);
 
          LogManager.Configuration = config;

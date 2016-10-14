@@ -15,9 +15,5 @@ namespace Dargon.Hydrous.Impl {
 
          return new Guid(bytes);
       }
-
-      public static string ToShortString(this Guid x) {
-         return x.ToString("n").Substring(0, 6);
-      }
    }
 }

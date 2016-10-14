@@ -8,6 +8,8 @@ namespace Dargon.Courier.TransportTier.Udp {
    public class DebugRuntimeStats {
 #if DEBUG
       public static int in_de = 0;
+      public static int in_payload = 0;
+
       public static int in_ack = 0;
       public static int in_ack_done = 0;
       public static int in_ann = 0;
@@ -35,7 +37,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       static DebugRuntimeStats() {
          new Thread(() => {
             while (true) {
-               Console.Title = in_de + " ack " + in_ack + " " + in_ack_done + " ann " + in_ann + " " + in_ann_out + " pac " + in_pac + " " + in_pac_done + " ack_out " + in_out_ack + " " + in_out_ack_done +
+               Console.Title = in_de + " " + in_payload + " ack " + in_ack + " " + in_ack_done + " ann " + in_ann + " " + in_ann_out + " pac " + in_pac + " " + in_pac_done + " ack_out " + in_out_ack + " " + in_out_ack_done +
                                " mpp " + out_mpp + " " + out_mpp_done + " nrs " + out_nrs + " " + out_nrs_done + " rs " + out_rs + " " + out_rs_done + " acked " + out_rs_acked + " sends " + out_sent + " ps " + out_ps + " " + out_ps_done;
                Thread.Sleep(50);
             }

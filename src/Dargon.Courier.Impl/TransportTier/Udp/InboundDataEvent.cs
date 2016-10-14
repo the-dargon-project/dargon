@@ -5,11 +5,13 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Dargon.Commons.Pooling;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class InboundDataEvent {
       public UdpClient UdpClient { get; set; }
       public SocketAsyncEventArgs SocketArgs { get; set; }
+      public IObjectPool<byte[]> DataBufferPool { get; set; }
       public byte[] Data { get; set; }
       public int DataOffset { get; set; }
       public int DataLength { get; set; }

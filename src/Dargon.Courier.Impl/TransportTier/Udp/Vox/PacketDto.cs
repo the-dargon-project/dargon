@@ -14,11 +14,38 @@ namespace Dargon.Courier.TransportTier.Udp.Vox {
       public bool IsReliable() => (Flags & PacketFlags.Reliable) != 0;
 
       public static PacketDto Create(Guid sender, Guid receiver, MessageDto message, bool reliable) => new PacketDto {
-         Id = Guid.NewGuid(),
+//         Id = Guid.NewGuid(),
+         Id = GuidSource.Next(),
          SenderId = sender,
          ReceiverId = receiver,
          Message = message,
          Flags = reliable ? PacketFlags.Reliable : PacketFlags.None
       };
+
+      public static class GuidSource {
+         [ThreadStatic] private static bool initialized;
+         [ThreadStatic] private static Guid currentGuid;
+         [ThreadStatic] private static int count;
+
+         public static Guid Next() {
+            if (!initialized || count == 1024) {
+               initialized = true;
+               count = 0;
+               currentGuid = Guid.NewGuid();
+            }
+            return AddToGuidSomehow(currentGuid, count++);
+         }
+
+         private static unsafe Guid AddToGuidSomehow(Guid guid, int value) {
+            var bytes = guid.ToByteArray();
+
+            // sue me.
+            fixed (byte* pBytes = bytes) {
+               *(int*)pBytes += value;
+            }
+
+            return new Guid(bytes);
+         }
+      }
    }
 }

@@ -53,7 +53,7 @@ namespace Dargon.Hydrous.Cache {
          Console.WriteLine($"Test Configuration: workers {minWorkerThreads}/{maxWorkerThreads}, iocp {minCompletionPortThreads}/{maxCompletionPortThreads}");
 
          await TaskEx.YieldToThreadPool();
-//         ThreadPool.SetMaxThreads(128, 128);
+         ThreadPool.SetMaxThreads(128, 128);
 
          await SetupAsync().ConfigureAwait(false);
 
@@ -65,9 +65,9 @@ namespace Dargon.Hydrous.Cache {
          var cluster = await TestUtils.CreateCluster<int, TestDto>(
             clusterSize,
             () => new CacheConfiguration<int, TestDto>("test-cache") {
-//               CachePersistenceStrategy = CachePersistenceStrategy<int, TestDto>.Create(
-//                  BatchedCacheReadStrategy<int, TestDto>.Create(hitler),
-//                  WriteBehindCacheUpdateStrategy<int, TestDto>.Create(hitler, 5000)),
+               CachePersistenceStrategy = CachePersistenceStrategy<int, TestDto>.Create(
+                  BatchedCacheReadStrategy<int, TestDto>.Create(hitler),
+                  WriteBehindCacheUpdateStrategy<int, TestDto>.Create(hitler, 5000)),
                PartitioningConfiguration = new PartitioningConfiguration {
                   Redundancy = replicationFactor
                }
