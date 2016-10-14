@@ -5,7 +5,7 @@ Courier is a work-in-progress open-source library for the .net ecosystem release
 # Some Highlights
 You can use dargon-management-interface (dmi) to connect to your live application and debug its state.
 ```
-> graph outbound_bytes
+> graph inbound_bytes
 ══════════════════════ Dargon.Courier.TransportTier.Udp.Management.UdpDebugMob.inbound_bytes ══════════════════════
              Min                                    Max                                  Sum
      ▄▄                       │245.20               ▄           ▄   │8999.30            ▄               │2614475.70
