@@ -69,12 +69,6 @@ Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "Dargon.Hydrous.Impl", "depe
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "dummy-management-object-server", "dependencies\courier\src\dummy-management-object-server\dummy-management-object-server.xproj", "{832CF5BA-2ABA-4EB2-98DB-07001DB4EA0E}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Vox.IntegrationTests", "dependencies\vox\test\Dargon.Vox.IntegrationTests\Dargon.Vox.IntegrationTests.xproj", "{9F79AFF1-8CF5-47B1-9E67-03EF5FEF2F1D}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Vox.InternalTestUtils", "dependencies\vox\test\Dargon.Vox.InternalTestUtils\Dargon.Vox.InternalTestUtils.xproj", "{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Vox.UnitTests", "dependencies\vox\test\Dargon.Vox.UnitTests\Dargon.Vox.UnitTests.xproj", "{94A50AF5-E6BE-40E6-92B6-05E4689EA93F}"
-EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Hydrous.Impl.UnitTests", "dependencies\courier\test\Dargon.Hydrous.Impl.UnitTests\Dargon.Hydrous.Impl.UnitTests.xproj", "{895884CB-26B5-4F3B-98FB-5C3102F428C0}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Hydrous.Impl.FunctionalTests", "dependencies\courier\test\Dargon.Hydrous.Impl.FunctionalTests\Dargon.Hydrous.Impl.FunctionalTests.xproj", "{21E2EE15-621E-4521-8BC0-9C6387ED362F}"
@@ -122,9 +116,9 @@ Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "Dargon.Vox.FunctionalTests"
 		AttachLaunchAction = No
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dargon-management-interface_", "..\dargon-management-interface\dargon-management-interface_.csproj", "{79872398-F5A6-4F34-9596-447D1CFBCAB4}"
-EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "visual-dargon-management-interface", "dependencies\courier\src\visual-dargon-management-interface\visual-dargon-management-interface.xproj", "{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Dargon.Vox.InternalTestUtils", "dependencies\vox\test\Dargon.Vox.InternalTestUtils\Dargon.Vox.InternalTestUtils.xproj", "{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}"
 EndProject
 Global
 	GlobalSection(Performance) = preSolution
@@ -257,30 +251,6 @@ Global
 		{832CF5BA-2ABA-4EB2-98DB-07001DB4EA0E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{832CF5BA-2ABA-4EB2-98DB-07001DB4EA0E}.Release|x64.ActiveCfg = Release|Any CPU
 		{832CF5BA-2ABA-4EB2-98DB-07001DB4EA0E}.Release|x64.Build.0 = Release|Any CPU
-		{9F79AFF1-8CF5-47B1-9E67-03EF5FEF2F1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9F79AFF1-8CF5-47B1-9E67-03EF5FEF2F1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9F79AFF1-8CF5-47B1-9E67-03EF5FEF2F1D}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{9F79AFF1-8CF5-47B1-9E67-03EF5FEF2F1D}.Debug|x64.Build.0 = Debug|Any CPU
-		{9F79AFF1-8CF5-47B1-9E67-03EF5FEF2F1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9F79AFF1-8CF5-47B1-9E67-03EF5FEF2F1D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9F79AFF1-8CF5-47B1-9E67-03EF5FEF2F1D}.Release|x64.ActiveCfg = Release|Any CPU
-		{9F79AFF1-8CF5-47B1-9E67-03EF5FEF2F1D}.Release|x64.Build.0 = Release|Any CPU
-		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Debug|x64.Build.0 = Debug|Any CPU
-		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Release|x64.ActiveCfg = Release|Any CPU
-		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Release|x64.Build.0 = Release|Any CPU
-		{94A50AF5-E6BE-40E6-92B6-05E4689EA93F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{94A50AF5-E6BE-40E6-92B6-05E4689EA93F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{94A50AF5-E6BE-40E6-92B6-05E4689EA93F}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{94A50AF5-E6BE-40E6-92B6-05E4689EA93F}.Debug|x64.Build.0 = Debug|Any CPU
-		{94A50AF5-E6BE-40E6-92B6-05E4689EA93F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{94A50AF5-E6BE-40E6-92B6-05E4689EA93F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{94A50AF5-E6BE-40E6-92B6-05E4689EA93F}.Release|x64.ActiveCfg = Release|Any CPU
-		{94A50AF5-E6BE-40E6-92B6-05E4689EA93F}.Release|x64.Build.0 = Release|Any CPU
 		{895884CB-26B5-4F3B-98FB-5C3102F428C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{895884CB-26B5-4F3B-98FB-5C3102F428C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{895884CB-26B5-4F3B-98FB-5C3102F428C0}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -325,14 +295,6 @@ Global
 		{21627405-5C7E-4663-89D8-68A43CA31DD6}.Debug|x64.ActiveCfg = Release|x64
 		{21627405-5C7E-4663-89D8-68A43CA31DD6}.Release|Any CPU.ActiveCfg = Release|x64
 		{21627405-5C7E-4663-89D8-68A43CA31DD6}.Release|x64.ActiveCfg = Release|x64
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Debug|x64.Build.0 = Debug|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|x64.ActiveCfg = Release|Any CPU
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4}.Release|x64.Build.0 = Release|Any CPU
 		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -341,6 +303,14 @@ Global
 		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Release|x64.ActiveCfg = Release|Any CPU
 		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB}.Release|x64.Build.0 = Release|Any CPU
+		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Debug|x64.Build.0 = Debug|Any CPU
+		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Release|x64.ActiveCfg = Release|Any CPU
+		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -360,14 +330,10 @@ Global
 		{B8BA80E1-0831-4613-8A80-14E5E34696BD} = {717230C9-AFBC-456B-A700-9CFC5FB5FDD6}
 		{3E7B72E8-A156-4205-8A96-848FC6C80966} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
 		{832CF5BA-2ABA-4EB2-98DB-07001DB4EA0E} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
-		{9F79AFF1-8CF5-47B1-9E67-03EF5FEF2F1D} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
-		{FD64EABA-21E2-4DC8-97F0-133FFB3EE4CD} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
-		{94A50AF5-E6BE-40E6-92B6-05E4689EA93F} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
 		{895884CB-26B5-4F3B-98FB-5C3102F428C0} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
 		{21E2EE15-621E-4521-8BC0-9C6387ED362F} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
 		{7D178A6D-1368-462D-AF19-5837167DC6C0} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
 		{DE606596-8821-4E3E-B0F9-38F4AF083017} = {8C077420-A36E-4D87-993F-BD51BDB216FE}
-		{79872398-F5A6-4F34-9596-447D1CFBCAB4} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
 		{AF62ADA4-A8B3-42D9-AF10-6100F098CBFB} = {A95ADD7D-1C5B-4F71-ABAA-5A463036EDC7}
 	EndGlobalSection
 EndGlobal
