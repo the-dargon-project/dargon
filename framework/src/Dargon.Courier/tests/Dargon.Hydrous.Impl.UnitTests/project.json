@@ -1,0 +1,16 @@
+﻿{
+    "buildOptions": {
+        "emitEntryPoint": true
+    },
+
+    "frameworks": {
+        "net461": { }
+    },
+
+    "dependencies": {
+        "Dargon.Courier.Api": "*",
+        "Dargon.Courier.Impl": "*",
+        "Dargon.Hydrous.Impl": "*",
+        "NMockito": "*"
+    }
+}

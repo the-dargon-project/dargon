@@ -1,0 +1,36 @@
+{
+    "version": "1.0.0-*",
+
+    "dependencies": {
+        "Dargon.Commons": "*",
+        "Dargon.Courier.Api": "*",
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Ryu.Impl": "*",
+        "Dargon.Vox": "*",
+        "NLog": "3.1.0",
+        "Castle.Core": "3.3.3",
+        "xunit": "2.1.0",
+        "Microsoft.Extensions.Caching.Memory": "1.0.0-rc2-final",
+        "Newtonsoft.Json": "9.0.1"
+    },
+
+    "frameworks": {
+        "net461": {
+            "frameworkAssemblies": {
+                "System.Threading.Tasks": "",
+                "System.Runtime": ""
+            }
+        }
+    },
+
+    "exclude": [ "**/_o/**/*.cs" ],
+
+    "compilationOptions": {
+        "allowUnsafe": true
+    },
+
+    "scripts": {
+        "prebuild": [ "" ],
+        "postbuild": [ "powershell ../../../FodyDnx/src/exec-fody-weavers.ps1 -ProjectDir %cd%" ]
+    }
+}

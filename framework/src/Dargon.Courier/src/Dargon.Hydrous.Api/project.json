@@ -1,0 +1,34 @@
+{
+    "version": "1.0.0-*",
+
+    "buildOptions": {
+        "allowUnsafe": true,
+    },
+
+    "dependencies": {
+        "Dargon.Commons": "*",
+        "Dargon.Courier.Api": "*",
+        "Dargon.Courier.Impl": "*",
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Ryu.Impl": "*",
+        "Dargon.Vox": "*",
+        "Nito.AsyncEx": "3.0.1",
+        "NLombok.Fody": "0.0.5",
+        "npgsql": "3.1.5"
+    },
+
+    "frameworks": {
+        "net461": {
+            "frameworkAssemblies": {
+                "System.Data": "*"
+            }
+        }
+    },
+
+    "scripts": {
+        "prebuild": [ "" ],
+        "postbuild": [ "powershell ../../../FodyDnx/src/exec-fody-weavers.ps1 -ProjectDir %cd%" ]
+    },
+
+    "exclude": [ "**/Vox/**/*.cs" ]
+}

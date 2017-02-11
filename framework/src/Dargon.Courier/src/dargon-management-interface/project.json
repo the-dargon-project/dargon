@@ -1,0 +1,25 @@
+{
+    "frameworks": {
+        "net461": {
+            "frameworkAssemblies": {
+                "System.ObjectModel": "",
+                "System.Windows.Forms": ""
+            }
+        }
+    },
+
+    "dependencies": {
+        "Dargon.Courier.Api": "*",
+        "Dargon.Courier.Impl": "*",
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Ryu.Impl": "*",
+        "Dargon.Repl": "*",
+        "Newtonsoft.Json": "9.0.1",
+        "Dargon.Hydrous.Impl": "*",
+        "Dargon.Hydrous.Impl.FunctionalTests": "*"
+    },
+
+    "buildOptions": {
+        "emitEntryPoint": true
+    }
+}

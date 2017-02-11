@@ -1,0 +1,21 @@
+{
+    "version": "1.0.0-*",
+
+    "buildOptions": {
+        "emitEntryPoint": true,
+        "copyToOutput": "Resources/*"
+    },
+
+    "dependencies": {
+        "Dargon.Management.Impl": "0.2.0"
+    },
+
+    "frameworks": {
+        "net461": {
+            "frameworkAssemblies": {
+                "System.Drawing": "4.0.0.0",
+                "System.Windows.Forms": "4.0.0.0"
+            }
+        }
+    }
+}
