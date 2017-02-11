@@ -1,0 +1,17 @@
+{
+    "version": "1.0.0-*",
+
+    "dependencies": {
+        "Dargon.Ryu.Api": "*",
+        "Dargon.Vox": "*"
+    },
+
+    "frameworks": { 
+        "net461": { }
+    },
+
+    "scripts": {
+        "prebuild": [ "" ],
+        "postbuild": [ "powershell ../../../FodyDnx/src/exec-fody-weavers.ps1 -ProjectDir %cd%" ]
+    }
+}
