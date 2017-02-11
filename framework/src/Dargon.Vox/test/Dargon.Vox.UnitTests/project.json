@@ -1,0 +1,18 @@
+{
+    "frameworks": {
+        "net451": { }
+    },
+
+    "dependencies": {
+        "Dargon.Vox": "*",
+        "NMockito": "*"
+    },
+
+    "buildOptions": {
+        "emitEntryPoint": true
+    },
+
+    "commands": {
+        "Dargon.Vox.UnitTests": "Dargon.Vox.UnitTests"
+    }
+}
