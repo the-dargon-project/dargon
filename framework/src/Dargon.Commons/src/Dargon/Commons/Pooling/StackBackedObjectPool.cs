@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using Dargon.Commons.Collections;
+using System.Collections.Concurrent;
 
 namespace Dargon.Commons.Pooling {
    public class StackBackedObjectPool<T> : IObjectPool<T> {

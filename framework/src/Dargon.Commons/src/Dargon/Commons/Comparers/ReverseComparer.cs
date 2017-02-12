@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Dargon.Commons.Comparers {
    public class ReverseComparer<T> : IComparer<T> {

@@ -10,7 +10,7 @@ namespace Dargon.Commons.AsyncPrimitives {
       private readonly LinkedList<Subscription> subscriptions = new LinkedList<Subscription>(); 
 
       public Task PostAsync(T thing) {
-         var tasks = subscriptions.Select(s => DargonCommonsExtensions.Forgettable(s(this, thing)));
+         var tasks = subscriptions.Select(s => s(this, thing));
          return Task.WhenAll(tasks);
       }
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Dargon.Commons.Collections
 {
-   public class OrderedMultiValueDictionary<TKey, TValue> : IOrderedMultiValueDictionary<TKey, TValue> {
+   public class OrderedMultiValueDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TValue>>> {
       private readonly bool m_valuesSorted;
       private readonly OrderedDictionary<TKey, ISet<TValue>> m_dict;
 
@@ -90,5 +90,10 @@ namespace Dargon.Commons.Collections
       {
          return GetEnumerator();
       }
+   }
+
+   public enum ValuesSortState {
+      Sorted,
+      Unsorted
    }
 }

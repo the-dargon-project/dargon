@@ -1,5 +1,4 @@
 ﻿using System;
-using Dargon.Commons.Collections;
 
 namespace Dargon.Commons.Pooling {
    public static class ObjectPool {

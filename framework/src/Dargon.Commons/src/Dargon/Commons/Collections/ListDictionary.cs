@@ -3,8 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Dargon.Commons.Collections
-{
+namespace Dargon.Commons.Collections {
    public class ListDictionary<K, V> : IListDictionary<K, V> {
       private List<KeyValuePair<K, V>> list = new List<KeyValuePair<K, V>>();  
 
@@ -168,7 +167,7 @@ namespace Dargon.Commons.Collections
       /// <returns>
       /// An <see cref="T:System.Collections.Generic.ICollection`1"/> containing the keys of the object that implements <see cref="T:System.Collections.Generic.IDictionary`2"/>.
       /// </returns>
-      public ICollection<K> Keys { get { return Util.Generate(list.Count, i => list[i].Key); } }
+      public ICollection<K> Keys { get { return Arrays.Create(list.Count, i => list[i].Key); } }
 
       /// <summary>
       /// Gets an <see cref="T:System.Collections.Generic.ICollection`1"/> containing the values in the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
@@ -176,6 +175,6 @@ namespace Dargon.Commons.Collections
       /// <returns>
       /// An <see cref="T:System.Collections.Generic.ICollection`1"/> containing the values in the object that implements <see cref="T:System.Collections.Generic.IDictionary`2"/>.
       /// </returns>
-      public ICollection<V> Values { get { return Util.Generate(list.Count, i => list[i].Value); } }
+      public ICollection<V> Values { get { return Arrays.Create(list.Count, i => list[i].Value); } }
    }
 }

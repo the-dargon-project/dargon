@@ -1,13 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
+using Dargon.Commons.Exceptions;
 
-namespace Dargon.Commons
-{
-   public static partial class DargonCommonsExtensions
-   {
+namespace Dargon.Commons {
+   public static class IoExtensions {
+      public static ArraySegment<byte> GetBufferOrThrow(this MemoryStream ms) {
+         ArraySegment<byte> buffer;
+         if (!ms.TryGetBuffer(out buffer)) {
+            throw new InvalidStateException();
+         }
+         return buffer;
+      }
+
       /// <summary>
       /// Reads the given amount of characters, and treats
       /// the read characters as a string.  The string should 
@@ -29,7 +34,8 @@ namespace Dargon.Commons
             while ((b = reader.ReadByte()) != 0) {
                ms.WriteByte(b);
             }
-            return Encoding.UTF8.GetString(ms.GetBuffer(), 0, (int)ms.Length);
+            var buffer = ms.GetBufferOrThrow();
+            return Encoding.UTF8.GetString(buffer.Array, buffer.Offset, (int)ms.Length);
          }
       }
 

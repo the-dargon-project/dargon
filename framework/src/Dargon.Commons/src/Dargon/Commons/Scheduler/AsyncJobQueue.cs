@@ -1,12 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Dargon.Commons.Collections;
-using Dargon.Commons.Exceptions;
+using Dargon.Commons.AsyncPrimitives;
 
-namespace Dargon.Commons.AsyncPrimitives {
+namespace Dargon.Commons.Scheduler {
    public interface IJobQueue<TJobData> {
       void Enqueue(TJobData data);
       void EnqueueWithCallback(TJobData data, Action callback);
@@ -30,23 +29,37 @@ namespace Dargon.Commons.AsyncPrimitives {
       IRequestResponseJobQueue<TJobRequest, TJobResponse> CreateRequestResponseJobQueue<TJobRequest, TJobResponse>(Func<TJobRequest, TJobResponse> jobHandler);
    }
 
-   public static class SchedulerFactory {
-      public static IScheduler CreateWithCustomThreadPool(string name) {
-         return new CustomThreadPoolScheduler(name, Environment.ProcessorCount);
+   public class SchedulerFactory {
+      private readonly IThreadFactory threadFactory;
+
+      public SchedulerFactory(IThreadFactory threadFactory) {
+         this.threadFactory = threadFactory;
       }
 
-      public static IScheduler CreateWithCustomThreadPool(string name, int initialThreadCount) {
-         return new CustomThreadPoolScheduler(name, initialThreadCount);
+      public IScheduler CreateWithCustomThreadPool(string name) {
+         return new CustomThreadPoolScheduler(threadFactory, name, Environment.ProcessorCount);
+      }
+
+      public IScheduler CreateWithCustomThreadPool(string name, int initialThreadCount) {
+         return new CustomThreadPoolScheduler(threadFactory, name, initialThreadCount);
       }
    }
 
+   public interface IThread {
+      void Start();
+   }
+
+   public interface IThreadFactory {
+      IThread Create(Action threadStart, string name = null);
+   }
+
    public class CustomThreadPoolScheduler : IScheduler {
-      private readonly List<Thread> workerThreads = new List<Thread>();
       private readonly ConcurrentQueue<Action> workQueue = new ConcurrentQueue<Action>();
       private readonly Semaphore workAvailableSignal = new Semaphore(0, Int32.MaxValue);
+      private readonly IReadOnlyList<IThread> workerThreads;
 
-      public CustomThreadPoolScheduler(string name, int initialThreadCount) {
-         workerThreads = new List<Thread>(Util.Generate(initialThreadCount, i => new Thread(WorkerThreadStart) { Name = $"{name}_{i}" }));
+      public CustomThreadPoolScheduler(IThreadFactory threadFactory, string name, int initialThreadCount) {
+         workerThreads = new List<IThread>(Arrays.Create(initialThreadCount, i => threadFactory.Create(WorkerThreadStart, $"{name}_{i}")));
          workerThreads.ForEach(t => t.Start());
       }
 

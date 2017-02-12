@@ -60,7 +60,7 @@ namespace Dargon.Commons.Collections
    ///          segment.prepend([value, value]);
    ///        }
    /// </summary>
-   public class UniqueIdentificationSet : IUniqueIdentificationSet {
+   public class UniqueIdentificationSet {
       /// <summary>
       /// A segment in our UID Set
       /// <seealso cref="UniqueIdentificationSet"/>
@@ -425,7 +425,7 @@ namespace Dargon.Commons.Collections
          }
       }
 
-      public IUniqueIdentificationSet Merge(IUniqueIdentificationSet otherInput) {
+      public UniqueIdentificationSet Merge(UniqueIdentificationSet otherInput) {
          // clone other to prevent deadlock
          UniqueIdentificationSet other = new UniqueIdentificationSet(false);
          otherInput.__Access(other.__Assign);
@@ -451,7 +451,7 @@ namespace Dargon.Commons.Collections
                }
             }
          });
-         return new UniqueIdentificationSet(false).With(uidSet => uidSet.__Assign(results));
+         return new UniqueIdentificationSet(false).Tap(uidSet => uidSet.__Assign(results));
       }
 
       private IEnumerable<Segment> MergeHelper_OrderSegmentsByLower(LinkedList<Segment> a, LinkedList<Segment> b) {
@@ -476,9 +476,9 @@ namespace Dargon.Commons.Collections
          }
       }
 
-      public IUniqueIdentificationSet Except(IUniqueIdentificationSet removedSetInput) {
-         var result = new UniqueIdentificationSet(false).With(x => this.__Access(x.__Assign));
-         var removedSet = new UniqueIdentificationSet(false).With(x => removedSetInput.__Access(x.__Assign));
+      public UniqueIdentificationSet Except(UniqueIdentificationSet removedSetInput) {
+         var result = new UniqueIdentificationSet(false).Tap(x => this.__Access(x.__Assign));
+         var removedSet = new UniqueIdentificationSet(false).Tap(x => removedSetInput.__Access(x.__Assign));
          removedSet.__Access(removedSegments => {
             foreach (var segment in removedSegments) {
                result.TakeRange(segment.low, segment.high);
@@ -487,10 +487,10 @@ namespace Dargon.Commons.Collections
          return result;
       }
 
-      public IUniqueIdentificationSet Intersect(IUniqueIdentificationSet setInput) {
+      public UniqueIdentificationSet Intersect(UniqueIdentificationSet setInput) {
          // [1     5]   [10        16]  [18  22]
          // [12] [4 6] [9   12]  [15      20]
-         var set = new UniqueIdentificationSet(false).With(x => setInput.__Access(x.__Assign));
+         var set = new UniqueIdentificationSet(false).Tap(x => setInput.__Access(x.__Assign));
          lock (m_lock) {
             var resultList = new LinkedList<Segment>();
             var leftCurrent = m_segments.First;
@@ -511,11 +511,11 @@ namespace Dargon.Commons.Collections
                   rightCurrent = rightCurrent.Next;
                }
             }
-            return new UniqueIdentificationSet(false).With(x => x.__Assign(resultList));
+            return new UniqueIdentificationSet(false).Tap(x => x.__Assign(resultList));
          }
       }
 
-      public IUniqueIdentificationSet Invert() {
+      public UniqueIdentificationSet Invert() {
          lock (m_lock) {
             // Trivial case: empty set -> full set
             if (m_segments.Count == 0) {
@@ -534,7 +534,7 @@ namespace Dargon.Commons.Collections
             if (node.Value.high != UInt32.MaxValue) {
                resultList.AddLast(new Segment { low = node.Value.high + 1, high = UInt32.MaxValue });
             }
-            return new UniqueIdentificationSet(false).With(x => x.__Assign(resultList));
+            return new UniqueIdentificationSet(false).Tap(x => x.__Assign(resultList));
          }
       }
 

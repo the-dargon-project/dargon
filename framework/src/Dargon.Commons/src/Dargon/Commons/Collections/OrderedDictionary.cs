@@ -12,7 +12,7 @@ namespace Dargon.Commons.Collections
    /// key index.
    /// via: http://stackoverflow.com/questions/2629027/no-generic-implementation-of-ordereddictionary
    /// </summary>
-   public class OrderedDictionary<TKey, TValue> : IOrderedDictionary<TKey, TValue>
+   public class OrderedDictionary<TKey, TValue> : ICollection<KeyValuePair<TKey, TValue>>
    {
 
       #region Fields/Properties
@@ -107,7 +107,7 @@ namespace Dargon.Commons.Collections
          Initialize(comparer);
       }
 
-      public OrderedDictionary(IOrderedDictionary<TKey, TValue> dictionary)
+      public OrderedDictionary(OrderedDictionary<TKey, TValue> dictionary)
       {
          Initialize();
          foreach (KeyValuePair<TKey, TValue> pair in dictionary)
@@ -116,7 +116,7 @@ namespace Dargon.Commons.Collections
          }
       }
 
-      public OrderedDictionary(IOrderedDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey> comparer)
+      public OrderedDictionary(OrderedDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey> comparer)
       {
          Initialize(comparer);
          foreach (KeyValuePair<TKey, TValue> pair in dictionary)
@@ -259,52 +259,6 @@ namespace Dargon.Commons.Collections
       {
          _keyedCollection.Sort((x, y) => comparison(x.Value, y.Value));
       }
-      #endregion
-
-      #region IDictionary<TKey, TValue>
-
-      void IDictionary<TKey, TValue>.Add(TKey key, TValue value)
-      {
-         Add(key, value);
-      }
-
-      bool IDictionary<TKey, TValue>.ContainsKey(TKey key)
-      {
-         return ContainsKey(key);
-      }
-
-      ICollection<TKey> IDictionary<TKey, TValue>.Keys
-      {
-         get { return Keys; }
-      }
-
-      bool IDictionary<TKey, TValue>.Remove(TKey key)
-      {
-         return Remove(key);
-      }
-
-      bool IDictionary<TKey, TValue>.TryGetValue(TKey key, out TValue value)
-      {
-         return TryGetValue(key, out value);
-      }
-
-      ICollection<TValue> IDictionary<TKey, TValue>.Values
-      {
-         get { return Values; }
-      }
-
-      TValue IDictionary<TKey, TValue>.this[TKey key]
-      {
-         get
-         {
-            return this[key];
-         }
-         set
-         {
-            this[key] = value;
-         }
-      }
-
       #endregion
 
       #region ICollection<KeyValuePair<TKey, TValue>>

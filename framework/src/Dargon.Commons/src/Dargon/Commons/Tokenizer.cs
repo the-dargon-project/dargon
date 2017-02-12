@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Dargon.Commons {
    public static class Tokenizer {
@@ -149,7 +148,7 @@ namespace Dargon.Commons {
       }
 
       public static string Filter(this string s, Func<string, int, bool> pass) {
-         var conditions = Util.Generate(s.Length, i => pass(s, i));
+         var conditions = Arrays.Create(s.Length, i => pass(s, i));
          return s.LogicalIndex(conditions);
       }
    }
