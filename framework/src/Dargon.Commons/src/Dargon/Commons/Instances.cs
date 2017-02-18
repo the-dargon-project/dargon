@@ -27,6 +27,26 @@ namespace Dargon.Commons {
          }
       }
 
+      public static bool HasAttribute<TAttribute>(this Enum enumValue)
+         where TAttribute : Attribute {
+         return enumValue.GetAttributeOrNull<TAttribute>() != null;
+      }
+
+      public static bool HasAttribute<TAttribute>(this object instance)
+         where TAttribute : Attribute {
+         return instance.GetAttributeOrNull<TAttribute>() != null;
+      }
+
+      public static bool HasAttribute<TAttribute>(this Type type)
+         where TAttribute : Attribute {
+         return type.GetAttributeOrNull<TAttribute>() != null;
+      }
+
+      public static bool HasAttribute<TAttribute>(this TypeInfo typeInfo)
+         where TAttribute : Attribute {
+         return typeInfo.GetAttributeOrNull<TAttribute>() != null;
+      }
+
       /// <summary>
       /// Gets the attribute of Enum value
       /// </summary>

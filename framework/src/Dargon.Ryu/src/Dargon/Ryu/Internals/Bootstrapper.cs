@@ -20,11 +20,8 @@
       }
 
       public IRyuContainer Bootstrap(RyuConfiguration configuration) {
-         if (configuration.IsDirectoryAssemblyLoadingEnabled()) {
-            assemblyLoader.LoadAssembliesFromNeighboringDirectories();
-         }
-
-         var modules = moduleLoader.LoadModules(configuration);
+         var assemblies = assemblyLoader.LoadAssembliesFromNeighboringDirectories();
+         var modules = moduleLoader.LoadModules(configuration, assemblies);
          var container = new RyuContainer(null, activator);
          moduleImporter.ImportModules(container, modules);
          return container;

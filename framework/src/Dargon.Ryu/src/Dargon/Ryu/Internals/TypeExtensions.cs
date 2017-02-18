@@ -1,5 +1,4 @@
-﻿using Castle.Core.Internal;
-using Dargon.Commons;
+﻿using Dargon.Commons;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -11,7 +10,7 @@ namespace Dargon.Ryu.Internals {
       }
 
       public static ConstructorInfo GetRyuConstructorOrThrow(this Type type) {
-         var constructors = type.GetConstructors();
+         var constructors = type.GetTypeInfo().GetConstructors();
          switch (constructors.Length) {
             case 0:
                throw new NoConstructorsFoundException(type);

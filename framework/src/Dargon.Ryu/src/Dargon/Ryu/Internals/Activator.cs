@@ -3,7 +3,6 @@ using Dargon.Ryu.Modules;
 using System;
 using System.Linq;
 using System.Reflection;
-using Castle.Core.Internal;
 using Dargon.Ryu.Attributes;
 
 namespace Dargon.Ryu.Internals {
@@ -24,8 +23,9 @@ namespace Dargon.Ryu.Internals {
             var instance = ctor.Invoke(arguments);
             if (type.HasAttribute<InjectRequiredFields>()) {
                var bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-               var fieldsToInitialize = type.GetFields(bindingFlags)
-                                            .Where(f => f.IsInitOnly && !f.FieldType.IsValueType)
+               var fieldsToInitialize = type.GetTypeInfo()
+                                            .GetFields(bindingFlags)
+                                            .Where(f => f.IsInitOnly && !f.FieldType.GetTypeInfo().IsValueType)
                                             .Where(f => f.GetValue(instance) == null);
                foreach (var field in fieldsToInitialize) {
                   field.SetValue(instance, ryu.GetOrActivate(field.FieldType));

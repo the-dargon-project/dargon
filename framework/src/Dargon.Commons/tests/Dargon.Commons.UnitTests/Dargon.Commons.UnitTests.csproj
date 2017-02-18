@@ -5,8 +5,8 @@
     <RootNamespace />
   </PropertyGroup>
 
-  <PropertyGroup>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Dargon.Commons.csproj" />
+  </ItemGroup>
 
 </Project>

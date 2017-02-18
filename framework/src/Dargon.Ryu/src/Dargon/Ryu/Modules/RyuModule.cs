@@ -1,12 +1,19 @@
 using System;
 using System.Collections.Generic;
-using Dargon.Ryu.Internals;
 
 namespace Dargon.Ryu.Modules {
    public delegate object RyuTypeActivator(IRyuContainer ryu);
 
    public interface IRyuModule {
+      string Name { get; }
       IReadOnlyDictionary<Type, RyuType> TypeInfoByType { get; }
+      RyuModuleFlags Flags { get; }
+   }
+
+   [Flags]
+   public enum RyuModuleFlags {
+      Default = 0,
+      AlwaysLoad
    }
 
    public class RyuType {
@@ -15,9 +22,11 @@ namespace Dargon.Ryu.Modules {
       public RyuTypeActivator Activator { get; set; }
    }
 
-   public class RyuModule : IRyuModule {
+   public abstract class RyuModule : IRyuModule {
+      public virtual string Name => GetType().FullName;
       private readonly Dictionary<Type, RyuType> typeInfoByType = new Dictionary<Type, RyuType>();
       public IReadOnlyDictionary<Type, RyuType> TypeInfoByType => typeInfoByType;
+      public abstract RyuModuleFlags Flags { get; }
 
       public RyuRegisterOptions Register => new RyuRegisterOptions { Module = this };
       public RyuFluentOptions Optional => new RyuFluentOptions { Module = this, Flags = RyuTypeFlags.None };

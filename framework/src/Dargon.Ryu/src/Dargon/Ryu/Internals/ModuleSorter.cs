@@ -9,9 +9,17 @@ namespace Dargon.Ryu.Internals {
       IReadOnlyList<IRyuModule> SortModulesByInitializationOrder(IReadOnlyList<IRyuModule> modules);
    }
 
+   public class DuplicateTypeDeclarationException : Exception {
+      public DuplicateTypeDeclarationException(Type type, IRyuModule a, IRyuModule b) : base(GetMessage(type, a, b)) { }
+
+      private static string GetMessage(Type type, IRyuModule a, IRyuModule b) {
+         return $"Encountered duplicate declarations of type \"{type.FullName}\" in \"{a.Name}\" and \"{b.Name}\".";
+      }
+   }
+
    public class ModuleSorter : IModuleSorter {
       public IReadOnlyList<IRyuModule> SortModulesByInitializationOrder(IReadOnlyList<IRyuModule> modules) {
-         var dependencyNodes = modules.Map<IRyuModule, ModuleNode>(m => new ModuleNode { Module = m });
+         var dependencyNodes = modules.Map(m => new ModuleNode { Module = m });
          var dependencyNodesByType = GetTypeToNodeMap(dependencyNodes);
          UpdateNodeDependencies(dependencyNodes, dependencyNodesByType);
          ValidateNoCyclicDependencies(dependencyNodes);
@@ -25,7 +33,10 @@ namespace Dargon.Ryu.Internals {
          foreach (var dependencyNode in moduleNodes) {
             foreach (var type in dependencyNode.Types) {
                if (dependencyNodesByType.ContainsKey(type)) {
-                  dependencyNodesByType[type] = null;
+                  throw new DuplicateTypeDeclarationException(
+                     type, 
+                     dependencyNodesByType[type].Module, 
+                     dependencyNode.Module);
                } else {
                   dependencyNodesByType[type] = dependencyNode;
                }
@@ -54,7 +65,7 @@ namespace Dargon.Ryu.Internals {
             while (stack.Any()) {
                var node = stack.Pop();
                if (visited.Contains(node)) {
-                  throw new Exception("Cyclic dependencies found in amongst modules.");
+                  throw new Exception("Cyclic dependencies found in modules.");
                }
                visited.Add(node);
                node.ChildDependencies.ForEach(stack.Push);

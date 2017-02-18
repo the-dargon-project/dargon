@@ -61,9 +61,9 @@ namespace Dargon.Ryu.Internals {
          var currentType = type;
          while (currentType != null) {
             GetTypeToImplementorsMapImplementsHelper(typeToImplementors, ryuType, currentType);
-            currentType = currentType.BaseType;
+            currentType = currentType.GetTypeInfo().BaseType;
          }
-         foreach (var implementedInterface in type.GetInterfaces()) {
+         foreach (var implementedInterface in type.GetTypeInfo().GetInterfaces()) {
             GetTypeToImplementorsMapImplementsHelper(typeToImplementors, ryuType, implementedInterface);
          }
       }
@@ -72,7 +72,7 @@ namespace Dargon.Ryu.Internals {
          typeToImplementors.AddOrUpdate(
             currentType,
             add => new HashSet<RyuType> { ryuType },
-            (update, existing) => existing.With(e => e.Add(ryuType)));
+            (update, existing) => existing.Tap(e => e.Add(ryuType)));
       }
 
       private static List<object> ConstructRequiredTypes(RyuContainer container, Dictionary<Type, RyuType> ryuTypesByType) {
@@ -90,7 +90,7 @@ namespace Dargon.Ryu.Internals {
       public void InvokeInitialize<T>(params T[] objs) {
          foreach (var obj in objs) {
             var type = obj.GetType();
-            var initialize = type.GetMethod("Initialize", BindingFlags.Public);
+            var initialize = type.GetTypeInfo().GetMethod("Initialize", BindingFlags.Public);
             initialize?.Invoke(obj, null);
          }
       }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace Dargon.Ryu {
    public class RyuContainer : IRyuContainer {
@@ -59,7 +60,7 @@ namespace Dargon.Ryu {
          RyuType ryuType;
          if (ryuTypesByType.TryGetValue(type, out ryuType)) {
             result = activator.ActivateRyuType(this, ryuType);
-         } else if (type.IsAbstract || type.IsInterface) {
+         } else if (type.GetTypeInfo().IsAbstract || type.GetTypeInfo().IsInterface) {
             throw new ImplementationNotFoundException(type);
          } else {
             result = activator.ActivateActivatorlessType(this, type);
@@ -104,7 +105,7 @@ namespace Dargon.Ryu {
             implementorsByType.AddOrUpdate(
                kvp.Key,
                add => kvp.Value,
-               (update, existing) => existing.With(
+               (update, existing) => existing.Tap(
                   x => kvp.Value.ForEach(v => existing.Add(v))
                   ));
          }

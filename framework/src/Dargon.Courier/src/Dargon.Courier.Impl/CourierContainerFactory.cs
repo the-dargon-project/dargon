@@ -48,7 +48,6 @@ namespace Dargon.Courier {
       public static CourierBuilder Create(IRyuContainer container) => new CourierBuilder(container);
    }
 
-   [RequiredFieldsConstructor]
    public class CourierContainerFactory {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 

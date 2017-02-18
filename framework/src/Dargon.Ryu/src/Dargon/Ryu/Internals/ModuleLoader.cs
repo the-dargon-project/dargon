@@ -3,17 +3,20 @@ using Dargon.Ryu.Modules;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
+using Dargon.Commons.Collections;
 
 namespace Dargon.Ryu.Internals {
    public interface IModuleLoader {
-      IReadOnlyList<IRyuModule> LoadModules(RyuConfiguration configuration);
+      IReadOnlyList<IRyuModule> LoadModules(RyuConfiguration configuration, IReadOnlySet<Assembly> assemblies);
    }
 
    public class ModuleLoader : IModuleLoader {
-      public IReadOnlyList<IRyuModule> LoadModules(RyuConfiguration configuration) {
+      public IReadOnlyList<IRyuModule> LoadModules(RyuConfiguration configuration, IReadOnlySet<Assembly> assemblies) {
          var modules = new List<IRyuModule>();
-         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-            var moduleTypes = assembly.GetTypes().Where(RyuModuleTypeFilter(configuration));
+         foreach (var assembly in assemblies) {
+            var moduleTypes = assembly.GetTypes().Where(IsLoadableRyuModuleType);
             var moduleInstances = moduleTypes.Select(System.Activator.CreateInstance);
             modules.AddRange(moduleInstances.Cast<IRyuModule>());
          }
@@ -21,17 +24,10 @@ namespace Dargon.Ryu.Internals {
          return modules;
       }
 
-      private Func<Type, bool> RyuModuleTypeFilter(RyuConfiguration configuration) {
-         return (type) => {
-            var moduleConfiguration = type.GetAttributeOrNull<ModuleConfigurationAttribute>();
-            if (configuration.ExcludedModuleTypes.Contains(type) ||
-                moduleConfiguration.IsManualLoadRequired()) {
-               return false;
-            } else {
-               var moduleType = typeof(IRyuModule);
-               return moduleType.IsAssignableFrom(type) && !type.IsAbstract;
-            }
-         };
+      private static bool IsLoadableRyuModuleType(Type type) {
+         var moduleType = typeof(IRyuModule);
+         return moduleType.GetTypeInfo().IsAssignableFrom(type) &&
+                  !type.GetTypeInfo().IsAbstract;
       }
    }
 }
