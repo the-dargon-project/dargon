@@ -188,3 +188,8 @@ FakesAssemblies/
 project.lock.json
 .vs
 scriptcs_*
+
+# Nuget Executables and configuration
+NuGet.exe
+NuGet.config
+nuget.config
