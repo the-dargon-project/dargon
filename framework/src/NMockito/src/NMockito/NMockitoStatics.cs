@@ -40,12 +40,14 @@ namespace NMockito {
       public static Expectation<TOut1, TOut2, TOut3, TResult> Expect<TOut1, TOut2, TOut3, TResult>(Func<TOut1, TOut2, TOut3, TResult> func) => Core.Expect(func);
 
       public static void AssertEquals<T>(T expected, T actual) => Core.AssertEquals(expected, actual);
+      public static void AssertNotEquals<T>(T expected, T actual) => Core.AssertNotEquals(expected, actual);
       public static void AssertTrue(bool value) => Core.AssertTrue(value);
       public static void AssertFalse(bool value) => Core.AssertFalse(value);
       public static void AssertNull(object value) => Core.AssertNull(value);
       public static void AssertNotNull(object value) => Core.AssertNotNull(value);
       public static void AssertThrows<TException>(Action action) where TException : Exception => Core.AssertThrows<TException>(action);
       public static void AssertSequenceEquals<T>(IEnumerable<T> a, IEnumerable<T> b) => Core.AssertSequenceEquals(a, b);
+      public static void AssertCollectionDeepEquals<T>(IEnumerable<T> expected, IEnumerable<T> actual) => Core.AssertCollectionDeepEquals(expected, actual);
       public static AssertWithAction Assert(Action action) => Core.Assert(action);
 
       public static TMock Assert<TMock>(TMock mock) where TMock : class => Core.Assert(mock);

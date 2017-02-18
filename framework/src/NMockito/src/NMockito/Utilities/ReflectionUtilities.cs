@@ -9,7 +9,7 @@ namespace NMockito.Utilities {
       }
 
       public static object GetDefaultValue(this Type type) {
-         return type.IsValueType && type != typeof(void) ? Activator.CreateInstance(type) : null;
+         return type.GetTypeInfo().IsValueType && type != typeof(void) ? Activator.CreateInstance(type) : null;
       }
 
       public static Type GetParamsType(this MethodInfo methodInfo) {
@@ -37,9 +37,9 @@ namespace NMockito.Utilities {
          if (self == other) {
             return true;
          } else if (self.IsGenericParameter && other.IsGenericParameter) {
-            return self.GenericParameterAttributes == other.GenericParameterAttributes &&
-                   self.GetGenericParameterConstraints().SequenceEqual(other.GetGenericParameterConstraints());
-         } else if (self.ContainsGenericParameters && other.ContainsGenericParameters) {
+            return self.GetTypeInfo().GenericParameterAttributes == other.GetTypeInfo().GenericParameterAttributes &&
+                   self.GetTypeInfo().GetGenericParameterConstraints().SequenceEqual(other.GetTypeInfo().GetGenericParameterConstraints());
+         } else if (self.GetTypeInfo().ContainsGenericParameters && other.GetTypeInfo().ContainsGenericParameters) {
             return self.GetGenericTypeDefinition() == other.GetGenericTypeDefinition() &&
                    self.GetGenericArguments().Zip(other.GetGenericArguments(), IsEqualTo).All(x => x);
          } else {

@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 
 namespace NMockito.SmartParameters {
    public class AnySmartParameter : SmartParameter {
@@ -9,7 +10,7 @@ namespace NMockito.SmartParameters {
       }
 
       public bool Matches(object value) {
-         return typeConstraint?.IsInstanceOfType(value) ?? (value != null);
+         return typeConstraint?.GetTypeInfo().IsInstanceOfType(value) ?? (value != null);
       }
    }
 }

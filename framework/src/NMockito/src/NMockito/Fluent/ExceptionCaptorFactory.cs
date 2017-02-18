@@ -1,3 +1,4 @@
+using System.Reflection;
 using Castle.DynamicProxy;
 
 namespace NMockito.Fluent {
@@ -10,7 +11,7 @@ namespace NMockito.Fluent {
 
       public TMock Create<TMock>(TMock mock, FluentExceptionAssertor fluentExceptionAssertor)
          where TMock : class {
-         if (typeof(TMock).IsInterface) {
+         if (typeof(TMock).GetTypeInfo().IsInterface) {
             return proxyGenerator.CreateInterfaceProxyWithoutTarget<TMock>(
                new AssertExceptionCatchingInterceptor<TMock>(mock, fluentExceptionAssertor));
          } else {

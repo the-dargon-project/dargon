@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace NMockito.Utilities {
@@ -40,7 +41,7 @@ namespace NMockito.Utilities {
 
       [Fact]
       public void TryGetParamsType_SadPathTest() {
-         var copyExampleMethod = typeof(string).GetMethod(nameof(string.Copy));
+         var copyExampleMethod = typeof(string).GetMethod(nameof(string.CopyTo));
          Type paramsArrayType;
          Assert.False(copyExampleMethod.TryGetParamsType(out paramsArrayType));
          Assert.Null(paramsArrayType);

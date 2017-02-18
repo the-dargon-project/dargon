@@ -16,7 +16,7 @@ namespace NMockito.BehavioralTesters {
 
       public void TestStaticProxy(Type staticClass) {
          var mockableFields = staticClass.GetFields(BindingFlags.NonPublic | BindingFlags.Static)
-                                         .Where(f => f.FieldType.IsInterface || f.FieldType.IsClass);
+                                         .Where(f => f.FieldType.GetTypeInfo().IsInterface || f.FieldType.GetTypeInfo().IsClass);
          foreach (var f in mockableFields) {
             Debug.WriteLine("Testing proxy to field " + f.Name + " of type " + f.FieldType + ": ");
             TestStaticProxyField(staticClass, f);
@@ -34,7 +34,7 @@ namespace NMockito.BehavioralTesters {
                     m.ReturnType.IsEqualTo(method.ReturnType) &&
                     m.GetParameters().Length == method.GetParameters().Length).ToList();
             if (staticMethodMatches.Count == 0) {
-               throw new EntryPointNotFoundException("Failed to find static proxy method for " + method + " of interface " + interfaceType);
+               throw new StaticProxyMethodNotFoundException(method, interfaceType);
             } else if (staticMethodMatches.Count > 1) {
                throw new AmbiguousMatchException("Found more than one static proxy method matching " + method);
             } else {
@@ -63,11 +63,11 @@ namespace NMockito.BehavioralTesters {
          for (var i = 0; i < genericParameters.Length; i++) {
             var genericParameter = genericParameters[i];
             var genericArguments = genericArgumentOptions;
-            foreach (var constraint in genericParameter.GetGenericParameterConstraints()) {
-               genericArguments = genericArguments.Where(constraint.IsAssignableFrom).ToArray();
+            foreach (var constraint in genericParameter.GetTypeInfo().GetGenericParameterConstraints()) {
+               genericArguments = genericArguments.Where(constraint.GetTypeInfo().IsAssignableFrom).ToArray();
             }
-            if (genericParameter.GenericParameterAttributes.HasFlag(GenericParameterAttributes.ReferenceTypeConstraint)) {
-               genericArguments = genericArguments.Where(t => !t.IsValueType).ToArray();
+            if (genericParameter.GetTypeInfo().GenericParameterAttributes.HasFlag(GenericParameterAttributes.ReferenceTypeConstraint)) {
+               genericArguments = genericArguments.Where(t => !t.GetTypeInfo().IsValueType).ToArray();
             }
             genericArgumentsByParameterIndex[i] = genericArguments;
          }

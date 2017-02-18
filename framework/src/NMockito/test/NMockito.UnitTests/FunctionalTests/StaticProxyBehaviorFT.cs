@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using NMockito.BehavioralTesters;
 using Xunit;
 
@@ -11,7 +12,7 @@ namespace NMockito.FunctionalTests {
 
       [Fact]
       public void BadStatic_ProxyTest() {
-         AssertThrows<EntryPointNotFoundException>(() => {
+         AssertThrows<StaticProxyMethodNotFoundException>(() => {
             new StaticProxyBehaviorTester(this).TestStaticProxy(typeof(BadStatic));
          });
       }
@@ -28,8 +29,8 @@ namespace NMockito.FunctionalTests {
       }
 
       internal static class GoodStatic {
-         private static Interface1 interface1;
-         private static Interface2 interface2;
+         private static readonly Interface1 interface1 = default(Interface1);
+         private static readonly Interface2 interface2 = default(Interface2);
 
          public static int A<T>(string x, T y) where T : struct => interface1.A(x, y);
          public static int B(string x) => interface1.B(x);
@@ -38,7 +39,7 @@ namespace NMockito.FunctionalTests {
       }
 
       internal static class BadStatic {
-         private static Interface1 interface1;
+         private static readonly Interface1 interface1 = default(Interface1);
 
          public static int A<T>(string x, T y) where T : struct => interface1.A(x, y);
          public static int B(string x) => interface1.B(x);

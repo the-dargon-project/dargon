@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using Castle.DynamicProxy;
 using NMockito.Counters;
 using NMockito.Mocks;
@@ -38,7 +39,7 @@ namespace NMockito.Verification {
       }
 
       public TMock Create<TMock>(TMock mock, VerificationOperationsProxy verificationOperationsProxy) where TMock : class {
-         if (typeof(TMock).IsInterface) {
+         if (typeof(TMock).GetTypeInfo().IsInterface) {
             return proxyGenerator.CreateInterfaceProxyWithoutTarget<TMock>(
                new VerificationMockInterceptor<TMock>(
                   mock,

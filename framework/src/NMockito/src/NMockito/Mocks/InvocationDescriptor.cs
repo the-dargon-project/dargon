@@ -12,22 +12,22 @@ namespace NMockito.Mocks {
    public class InvocationDescriptor : IEquatable<InvocationDescriptor> {
       public MockInterceptor Interceptor { get; set; }
       public MethodInfo Method { get; set; }
-      public object[] Arguments { get; set; }
       public IInvocation Invocation { get; set; }
+      public Type MockedType => Method.DeclaringType;
+      public object Mock => Invocation.Proxy;
+      public object Target => Invocation.InvocationTarget;
+
+      public object[] Arguments { get; set; }
       public List<InvocationTransformation> Transformations { get; set; }
       public SmartParameterCollection SmartParameters { get; set; }
       public Exception Exception { get; set; }
-
-      public object Mock => Invocation.Proxy;
-      public object Target => Invocation.InvocationTarget;
-      public Type MockedType => Invocation.Method.ReflectedType;
 
       public InvocationDescriptor Clone() {
          return new InvocationDescriptor {
             Interceptor = Interceptor,
             Method = Method,
-            Arguments = (object[])Arguments.Clone(),
             Invocation = Invocation,
+            Arguments = (object[])Arguments.Clone(),
             Transformations = new List<InvocationTransformation>(Transformations),
             SmartParameters = SmartParameters,
             Exception = Exception
@@ -49,7 +49,7 @@ namespace NMockito.Mocks {
 
       public bool Equals(InvocationDescriptor other) {
          return other.Interceptor == this.Interceptor &&
-                other.Method == this.Method &&
+                other.Method.Equals(this.Method) &&
                 other.Arguments.SequenceEqual(this.Arguments) &&
                 other.Mock == this.Mock;
       }
@@ -63,7 +63,7 @@ namespace NMockito.Mocks {
          var genericArguments = Method.GetGenericArguments();
          if (genericArguments.Any()) {
             sb.Append('<');
-            genericArguments.ForEach(t => sb.Append(t.FullName));
+            genericArguments.ToList().ForEach(t => sb.Append(t.FullName));
             sb.Append('>');
          }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using Castle.DynamicProxy;
 
 namespace NMockito.Mocks {
@@ -67,10 +68,10 @@ namespace NMockito.Mocks {
 
       public object Create(Type mockType, bool isTracked) {
          var interceptor = new MockInterceptor(invocationDescriptorFactory, invocationTransformer, invocationStage, invocationOperationManagerFinder, isTracked);
-         if (mockType.IsInterface) {
+         if (mockType.GetTypeInfo().IsInterface) {
             return proxyGenerator.CreateInterfaceProxyWithoutTarget(mockType, interceptor);
          } else {
-            var target = mockType.IsAbstract ? null : Activator.CreateInstance(mockType);
+            var target = mockType.GetTypeInfo().IsAbstract ? null : Activator.CreateInstance(mockType);
             return proxyGenerator.CreateClassProxyWithTarget(mockType, target, interceptor);
          }
       }

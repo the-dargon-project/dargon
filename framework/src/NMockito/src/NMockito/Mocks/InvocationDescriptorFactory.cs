@@ -8,8 +8,8 @@ namespace NMockito.Mocks {
          return new InvocationDescriptor {
             Interceptor = interceptor,
             Method = invocation.Method,
-            Arguments = (object[])invocation.Arguments.Clone(),
             Invocation = invocation,
+            Arguments = (object[])invocation.Arguments.Clone(),
             Transformations = new List<InvocationTransformation>(),
             SmartParameters = null
          };

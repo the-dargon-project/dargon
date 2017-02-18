@@ -18,8 +18,8 @@ namespace NMockito.Placeholders {
       public T CreatePlaceholder<T>() => (T)CreatePlaceholder(typeof(T));
 
       public object CreatePlaceholder(Type type) {
-         if (type.IsEnum) {
-            return Enum.ToObject(type, CreatePlaceholder(type.GetEnumUnderlyingType()));
+         if (type.GetTypeInfo().IsEnum) {
+            return Enum.ToObject(type, CreatePlaceholder(type.GetTypeInfo().GetEnumUnderlyingType()));
          } else if (type.IsArray) {
             var counter = Interlocked.Increment(ref placeholderCounter);
             var size = (13 * counter) % 7 + 3;
@@ -29,9 +29,11 @@ namespace NMockito.Placeholders {
                array.SetValue(CreatePlaceholder(elementType), i);
             }
             return array;
-         } else if (type.IsGenericType && typeof(IEnumerable).IsAssignableFrom(type)) {
-            var enumerableType = type.GetInterfaces().First(i => i.Name.Contains(nameof(IEnumerable)) && i.IsGenericType);
-            var elementType = enumerableType.GetGenericArguments()[0];
+         } else if (type.Name.Contains(nameof(IEnumerable)) && type.GetTypeInfo().IsGenericType) {
+            return CreatePlaceholder(type.GetGenericArguments().First().MakeArrayType());
+         } else if (type.GetTypeInfo().IsGenericType && typeof(IEnumerable).IsAssignableFrom(type)) {
+            var enumerableType = type.GetInterfaces().First(i => i.Name.Contains(nameof(IEnumerable)) && i.GetTypeInfo().IsGenericType);
+            var elementType = enumerableType.GetTypeInfo().GetGenericArguments()[0];
             var enumerableConstrutor = type.GetConstructor(new[] { enumerableType });
             if (enumerableConstrutor != null) {
                return Activator.CreateInstance(type, CreatePlaceholder(elementType.MakeArrayType()));
@@ -43,10 +45,10 @@ namespace NMockito.Placeholders {
                add.Invoke(instance, new[] { element });
             }
             return instance;
-         } else if (type.IsClass && type != typeof(string)) {
+         } else if (type.GetTypeInfo().IsClass && type != typeof(string)) {
             var ctor = type.GetConstructors().FirstOrDefault(x => x.GetParameters().Length == 0);
             return ctor?.Invoke(null);
-         } else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)) {
+         } else if (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)) {
             var genericArgs = type.GetGenericArguments();
             var keyType = genericArgs[0];
             var valueType = genericArgs[1];

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -28,7 +29,7 @@ namespace NMockito.Assertions {
          // Determine if is dictionary
          var isDictionaryLike = typeInterfaces.Any(t =>
             t == typeof(IDictionary) ||
-            (t.IsGenericType &&
+            (t.GetTypeInfo().IsGenericType &&
              (t.GetGenericTypeDefinition() == typeof(IDictionary<,>) ||
               t.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))
                ));
@@ -38,24 +39,24 @@ namespace NMockito.Assertions {
          if (isDictionaryLike) {
             var current = type;
             while (current != null && isUnorderedDictionaryLike) {
-               if (current.IsGenericType && current.GetGenericTypeDefinition() == typeof(SortedDictionary<,>)) {
+               if (current.GetTypeInfo().IsGenericType && current.GetGenericTypeDefinition() == typeof(SortedDictionary<,>)) {
                   isUnorderedDictionaryLike = false;
                }
-               current = current.BaseType;
+               current = current.GetTypeInfo().BaseType;
             }
          }
 
          // determine if is a set
-         var isSetLike = typeInterfaces.Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ISet<>));
+         var isSetLike = typeInterfaces.Any(t => t.GetTypeInfo().IsGenericType && t.GetGenericTypeDefinition() == typeof(ISet<>));
 
          var isUnorderedSetLike = isSetLike;
          if (isSetLike) {
             var current = type;
             while (current != null && isUnorderedSetLike) {
-               if (current.IsGenericType && current.GetGenericTypeDefinition() == typeof(SortedSet<>)) {
+               if (current.GetTypeInfo().IsGenericType && current.GetGenericTypeDefinition() == typeof(SortedSet<>)) {
                   isUnorderedSetLike = false;
                }
-               current = current.BaseType;
+               current = current.GetTypeInfo().BaseType;
             }
          }
 
@@ -108,7 +109,7 @@ namespace NMockito.Assertions {
 
          if (a is IEnumerable) {
             AssertCollectionsDeepEquals((IEnumerable)a, (IEnumerable)b);
-         } else if (aType.IsGenericType && aType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)) {
+         } else if (aType.GetTypeInfo().IsGenericType && aType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)) {
             dynamic aKvp = a;
             dynamic bKvp = b;
             AssertCollectionDeepEquals_AssertElementEquals(aKvp.Key, bKvp.Key);

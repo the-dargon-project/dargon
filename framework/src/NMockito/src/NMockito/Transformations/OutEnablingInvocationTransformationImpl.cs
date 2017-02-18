@@ -1,11 +1,12 @@
 ﻿using System.Linq;
+using System.Reflection;
 using NMockito.Mocks;
 using NMockito.Utilities;
 
 namespace NMockito.Transformations {
    public class OutEnablingInvocationTransformationImpl : InvocationTransformation {
       public bool IsApplicable(InvocationDescriptor invocationDescriptor) {
-         var parameters = invocationDescriptor.Method.GetParameters();
+            var parameters = invocationDescriptor.Method.GetParameters();
          return parameters.Any(parameter => parameter.IsOut);
       }
 
@@ -26,7 +27,7 @@ namespace NMockito.Transformations {
             if (parameter.IsOut) {
                var outValue = invocationDescriptor.Arguments[i];
                var realType = parameter.ParameterType.GetElementType();
-               if (outValue == null && realType.IsValueType) {
+               if (outValue == null && realType.GetTypeInfo().IsValueType) {
                   outValue = realType.GetDefaultValue();
                }
                invocationDescriptor.Invocation.Arguments[i] = outValue;
