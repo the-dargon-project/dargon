@@ -18,7 +18,7 @@ namespace Dargon.Commons.AsyncPrimitives {
       public bool Signal() {
          var decrementResult = Interlocked.Decrement(ref count);
          if (decrementResult == 0) {
-            latch.Set();
+            latch.TrySet();
             return true;
          }
          if (decrementResult < 0) {

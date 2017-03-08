@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,12 +32,17 @@ namespace Dargon.Commons.AsyncPrimitives {
          ((TaskCompletionSource<bool>)x).TrySetException(new TaskCanceledException());
       }
 
-
-      public void Set() {
+      public bool TrySet() {
          if (Interlocked.CompareExchange(ref state, kStateSignalled, kStateUnsignalled) == kStateUnsignalled) {
-            // todo: why does sync setresult still stack dive with RCA?
-//            Task.Run(() => tcs.TrySetResult(false));
             tcs.SetResult(false);
+            return true;
+         }
+         return false;
+      }
+
+      public void SetOrThrow() {
+         if (!TrySet()) {
+            throw new InvalidOperationException("Latch was already in set state.");
          }
       }
    }

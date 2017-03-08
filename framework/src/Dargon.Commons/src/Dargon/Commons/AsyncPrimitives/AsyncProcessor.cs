@@ -43,7 +43,7 @@ namespace Dargon.Commons.AsyncPrimitives {
             } catch (Exception e) {
                await HandleExceptionAsync(state.Input, e).ConfigureAwait(false);
             } finally {
-               state.CompletionLatch.Set();
+               state.CompletionLatch.SetOrThrow();
             }
          }
       }

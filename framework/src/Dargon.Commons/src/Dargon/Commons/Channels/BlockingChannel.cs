@@ -50,7 +50,7 @@ namespace Dargon.Commons.Channels {
          if (oldState == WriterContext.kStatePending) {
             Interlocked.CompareExchange(ref context.state, WriterContext.kStateCompleted, WriterContext.kStateCompleting);
             context.completingFreedEvent.Set();
-            context.completionLatch.Set();
+            context.completionLatch.SetOrThrow();
             message = context.value;
             return true;
          } else if (oldState == WriterContext.kStateCompleted) {
@@ -77,7 +77,7 @@ namespace Dargon.Commons.Channels {
                if (acceptanceTest(context.value)) {
                   Interlocked.CompareExchange(ref context.state, WriterContext.kStateCompleted, WriterContext.kStateCompleting);
                   context.completingFreedEvent.Set();
-                  context.completionLatch.Set();
+                  context.completionLatch.SetOrThrow();
                   return context.value;
                } else {
                   Interlocked.CompareExchange(ref context.state, WriterContext.kStatePending, WriterContext.kStateCompleting);

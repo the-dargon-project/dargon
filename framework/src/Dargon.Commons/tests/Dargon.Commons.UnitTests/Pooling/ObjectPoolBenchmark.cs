@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
-using Dargon.Commons.Collections;
 using Xunit;
 
 namespace Dargon.Commons.Pooling {
@@ -12,12 +12,12 @@ namespace Dargon.Commons.Pooling {
             Console.WriteLine("Run " + i + ": ");
             var sw = new Stopwatch();
             sw.Restart();
-            IObjectPool<object> pool = new DefaultObjectPool<object>(() => new object());
+            IObjectPool<object> pool = new StackBackedObjectPool<object>(_ => new object());
             RunBenchmark(pool.TakeObject, pool.ReturnObject);
             Console.WriteLine("Pool: " + sw.ElapsedMilliseconds);
             
             sw.Restart();
-            IConcurrentQueue<object> queue = new ConcurrentQueue<object>();
+            ConcurrentQueue<object> queue = new ConcurrentQueue<object>();
             RunBenchmark(() => {
                object result;
                if (!queue.TryDequeue(out result)) {
@@ -36,7 +36,7 @@ namespace Dargon.Commons.Pooling {
          var readyEvent = new CountdownEvent(threadCount);
          var beginEvent = new CountdownEvent(1);
          var doneEvent = new CountdownEvent(threadCount);
-         var threads = Util.Generate(threadCount,
+         var threads = Arrays.Create(threadCount,
             threadNumber => new Thread(() => {
                readyEvent.Signal();
                beginEvent.Wait();

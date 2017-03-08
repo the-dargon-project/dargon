@@ -45,7 +45,7 @@ namespace Dargon.Commons.AsyncPrimitives {
                      while (!latches.TryDequeue(out latch)) {
                         spinner.SpinOnce();
                      }
-                     latch.Set();
+                     latch.SetOrThrow();
                      return;
                   }
                   break;

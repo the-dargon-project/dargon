@@ -11,7 +11,7 @@ namespace Dargon.Commons.Collections {
    public class UniqueIdentificationSetTests : NMockitoInstance {
       [Fact]
       public void __HackTest() {
-         IUniqueIdentificationSet uidSet = new UniqueIdentificationSet(0, 1000);
+         var uidSet = new UniqueIdentificationSet(0, 1000);
          var list = new LinkedList<UniqueIdentificationSet.Segment>();
          list.AddFirst(new UniqueIdentificationSet.Segment { low = 2000, high = 3000 });
          list.AddLast(new UniqueIdentificationSet.Segment { low = 4000, high = 5000 });
@@ -28,7 +28,7 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void GiveRange_AppendToBackTest() {
-         IUniqueIdentificationSet uidSet = new UniqueIdentificationSet(false);
+         var uidSet = new UniqueIdentificationSet(false);
          uidSet.GiveRange(1, 5);
          uidSet.GiveRange(7, 10);
          uidSet.GiveRange(12, 15);
@@ -38,7 +38,7 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void GiveRange_PrependToFrontTest() {
-         IUniqueIdentificationSet uidSet = new UniqueIdentificationSet(false);
+         var uidSet = new UniqueIdentificationSet(false);
          uidSet.Clear();
          uidSet.GiveRange(18, 20);
          uidSet.GiveRange(12, 15);
@@ -49,7 +49,7 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void GiveRange_AppendInMiddleTest() {
-         IUniqueIdentificationSet uidSet = new UniqueIdentificationSet(false);
+         var uidSet = new UniqueIdentificationSet(false);
          uidSet.GiveRange(12, 15);
          uidSet.GiveRange(18, 20);
          uidSet.GiveRange(1, 5);
@@ -59,7 +59,7 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void GiveRange_MergeAfterFirstTest() {
-         IUniqueIdentificationSet uidSet = new UniqueIdentificationSet(false);
+         var uidSet = new UniqueIdentificationSet(false);
          uidSet.GiveRange(1, 5);
          uidSet.GiveRange(10, 12);
          uidSet.GiveRange(8, 9);
@@ -68,14 +68,14 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void GiveRange_MergeMultipleTest() {
-         var hardList = new LinkedList<UniqueIdentificationSet.Segment>().With(list => {
+         var hardList = new LinkedList<UniqueIdentificationSet.Segment>().Tap(list => {
             list.AddLast(new UniqueIdentificationSet.Segment { low = 1, high = 5 });
             list.AddLast(new UniqueIdentificationSet.Segment { low = 12, high = 15 });
             list.AddLast(new UniqueIdentificationSet.Segment { low = 30, high = 50 });
             list.AddLast(new UniqueIdentificationSet.Segment { low = 52, high = 100 });
             list.AddLast(new UniqueIdentificationSet.Segment { low = 150, high = 200 });
          });
-         IUniqueIdentificationSet uidSet = new UniqueIdentificationSet(false);
+         var uidSet = new UniqueIdentificationSet(false);
          uidSet.__Assign(hardList);
          uidSet.GiveRange(0, 16);
          AssertEquals("[0, 16][30, 50][52, 100][150, 200]", uidSet.ToString());
@@ -103,14 +103,14 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void TakeRangeStartTest() {
-         var hardList = new LinkedList<UniqueIdentificationSet.Segment>().With(list => {
+         var hardList = new LinkedList<UniqueIdentificationSet.Segment>().Tap(list => {
             list.AddLast(new UniqueIdentificationSet.Segment { low = 1, high = 5 });
             list.AddLast(new UniqueIdentificationSet.Segment { low = 12, high = 15 });
             list.AddLast(new UniqueIdentificationSet.Segment { low = 30, high = 50 });
             list.AddLast(new UniqueIdentificationSet.Segment { low = 52, high = 100 });
             list.AddLast(new UniqueIdentificationSet.Segment { low = 150, high = 200 });
          });
-         IUniqueIdentificationSet uidSet = new UniqueIdentificationSet(false);
+         var uidSet = new UniqueIdentificationSet(false);
          uidSet.__Assign(hardList);
          uidSet.TakeRange(3, 11);
          AssertEquals("[1, 2][12, 15][30, 50][52, 100][150, 200]", uidSet.ToString());
@@ -134,12 +134,12 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void IntersectTest() {
-         var setA = new UniqueIdentificationSet(false).With(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().With(x => {
+         var setA = new UniqueIdentificationSet(false).Tap(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().Tap(x => {
             x.AddLast(new UniqueIdentificationSet.Segment { low = 1, high = 5 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 10, high = 16 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 18, high = 22 });
          })));
-         var setB = new UniqueIdentificationSet(false).With(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().With(x => {
+         var setB = new UniqueIdentificationSet(false).Tap(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().Tap(x => {
             x.AddLast(new UniqueIdentificationSet.Segment { low = 1, high = 2 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 4, high = 6 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 9, high = 12 });
@@ -150,25 +150,25 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void InvertTest() {
-         var setA = new UniqueIdentificationSet(false).With(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().With(x => {
+         var setA = new UniqueIdentificationSet(false).Tap(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().Tap(x => {
             x.AddLast(new UniqueIdentificationSet.Segment { low = 0, high = 5 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 10, high = 16 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 18, high = 22 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 25, high = 100 });
          })));
-         var setB = new UniqueIdentificationSet(false).With(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().With(x => {
+         var setB = new UniqueIdentificationSet(false).Tap(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().Tap(x => {
             x.AddLast(new UniqueIdentificationSet.Segment { low = 1, high = 5 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 10, high = 16 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 18, high = 22 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 25, high = 100 });
          })));
-         var setC = new UniqueIdentificationSet(false).With(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().With(x => {
+         var setC = new UniqueIdentificationSet(false).Tap(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().Tap(x => {
             x.AddLast(new UniqueIdentificationSet.Segment { low = 1, high = 5 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 10, high = 16 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 18, high = 22 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 25, high = uint.MaxValue });
          })));
-         var setD = new UniqueIdentificationSet(false).With(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().With(x => {
+         var setD = new UniqueIdentificationSet(false).Tap(set => set.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().Tap(x => {
             x.AddLast(new UniqueIdentificationSet.Segment { low = 0, high = 5 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 10, high = 16 });
             x.AddLast(new UniqueIdentificationSet.Segment { low = 18, high = 22 });
@@ -190,7 +190,7 @@ namespace Dargon.Commons.Collections {
       public void GiveTakeMergeExceptInvertIntersectRangeRandomTest() {
          var random = new Random();
          var set = new HashSet<uint>();
-         IUniqueIdentificationSet uidSet = new UniqueIdentificationSet(false);
+         var uidSet = new UniqueIdentificationSet(false);
          for (var it = 0; it < 20000; it++) {
             var low = (uint)(random.NextDouble() * (long)100000);
             var high = low + (uint)(random.NextDouble() * (long)100);
@@ -228,8 +228,8 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void MergeTest () {
-         IUniqueIdentificationSet first = new UniqueIdentificationSet(false).With(x => {
-            x.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().With(list => {
+         var first = new UniqueIdentificationSet(false).Tap(x => {
+            x.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().Tap(list => {
                list.AddLast(new UniqueIdentificationSet.Segment { low = 1, high = 5 });
                list.AddLast(new UniqueIdentificationSet.Segment { low = 10, high = 12 });
                list.AddLast(new UniqueIdentificationSet.Segment { low = 15, high = 20 });
@@ -237,8 +237,8 @@ namespace Dargon.Commons.Collections {
                list.AddLast(new UniqueIdentificationSet.Segment { low = 40, high = UInt32.MaxValue - 1 });
             }));
          });
-         IUniqueIdentificationSet second = new UniqueIdentificationSet(false).With(x => {
-            x.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().With(list => {
+         var second = new UniqueIdentificationSet(false).Tap(x => {
+            x.__Assign(new LinkedList<UniqueIdentificationSet.Segment>().Tap(list => {
                list.AddLast(new UniqueIdentificationSet.Segment { low = 0, high = 0 });
                list.AddLast(new UniqueIdentificationSet.Segment { low = 6, high = 7 });
                list.AddLast(new UniqueIdentificationSet.Segment { low = 13, high = 14 });
@@ -258,7 +258,7 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void Any_ComplexTest() {
-         IUniqueIdentificationSet uidSet = new UniqueIdentificationSet(1, 2);
+         var uidSet = new UniqueIdentificationSet(1, 2);
          uidSet.GiveRange(4, 5);
 
          AssertEquals(4, uidSet.Count);
@@ -266,7 +266,7 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void ContainsTest() {
-         IUniqueIdentificationSet uidSet = new UniqueIdentificationSet(1, 4);
+         var uidSet = new UniqueIdentificationSet(1, 4);
          uidSet.GiveRange(6, 15);
          uidSet.TakeRange(10, 11);
 

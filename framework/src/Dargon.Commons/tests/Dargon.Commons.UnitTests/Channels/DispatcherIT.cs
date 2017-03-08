@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Dargon.Commons.Channels;
 using NMockito;
 using Xunit;
 
@@ -27,7 +28,7 @@ namespace Dargon.Channels.Tests {
          await channel.WriteAsync<int>(2);
 
          var list = new List<int>();
-         Func<int, Task> handler = async (i) => {
+         Action<int> handler = (i) => {
             list.Add(i);
          };
 

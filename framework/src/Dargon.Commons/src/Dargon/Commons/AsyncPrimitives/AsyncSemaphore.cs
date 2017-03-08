@@ -49,7 +49,7 @@ namespace Dargon.Commons.AsyncPrimitives {
                      waitContexts.Enqueue(waitContext);
                      await latch.WaitAsync(cancellationToken).ConfigureAwait(false);
                      return;
-                  } catch (OperationCanceledException e) {
+                  } catch (OperationCanceledException) {
                      if (ResolveWaitContextUndoAsync(waitContext)) {
                         throw;
                      } else {
@@ -123,7 +123,7 @@ namespace Dargon.Commons.AsyncPrimitives {
                      while (!waitContexts.TryDequeue(out waitContext)) {
                         spinner.SpinOnce();
                      }
-                     waitContext.Latch.Set();
+                     waitContext.Latch.SetOrThrow();
                      return;
                   }
                }

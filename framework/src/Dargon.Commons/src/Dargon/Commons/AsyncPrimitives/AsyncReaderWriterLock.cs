@@ -53,7 +53,7 @@ namespace Dargon.Commons.AsyncPrimitives {
             while (!readerQueue.TryDequeue(out followerLatch)) {
                spinner.SpinOnce();
             }
-            followerLatch.Set();
+            followerLatch.SetOrThrow();
          }
          return new DecrementOnDisposeAndReleaseOnCallbackZeroResult(
             () => Interlocked.Decrement(ref pendingReadersCount),

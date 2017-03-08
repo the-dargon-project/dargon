@@ -1,12 +1,12 @@
-﻿using NMockito;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
+using NMockito;
 using Xunit;
-using ICL = Dargon.Commons.Collections;
-using SCG = System.Collections.Generic;
 
 namespace Dargon.Commons.Collections {
    public class ConcurrentDictionaryUsabilityTest : NMockitoInstance {
-      readonly ICL.ConcurrentDictionary<int, string> dict = new ICL.ConcurrentDictionary<int, string>(
-         new SCG.Dictionary<int, string> {
+      private readonly ConcurrentDictionary<int, string> dict = new ConcurrentDictionary<int, string>(
+         new Dictionary<int, string> {
             [0] = "zero",
             [1] = "one"
          }
@@ -36,12 +36,12 @@ namespace Dargon.Commons.Collections {
 
       [Fact]
       public void KeysLacksAmbiguity() {
-         AssertTrue(new SCG.HashSet<int> { 0, 1 }.SetEquals(dict.Keys));
+         AssertTrue(new HashSet<int> { 0, 1 }.SetEquals(dict.Keys));
       }
 
       [Fact]
       public void ValuesLacksAmbiguity() {
-         AssertTrue(new SCG.HashSet<string> { "zero", "one" }.SetEquals(dict.Values));
+         AssertTrue(new HashSet<string> { "zero", "one" }.SetEquals(dict.Values));
       }
 
       [Fact]
@@ -55,24 +55,13 @@ namespace Dargon.Commons.Collections {
       }
 
       [Fact]
-      public void IsReadOnlyLacksAmbiguity() {
-         AssertFalse(dict.IsReadOnly);
-      }
-
-      [Fact]
       public void IndexerLacksAmbiguity() {
          AssertEquals("zero", dict[0]);
       }
 
       [Fact]
       public void ReferenceImplicitlyCastableToIReadOnlyDictionary() {
-         SCG.IReadOnlyDictionary<int, string> x = dict;
-         AssertEquals(x, dict);
-      }
-
-      [Fact]
-      public void ReferenceImplicitlyCastableToIConcurrentDictionary() {
-         ICL.IConcurrentDictionary<int, string> x = dict;
+         IReadOnlyDictionary<int, string> x = dict;
          AssertEquals(x, dict);
       }
    }

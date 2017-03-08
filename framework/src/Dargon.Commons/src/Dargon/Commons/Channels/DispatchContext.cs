@@ -70,7 +70,7 @@ namespace Dargon.Commons.Channels {
                if (isFinalDispatch) {
                   cts.Cancel();
                   await callback(result).ConfigureAwait(false);
-                  completionLatch.Set();
+                  completionLatch.TrySet();
                   isCompleted = true;
                } else {
                   await callback(result).ConfigureAwait(false);
@@ -90,7 +90,7 @@ namespace Dargon.Commons.Channels {
 
       public async Task ShutdownAsync() {
          cts.Cancel();
-         completionLatch.Set();
+         completionLatch.TrySet();
          foreach (var task in tasksToShutdown) {
             try {
                await task.ConfigureAwait(false);

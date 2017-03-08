@@ -7,7 +7,7 @@ using Dargon.Commons;
 
 namespace Dargon.Commons.Collections
 {
-   public class ConcurrentSet<T> : ISet<T>, IReadOnlySet<T> {
+   public class ConcurrentSet<T> : IReadOnlySet<T> {
       ConcurrentDictionary<T, byte> storage;
 
       public ConcurrentSet()
@@ -77,10 +77,6 @@ namespace Dargon.Commons.Collections
          storage.RemoveOrThrow(item, (byte)0);
       }
 
-      void ICollection<T>.Add(T item) {
-         ((ICollection<KeyValuePair<T, byte>>)storage).Add(new KeyValuePair<T, byte>(item, 0));
-      }
-
       public bool SetEquals(IEnumerable<T> other) {
          var otherSet = new HashSet<T>(other);
          var otherInitialCount = otherSet.Count;
@@ -119,16 +115,6 @@ namespace Dargon.Commons.Collections
          }
       }
 
-      bool ICollection<T>.IsReadOnly
-      {
-         get { return false; }
-      }
-
-      bool ICollection<T>.Remove(T item)
-      {
-         return TryRemove(item);
-      }
-
       IEnumerator<T> IEnumerable<T>.GetEnumerator()
       {
          return storage.Keys.GetEnumerator();
@@ -137,46 +123,6 @@ namespace Dargon.Commons.Collections
       IEnumerator IEnumerable.GetEnumerator()
       {
          return storage.Keys.GetEnumerator();
-      }
-
-      public bool Add(T item) {
-         throw new NotImplementedException();
-      }
-
-      public void ExceptWith(IEnumerable<T> other) {
-         throw new NotImplementedException();
-      }
-
-      public void IntersectWith(IEnumerable<T> other) {
-         throw new NotImplementedException();
-      }
-
-      public bool IsProperSubsetOf(IEnumerable<T> other) {
-         throw new NotImplementedException();
-      }
-
-      public bool IsProperSupersetOf(IEnumerable<T> other) {
-         throw new NotImplementedException();
-      }
-
-      public bool IsSubsetOf(IEnumerable<T> other) {
-         throw new NotImplementedException();
-      }
-
-      public bool IsSupersetOf(IEnumerable<T> other) {
-         throw new NotImplementedException();
-      }
-
-      public bool Overlaps(IEnumerable<T> other) {
-         throw new NotImplementedException();
-      }
-
-      public void SymmetricExceptWith(IEnumerable<T> other) {
-         throw new NotImplementedException();
-      }
-
-      public void UnionWith(IEnumerable<T> other) {
-         throw new NotImplementedException();
       }
    }
 }

@@ -92,7 +92,7 @@ namespace Dargon.Commons.Scheduler {
 
       public Task ExecuteAsync(Action work) {
          var latch = new AsyncLatch();
-         Schedule(work, latch.Set);
+         Schedule(work, latch.SetOrThrow);
          return latch.WaitAsync();
       }
 
