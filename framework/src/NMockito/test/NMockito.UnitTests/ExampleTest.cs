@@ -6,7 +6,7 @@ using Xunit;
 // ReSharper disable TestClassNameDoesNotMatchFileNameWarning
 
 namespace NMockito {
-   public interface EventBus<T> {
+   public interface IEventBus<T> {
       void Post(T message);
       event EventHandler<T> Receive;
    }
@@ -17,27 +17,27 @@ namespace NMockito {
       Ping
    }
 
-   public interface Message {
+   public interface IMessage {
       int Size { get; }
       MessageType Type { get; }
    }
    
-   public interface PingService {
-      void HandlePing(Message message);
+   public interface IPingService {
+      void HandlePing(IMessage message);
    }
 
-   public interface PeerDiscoveryService {
-      void HandleAnnounce(Message message);
+   public interface IPeerDiscoveryService {
+      void HandleAnnounce(IMessage message);
    }
 
    public class MessageDispatcher {
       internal const int kMessageSizeLimit = 1024;
 
-      private readonly EventBus<Message> messageBus;
-      private readonly PingService pingService;
-      private readonly PeerDiscoveryService peerDiscoveryService;
+      private readonly IEventBus<IMessage> messageBus;
+      private readonly IPingService pingService;
+      private readonly IPeerDiscoveryService peerDiscoveryService;
 
-      public MessageDispatcher(EventBus<Message> messageBus, PingService pingService, PeerDiscoveryService peerDiscoveryService) {
+      public MessageDispatcher(IEventBus<IMessage> messageBus, IPingService pingService, IPeerDiscoveryService peerDiscoveryService) {
          this.messageBus = messageBus;
          this.pingService = pingService;
          this.peerDiscoveryService = peerDiscoveryService;
@@ -47,7 +47,7 @@ namespace NMockito {
          messageBus.Receive += HandleMessage;
       }
 
-      internal void HandleMessage(object sender, Message message) {
+      internal void HandleMessage(object sender, IMessage message) {
          if (message.Size > kMessageSizeLimit) {
             return;
          }
@@ -63,9 +63,9 @@ namespace NMockito {
    }
 
    public class MessageDispatcherTests : NMockitoInstance {
-      [Mock] private readonly EventBus<Message> messageBus = null;
-      [Mock] private readonly PingService pingService = null;
-      [Mock] private readonly PeerDiscoveryService peerDiscoveryService = null;
+      [Mock] private readonly IEventBus<IMessage> messageBus = null;
+      [Mock] private readonly IPingService pingService = null;
+      [Mock] private readonly IPeerDiscoveryService peerDiscoveryService = null;
 
       private readonly MessageDispatcher testObj;
 
@@ -84,7 +84,7 @@ namespace NMockito {
 
       [Fact]
       public void HandleMessage_WithSurpassedSizeLimit_DoesNothing() {
-         var message = CreateMock<Message>(m =>
+         var message = CreateMock<IMessage>(m =>
             m.Size == MessageDispatcher.kMessageSizeLimit + 1);
 
          testObj.HandleMessage(messageBus, message);
@@ -94,7 +94,7 @@ namespace NMockito {
 
       [Fact]
       public void HandleMessage_WithPing_DelegatesToPingService() {
-         var message = CreateMock<Message>(m =>
+         var message = CreateMock<IMessage>(m =>
             m.Size == MessageDispatcher.kMessageSizeLimit &&
             m.Type == MessageType.Ping);
 
@@ -107,7 +107,7 @@ namespace NMockito {
 
       [Fact]
       public void HandleMessage_WithAnnounce_DelegatesToPeerDiscoveryService() {
-         var message = CreateMock<Message>(m =>
+         var message = CreateMock<IMessage>(m =>
             m.Size == MessageDispatcher.kMessageSizeLimit &&
             m.Type == MessageType.Announce);
 
@@ -120,7 +120,7 @@ namespace NMockito {
 
       [Fact]
       public void HandleMessage_WithUnhandledMessage_Throws() {
-         var message = CreateMock<Message>(m =>
+         var message = CreateMock<IMessage>(m =>
             m.Size == MessageDispatcher.kMessageSizeLimit &&
             m.Type == MessageType.Unknown);
 

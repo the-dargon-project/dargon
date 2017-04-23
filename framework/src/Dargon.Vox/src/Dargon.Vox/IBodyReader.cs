@@ -131,9 +131,8 @@ namespace Dargon.Vox {
       private class AutoTypeSerializer<T> : InlineTypeSerializer<T> {
          public AutoTypeSerializer(Action<IBodyWriter, T> write, Action<IBodyReader, T> read) : base(write, read) { }
 
-         public override bool Equals(object obj) {
-            return GetType() == obj?.GetType();
-         }
+         public override bool Equals(object obj) => GetType() == obj?.GetType();
+         public override int GetHashCode() => typeof(T).GetHashCode();
       }
 
       private static class ReaderWriterCallHelper<T> {

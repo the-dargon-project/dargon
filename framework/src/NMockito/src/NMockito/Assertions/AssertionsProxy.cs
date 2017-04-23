@@ -150,22 +150,16 @@ namespace NMockito.Assertions {
          throw new NothingThrownException(typeof(TOuterException), typeof(TInnerException));
       }
 
-      private bool TestForInnerException<TInnerException>(Exception exception) {
-         if (exception.GetType() == typeof(TInnerException)) {
-            return true;
+      private bool TestForInnerException<TInnerException>(Exception exception) where TInnerException : Exception {
+         switch (exception) {
+            case TInnerException _:
+            case AggregateException ae when ae.InnerExceptions.Any(TestForInnerException<TInnerException>):
+            case Exception _ when exception.InnerException != null &&
+                                  TestForInnerException<TInnerException>(exception.InnerException):
+               return true;
+            default:
+               return false;
          }
-         var aggregateException = exception as AggregateException;
-         if (aggregateException != null) {
-            foreach (var innerException in aggregateException.InnerExceptions) {
-               if (TestForInnerException<TInnerException>(innerException)) {
-                  return true;
-               }
-            }
-         }
-         if (exception.InnerException != null) {
-            return TestForInnerException<TInnerException>(exception.InnerException);
-         }
-         return false;
       }
 
       public AssertWithAction AssertWithAction(Action action) => new AssertWithAction(this, action);

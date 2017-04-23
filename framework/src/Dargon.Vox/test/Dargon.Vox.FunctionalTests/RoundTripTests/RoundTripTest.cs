@@ -81,7 +81,7 @@ namespace Dargon.Vox.RoundTripTests {
                if (typeof(Type).IsAssignableFrom(hintType)) {
                   hintType = typeof(Type);
                }
-               T[] results = Util.Generate(count, i => (T)serializer.Deserialize(ms, hintType));
+               T[] results = Arrays.Create(count, i => (T)serializer.Deserialize(ms, hintType));
                AssertEquals(length, ms.Position);
                foreach (var val2 in results) {
                   if (assertEqualsOverride != null) {

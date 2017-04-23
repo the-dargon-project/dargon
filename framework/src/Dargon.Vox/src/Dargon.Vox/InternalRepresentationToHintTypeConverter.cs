@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -74,7 +75,7 @@ namespace Dargon.Vox {
          // If hintType is IROD/IROS, up that to the Dictionary default, since we can't 
          // construct an interface.
          // TODO: All sets are IROS, all dicts are IROD, so is this an impossible code path?
-         if (hintType.IsGenericType && hintType.GetGenericTypeDefinition() == typeof(System.Collections.Generic.IReadOnlyDictionary<,>)) {
+         if (hintType.IsGenericType && hintType.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>)) {
             hintType = typeof(System.Collections.Generic.Dictionary<,>).MakeGenericType(hintType.GetGenericArguments());
          }
          if (hintType.IsGenericType && hintType.GetGenericTypeDefinition() == typeof(IReadOnlySet<>)) {

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Dargon.Commons;
-using Dargon.Commons.Collections;
 
 namespace Dargon.Vox.Utilities {
    public static class TypeSimplifier {
@@ -35,7 +35,7 @@ namespace Dargon.Vox.Utilities {
             return genericType.GetGenericTypeDefinition()
                               .MakeGenericType(
                                  genericType.GetGenericArguments().Map(SimplifyType)
-               );
+                              );
          }
       }
 
@@ -74,7 +74,7 @@ namespace Dargon.Vox.Utilities {
                               .Any(t => t == typeof(IDictionary) ||
                                         (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IDictionary<,>)) ||
                                         (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))
-            );
+                              );
       }
    }
 }

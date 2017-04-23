@@ -53,7 +53,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
    public class DateTimeRoundTripFT : RoundTripTest {
       [Fact]
       public void Run() {
-         var testCases = Util.Generate(10, i => DateTime.FromBinary(i * 1000000000000000L));
+         var testCases = Arrays.Create(10, i => DateTime.FromBinary(i * 1000000000000000L));
          MultiThreadedRoundTripTest(testCases, 10000, 8);
       }
    }
@@ -61,7 +61,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
    public class TimeSpanRoundTripFT : RoundTripTest {
       [Fact]
       public void Run() {
-         var testCases = Util.Generate(10, i => TimeSpan.FromTicks(i * 100000000000000L));
+         var testCases = Arrays.Create(10, i => TimeSpan.FromTicks(i * 100000000000000L));
          MultiThreadedRoundTripTest(testCases, 10000, 8);
       }
    }

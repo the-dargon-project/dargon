@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace Dargon.Vox.Internals.TypePlaceholders {
-   public class TNull { }
-   public class TBoolTrue { }
-   public class TBoolFalse { }
+   public class TypePlaceholderNull { }
+   public class TypePlaceholderBoolTrue { }
+   public class TypePlaceholderBoolFalse { }
 
    public class ByteArraySlice {
       public ByteArraySlice(byte[] buffer, int offset, int length) {

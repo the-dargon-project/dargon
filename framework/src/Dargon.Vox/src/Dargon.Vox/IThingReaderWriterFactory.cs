@@ -1,10 +1,9 @@
-﻿using Dargon.Commons;
-using Dargon.Vox.Utilities;
-using System;
+﻿using System;
 using System.Collections;
-using System.IO;
+using Dargon.Commons;
 using Dargon.Commons.Exceptions;
 using Dargon.Vox.Internals.TypePlaceholders;
+using Dargon.Vox.Utilities;
 using NLog;
 using SCG = System.Collections.Generic;
 
@@ -12,15 +11,10 @@ namespace Dargon.Vox {
    public class ThingReaderWriterFactory {
       private static Logger logger = LogManager.GetCurrentClassLogger();
       private readonly FullTypeBinaryRepresentationCache fullTypeBinaryRepresentationCache;
-      private ThingReaderWriterContainer thingReaderWriterContainer;
       private ThisIsTotesTheRealLegitThingReaderWriterThing thisIsTotesTheRealLegitThingReaderWriterThing;
 
       public ThingReaderWriterFactory(FullTypeBinaryRepresentationCache fullTypeBinaryRepresentationCache) {
          this.fullTypeBinaryRepresentationCache = fullTypeBinaryRepresentationCache;
-      }
-
-      public void SetContainer(ThingReaderWriterContainer thingReaderWriterContainer) {
-         this.thingReaderWriterContainer = thingReaderWriterContainer;
       }
 
       public void SetThisIsTotesTheRealLegitThingReaderWriterThing(ThisIsTotesTheRealLegitThingReaderWriterThing thisIsTotesTheRealLegitThingReaderWriterThing) {
@@ -78,7 +72,7 @@ namespace Dargon.Vox {
       public void Write(byte[] buffer, int offset, int length) {
          slotCount++;
          thisIsTotesTheRealLegitThingReaderWriterThing.WriteThing(
-            dest, 
+            dest,
             new ByteArraySlice(buffer, offset, length));
       }
    }
@@ -141,7 +135,7 @@ namespace Dargon.Vox {
                var subject = Activator.CreateInstance(typeof(TUserType));
                userTypeSerializer.Deserialize(readerThing, (TUserType)subject);
                return subject;
-            } catch (Exception e) {
+            } catch {
                logger.Error($"Failed to instantiate or deserialize instance of type {typeof(TUserType).Name}.");
                throw;
             }

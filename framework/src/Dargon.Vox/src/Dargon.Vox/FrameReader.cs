@@ -28,7 +28,7 @@ namespace Dargon.Vox {
       private GCHandle bufferHandle;
       private byte* basePointer = null;
       private byte*[] dataPointers = new byte*[16];
-      private int[] bytesRemainings = Util.Generate(16, i => -1);
+      private int[] bytesRemainings = Arrays.Create(16, i => -1);
       private int currentIndex = -1;
 
       public VoxBinaryReader(Stream stream) {
@@ -110,27 +110,29 @@ namespace Dargon.Vox {
             throw new InvalidStateException("The frame would surpass the end of the stream.");
          }
 
-         var ms = stream as MemoryStream;
-         if (ms != null) {
-            var buffer = ms.GetBuffer();
-            bufferHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            basePointer = (byte*)bufferHandle.AddrOfPinnedObject().ToPointer();
-            dataPointers[0] = basePointer + ms.Position;
-            ms.Position += frameLength;
-         } else {
-            basePointer = (byte*)Marshal.AllocHGlobal(frameLength).ToPointer();
-            var ums = new UnmanagedMemoryStream(basePointer, frameLength);
+         switch (stream) {
+            case MemoryStream ms:
+               var buffer = ms.GetBuffer();
+               bufferHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+               basePointer = (byte*)bufferHandle.AddrOfPinnedObject().ToPointer();
+               dataPointers[0] = basePointer + ms.Position;
+               ms.Position += frameLength;
+               break;
+            default:
+               basePointer = (byte*)Marshal.AllocHGlobal(frameLength).ToPointer();
+               var ums = new UnmanagedMemoryStream(basePointer, frameLength);
 
-            const int kCopyBufferSize = 4096;
-            byte[] copyBuffer = new byte[kCopyBufferSize];
-            int bytesRemaining = frameLength;
-            while (bytesRemaining > 0) {
-               var bytesRead = stream.Read(copyBuffer, 0, Math.Min(bytesRemaining, kCopyBufferSize));
-               ums.Write(copyBuffer, 0, bytesRead);
-               bytesRemaining -= bytesRead;
-            }
+               const int kCopyBufferSize = 4096;
+               byte[] copyBuffer = new byte[kCopyBufferSize];
+               int bytesRemaining = frameLength;
+               while (bytesRemaining > 0) {
+                  var bytesRead = stream.Read(copyBuffer, 0, Math.Min(bytesRemaining, kCopyBufferSize));
+                  ums.Write(copyBuffer, 0, bytesRead);
+                  bytesRemaining -= bytesRead;
+               }
 
-            dataPointers[0] = basePointer;
+               dataPointers[0] = basePointer;
+               break;
          }
          bytesRemainings[0] = frameLength;
          currentIndex = 0;

@@ -1,5 +1,4 @@
-﻿using Dargon.Vox.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -22,14 +21,14 @@ namespace Dargon.Vox {
          typeRegistry.RegisterReservedTypeId(typeof(Guid), (int)TypeId.Guid);
          typeRegistry.RegisterReservedTypeId(typeof(string), (int)TypeId.String);
          typeRegistry.RegisterReservedTypeId(typeof(bool), (int)TypeId.Bool);
-         typeRegistry.RegisterReservedTypeId(typeof(TBoolTrue), (int)TypeId.BoolTrue);
-         typeRegistry.RegisterReservedTypeId(typeof(TBoolFalse), (int)TypeId.BoolFalse);
+         typeRegistry.RegisterReservedTypeId(typeof(TypePlaceholderBoolTrue), (int)TypeId.BoolTrue);
+         typeRegistry.RegisterReservedTypeId(typeof(TypePlaceholderBoolFalse), (int)TypeId.BoolFalse);
          typeRegistry.RegisterReservedTypeId(typeof(Type), (int)TypeId.Type);
          typeRegistry.RegisterReservedTypeId(typeof(float), (int)TypeId.Float);
          typeRegistry.RegisterReservedTypeId(typeof(double), (int)TypeId.Double);
          typeRegistry.RegisterReservedTypeId(typeof(DateTime), (int)TypeId.DateTime);
          typeRegistry.RegisterReservedTypeId(typeof(TimeSpan), (int)TypeId.TimeSpan);
-         typeRegistry.RegisterReservedTypeId(typeof(TNull), (int)TypeId.Null);
+         typeRegistry.RegisterReservedTypeId(typeof(TypePlaceholderNull), (int)TypeId.Null);
          typeRegistry.RegisterReservedTypeId(typeof(void), (int)TypeId.Void);
          typeRegistry.RegisterReservedTypeId(typeof(object), (int)TypeId.Object, () => new object());
          typeRegistry.RegisterReservedTypeId(typeof(Array), (int)TypeId.Array);
@@ -51,20 +50,19 @@ namespace Dargon.Vox {
          thingReaderWriterContainer.AddOrThrow(typeof(ulong), new IntegerLikeThingReaderWriter<ulong>(fullTypeBinaryRepresentationCache));
          thingReaderWriterContainer.AddOrThrow(typeof(Guid), new GuidThingReaderWriter(fullTypeBinaryRepresentationCache));
          thingReaderWriterContainer.AddOrThrow(typeof(bool), new BoolThingReaderWriter());
-         thingReaderWriterContainer.AddOrThrow(typeof(TBoolTrue), new BoolTrueThingReaderWriter(fullTypeBinaryRepresentationCache));
-         thingReaderWriterContainer.AddOrThrow(typeof(TBoolFalse), new BoolFalseThingReaderWriter(fullTypeBinaryRepresentationCache));
+         thingReaderWriterContainer.AddOrThrow(typeof(TypePlaceholderBoolTrue), new BoolTrueThingReaderWriter(fullTypeBinaryRepresentationCache));
+         thingReaderWriterContainer.AddOrThrow(typeof(TypePlaceholderBoolFalse), new BoolFalseThingReaderWriter(fullTypeBinaryRepresentationCache));
          thingReaderWriterContainer.AddOrThrow(typeof(Type), new TypeThingReaderWriter(fullTypeBinaryRepresentationCache, typeReader));
          thingReaderWriterContainer.AddOrThrow(typeof(float), new FloatThingReaderWriter(fullTypeBinaryRepresentationCache));
          thingReaderWriterContainer.AddOrThrow(typeof(double), new DoubleThingReaderWriter(fullTypeBinaryRepresentationCache));
          thingReaderWriterContainer.AddOrThrow(typeof(DateTime), new DateTimeThingReaderWriter(fullTypeBinaryRepresentationCache));
          thingReaderWriterContainer.AddOrThrow(typeof(TimeSpan), new TimeSpanThingReaderWriter(fullTypeBinaryRepresentationCache));
-         thingReaderWriterContainer.AddOrThrow(typeof(TNull), new NullThingReaderWriter(fullTypeBinaryRepresentationCache));
+         thingReaderWriterContainer.AddOrThrow(typeof(TypePlaceholderNull), new NullThingReaderWriter(fullTypeBinaryRepresentationCache));
          thingReaderWriterContainer.AddOrThrow(typeof(void), new VoidThingReaderWriter());
          thingReaderWriterContainer.AddOrThrow(typeof(object), new SystemObjectThingReaderWriter(fullTypeBinaryRepresentationCache));
 
          // internal magic types
          thingReaderWriterContainer.AddOrThrow(typeof(ByteArraySlice), new ByteArraySliceReaderWriter(fullTypeBinaryRepresentationCache));
-         thingReaderWriterFactory.SetContainer(thingReaderWriterContainer);
 
          var thisIsTotesTheRealLegitThingReaderWriterThing = new ThisIsTotesTheRealLegitThingReaderWriterThing(thingReaderWriterContainer, typeReader);
          var frameReader = new FrameReader(thisIsTotesTheRealLegitThingReaderWriterThing);
@@ -83,9 +81,13 @@ namespace Dargon.Vox {
          createThingReaderWriter = thingReaderWriterFactory.Create;
       }
 
-      public void AddOrThrow(Type type, IThingReaderWriter thingReaderWriter) => storage.AddOrThrow(type, thingReaderWriter);
+      public void AddOrThrow(Type type, IThingReaderWriter thingReaderWriter) {
+         storage.AddOrThrow(type, thingReaderWriter);
+      }
 
-      public IThingReaderWriter Get(Type type) => storage.GetOrAdd(type, createThingReaderWriter);
+      public IThingReaderWriter Get(Type type) {
+         return storage.GetOrAdd(type, createThingReaderWriter);
+      }
    }
 
    public class VoxSerializer {
@@ -140,7 +142,9 @@ namespace Dargon.Vox {
    }
 
    public static class Deserialize {
-      public static T From<T>(Stream dest) => (T)From(dest, typeof(T));
+      public static T From<T>(Stream dest) {
+         return (T)From(dest, typeof(T));
+      }
 
       public static object From(Stream dest, Type hintType = null) {
          return Globals.Serializer.Deserialize(dest, hintType);
@@ -150,7 +154,9 @@ namespace Dargon.Vox {
    public static class CloneStatics {
       [ThreadStatic] private static MemoryStream ms;
 
-      private static MemoryStream GetMemoryStream() => ms ?? (ms = new MemoryStream());
+      private static MemoryStream GetMemoryStream() {
+         return ms ?? (ms = new MemoryStream());
+      }
 
       public static T DeepCloneSerializable<T>(this T subject) {
          var ms = GetMemoryStream();

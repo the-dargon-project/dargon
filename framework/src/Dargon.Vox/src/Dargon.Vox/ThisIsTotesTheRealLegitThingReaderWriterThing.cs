@@ -23,7 +23,7 @@ namespace Dargon.Vox {
          var type = typeReader.ReadType(thingReader);
 
          // special cases for type deserialization
-         if (type == typeof(TBoolTrue) || type == typeof(TBoolFalse) || type == typeof(TNull)) {
+         if (type == typeof(TypePlaceholderBoolTrue) || type == typeof(TypePlaceholderBoolFalse) || type == typeof(TypePlaceholderNull)) {
             // fall straight to reader, ignoring hintType
             return thingReaderWriterContainer.Get(type).ReadBody(thingReader);
          } else if (type == typeof(Type)) {

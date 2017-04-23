@@ -120,8 +120,8 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
 
       [AutoSerializable]
       internal class LinkedListNode<T> {
-         public T Value { get; set; }
-         public LinkedListNode<T> Next { get; set; }
+         public T Value { get; }
+         public LinkedListNode<T> Next { get; }
 
          public LinkedListNode() { }
 
@@ -136,6 +136,8 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
                    Value.Equals(other.Value) &&
                    Equals(Next, other.Next);
          }
+
+         public override int GetHashCode() => (Value == null ? 0 : Value.GetHashCode()) ^ (Next == null ? 0 : Next.GetHashCode());
       }
    }
 }

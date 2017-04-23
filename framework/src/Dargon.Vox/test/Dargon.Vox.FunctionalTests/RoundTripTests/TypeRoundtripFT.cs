@@ -23,7 +23,7 @@ namespace Dargon.Vox.RoundTripTests {
          },
          new[] {
             typeof(object),
-            typeof(TNull),
+            typeof(TypePlaceholderNull),
             typeof(void),
             typeof(int),
             typeof(string),

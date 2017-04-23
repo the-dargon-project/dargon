@@ -1,12 +1,6 @@
 ﻿using System;
-using System.CodeDom;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.IO;
 using System.Text;
-using System.Threading;
 using Dargon.Commons.Exceptions;
-using Dargon.Commons.FormatProviders;
 using Dargon.Vox.Internals.TypePlaceholders;
 using Dargon.Vox.Utilities;
 
@@ -43,7 +37,7 @@ namespace Dargon.Vox {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(string)));
 
          var str = (string)subject;
-         using(dest.ReserveLength()) {
+         using (dest.ReserveLength()) {
             var bytes = Encoding.UTF8.GetBytes(str);
             dest.Write(bytes);
          }
@@ -74,7 +68,7 @@ namespace Dargon.Vox {
       }
 
       public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
-         dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(TBoolTrue)));
+         dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(TypePlaceholderBoolTrue)));
       }
 
       public object ReadBody(VoxBinaryReader reader) {
@@ -90,7 +84,7 @@ namespace Dargon.Vox {
       }
 
       public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
-         dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(TBoolFalse)));
+         dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(TypePlaceholderBoolFalse)));
       }
 
       public object ReadBody(VoxBinaryReader reader) {
@@ -100,8 +94,7 @@ namespace Dargon.Vox {
 
    public unsafe class FloatThingReaderWriter : IThingReaderWriter {
       private readonly FullTypeBinaryRepresentationCache fullTypeBinaryRepresentationCache;
-      [ThreadStatic]
-      private static byte[] writerBuffers;
+      [ThreadStatic] private static byte[] writerBuffers;
 
       public FloatThingReaderWriter(FullTypeBinaryRepresentationCache fullTypeBinaryRepresentationCache) {
          this.fullTypeBinaryRepresentationCache = fullTypeBinaryRepresentationCache;
@@ -119,8 +112,7 @@ namespace Dargon.Vox {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(float)));
 
          var buffer = GetWriterBuffer();
-         fixed (byte* pBuffer = buffer)
-         {
+         fixed (byte* pBuffer = buffer) {
             *(float*)pBuffer = (float)subject;
          }
          dest.Write(buffer);
@@ -205,8 +197,7 @@ namespace Dargon.Vox {
             dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(short)));
 
             var buffer = GetWriterBuffer();
-            fixed (byte* pBuffer = buffer)
-            {
+            fixed (byte* pBuffer = buffer) {
                *(short*)pBuffer = subject;
             }
             dest.Write(buffer, 0, sizeof(short));
@@ -220,8 +211,7 @@ namespace Dargon.Vox {
             dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(int)));
 
             var buffer = GetWriterBuffer();
-            fixed (byte* pBuffer = buffer)
-            {
+            fixed (byte* pBuffer = buffer) {
                *(int*)pBuffer = subject;
             }
             dest.Write(buffer, 0, sizeof(int));
@@ -235,8 +225,7 @@ namespace Dargon.Vox {
             dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(long)));
 
             var buffer = GetWriterBuffer();
-            fixed (byte* pBuffer = buffer)
-            {
+            fixed (byte* pBuffer = buffer) {
                *(long*)pBuffer = subject;
             }
             dest.Write(buffer, 0, sizeof(long));
@@ -294,14 +283,36 @@ namespace Dargon.Vox {
          }
       }
 
-      private object HandleReadBodyInt8(VoxBinaryReader reader) => *(sbyte*)reader.TakeBytes(1);
-      private object HandleReadBodyInt16(VoxBinaryReader reader) => *(short*)reader.TakeBytes(2);
-      private object HandleReadBodyInt32(VoxBinaryReader reader) => *(int*)reader.TakeBytes(4);
-      private object HandleReadBodyInt64(VoxBinaryReader reader) => *(long*)reader.TakeBytes(8);
+      private object HandleReadBodyInt8(VoxBinaryReader reader) {
+         return *(sbyte*)reader.TakeBytes(1);
+      }
 
-      private object HandleReadBodyUInt8(VoxBinaryReader reader) => *(byte*)reader.TakeBytes(1);
-      private object HandleReadBodyUInt16(VoxBinaryReader reader) => *(ushort*)reader.TakeBytes(2);
-      private object HandleReadBodyUInt32(VoxBinaryReader reader) => *(uint*)reader.TakeBytes(4);
-      private object HandleReadBodyUInt64(VoxBinaryReader reader) => *(ulong*)reader.TakeBytes(8);
+      private object HandleReadBodyInt16(VoxBinaryReader reader) {
+         return *(short*)reader.TakeBytes(2);
+      }
+
+      private object HandleReadBodyInt32(VoxBinaryReader reader) {
+         return *(int*)reader.TakeBytes(4);
+      }
+
+      private object HandleReadBodyInt64(VoxBinaryReader reader) {
+         return *(long*)reader.TakeBytes(8);
+      }
+
+      private object HandleReadBodyUInt8(VoxBinaryReader reader) {
+         return *(byte*)reader.TakeBytes(1);
+      }
+
+      private object HandleReadBodyUInt16(VoxBinaryReader reader) {
+         return *(ushort*)reader.TakeBytes(2);
+      }
+
+      private object HandleReadBodyUInt32(VoxBinaryReader reader) {
+         return *(uint*)reader.TakeBytes(4);
+      }
+
+      private object HandleReadBodyUInt64(VoxBinaryReader reader) {
+         return *(ulong*)reader.TakeBytes(8);
+      }
    }
 }

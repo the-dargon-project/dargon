@@ -6,9 +6,9 @@ namespace NMockito {
    public class MockFactoryTests : NMockitoInstance {
       [Fact]
       public void Run() {
-         var mock = CreateMock<X<string, int>>();
-         Console.WriteLine(mock.Func(Any<bool>()).Returns(true).ThenReturns(false));
-         Console.WriteLine(mock.Func("Hello").Returns("asdf").ThenReturns("jkl"));
+         var mock = CreateMock<IInvokable<string, int>>();
+         mock.Func(Any<bool>()).Returns(true).ThenReturns(false);
+         mock.Func("Hello").Returns("asdf").ThenReturns("jkl");
 
          mock.Func(false).IsTrue();
          mock.Func(false).IsFalse();
@@ -18,7 +18,7 @@ namespace NMockito {
          mock.Func<string>("asdf").IsEqualTo(null);
       }
 
-      public interface X<Y, Z> {
+      public interface IInvokable<Y, Z> {
          W Func<W>(W w);
       }
    }

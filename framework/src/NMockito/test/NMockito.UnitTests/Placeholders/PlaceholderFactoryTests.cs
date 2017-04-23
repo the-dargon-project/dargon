@@ -29,10 +29,6 @@ namespace NMockito.Placeholders {
          AssertThrows<NotSupportedException>(() => CreatePlaceholder(typeof(void)));
       }
 
-      public class DefaultConstructedClass {
-         public DefaultConstructedClass() {
-            Console.WriteLine("Default constructor invoked!");
-         }
-      }
+      public class DefaultConstructedClass { }
    }
 }

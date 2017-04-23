@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net462</TargetFramework>
+    <AssemblyName>Dargon.Vox.FunctionalTests</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackageId>Dargon.Vox.FunctionalTests</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="**\o_\**\*.cs" />
+    <EmbeddedResource Remove="**\o_\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Castle.Core" Version="4.0.0" />
+    <PackageReference Include="xunit" Version="2.2.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\NMockito\src\NMockito\NMockito.csproj" />
+    <ProjectReference Include="..\..\src\Dargon.Vox\Dargon.Vox.csproj" />
+  </ItemGroup>
+
+</Project>

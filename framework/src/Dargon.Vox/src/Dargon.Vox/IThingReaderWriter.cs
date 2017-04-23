@@ -16,7 +16,7 @@ namespace Dargon.Vox {
       }
 
       public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
-         dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(TNull)));
+         dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(TypePlaceholderNull)));
       }
 
       public object ReadBody(VoxBinaryReader reader) {

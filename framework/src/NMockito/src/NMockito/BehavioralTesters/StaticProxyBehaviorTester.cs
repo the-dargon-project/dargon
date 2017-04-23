@@ -103,7 +103,7 @@ namespace NMockito.BehavioralTesters {
       }
 
       private void TestProxiedStaticMethod(FieldInfo staticField, MethodInfo method, MethodInfo staticMethod) {
-         Console.WriteLine($"Invoking static method {staticMethod} which delegates to {staticField.FieldType}.");
+//         Console.WriteLine($"Invoking static method {staticMethod} which delegates to {staticField.FieldType}.");
 
          var interfaceType = staticField.FieldType;
          var mock = nmockito.CreateMock(interfaceType);
@@ -126,9 +126,9 @@ namespace NMockito.BehavioralTesters {
 
          var expectedReturnValue = method.ReturnType == typeof(void) ? null : nmockito.CreatePlaceholder(method.ReturnType);
 
-         Console.WriteLine($"   Arguments: " + string.Join(", ", originalArguments));
-         Console.WriteLine($"        Outs: " + (outResultsOrderedByIndex.Any() ? string.Join(", ", outResultsOrderedByIndex.Values) : "(none)"));
-         Console.WriteLine($"     Returns: " + (expectedReturnValue?.ToString() ?? "null"));
+//         Console.WriteLine($"   Arguments: " + string.Join(", ", originalArguments));
+//         Console.WriteLine($"        Outs: " + (outResultsOrderedByIndex.Any() ? string.Join(", ", outResultsOrderedByIndex.Values) : "(none)"));
+//         Console.WriteLine($"     Returns: " + (expectedReturnValue?.ToString() ?? "null"));
 
 
          nmockito.Expect(() => method.Invoke(mock, originalArguments))
@@ -143,7 +143,7 @@ namespace NMockito.BehavioralTesters {
          }
 
          nmockito.VerifyExpectationsAndNoMoreInteractions();
-         Console.WriteLine("");
+//         Console.WriteLine("");
       }
    }
 }

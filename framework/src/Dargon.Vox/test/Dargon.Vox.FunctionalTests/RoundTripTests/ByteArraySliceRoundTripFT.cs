@@ -14,10 +14,10 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
 
       [Fact]
       public void Run() {
-         var testCases = Util.Generate(
+         var testCases = Arrays.Create(
             10,
             i => new BufferBox {
-               Buffer = Util.Generate(i * 10, j => (byte)j),
+               Buffer = Arrays.Create(i * 10, j => (byte)j),
                BufferOffset = i * 2,
                BufferLength = i * 6
             });
@@ -25,7 +25,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
             testCases, 1000, 8,
             (expected, actual) => {
                AssertTrue(
-                  Util.ByteArraysEqual(
+                  Bytes.ArraysEqual(
                      expected.Buffer, expected.BufferOffset, expected.BufferLength,
                      actual.Buffer, actual.BufferOffset, actual.BufferLength)
                   );

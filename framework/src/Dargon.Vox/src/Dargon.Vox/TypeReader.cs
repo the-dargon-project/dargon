@@ -55,7 +55,7 @@ namespace Dargon.Vox {
             if (type == typeof(Array)) {
                s.Push(s.Pop().MakeArrayType());
             } else if (type.IsGenericTypeDefinition) {
-               var genericArgs = Util.Generate(type.GetGenericArguments().Length, s.Pop);
+               var genericArgs = Arrays.Create(type.GetGenericArguments().Length, s.Pop);
                s.Push(type.MakeGenericType(genericArgs));
             } else {
                s.Push(type);

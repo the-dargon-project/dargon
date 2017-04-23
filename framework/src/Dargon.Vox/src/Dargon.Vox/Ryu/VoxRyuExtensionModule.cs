@@ -9,6 +9,8 @@ namespace Dargon.Vox.Ryu {
    public class VoxRyuExtensionModule : RyuModule, IRyuExtensionModule {
       private readonly Logger logger = LogManager.GetCurrentClassLogger();
 
+      public override RyuModuleFlags Flags => RyuModuleFlags.Default;
+
       public void Loaded(IRyuExtensionArguments args) { }
 
       public void PreConstruction(IRyuExtensionArguments args) { }
