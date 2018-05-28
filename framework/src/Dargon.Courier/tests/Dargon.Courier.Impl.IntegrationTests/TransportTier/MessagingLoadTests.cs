@@ -38,7 +38,7 @@ namespace Dargon.Courier.TransportTier {
                if (upCounter % 500 == 0)
                   Console.WriteLine(newCounter + " " + upCounter);
                if (newCounter == 0) {
-                  doneSignal.Set();
+                  doneSignal.SetOrThrow();
                }
                return Task.FromResult(false);
             });
@@ -53,7 +53,7 @@ namespace Dargon.Courier.TransportTier {
             const int kBatchFactor = 1;
             for (var batch = 0; batch < kBatchFactor; batch++) {
                var batchSize = kMessagesPerWorker / kBatchFactor;
-               await Task.WhenAll(Util.Generate(
+               await Task.WhenAll(Arrays.Create(
                   batchSize,
                   i => s.Messenger.SendReliableAsync(
                      "" + (batch * batchSize + i + id * kMessagesPerWorker),
@@ -80,7 +80,7 @@ namespace Dargon.Courier.TransportTier {
    public class LocalMessagingLoadTests : MessagingLoadTestsBase {
       public LocalMessagingLoadTests() {
          var testTransportFactory = new TestTransportFactory();
-         var courierFacades = Util.Generate(
+         var courierFacades = Arrays.Create(
             3,
             i => CourierBuilder.Create()
                                .UseTransport(testTransportFactory)
@@ -102,7 +102,7 @@ namespace Dargon.Courier.TransportTier {
                   await Task.Delay(400).ConfigureAwait(false);
                }
             }).Forget();
-            l.Set();
+            l.SetOrThrow();
             for (var i = 0; i < 10; i++) {
                await new Select {
                   Case(Time.After(500), () => {
@@ -115,7 +115,7 @@ namespace Dargon.Courier.TransportTier {
             }
             while (true) ;
          }).Wait();
-         var courierFacades = Util.Generate(
+         var courierFacades = Arrays.Create(
             2,
             i => CourierBuilder.Create()
                                .UseUdpTransport()

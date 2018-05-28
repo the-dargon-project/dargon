@@ -1,36 +1,27 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net462</TargetFramework>
-    <AssemblyName>Dargon.Vox.FunctionalTests</AssemblyName>
-    <OutputType>Library</OutputType>
-    <PackageId>Dargon.Vox.FunctionalTests</PackageId>
-    <ApplicationIcon />
-    <StartupObject />
+    <TargetFramework>net461</TargetFramework>
+
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="**\o_\**\*.cs" />
-    <EmbeddedResource Remove="**\o_\**\*.cs" />
+    <Compile Remove="o_\**" />
+    <EmbeddedResource Remove="o_\**" />
+    <None Remove="o_\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Castle.Core" Version="4.0.0" />
-    <PackageReference Include="xunit" Version="2.2.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Dargon.Ryu\src\Dargon.Ryu.csproj" />
     <ProjectReference Include="..\..\..\NMockito\src\NMockito\NMockito.csproj" />
     <ProjectReference Include="..\..\src\Dargon.Vox\Dargon.Vox.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
 
 </Project>

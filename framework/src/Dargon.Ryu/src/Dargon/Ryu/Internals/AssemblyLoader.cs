@@ -3,6 +3,7 @@ using Dargon.Ryu.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using Dargon.Commons.Collections;
@@ -23,6 +24,9 @@ namespace Dargon.Ryu.Internals {
 
       public IReadOnlySet<Assembly> LoadAssembliesFromNeighboringDirectories() {
          var seedAssemblies = new[] { Assembly.GetEntryAssembly(), typeof(AssemblyLoader).GetTypeInfo().Assembly };
+
+         // EntryAssembly can be null under unit test.
+         seedAssemblies = seedAssemblies.Where(x => x != null).ToArray();
 
          var directoryAssemblies = new HashSet<Assembly>(seedAssemblies);
          foreach (var assembly in seedAssemblies) {

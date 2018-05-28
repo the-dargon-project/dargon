@@ -44,7 +44,22 @@ namespace Dargon.Commons {
 
       public static bool HasAttribute<TAttribute>(this TypeInfo typeInfo)
          where TAttribute : Attribute {
-         return typeInfo.GetAttributeOrNull<TAttribute>() != null;
+         return typeInfo.GetCustomAttribute<TAttribute>() != null;
+      }
+
+      public static bool HasAttribute<TAttribute>(this MethodInfo methodInfo)
+         where TAttribute : Attribute {
+         return methodInfo.GetCustomAttribute<TAttribute>() != null;
+      }
+
+      public static bool HasAttribute<TAttribute>(this FieldInfo fieldInfo)
+         where TAttribute : Attribute {
+         return fieldInfo.GetCustomAttribute<TAttribute>() != null;
+      }
+
+      public static bool HasAttribute<TAttribute>(this PropertyInfo propertyInfo)
+         where TAttribute : Attribute {
+         return propertyInfo.GetCustomAttribute<TAttribute>() != null;
       }
 
       /// <summary>

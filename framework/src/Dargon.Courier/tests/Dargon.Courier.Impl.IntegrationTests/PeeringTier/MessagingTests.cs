@@ -37,10 +37,10 @@ namespace Dargon.Courier.PeeringTier {
 
                var latch = new AsyncLatch();
                receiverFacade.InboundMessageRouter.RegisterHandler<string>(async x => {
-                  await TaskEx.YieldToThreadPool();
+                  //await TaskEx.YieldToThreadPool();
 
                   AssertEquals(str, x.Body);
-                  latch.Set();
+                  latch.SetOrThrow();
                });
 
                // await discovery between nodes
@@ -71,10 +71,10 @@ namespace Dargon.Courier.PeeringTier {
                var latch = new AsyncLatch();
                var router = receiverFacade.InboundMessageRouter;
                router.RegisterHandler<string>(async x => {
-                  await TaskEx.YieldToThreadPool();
+//                  await TaskEx.YieldToThreadPool();
 
                   AssertEquals(str, x.Body);
-                  latch.Set();
+                  latch.SetOrThrow();
                });
 
                await receiverFacade.PeerTable.GetOrAdd(senderFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token).ConfigureAwait(false);
@@ -103,7 +103,7 @@ namespace Dargon.Courier.PeeringTier {
             sw.Start();
 
             logger.Info("Building large payload");
-            var payload = new byte[1000 * 1000 * 1000];
+            var payload = new byte[1000 * 1000 * 4];
             logger.Info($"Done building large payload. Size: {payload.Length / (1024f * 1024f)} MiB." );
             
             using (var timeout = new CancellationTokenSource(1000000)) {
@@ -111,14 +111,14 @@ namespace Dargon.Courier.PeeringTier {
                var readCompletionLatch = new AsyncLatch();
                var router = receiverFacade.InboundMessageRouter;
                router.RegisterHandler<byte[]>(async x => {
-                  await TaskEx.YieldToThreadPool();
+                  // await TaskEx.YieldToThreadPool();
 
                   logger.Info("Received large payload.");
-                  var equalityCheckResult = Util.ByteArraysEqual(payload, x.Body);
+                  var equalityCheckResult = Bytes.ArraysEqual(payload, x.Body);
                   logger.Info("Validation result: " + equalityCheckResult);
                   AssertTrue(equalityCheckResult);
                   logger.Info("Validated large payload.");
-                  readCompletionLatch.Set();
+                  readCompletionLatch.SetOrThrow();
                });
 
                await receiverFacade.PeerTable.GetOrAdd(senderFacade.Identity.Id).WaitForDiscoveryAsync(timeout.Token);

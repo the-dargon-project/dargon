@@ -16,7 +16,7 @@ namespace Dargon.Courier.Utilities {
       public void PerformanceTest() {
          const int guidCount = 150000;
          const int timeAllowed = 1000;
-         var guids = Util.Generate(guidCount, Guid.NewGuid);
+         var guids = Arrays.Create(guidCount, Guid.NewGuid);
          var sw = new Stopwatch();
          sw.Start();
          guids.ForEach(bit => testObj.SetAndTest(bit));
@@ -30,7 +30,7 @@ namespace Dargon.Courier.Utilities {
       public void CanHaveNegligibleFalseCollisionRate() {
          const int guidCount = kExpectedItems;
 
-         var guids = Util.Generate(guidCount, Guid.NewGuid);
+         var guids = Arrays.Create(guidCount, Guid.NewGuid);
          AssertEquals(guids.Distinct().Count(), guidCount);
 
          foreach (var guid in guids) {

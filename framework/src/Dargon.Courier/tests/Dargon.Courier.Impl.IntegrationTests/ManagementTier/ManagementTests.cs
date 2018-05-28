@@ -2,9 +2,12 @@
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Dargon.Commons;
 using Dargon.Courier.TransportTier.Tcp;
+using Dargon.Courier.TransportTier.Tcp.Management;
 using Dargon.Courier.TransportTier.Test;
 using Dargon.Courier.TransportTier.Udp;
+using Dargon.Courier.TransportTier.Udp.Management;
 using Dargon.Ryu;
 using NMockito;
 using Xunit;
@@ -24,7 +27,9 @@ namespace Dargon.Courier.ManagementTier {
             courierFacade.MobOperations.RegisterMob(new TestMob());
             var managementObjectService = courierFacade.ManagementObjectService;
 
-            var mobIdentifierDtos = managementObjectService.EnumerateManagementObjects().ToList();
+            var mobIdentifierDtos = managementObjectService.EnumerateManagementObjects()
+                                                           .Where(x => !x.FullName.ContainsAny(new[] { nameof(UdpDebugMob), nameof(TcpDebugMob) }))
+                                                           .ToList();
             AssertEquals(1, mobIdentifierDtos.Count);
             AssertEquals(Guid.Parse(kTestMobGuid), mobIdentifierDtos[0].Id);
             AssertEquals(typeof(TestMob).FullName, mobIdentifierDtos[0].FullName);

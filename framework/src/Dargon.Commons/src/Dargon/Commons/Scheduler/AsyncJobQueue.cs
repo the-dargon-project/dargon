@@ -53,6 +53,21 @@ namespace Dargon.Commons.Scheduler {
       IThread Create(Action threadStart, string name = null);
    }
 
+   public class ThreadFactory : IThreadFactory {
+      public IThread Create(Action threadStart, string name = null) {
+         var thread = new Thread(() => threadStart()) { Name = name };
+         return new ThreadBox { Thread = thread };
+      }
+
+      private class ThreadBox : IThread {
+         public Thread Thread;
+
+         public void Start() {
+            Thread.Start();
+         }
+      }
+   }
+
    public class CustomThreadPoolScheduler : IScheduler {
       private readonly ConcurrentQueue<Action> workQueue = new ConcurrentQueue<Action>();
       private readonly Semaphore workAvailableSignal = new Semaphore(0, Int32.MaxValue);
