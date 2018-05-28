@@ -115,6 +115,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
                   new LinkedListNode<string>(
                      CreatePlaceholder<string>())))
          };
+         RunRoundTripTest(cases, "", 1);
          MultiThreadedRoundTripTest(cases, 10000, 8);
       }
 

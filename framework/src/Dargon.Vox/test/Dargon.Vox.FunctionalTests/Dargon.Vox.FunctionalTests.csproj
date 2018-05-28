@@ -3,8 +3,10 @@
   <PropertyGroup>
     <TargetFramework>net462</TargetFramework>
     <AssemblyName>Dargon.Vox.FunctionalTests</AssemblyName>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <PackageId>Dargon.Vox.FunctionalTests</PackageId>
+    <ApplicationIcon />
+    <StartupObject />
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +27,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\NMockito\src\NMockito\NMockito.csproj" />
     <ProjectReference Include="..\..\src\Dargon.Vox\Dargon.Vox.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
 
 </Project>

@@ -11,7 +11,7 @@ namespace Dargon.Vox {
          Console.SetOut(TextWriter.Null);
          var sw = new Stopwatch();
          sw.Start();
-         for (var i = 0; i < 10; i++) {
+         for (var i = 0; i < 1; i++) {
             new ByteArraySliceRoundTripFT().Run();
 
             new StringRoundTripFT().StringRoundTripTest();

@@ -45,7 +45,8 @@ namespace Dargon.Ryu.Internals {
             if (path.EndsWithAny(kAssemblyExtensions, StringComparison.OrdinalIgnoreCase) &&
                 !path.ContainsAny(kExcludedFilePathFilter, StringComparison.OrdinalIgnoreCase)) {
                try {
-                  var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(path); 
+                  var assembly = Assembly.LoadFile(path);
+                  //var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(path); 
                   logger.LoadedAssemblyFromPath(path);
                   loadedAssemblies.Add(assembly);
                } catch (BadImageFormatException) {
@@ -58,10 +59,19 @@ namespace Dargon.Ryu.Internals {
       private void LoadReferencedAssemblies(Assembly node, HashSet<Assembly> allAssemblies) {
          allAssemblies.Add(node);
          foreach (var name in node.GetReferencedAssemblies()) {
-            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(name);
-            allAssemblies.Add(assembly);
+            Assembly assembly;
+            try {
+               assembly = Assembly.Load(name);
+               //assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(name);
+            } catch (FileLoadException) {
+               // skip - probably a native dll dependency
+               continue;
+            }
 
-            LoadReferencedAssemblies(assembly, allAssemblies);
+            if (allAssemblies.Add(assembly)) {
+               Console.WriteLine(assembly.FullName);
+               LoadReferencedAssemblies(assembly, allAssemblies);
+            }
          }
       }
    }
