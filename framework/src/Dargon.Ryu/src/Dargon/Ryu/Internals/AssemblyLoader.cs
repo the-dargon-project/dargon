@@ -73,7 +73,6 @@ namespace Dargon.Ryu.Internals {
             }
 
             if (allAssemblies.Add(assembly)) {
-               Console.WriteLine(assembly.FullName);
                LoadReferencedAssemblies(assembly, allAssemblies);
             }
          }

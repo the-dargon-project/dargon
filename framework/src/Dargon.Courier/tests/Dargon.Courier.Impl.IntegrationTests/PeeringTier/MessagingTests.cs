@@ -32,7 +32,7 @@ namespace Dargon.Courier.PeeringTier {
       [Fact]
       public async Task BroadcastTest() {
          try {
-            using (var timeout = new CancellationTokenSource(2000)) {
+            using (var timeout = new CancellationTokenSource(5000)) {
                var str = CreatePlaceholder<string>();
 
                var latch = new AsyncLatch();

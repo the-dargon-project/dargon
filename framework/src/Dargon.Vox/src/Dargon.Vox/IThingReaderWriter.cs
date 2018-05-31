@@ -4,7 +4,7 @@ using Dargon.Vox.Internals.TypePlaceholders;
 
 namespace Dargon.Vox {
    public interface IThingReaderWriter {
-      void WriteThing(SomeMemoryStreamWrapperThing dest, object subject);
+      void WriteThing(VoxBinaryWriter dest, object subject);
       object ReadBody(VoxBinaryReader reader);
    }
 
@@ -15,7 +15,7 @@ namespace Dargon.Vox {
          this.fullTypeBinaryRepresentationCache = fullTypeBinaryRepresentationCache;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(TypePlaceholderNull)));
       }
 
@@ -31,7 +31,7 @@ namespace Dargon.Vox {
          this.fullTypeBinaryRepresentationCache = fullTypeBinaryRepresentationCache;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(object)));
       }
 
@@ -41,7 +41,7 @@ namespace Dargon.Vox {
    }
 
    public class VoidThingReaderWriter : IThingReaderWriter {
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          throw new InvalidStateException("Attempted to write void thing");
       }
 

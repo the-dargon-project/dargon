@@ -14,13 +14,13 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
       [Fact]
       public void StringRoundTripTest() {
          var cases = CreatePlaceholder<string[]>();
-         MultiThreadedRoundTripTest(cases, 10000, 8);
+         MultiThreadedRoundTripTest(cases, 1000, 8);
       }
 
       [Fact]
       public void StringArrayRoundTripTest() {
          var cases = CreatePlaceholder<string[][]>();
-         MultiThreadedRoundTripTest(cases, 10000, 8);
+         MultiThreadedRoundTripTest(cases, 1000, 8);
       }
    }
 
@@ -32,7 +32,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
             new object()
          };
          MultiThreadedRoundTripTest(
-            cases, 20000, 8,
+            cases, 1000, 8,
             (a, b) => {
                AssertTrue(
                   (a == null && b == null) ||

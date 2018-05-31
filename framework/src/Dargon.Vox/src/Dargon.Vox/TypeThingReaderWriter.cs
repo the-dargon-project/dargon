@@ -14,7 +14,7 @@ namespace Dargon.Vox {
          this.typeReader = typeReader;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          var type = TypeSimplifier.SimplifyType((Type)subject);
          var typeBinaryRepresentation = fullTypeBinaryRepresentationCache.GetOrCompute(type);
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(Type)));
@@ -33,7 +33,7 @@ namespace Dargon.Vox {
          this.fullTypeBinaryRepresentationCache = fullTypeBinaryRepresentationCache;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(string)));
 
          var str = (string)subject;
@@ -51,7 +51,7 @@ namespace Dargon.Vox {
    }
 
    public class BoolThingReaderWriter : IThingReaderWriter {
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          throw new InvalidStateException($"WriteThing invoked on {nameof(BoolThingReaderWriter)}");
       }
 
@@ -67,7 +67,7 @@ namespace Dargon.Vox {
          this.fullTypeBinaryRepresentationCache = fullTypeBinaryRepresentationCache;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(TypePlaceholderBoolTrue)));
       }
 
@@ -83,7 +83,7 @@ namespace Dargon.Vox {
          this.fullTypeBinaryRepresentationCache = fullTypeBinaryRepresentationCache;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(TypePlaceholderBoolFalse)));
       }
 
@@ -108,7 +108,7 @@ namespace Dargon.Vox {
          return result;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(float)));
 
          var buffer = GetWriterBuffer();
@@ -125,7 +125,7 @@ namespace Dargon.Vox {
 
    public unsafe class IntegerLikeThingReaderWriter<T> : IThingReaderWriter {
       private readonly FullTypeBinaryRepresentationCache fullTypeBinaryRepresentationCache;
-      private readonly Action<SomeMemoryStreamWrapperThing, object> writeThingImpl;
+      private readonly Action<VoxBinaryWriter, object> writeThingImpl;
       private readonly Func<VoxBinaryReader, object> readThingImpl;
       [ThreadStatic] private static byte[] writerBuffer;
 
@@ -177,7 +177,7 @@ namespace Dargon.Vox {
          return result;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          writeThingImpl(dest, subject);
       }
 
@@ -185,14 +185,14 @@ namespace Dargon.Vox {
          return readThingImpl(reader);
       }
 
-      private void HandleWriteThingInt8(SomeMemoryStreamWrapperThing dest, sbyte subject) {
+      private void HandleWriteThingInt8(VoxBinaryWriter dest, sbyte subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(sbyte)));
          var buffer = GetWriterBuffer();
          buffer[0] = (byte)subject;
          dest.Write(buffer, 0, sizeof(sbyte));
       }
 
-      private void HandleWriteThingInt16(SomeMemoryStreamWrapperThing dest, short subject) {
+      private void HandleWriteThingInt16(VoxBinaryWriter dest, short subject) {
          if (subject < sbyte.MinValue || subject > sbyte.MaxValue) {
             dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(short)));
 
@@ -206,7 +206,7 @@ namespace Dargon.Vox {
          }
       }
 
-      private void HandleWriteThingInt32(SomeMemoryStreamWrapperThing dest, int subject) {
+      private void HandleWriteThingInt32(VoxBinaryWriter dest, int subject) {
          if (subject < short.MinValue || subject > short.MaxValue) {
             dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(int)));
 
@@ -220,7 +220,7 @@ namespace Dargon.Vox {
          }
       }
 
-      private void HandleWriteThingInt64(SomeMemoryStreamWrapperThing dest, long subject) {
+      private void HandleWriteThingInt64(VoxBinaryWriter dest, long subject) {
          if (subject < int.MinValue || subject > int.MaxValue) {
             dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(long)));
 
@@ -234,14 +234,14 @@ namespace Dargon.Vox {
          }
       }
 
-      private void HandleWriteThingUInt8(SomeMemoryStreamWrapperThing dest, byte subject) {
+      private void HandleWriteThingUInt8(VoxBinaryWriter dest, byte subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(byte)));
          var buffer = GetWriterBuffer();
          buffer[0] = subject;
          dest.Write(buffer, 0, sizeof(byte));
       }
 
-      private void HandleWriteThingUInt16(SomeMemoryStreamWrapperThing dest, ushort subject) {
+      private void HandleWriteThingUInt16(VoxBinaryWriter dest, ushort subject) {
          if (subject > byte.MaxValue) {
             dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(ushort)));
 
@@ -255,7 +255,7 @@ namespace Dargon.Vox {
          }
       }
 
-      private void HandleWriteThingUInt32(SomeMemoryStreamWrapperThing dest, uint subject) {
+      private void HandleWriteThingUInt32(VoxBinaryWriter dest, uint subject) {
          if (subject > ushort.MaxValue) {
             dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(uint)));
 
@@ -269,7 +269,7 @@ namespace Dargon.Vox {
          }
       }
 
-      private void HandleWriteThingUInt64(SomeMemoryStreamWrapperThing dest, ulong subject) {
+      private void HandleWriteThingUInt64(VoxBinaryWriter dest, ulong subject) {
          if (subject > uint.MaxValue) {
             dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(ulong)));
 

@@ -53,7 +53,7 @@ namespace Dargon.Vox {
          return thingReaderWriterContainer.Get(type).ReadBody(thingReader);
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          var type = SubjectTypeGetterererer.GetSubjectType(subject);
          thingReaderWriterContainer.Get(type).WriteThing(dest, subject);
       }

@@ -107,7 +107,7 @@ namespace Dargon.Vox {
 
       public void Serialize(Stream dest, object subject) {
          var scratch = new MemoryStream();
-         var target = new SomeMemoryStreamWrapperThing(scratch);
+         var target = new VoxBinaryWriter(scratch);
          frameWriter.WriteFrame(target, subject);
          target.CopyTo(dest);
       }

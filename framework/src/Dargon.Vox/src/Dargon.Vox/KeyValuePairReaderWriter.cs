@@ -24,7 +24,7 @@ namespace Dargon.Vox {
          this.simplifiedKvpType = TypeSimplifier.SimplifyType(userKvpType);
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(simplifiedKvpType));
 
          using (dest.ReserveLength()) {

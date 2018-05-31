@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Dargon.Commons.Exceptions;
 using Dargon.Vox.Internals.TypePlaceholders;
 using Dargon.Vox.Utilities;
@@ -21,30 +23,46 @@ namespace Dargon.Vox {
          this.elementType = EnumerableUtilities.GetEnumerableElementType(simplifiedCollectionType);
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(simplifiedCollectionType));
 
          using (dest.ReserveLength())
          using (var countReservation = dest.ReserveCount()) {
-            int count = 0;
-            foreach (var x in (IEnumerable)subject) {
-               count++;
-               thingReaderWriterDispatcherThing.WriteThing(dest, x);
+            if (elementType == typeof(byte)) {
+               var buffer = subject is byte[] buff ? buff : ((IEnumerable<byte>)subject).ToArray();
+               dest.Write(buffer);
+               countReservation.SetValue(buffer.Length);
+            } else {
+               int count = 0;
+               foreach (var x in (IEnumerable)subject) {
+                  count++;
+                  thingReaderWriterDispatcherThing.WriteThing(dest, x);
+               }
+
+               countReservation.SetValue(count);
             }
-            countReservation.SetValue(count);
          }
       }
 
-      public object ReadBody(VoxBinaryReader reader) {
+      public unsafe object ReadBody(VoxBinaryReader reader) {
          var dataLength = reader.ReadVariableInt();
          reader.HandleEnterInnerBuffer(dataLength);
          try {
             var elementCount = reader.ReadVariableInt();
-            var elements = Array.CreateInstance(elementType, elementCount);
-            for (var i = 0; i < elements.Length; i++) {
-               var thing = thingReaderWriterDispatcherThing.ReadThing(reader, null);
-               elements.SetValue(thing, i);
+            Array elements;
+            if (elementType == typeof(byte)) {
+               var buffer = new byte[elementCount];
+               fixed(byte* pBuffer = buffer) reader.ReadBytes(elementCount, pBuffer);
+               elements = buffer;
+            } else {
+               elements = Array.CreateInstance(elementType, elementCount);
+
+               for (var i = 0; i < elements.Length; i++) {
+                  var thing = thingReaderWriterDispatcherThing.ReadThing(reader, null);
+                  elements.SetValue(thing, i);
+               }
             }
+
             return InternalRepresentationToHintTypeConverter.ConvertCollectionToHintType(elements, userCollectionType);
          } finally {
             reader.HandleLeaveInnerBuffer();
@@ -61,15 +79,13 @@ namespace Dargon.Vox {
          this.byteReaderWriter = new IntegerLikeThingReaderWriter<byte>(fullTypeBinaryRepresentationCache);
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          var byteArraySlice = (ByteArraySlice)subject;
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(byte[])));
 
          using (dest.ReserveLength())
          using (var countReservation = dest.ReserveCount()) {
-            for (var i = 0; i < byteArraySlice.Length; i++) {
-               byteReaderWriter.WriteThing(dest, byteArraySlice.Buffer[i + byteArraySlice.Offset]);
-            }
+            dest.Write(byteArraySlice.Buffer, byteArraySlice.Offset, byteArraySlice.Length);
             countReservation.SetValue(byteArraySlice.Length);
          }
       }

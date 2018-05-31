@@ -13,18 +13,18 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
 
       [Fact]
       public void TrueRoundTripTest() {
-         MultiThreadedRoundTripTest(new[] { true }, 10000, 8);
+         MultiThreadedRoundTripTest(new[] { true }, 1000, 8);
       }
 
       [Fact]
       public void FalseRoundTripTest() {
-         MultiThreadedRoundTripTest(new[] { false }, 10000, 8);
+         MultiThreadedRoundTripTest(new[] { false }, 1000, 8);
       }
 
       [Fact]
       public void ThisIsMaybeProbablyTotallyGoingToBreaktest() {
          var testCase = new[] { true, false, true, false, true, false };
-         MultiThreadedRoundTripTest(new[] { testCase }, 10000, 8);
+         MultiThreadedRoundTripTest(new[] { testCase }, 1000, 8);
       }
    }
 }

@@ -19,7 +19,7 @@ namespace Dargon.Vox {
          return result;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(double)));
 
          var buffer = GetWriterBuffer();
@@ -46,7 +46,7 @@ namespace Dargon.Vox {
          return guidBuffer ?? (guidBuffer = new byte[16]);
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(Guid)));
          dest.Write(((Guid)subject).ToByteArray());
       }
@@ -77,7 +77,7 @@ namespace Dargon.Vox {
          return result;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(DateTime)));
 
          var buffer = GetWriterBuffer();
@@ -110,7 +110,7 @@ namespace Dargon.Vox {
          return result;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(typeof(TimeSpan)));
 
          var buffer = GetWriterBuffer();

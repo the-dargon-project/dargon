@@ -55,7 +55,7 @@ namespace Dargon.Commons.Scheduler {
 
    public class ThreadFactory : IThreadFactory {
       public IThread Create(Action threadStart, string name = null) {
-         var thread = new Thread(() => threadStart()) { Name = name };
+         var thread = new Thread(() => threadStart()) { Name = name, IsBackground = true };
          return new ThreadBox { Thread = thread };
       }
 

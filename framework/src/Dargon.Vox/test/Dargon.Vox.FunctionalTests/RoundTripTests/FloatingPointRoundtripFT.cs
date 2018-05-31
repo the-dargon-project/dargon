@@ -19,7 +19,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
             float.Epsilon,
             1337.0f
          };
-         MultiThreadedRoundTripTest(testCases, 20000, 8);
+         MultiThreadedRoundTripTest(testCases, 1000, 8);
       }
 
       [Fact]
@@ -32,7 +32,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
             double.Epsilon,
             1337.0
          };
-         MultiThreadedRoundTripTest(testCases, 20000, 8);
+         MultiThreadedRoundTripTest(testCases, 1000, 8);
       }
    }
 
@@ -46,7 +46,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
             Guid.Parse("1CE65E13-1DEA-43F8-B62D-EBEF3ADC608E"),
             Guid.Parse("DDD0A7A3-1185-4508-9D57-BC9CDCA8120A")
          };
-         MultiThreadedRoundTripTest(testCases, 10000, 8);
+         MultiThreadedRoundTripTest(testCases, 1000, 8);
       }
    }
 
@@ -54,7 +54,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
       [Fact]
       public void Run() {
          var testCases = Arrays.Create(10, i => DateTime.FromBinary(i * 1000000000000000L));
-         MultiThreadedRoundTripTest(testCases, 10000, 8);
+         MultiThreadedRoundTripTest(testCases, 1000, 8);
       }
    }
 
@@ -62,7 +62,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
       [Fact]
       public void Run() {
          var testCases = Arrays.Create(10, i => TimeSpan.FromTicks(i * 100000000000000L));
-         MultiThreadedRoundTripTest(testCases, 10000, 8);
+         MultiThreadedRoundTripTest(testCases, 1000, 8);
       }
    }
 }

@@ -8,7 +8,7 @@ namespace Dargon.Vox {
          this.thisIsTotesTheRealLegitThingReaderWriterThing = thisIsTotesTheRealLegitThingReaderWriterThing;
       }
 
-      public void WriteFrame(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteFrame(VoxBinaryWriter dest, object subject) {
          using (dest.ReserveLength()) {
             thisIsTotesTheRealLegitThingReaderWriterThing.WriteThing(dest, subject);
          }

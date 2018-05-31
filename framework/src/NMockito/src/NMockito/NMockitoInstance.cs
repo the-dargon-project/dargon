@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
 using NMockito.Assertions;
 using NMockito.Expectations;
@@ -14,6 +15,26 @@ namespace NMockito {
          core = new NMockitoCoreImpl();
 
          InitializeMocks(this);
+         PatchAssemblyGetEntryAssembly(Assembly.GetCallingAssembly());
+      }
+
+      private void PatchAssemblyGetEntryAssembly(Assembly entryAssembly) {
+         if (Assembly.GetEntryAssembly() != null) return;
+
+         // via https://github.com/Microsoft/vstest/issues/649
+         var manager = new AppDomainManager();
+         var entryAssemblyField = manager.GetType().GetField("m_entryAssembly", BindingFlags.Instance | BindingFlags.NonPublic);
+         if (entryAssemblyField == null) throw new Exception("Failed to use reflection on framework to set Assembly.GetEntryAssembly()!");
+         entryAssemblyField.SetValue(manager, entryAssembly);
+
+         var domain = AppDomain.CurrentDomain;
+         var domainManagerField = domain.GetType().GetField("_domainManager", BindingFlags.Instance | BindingFlags.NonPublic);
+         if (domainManagerField == null) throw new Exception("Failed to use reflection on framework to set Assembly.GetEntryAssembly()!");
+         domainManagerField.SetValue(domain, manager);
+
+         if (Assembly.GetEntryAssembly() != entryAssembly) {
+            throw new Exception("Failed to set Assembly.GetEntryAssembly()!");
+         }
       }
 
       public void InitializeMocks(object testClassInstance) => core.InitializeMocks(testClassInstance);

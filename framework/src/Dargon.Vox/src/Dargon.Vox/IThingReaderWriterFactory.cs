@@ -54,10 +54,10 @@ namespace Dargon.Vox {
 
    public class WriterThing : IBodyWriter {
       private readonly ThisIsTotesTheRealLegitThingReaderWriterThing thisIsTotesTheRealLegitThingReaderWriterThing;
-      private readonly SomeMemoryStreamWrapperThing dest;
+      private readonly VoxBinaryWriter dest;
       private int slotCount = 0;
 
-      public WriterThing(ThisIsTotesTheRealLegitThingReaderWriterThing thisIsTotesTheRealLegitThingReaderWriterThing, SomeMemoryStreamWrapperThing dest) {
+      public WriterThing(ThisIsTotesTheRealLegitThingReaderWriterThing thisIsTotesTheRealLegitThingReaderWriterThing, VoxBinaryWriter dest) {
          this.thisIsTotesTheRealLegitThingReaderWriterThing = thisIsTotesTheRealLegitThingReaderWriterThing;
          this.dest = dest;
       }
@@ -114,7 +114,7 @@ namespace Dargon.Vox {
          this.userTypeSerializer = userTypeSerializer;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          dest.Write(fullTypeBinaryRepresentationCache.GetOrCompute(simplifiedType));
 
          using (dest.ReserveLength())

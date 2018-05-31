@@ -9,7 +9,7 @@ namespace Dargon.Vox {
          this.backingTypeThingReaderWriter = backingTypeThingReaderWriter;
       }
 
-      public void WriteThing(SomeMemoryStreamWrapperThing dest, object subject) {
+      public void WriteThing(VoxBinaryWriter dest, object subject) {
          backingTypeThingReaderWriter.WriteThing(dest, (TBackingType)subject);
       }
 
