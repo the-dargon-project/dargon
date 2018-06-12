@@ -21,10 +21,7 @@ namespace Dargon.Commons.Pooling {
 
       public T TakeObject() {
          var s = container.Value;
-         if (s.None()) {
-            return generator(this);
-         }
-         return s.Pop();
+         return s.Count == 0 ? generator(this) : s.Pop();
       }
 
       public void ReturnObject(T item) {

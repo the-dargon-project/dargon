@@ -18,20 +18,36 @@ namespace Dargon.Commons.Pooling {
          return new TlsBackedObjectPool<T>(generator, name);
       }
 
-      public static IObjectPool<T> CreateStackBacked<T>(Func<T> generator) {
-         return CreateStackBacked<T>(pool => generator());
+      public static IObjectPool<T> CreateSingleThreadedStackBacked<T>(Func<T> generator) {
+         return CreateSingleThreadedStackBacked<T>(pool => generator());
       }
 
-      public static IObjectPool<T> CreateStackBacked<T>(Func<IObjectPool<T>, T> generator) {
-         return new StackBackedObjectPool<T>(generator);
+      public static IObjectPool<T> CreateSingleThreadedStackBacked<T>(Func<IObjectPool<T>, T> generator) {
+         return new SingleThreadedStackBackedObjectPool<T>(generator);
       }
 
-      public static IObjectPool<T> CreateStackBacked<T>(Func<T> generator, string name) {
-         return CreateStackBacked<T>(pool => generator(), name);
+      public static IObjectPool<T> CreateSingleThreadedStackBacked<T>(Func<T> generator, string name) {
+         return CreateSingleThreadedStackBacked<T>(pool => generator(), name);
       }
 
-      public static IObjectPool<T> CreateStackBacked<T>(Func<IObjectPool<T>, T> generator, string name) {
-         return new StackBackedObjectPool<T>(generator, name);
+      public static IObjectPool<T> CreateSingleThreadedStackBacked<T>(Func<IObjectPool<T>, T> generator, string name) {
+         return new SingleThreadedStackBackedObjectPool<T>(generator, name);
+      }
+
+      public static IObjectPool<T> CreateConcurrentQueueBacked<T>(Func<T> generator) {
+         return CreateConcurrentQueueBacked<T>(pool => generator());
+      }
+
+      public static IObjectPool<T> CreateConcurrentQueueBacked<T>(Func<IObjectPool<T>, T> generator) {
+         return new ConcurrentQueueBackedObjectPool<T>(generator);
+      }
+
+      public static IObjectPool<T> CreateConcurrentQueueBacked<T>(Func<T> generator, string name) {
+         return CreateConcurrentQueueBacked<T>(pool => generator(), name);
+      }
+
+      public static IObjectPool<T> CreateConcurrentQueueBacked<T>(Func<IObjectPool<T>, T> generator, string name) {
+         return new ConcurrentQueueBackedObjectPool<T>(generator, name);
       }
    }
 }

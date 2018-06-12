@@ -12,7 +12,7 @@ namespace Dargon.Commons.Pooling {
             Console.WriteLine("Run " + i + ": ");
             var sw = new Stopwatch();
             sw.Restart();
-            IObjectPool<object> pool = new StackBackedObjectPool<object>(_ => new object());
+            IObjectPool<object> pool = new ConcurrentQueueBackedObjectPool<object>(_ => new object());
             RunBenchmark(pool.TakeObject, pool.ReturnObject);
             Console.WriteLine("Pool: " + sw.ElapsedMilliseconds);
             

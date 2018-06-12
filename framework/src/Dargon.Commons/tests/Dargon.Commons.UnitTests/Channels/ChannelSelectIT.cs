@@ -34,16 +34,14 @@ namespace Dargon.Channels.Tests {
          var semaphore = new AsyncSemaphore(0);
          Go(async () => {
             for (var i = 0; i < 10; i++) {
-//               await barrier.SignalAndWaitAsync();
-//               await semaphore.WaitAsync();
-//               await channel1.WriteAsync(i);
+               await barrier.SignalAndWaitAsync();
+               await semaphore.WaitAsync();
+               await channel2.WriteAsync(i);
             }
          }).Forget();
          Go(async () => {
             for (var i = 0; i < 10; i++) {
-               //await barrier.SignalAndWaitAsync();
-               await semaphore.WaitAsync();
-               await channel2.WriteAsync(i);
+               await barrier.SignalAndWaitAsync();
                await semaphore.WaitAsync();
                await channel1.WriteAsync(i);
             }

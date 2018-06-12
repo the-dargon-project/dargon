@@ -1,14 +1,14 @@
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Dargon.Commons.Pooling {
-   public class StackBackedObjectPool<T> : IObjectPool<T> {
-      private readonly ConcurrentQueue<T> container = new ConcurrentQueue<T>();
+   public class SingleThreadedStackBackedObjectPool<T> : IObjectPool<T> {
+      private readonly Stack<T> container = new Stack<T>();
       private readonly Func<IObjectPool<T>, T> generator;
       private readonly string name;
 
-      public StackBackedObjectPool(Func<IObjectPool<T>, T> generator) : this(generator, null) { }
-      public StackBackedObjectPool(Func<IObjectPool<T>, T> generator, string name) {
+      public SingleThreadedStackBackedObjectPool(Func<IObjectPool<T>, T> generator) : this(generator, null) { }
+      public SingleThreadedStackBackedObjectPool(Func<IObjectPool<T>, T> generator, string name) {
          generator.ThrowIfNull("generator");
 
          this.generator = generator;
@@ -18,16 +18,8 @@ namespace Dargon.Commons.Pooling {
       public string Name => name;
       public int Count => container.Count;
 
-      public T TakeObject() {
-         T r;
-         if (!container.TryDequeue(out r)) {
-            r = generator(this);
-         }
-         return r;
-      }
-      
-      public void ReturnObject(T item) {
-         container.Enqueue(item);
-      }
+      public T TakeObject() => container.Count == 0 ? generator(this) : container.Pop();
+
+      public void ReturnObject(T item) => container.Push(item);
    }
 }

@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\NMockito\src\NMockito\NMockito.csproj" />
-    <ProjectReference Include="..\..\src\Dargon.Commons.csproj" />
   </ItemGroup>
 
   <ItemGroup>
