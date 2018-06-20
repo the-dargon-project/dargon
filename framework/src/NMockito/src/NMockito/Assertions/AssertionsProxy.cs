@@ -5,11 +5,38 @@ using System.Linq;
 using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace NMockito.Assertions {
    public class AssertionsProxy {
-      public void AssertEquals<T>(T expected, T actual) => Assert.Equal(expected, actual);
-      public void AssertNotEquals<T>(T expected, T actual) => Assert.NotEqual(expected, actual);
+      // Where equals refers to .Equals invoke if not null.
+      // xUnit does insane new int[0] == new int[0], which we support through
+      // AssertSequenceEquals and AssertCollectionsDeepEquals.
+      // We also support AssertReferenceEquals.
+      public void AssertEquals<T>(T expected, T actual) {
+         void Test(bool eq) {
+            if (!eq) {
+               throw new EqualException(expected, actual);
+            }
+         }
+
+         if (expected == null && actual == null) Test(true);
+         else if (expected != null) Test(expected.Equals(actual));
+         else Test(actual.Equals(expected));
+      }
+
+      public void AssertNotEquals<T>(T expected, T actual) {
+         void Test(bool eq) {
+            if (eq) {
+               // WTF xUnit takes string expected/actuals here?
+               throw new NotEqualException(expected?.ToString() ?? "[null]", actual?.ToString() ?? "[null]");
+            }
+         }
+
+         if (expected == null && actual == null) Test(true);
+         else if (expected != null) Test(expected.Equals(actual));
+         else Test(actual.Equals(expected));
+      }
 
       public void AssertSequenceEquals<T>(IEnumerable<T> expected, IEnumerable<T> actual) {
          Assert.Equal(expected, actual);
