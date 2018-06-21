@@ -71,4 +71,51 @@ namespace Dargon.Commons.Pooling {
             ReflectionUtils.DefaultReconstruct);
       }
    }
+
+   public class TlsTakeManyReturnOnceObjectPool<T> {
+      private readonly TlsBackedObjectPool<T>[] tlsPools;
+      private readonly ThreadLocal<List<T>[]> tlsTakenInstancesByPoolIndex;
+      private readonly ThreadLocal<int> tlsSelectedPoolIndex;
+
+      public TlsTakeManyReturnOnceObjectPool(TlsBackedObjectPool<T>[] pools) {
+         this.tlsPools = pools;
+         this.tlsTakenInstancesByPoolIndex = new ThreadLocal<List<T>[]>(() => pools.Map(p => new List<T>()));
+         this.tlsSelectedPoolIndex = new ThreadLocal<int>(() => -1);
+      }
+
+      public void EnterLevel() {
+         if (tlsSelectedPoolIndex.Value == tlsPools.Length - 1) throw new InvalidOperationException();
+         tlsSelectedPoolIndex.Value++;
+      }
+
+      public T Take() {
+         if (tlsSelectedPoolIndex.Value == -1) throw new InvalidOperationException();
+         var inst = tlsPools[tlsSelectedPoolIndex.Value].TakeObject();
+         tlsTakenInstancesByPoolIndex.Value[tlsSelectedPoolIndex.Value].Add(inst);
+         return inst;
+      }
+
+      public void LeaveLevelReturningTakenInstances() {
+         if (tlsSelectedPoolIndex.Value == -1) throw new InvalidOperationException();
+         var takenInstances = tlsTakenInstancesByPoolIndex.Value[tlsSelectedPoolIndex.Value];
+         var pool = tlsPools[tlsSelectedPoolIndex.Value];
+         tlsSelectedPoolIndex.Value--;
+         foreach (var inst in takenInstances) {
+            pool.ReturnObject(inst);
+         }
+         takenInstances.Clear();
+      }
+   }
+
+   public static class TlsTakeManyReturnOnceObjectPool {
+      public static TlsTakeManyReturnOnceObjectPool<T> Create<T>(int reentrancy) where T : new() {
+         var pools = Arrays.Create(reentrancy, i => TlsBackedObjectPool.Create<T>());
+         return new TlsTakeManyReturnOnceObjectPool<T>(pools);
+      }
+
+      public static TlsTakeManyReturnOnceObjectPool<T> CreateWithObjectZeroAndReconstruction<T>(int reentrancy) where T : new() {
+         var pools = Arrays.Create(reentrancy, i => TlsBackedObjectPool.CreateWithObjectZeroAndReconstruction<T>());
+         return new TlsTakeManyReturnOnceObjectPool<T>(pools);
+      }
+   }
 }
