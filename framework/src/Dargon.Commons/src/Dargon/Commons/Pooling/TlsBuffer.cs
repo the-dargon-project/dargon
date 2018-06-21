@@ -35,6 +35,13 @@ namespace Dargon.Commons.Pooling {
          if (tlsBuffers.Value[tlsNextBufferIndex.Value - 1] != buffer) throw new InvalidOperationException();
          tlsNextBufferIndex.Value--;
       }
+
+      // Useful for retrofitting old code that does wasteful new[]s.
+      public T[] UnsafeTakeAndGive(int size) {
+         var buf = Take(size);
+         Give(buf);
+         return buf;
+      }
    }
 
    public class AsyncLocalBufferManager<T> {

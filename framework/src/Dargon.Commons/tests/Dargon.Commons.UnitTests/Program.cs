@@ -8,7 +8,8 @@ using Dargon.Commons.Pooling;
 namespace Dargon.Commons {
    public static class Program {
       public static void Main() {
-         new AsyncLocalBufferManagerTests().Run().Wait();
+         // new AsyncLocalBufferManagerTests().Run().Wait();
+         new ReflectionTests().ZeroAndDefaultReconstructTest();
       }
    }
 }

@@ -15,7 +15,7 @@ namespace Dargon.Commons.Pooling {
       }
 
       public static IObjectPool<T> CreateTlsBacked<T>(Func<IObjectPool<T>, T> generator, string name) {
-         return new TlsBackedObjectPool<T>(generator, name);
+         return new TlsBackedObjectPool<T>(generator, name, null, null);
       }
 
       public static IObjectPool<T> CreateSingleThreadedStackBacked<T>(Func<T> generator) {
