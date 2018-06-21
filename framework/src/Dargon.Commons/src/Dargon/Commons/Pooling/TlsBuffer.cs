@@ -2,14 +2,14 @@
 using System.Threading;
 
 namespace Dargon.Commons.Pooling {
-   public class TlsBufferManager<T> {
+   public class TlsPow2BufferManager<T> {
       private readonly Func<int, T[]> factory;
       private ThreadLocal<T[][]> tlsBuffers;
       private ThreadLocal<int> tlsNextBufferIndex;
 
-      public TlsBufferManager(int reentrancy = 1) : this(i => new T[i], reentrancy) { }
+      public TlsPow2BufferManager(int reentrancy = 1) : this(i => new T[i], reentrancy) { }
 
-      public TlsBufferManager(Func<int, T[]> factory, int reentrancy = 1) {
+      public TlsPow2BufferManager(Func<int, T[]> factory, int reentrancy = 1) {
          this.factory = factory;
          this.tlsBuffers = new ThreadLocal<T[][]>(() => Arrays.Create(reentrancy, i => factory(0)));
          this.tlsNextBufferIndex = new ThreadLocal<int>();
