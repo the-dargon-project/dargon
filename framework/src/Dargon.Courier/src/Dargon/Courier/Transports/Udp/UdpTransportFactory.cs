@@ -45,7 +45,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          var acknowledgementCoordinator = new AcknowledgementCoordinator(identity);
          var schedulerFactory = new SchedulerFactory(new ThreadFactory());
          var udpUnicastScheduler = schedulerFactory.CreateWithCustomThreadPool($"Courier.Udp({identity.Id.ToString()})");
-         var sendReceiveBufferPool = ObjectPool.CreateStackBacked(() => new byte[UdpConstants.kMaximumTransportSize]);
+         var sendReceiveBufferPool = ObjectPool.CreateConcurrentQueueBacked(() => new byte[UdpConstants.kMaximumTransportSize]);
          var client = UdpClient.Create(configuration, udpUnicastScheduler, sendReceiveBufferPool, inboundBytesAggregator, outboundBytesAggregator, inboundReceiveProcessDispatchLatencyAggregator);
          var payloadSender = new PayloadSender(client);
          var multiPartPacketReassembler = new MultiPartPacketReassembler();

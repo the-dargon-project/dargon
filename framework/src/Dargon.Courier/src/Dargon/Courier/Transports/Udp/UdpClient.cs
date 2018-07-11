@@ -27,20 +27,20 @@ namespace Dargon.Courier.TransportTier.Udp {
    public class UdpClient {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-      private readonly IObjectPool<InboundDataEvent> inboundSomethingEventPool = ObjectPool.CreateStackBacked(() => new InboundDataEvent());
-      private readonly IObjectPool<AsyncAutoResetLatch> asyncAutoResetEventPool = ObjectPool.CreateStackBacked(() => new AsyncAutoResetLatch());
+      // todo figure out better pooling
+      private readonly IObjectPool<InboundDataEvent> inboundSomethingEventPool = ObjectPool.CreateConcurrentQueueBacked(() => new InboundDataEvent());
       
       private readonly UdpTransportConfiguration configuration;
       private readonly List<Socket> multicastSockets;
       private readonly List<Socket> unicastSockets;
       private readonly IJobQueue<UdpUnicastJob> unicastJobQueue;
       private readonly IObjectPool<byte[]> sendReceiveBufferPool;
-      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
+
+      // todo figure out better pooling
+      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
       private readonly IAuditAggregator<double> inboundBytesAggregator;
       private readonly IAuditAggregator<double> outboundBytesAggregator;
       private readonly IAuditAggregator<double> inboundReceiveProcessDispatchLatencyAggregator;
-
-      private readonly IObjectPool<SocketAsyncEventArgs> sendArgsPool;
 
       private volatile bool isShutdown = false;
       private IUdpDispatcher udpDispatcher;
@@ -56,7 +56,6 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.inboundBytesAggregator = inboundBytesAggregator;
          this.outboundBytesAggregator = outboundBytesAggregator;
          this.inboundReceiveProcessDispatchLatencyAggregator = inboundReceiveProcessDispatchLatencyAggregator;
-         this.sendArgsPool = ObjectPool.CreateStackBacked(() => new SocketAsyncEventArgs());
       }
 
       public void StartReceiving(IUdpDispatcher udpDispatcher) {

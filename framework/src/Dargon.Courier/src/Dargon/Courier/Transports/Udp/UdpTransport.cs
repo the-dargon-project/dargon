@@ -20,7 +20,8 @@ using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class UdpBroadcaster {
-      private readonly IObjectPool<MemoryStream> broadcastOutboundMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
+      // todo: figure out better pooling
+      private readonly IObjectPool<MemoryStream> broadcastOutboundMemoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
       private readonly Identity identity;
       private readonly UdpClient udpClient;
 
@@ -139,8 +140,8 @@ namespace Dargon.Courier.TransportTier.Udp {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
       private readonly AsyncAutoResetLatch workSignal = new AsyncAutoResetLatch();
-      private readonly IObjectPool<MemoryStream> outboundAcknowledgementMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kAckSerializationBufferSize], 0, UdpConstants.kAckSerializationBufferSize, true, true));
-      private readonly IObjectPool<MemoryStream> outboundPacketMemoryStreamPool;
+      private readonly IObjectPool<MemoryStream> outboundAcknowledgementMemoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream(new byte[UdpConstants.kAckSerializationBufferSize], 0, UdpConstants.kAckSerializationBufferSize, true, true)); // todo: figure out better pooling
+      private readonly IObjectPool<MemoryStream> outboundPacketMemoryStreamPool; // todo: figure out better pooling
       private readonly Identity identity;
       private readonly UdpClient udpClient;
       private readonly AcknowledgementCoordinator acknowledgementCoordinator;

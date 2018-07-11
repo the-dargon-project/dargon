@@ -17,7 +17,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       private static readonly TimeSpan kSomethingExpiration = TimeSpan.FromMinutes(5);
 
       private readonly ConcurrentDictionary<Guid, ChunkReassemblyContext> chunkReassemblerContextsByMessageId = new ConcurrentDictionary<Guid, ChunkReassemblyContext>();
-      private readonly IObjectPool<InboundDataEvent> inboundDataEventPool = ObjectPool.CreateStackBacked(() => new InboundDataEvent());
+      private readonly IObjectPool<InboundDataEvent> inboundDataEventPool = ObjectPool.CreateTlsBacked(() => new InboundDataEvent());
       private IUdpDispatcher dispatcher;
 
       public void SetUdpDispatcher(IUdpDispatcher dispatcher) {

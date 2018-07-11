@@ -52,7 +52,7 @@ namespace Dargon.Courier {
          }
 
          private static class Inner<T> {
-            private static readonly IObjectPool<InboundMessageEvent<T>> eventPool = ObjectPool.CreateStackBacked(() => new InboundMessageEvent<T>());
+            private static readonly IObjectPool<InboundMessageEvent<T>> eventPool = ObjectPool.CreateTlsBacked(() => new InboundMessageEvent<T>());
 
             public static async Task Visit(InboundMessageRouter router, MessageDto message, PeerContext peer) {
                var e = eventPool.TakeObject();

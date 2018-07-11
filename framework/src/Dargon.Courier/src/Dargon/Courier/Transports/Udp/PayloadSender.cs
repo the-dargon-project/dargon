@@ -11,7 +11,8 @@ using Dargon.Courier.TransportTier.Udp.Vox;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class PayloadSender {
-      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.CreateStackBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
+      // TODO: Figure out better pooling
+      private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
       private readonly UdpClient udpClient;
 
       public PayloadSender(UdpClient udpClient) {
