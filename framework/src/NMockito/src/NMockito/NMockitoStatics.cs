@@ -48,6 +48,7 @@ namespace NMockito {
       public static void AssertThrows<TException>(Action action) where TException : Exception => Core.AssertThrows<TException>(action);
       public static void AssertSequenceEquals<T>(IEnumerable<T> a, IEnumerable<T> b) => Core.AssertSequenceEquals(a, b);
       public static void AssertCollectionDeepEquals<T>(IEnumerable<T> expected, IEnumerable<T> actual) => Core.AssertCollectionDeepEquals(expected, actual);
+      public static void AssertDeepEquals<T>(T expected, T actual) => Core.AssertDeepEquals(expected, actual);
       public static AssertWithAction Assert(Action action) => Core.Assert(action);
 
       public static TMock Assert<TMock>(TMock mock) where TMock : class => Core.Assert(mock);
