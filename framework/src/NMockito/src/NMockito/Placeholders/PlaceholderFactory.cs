@@ -53,6 +53,9 @@ namespace NMockito.Placeholders {
             var keyType = genericArgs[0];
             var valueType = genericArgs[1];
             return Activator.CreateInstance(type, CreatePlaceholder(keyType), CreatePlaceholder(valueType));
+         } else if (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition().Name.StartsWith("ValueTuple`")) {
+            var genericArgs = type.GetGenericArguments();
+            return Activator.CreateInstance(type, genericArgs.Select(CreatePlaceholder).ToArray());
          } else {
             var counter = Interlocked.Increment(ref placeholderCounter);
             switch (type.Name) {

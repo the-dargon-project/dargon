@@ -102,6 +102,7 @@ namespace NMockito {
 
       public void AssertSequenceEquals<T>(IEnumerable<T> a, IEnumerable<T> b) => assertionsProxy.AssertSequenceEquals(a, b);
       public void AssertCollectionDeepEquals<T>(IEnumerable<T> expected, IEnumerable<T> actual) => assertionsProxy.AssertCollectionsDeepEquals(expected, actual);
+      public void AssertDeepEquals<T>(T expected, T actual) => assertionsProxy.AssertDeepEquals(expected, actual);
 
       public AssertWithAction Assert(Action action) => assertionsProxy.AssertWithAction(action);
 

@@ -9,6 +9,7 @@ using NMockito.Expectations;
 
 namespace NMockito {
    public class NMockitoInstance : NMockitoCore {
+      private static readonly object g_patchAppDomainManagerLock = new object(); // prevents NMIs of different testing threads from racing to patch appdomain manager.
       private readonly NMockitoCore core;
 
       public NMockitoInstance() {
@@ -19,21 +20,23 @@ namespace NMockito {
       }
 
       private void PatchAssemblyGetEntryAssembly(Assembly entryAssembly) {
-         if (Assembly.GetEntryAssembly() != null) return;
+         lock (g_patchAppDomainManagerLock) {
+            if (Assembly.GetEntryAssembly() != null) return;
 
-         // via https://github.com/Microsoft/vstest/issues/649
-         var manager = new AppDomainManager();
-         var entryAssemblyField = manager.GetType().GetField("m_entryAssembly", BindingFlags.Instance | BindingFlags.NonPublic);
-         if (entryAssemblyField == null) throw new Exception("Failed to use reflection on framework to set Assembly.GetEntryAssembly()!");
-         entryAssemblyField.SetValue(manager, entryAssembly);
+            // via https://github.com/Microsoft/vstest/issues/649
+            var manager = new AppDomainManager();
+            var entryAssemblyField = manager.GetType().GetField("m_entryAssembly", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (entryAssemblyField == null) throw new Exception("Failed to use reflection on framework to set Assembly.GetEntryAssembly()!");
+            entryAssemblyField.SetValue(manager, entryAssembly);
 
-         var domain = AppDomain.CurrentDomain;
-         var domainManagerField = domain.GetType().GetField("_domainManager", BindingFlags.Instance | BindingFlags.NonPublic);
-         if (domainManagerField == null) throw new Exception("Failed to use reflection on framework to set Assembly.GetEntryAssembly()!");
-         domainManagerField.SetValue(domain, manager);
+            var domain = AppDomain.CurrentDomain;
+            var domainManagerField = domain.GetType().GetField("_domainManager", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (domainManagerField == null) throw new Exception("Failed to use reflection on framework to set Assembly.GetEntryAssembly()!");
+            domainManagerField.SetValue(domain, manager);
 
-         if (Assembly.GetEntryAssembly() != entryAssembly) {
-            throw new Exception("Failed to set Assembly.GetEntryAssembly()!");
+            if (Assembly.GetEntryAssembly() != entryAssembly) {
+               throw new Exception("Failed to set Assembly.GetEntryAssembly()!");
+            }
          }
       }
 
@@ -74,6 +77,7 @@ namespace NMockito {
       public void AssertThrows<TOuterException, TInnerException>(Action action) where TOuterException : Exception where TInnerException : Exception => core.AssertThrows<TOuterException, TInnerException>(action);
       public void AssertSequenceEquals<T>(IEnumerable<T> a, IEnumerable<T> b) => core.AssertSequenceEquals(a, b);
       public void AssertCollectionDeepEquals<T>(IEnumerable<T> expected, IEnumerable<T> actual) => core.AssertCollectionDeepEquals(expected, actual);
+      public void AssertDeepEquals<T>(T expected, T actual) => core.AssertDeepEquals(expected, actual);
       public AssertWithAction Assert(Action action) => core.Assert(action);
       public TMock Assert<TMock>(TMock mock) where TMock : class => core.Assert(mock);
 

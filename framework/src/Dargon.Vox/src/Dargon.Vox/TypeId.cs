@@ -28,5 +28,15 @@ namespace Dargon.Vox {
       TimeSpan = -0x1F,
 
       String = -0x20,
+
+      ValueTuple0 = -0x30,
+      ValueTuple1 = -0x31,
+      ValueTuple2 = -0x32,
+      ValueTuple3 = -0x33,
+      ValueTuple4 = -0x34,
+      ValueTuple5 = -0x35,
+      ValueTuple6 = -0x36,
+      ValueTuple7 = -0x37,
+      ValueTuple8 = -0x38,
    }
 }

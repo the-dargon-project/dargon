@@ -22,7 +22,7 @@ namespace Dargon.Vox.RoundTripTests {
          serializer.ImportTypes(new InlineVoxTypes(0, typeContextsByTypeId));
       }
 
-      public void MultiThreadedRoundTripTest<T>(IReadOnlyList<T> testCases, int trialsPerCase, int workerCount, Action<T, T> assertEqualsOverride = null) {
+      public void MultiThreadedRoundTripTest<T>(IReadOnlyList<T> testCases, int trialsPerCase = 1000, int workerCount = 8, Action<T, T> assertEqualsOverride = null) {
          var workersReadySignal = new CountdownEvent(workerCount);
          var startSignal = new ManualResetEvent(false);
          var workersCompleteSignal = new CountdownEvent(workerCount);
@@ -106,12 +106,8 @@ namespace Dargon.Vox.RoundTripTests {
             AssertEquals(hintType, val2Type);
             if (expected == null) {
                AssertNull(actual);
-            } else if (expected is IEnumerable) {
-               var e1 = ((IEnumerable)expected).Cast<object>().ToArray();
-               var e2 = ((IEnumerable)actual).Cast<object>().ToArray();
-               AssertCollectionDeepEquals(e1, e2);
             } else {
-               AssertEquals(expected, actual);
+               AssertDeepEquals(expected, actual);
             }
          }
       }

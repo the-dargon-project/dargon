@@ -46,6 +46,7 @@ namespace NMockito {
          where TInnerException : Exception;
       void AssertSequenceEquals<T>(IEnumerable<T> a, IEnumerable<T> b);
       void AssertCollectionDeepEquals<T>(IEnumerable<T> expected, IEnumerable<T> actual);
+      void AssertDeepEquals<T>(T expected, T actual);
       AssertWithAction Assert(Action action);
       TMock Assert<TMock>(TMock mock) where TMock : class;
 

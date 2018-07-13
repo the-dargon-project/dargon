@@ -34,6 +34,15 @@ namespace Dargon.Vox {
          typeRegistry.RegisterReservedTypeId(typeof(Array), (int)TypeId.Array);
          typeRegistry.RegisterReservedTypeId(typeof(Dictionary<,>), (int)TypeId.Map);
          typeRegistry.RegisterReservedTypeId(typeof(KeyValuePair<,>), (int)TypeId.KeyValuePair);
+         typeRegistry.RegisterReservedTypeId(typeof(ValueTuple), (int)TypeId.ValueTuple0);
+         typeRegistry.RegisterReservedTypeId(typeof(ValueTuple<>), (int)TypeId.ValueTuple1);
+         typeRegistry.RegisterReservedTypeId(typeof(ValueTuple<,>), (int)TypeId.ValueTuple2);
+         typeRegistry.RegisterReservedTypeId(typeof(ValueTuple<,,>), (int)TypeId.ValueTuple3);
+         typeRegistry.RegisterReservedTypeId(typeof(ValueTuple<,,,>), (int)TypeId.ValueTuple4);
+         typeRegistry.RegisterReservedTypeId(typeof(ValueTuple<,,,,>), (int)TypeId.ValueTuple5);
+         typeRegistry.RegisterReservedTypeId(typeof(ValueTuple<,,,,,>), (int)TypeId.ValueTuple6);
+         typeRegistry.RegisterReservedTypeId(typeof(ValueTuple<,,,,,,>), (int)TypeId.ValueTuple7);
+         typeRegistry.RegisterReservedTypeId(typeof(ValueTuple<,,,,,,,>), (int)TypeId.ValueTuple8);
 
          var fullTypeBinaryRepresentationCache = new FullTypeBinaryRepresentationCache(typeRegistry);
          var typeReader = new TypeReader(typeRegistry);

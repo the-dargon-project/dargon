@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using Dargon.Commons;
 using Dargon.Commons.Collections;
 using Dargon.Vox.Utilities;
 
@@ -50,9 +51,25 @@ namespace Dargon.Vox {
       public static object ConvertElementToHintType(object element, Type hintType) {
          if (hintType.IsEnum) {
             return Enum.ToObject(hintType, Convert.ChangeType(element, hintType.GetEnumUnderlyingType()));
+         } else if (hintType.Name.StartsWith("ValueTuple`")) {
+            return ConvertValueTupleToHintType(element, hintType);
          } else {
             return ConvertCollectionToHintType(element, hintType);
          }
+      }
+
+      private static object ConvertValueTupleToHintType(dynamic tuple, Type hintType) {
+         var typeArguments = hintType.GetGenericArguments();
+         var ctorArgs = new object[typeArguments.Length];
+         if (typeArguments.Length >= 1) ctorArgs[0] = ConvertElementToHintType(tuple.Item1, typeArguments[0]);
+         if (typeArguments.Length >= 2) ctorArgs[1] = ConvertElementToHintType(tuple.Item2, typeArguments[1]);
+         if (typeArguments.Length >= 3) ctorArgs[2] = ConvertElementToHintType(tuple.Item3, typeArguments[2]);
+         if (typeArguments.Length >= 4) ctorArgs[3] = ConvertElementToHintType(tuple.Item4, typeArguments[3]);
+         if (typeArguments.Length >= 5) ctorArgs[4] = ConvertElementToHintType(tuple.Item5, typeArguments[4]);
+         if (typeArguments.Length >= 6) ctorArgs[5] = ConvertElementToHintType(tuple.Item6, typeArguments[5]);
+         if (typeArguments.Length >= 7) ctorArgs[6] = ConvertElementToHintType(tuple.Item7, typeArguments[6]);
+         if (typeArguments.Length >= 8) ctorArgs[7] = ConvertElementToHintType(tuple.Rest, typeArguments[7]);
+         return Activator.CreateInstance(hintType, ctorArgs);
       }
 
       public static object ConvertCollectionToHintType(object collection, Type hintType) {

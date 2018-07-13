@@ -38,15 +38,16 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
          AssertEquals(reference.FileAccess, actual.FileAccess);
          AssertEquals(reference.String, actual.String);
          AssertEquals(reference.Guid, actual.Guid);
-         AssertEquals(reference.IntList, actual.IntList);
-         AssertEquals(reference.IntPowersArray, actual.IntPowersArray);
-         AssertEquals(reference.StringArray, actual.StringArray);
-         AssertEquals(reference.IntStringMap, actual.IntStringMap);
-         AssertEquals(reference.IntStringStringArrayMapArrayMap, actual.IntStringStringArrayMapArrayMap);
+         AssertSequenceEquals(reference.IntList, actual.IntList);
+         AssertSequenceEquals(reference.IntPowersArray, actual.IntPowersArray);
+         AssertSequenceEquals(reference.StringArray, actual.StringArray);
+         AssertSequenceEquals(reference.IntStringMap, actual.IntStringMap);
+         AssertSequenceEquals(reference.IntStringStringArrayMapArrayMap, actual.IntStringStringArrayMapArrayMap);
          AssertEquals(reference.Type, actual.Type);
          AssertEquals(reference.DateTime, actual.DateTime);
          AssertEquals(reference.Float, actual.Float);
          AssertEquals(reference.Double, actual.Double);
+         AssertEquals(reference.ValueTuple, actual.ValueTuple);
          AssertHodgepodgeEquals(reference.InnerHodgepodge, actual.InnerHodgepodge);
       }
 
@@ -74,6 +75,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
             DateTime = DateTime.FromFileTime(2131891),
             Float = CreatePlaceholder<float>(),
             Double = CreatePlaceholder<double>(),
+            ValueTuple = CreatePlaceholder<(int, string)>(),
             InnerHodgepodge = innerHodgepodge,
          };
       }
@@ -102,6 +104,7 @@ namespace Dargon.Vox.FunctionalTests.RoundTripTests {
          public DateTime DateTime { get; set; }
          public float Float { get; set; }
          public double Double { get; set; }
+         public ValueTuple<int, string> ValueTuple { get; set; }
          public HodgepodgeDto InnerHodgepodge { get; set; }
       }
 

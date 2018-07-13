@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -90,8 +91,8 @@ namespace NMockito.Assertions {
          if (isUnorderedDictionaryLike) {
             dynamic aDynamic = a;
             dynamic bDynamic = b;
-            var aKeys = new HashSet<object>(aDynamic.Keys);
-            var bKeys = new HashSet<object>(bDynamic.Keys);
+            var aKeys = new HashSet<object>(Enumerable.Cast<object>(aDynamic.Keys));
+            var bKeys = new HashSet<object>(Enumerable.Cast<object>(bDynamic.Keys));
             AssertEquals(aKeys.Count, bKeys.Count);
 
             var aType = a.GetType();
@@ -101,7 +102,7 @@ namespace NMockito.Assertions {
                AssertTrue(bKeys.Contains(aKey));
                var aValue = indexer.GetValue(a, new[] { aKey });
                var bValue = indexer.GetValue(b, new[] { aKey });
-               AssertCollectionDeepEquals_AssertElementEquals(aValue, bValue);
+               AssertDeepEquals(aValue, bValue);
             }
          } else if (isUnorderedSetLike) {
             var aKeys = new HashSet<object>(a.Cast<object>());
@@ -120,13 +121,13 @@ namespace NMockito.Assertions {
                AssertEquals(hasCurrent, itb.MoveNext());
 
                if (hasCurrent) {
-                  AssertCollectionDeepEquals_AssertElementEquals(ita.Current, itb.Current);
+                  AssertDeepEquals(ita.Current, itb.Current);
                }
             }
          }
       }
 
-      public void AssertCollectionDeepEquals_AssertElementEquals(object a, object b) {
+      public void AssertDeepEquals(object a, object b) {
          if (a == null || b == null) {
             AssertTrue(a == b);
          }
@@ -139,11 +140,28 @@ namespace NMockito.Assertions {
          } else if (aType.GetTypeInfo().IsGenericType && aType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)) {
             dynamic aKvp = a;
             dynamic bKvp = b;
-            AssertCollectionDeepEquals_AssertElementEquals(aKvp.Key, bKvp.Key);
-            AssertCollectionDeepEquals_AssertElementEquals(aKvp.Value, bKvp.Value);
+            AssertDeepEquals(aKvp.Key, bKvp.Key);
+            AssertDeepEquals(aKvp.Value, bKvp.Value);
+         } else if (aType.GetTypeInfo().IsGenericType && aType.GetGenericTypeDefinition().Name.StartsWith("ValueTuple`")) {
+            AssertTupleDeepEquals(a, b);
          } else {
             AssertEquals(a, b);
          }
+      }
+
+      public void AssertTupleDeepEquals(dynamic a, dynamic b) {
+         var aType = (Type)a.GetType();
+         AssertTrue(aType.Name.StartsWith("ValueTuple`"));
+
+         var gargs = aType.GetGenericArguments();
+         if (gargs.Length >= 1) AssertDeepEquals(a.Item1, b.Item1);
+         if (gargs.Length >= 2) AssertDeepEquals(a.Item2, b.Item2);
+         if (gargs.Length >= 3) AssertDeepEquals(a.Item3, b.Item3);
+         if (gargs.Length >= 4) AssertDeepEquals(a.Item4, b.Item4);
+         if (gargs.Length >= 5) AssertDeepEquals(a.Item5, b.Item5);
+         if (gargs.Length >= 6) AssertDeepEquals(a.Item6, b.Item6);
+         if (gargs.Length >= 7) AssertDeepEquals(a.Item7, b.Item7);
+         if (gargs.Length >= 8) AssertDeepEquals(a.Rest, b.Rest);
       }
 
       public void AssertTrue(bool value) => Assert.True(value);
