@@ -21,6 +21,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
 
       public async Task WritePayloadAsync(NetworkStream ns, object payload, AsyncLock writerLock, CancellationToken cancellationToken = default(CancellationToken)) {
          var ms = memoryStreamPool.TakeObject();
+         // TODO: suspicious use of global serializer?
          Serialize.To(ms, payload);
          using (await writerLock.LockAsync(cancellationToken).ConfigureAwait(false)) {
             await WriteMemoryStreamAsync(ns, ms, 0, (int)ms.Position, cancellationToken).ConfigureAwait(false);

@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Dargon.Commons.Collections;
+using Dargon.Commons.Pooling;
 using Dargon.Vox.Internals.TypePlaceholders;
 
 namespace Dargon.Vox {
@@ -145,8 +147,21 @@ namespace Dargon.Vox {
    }
 
    public static class Serialize {
+      private static readonly ThreadLocal<MemoryStream> tlsMemoryStream = new ThreadLocal<MemoryStream>(() => new MemoryStream());
+
       public static void To(Stream dest, object subject) {
          Globals.Serializer.Serialize(dest, subject);
+      }
+
+      public static byte[] ToBytes(object subject) {
+         var ms = tlsMemoryStream.Value;
+         ms.SetLength(0);
+
+         Globals.Serializer.Serialize(ms, subject);
+
+         var res = ms.ToArray();
+         ms.SetLength(0);
+         return res;
       }
    }
 

@@ -80,6 +80,7 @@ namespace Dargon.Courier.TransportTier.Udp {
                throw new InvalidStateException();
             }
             try {
+               // TODO: suspicious use of global serializer?
                Serialize.To(r.Item1, r.Item2);
                r.Item3.SetResult(0);
             } catch (Exception e) {
