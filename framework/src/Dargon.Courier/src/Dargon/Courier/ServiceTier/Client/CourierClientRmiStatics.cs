@@ -52,8 +52,11 @@ namespace Dargon.Courier.ServiceTier.Client {
                   if (TryGetRemoteServiceProxyInvocationInterceptor(methodObject, out var remoteServiceProxyInvocationInterceptor)) {
                      DebugWriteLine($"!> Asynchronously invoking service method {methodCallExpression.Method.Name}!");
                      var rmiResponseDto = await remoteServiceProxyInvocationInterceptor.ExecuteRmiAsync(methodCallExpression.Method, methodArguments);
+                     if (rmiResponseDto.Exception != null) {
+                        throw (Exception)rmiResponseDto.Exception;
+                     }
                      invocationReturnValue = rmiResponseDto.ReturnValue;
-                     if (rmiResponseDto.Outs!= null && rmiResponseDto.Outs.Length > 0) {
+                     if (rmiResponseDto.Outs != null && rmiResponseDto.Outs.Length > 0) {
                         throw new InvalidOperationException("Async() shouldn't be used on methods with out/ref parameters!");
                      }
                   } else {
