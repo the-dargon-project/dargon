@@ -36,6 +36,19 @@ namespace Dargon.Ryu.Modules {
       public void AddRyuType(Type type, RyuType ryuType) => typeInfoByType.Add(type, ryuType);
    }
 
+   public class LambdaRyuModule : RyuModule {
+      public LambdaRyuModule(Action<LambdaRyuModule> init, RyuModuleFlags flags = RyuModuleFlags.Default) {
+         Flags = flags;
+         init(this);
+      }
+
+      public override RyuModuleFlags Flags { get; }
+
+      public static LambdaRyuModule ForRequired<T>(Func<IRyuContainer, T> activator, RyuModuleFlags flags = RyuModuleFlags.AlwaysLoad) {
+         return new LambdaRyuModule(m => m.Required.Singleton<T>(ryu => activator(ryu)), flags);
+      }
+   }
+
    public class RyuRegisterOptions {
       public RyuModule Module { get; set; }
    }
@@ -45,7 +58,9 @@ namespace Dargon.Ryu.Modules {
       internal RyuTypeFlags Flags { get; set; }
 
       public RyuFluentAdditions<T> Transient<T>(RyuTypeActivator activator = null) => Helper<T>(RyuTypeFlags.None, activator);
+      public RyuFluentAdditions<T> Transient<T>(Func<IRyuContainer, T> activator) => Helper<T>(RyuTypeFlags.None, ryu => activator(ryu));
       public RyuFluentAdditions<T> Singleton<T>(RyuTypeActivator activator = null) => Helper<T>(RyuTypeFlags.Cache, activator);
+      public RyuFluentAdditions<T> Singleton<T>(Func<IRyuContainer, T> activator) => Helper<T>(RyuTypeFlags.Cache, ryu => activator(ryu));
 
       private RyuFluentAdditions<T> Helper<T>(RyuTypeFlags additionalFlags, RyuTypeActivator activator) {
          var ryuType = new RyuType {

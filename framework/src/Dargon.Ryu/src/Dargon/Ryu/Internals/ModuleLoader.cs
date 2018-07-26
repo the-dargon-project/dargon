@@ -27,7 +27,8 @@ namespace Dargon.Ryu.Internals {
       private static bool IsLoadableRyuModuleType(Type type) {
          var moduleType = typeof(IRyuModule);
          return moduleType.GetTypeInfo().IsAssignableFrom(type) &&
-                  !type.GetTypeInfo().IsAbstract;
+                !type.GetTypeInfo().IsAbstract &&
+                type != typeof(LambdaRyuModule);
       }
    }
 }
