@@ -12,7 +12,7 @@ namespace Dargon.Courier.Utilities {
 
       private readonly BloomFilter testObj = new BloomFilter(kExpectedItems, kExpectedCollisionProbability);
       
-      [Fact]
+      [Fact(Skip = "inconsistent across devices")]
       public void PerformanceTest() {
          const int guidCount = 150000;
          const int timeAllowed = 1000;
