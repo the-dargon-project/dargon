@@ -43,7 +43,8 @@ namespace Dargon.Courier.ServiceTier {
                var expectedOutValue2 = CreatePlaceholder<int>();
 
                var serverInvokableService = CreateMock<IInvokableService>();
-               Expect<string, int, string>((x, y) => serverInvokableService.Call(param, out x, out y))
+               Expect(serverInvokableService.Call1(param)).ThenReturn(expectedResult);
+               Expect<string, int, string>((x, y) => serverInvokableService.Call2(param, out x, out y))
                   .SetOut(expectedOutValue1, expectedOutValue2).ThenReturn(expectedResult);
 
                serverFacade.LocalServiceRegistry.RegisterService(serverInvokableService);
@@ -51,7 +52,8 @@ namespace Dargon.Courier.ServiceTier {
                var remoteServiceProxyContainer = clientFacade.RemoteServiceProxyContainer;
                var clientInvokableService = remoteServiceProxyContainer.Get<IInvokableService>(clientSideServerContext);
 
-               AssertEquals(expectedResult, clientInvokableService.Call(param, out var outValue1, out var outValue2));
+               AssertEquals(expectedResult, CourierClientRmiStatics.Async(() => clientInvokableService.Call1(param)).Result);
+               AssertEquals(expectedResult, clientInvokableService.Call2(param, out var outValue1, out var outValue2));
                AssertEquals(expectedOutValue1, outValue1);
                AssertEquals(expectedOutValue2, outValue2);
                VerifyExpectationsAndNoMoreInteractions();
@@ -67,7 +69,8 @@ namespace Dargon.Courier.ServiceTier {
 
       [Guid("7B862166-1E4C-4F54-83B0-082683B63EE1")]
       public interface IInvokableService {
-         string Call(string arg1, out string out1, out int out2);
+         string Call1(string arg1);
+         string Call2(string arg1, out string out1, out int out2);
       }
    }
 

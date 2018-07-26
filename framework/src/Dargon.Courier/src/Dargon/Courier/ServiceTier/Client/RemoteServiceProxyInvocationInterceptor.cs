@@ -29,7 +29,7 @@ namespace Dargon.Courier.ServiceTier.Client {
             if (logger.IsDebugEnabled) {
                logger.Debug($"At intercept async for invocation on method {method.Name} for service {remoteServiceInfo.ServiceType.Name}");
             }
-            responseDto = await InterceptAsync(method, invocation.Arguments).ConfigureAwait(false);
+            responseDto = await ExecuteRmiAsync(method, invocation.Arguments).ConfigureAwait(false);
             if (logger.IsDebugEnabled) {
                logger.Debug($"Completing Intercept async for invocation on method {method.Name} for service {remoteServiceInfo.ServiceType.Name}");
             }
@@ -75,7 +75,7 @@ namespace Dargon.Courier.ServiceTier.Client {
          }
       }
 
-      public async Task<RmiResponseDto> InterceptAsync(MethodInfo methodInfo, object[] methodArguments) {
+      public async Task<RmiResponseDto> ExecuteRmiAsync(MethodInfo methodInfo, object[] methodArguments) {
          var result = await remoteServiceInvoker.Invoke(
             remoteServiceInfo,
             methodInfo,
