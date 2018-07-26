@@ -7,6 +7,12 @@ namespace Dargon.Courier.TransportTier.Udp {
          return builder.UseTransport(new UdpTransportFactory());
       }
 
+      public static CourierBuilder UseUdpTransport(this CourierBuilder builder, int unicastPort = -1) {
+         var configurationBuilder = UdpTransportConfigurationBuilder.Create();
+         if (unicastPort != -1) configurationBuilder.WithUnicastReceivePort(unicastPort);
+         return builder.UseUdpTransport(configurationBuilder.Build());
+      }
+
       public static CourierBuilder UseUdpTransport(this CourierBuilder builder, UdpTransportConfiguration configuration) {
          return builder.UseTransport(new UdpTransportFactory(configuration));
       }

@@ -39,20 +39,21 @@ namespace Dargon.Courier.ServiceTier {
 
                var param = CreatePlaceholder<string>();
                var expectedResult = CreatePlaceholder<string>();
-               var expectedOutValue = CreatePlaceholder<string>();
+               var expectedOutValue1 = CreatePlaceholder<string>();
+               var expectedOutValue2 = CreatePlaceholder<int>();
 
                var serverInvokableService = CreateMock<IInvokableService>();
-               Expect<string, string>(x => serverInvokableService.Call(param, out x))
-                  .SetOut(expectedOutValue).ThenReturn(expectedResult);
+               Expect<string, int, string>((x, y) => serverInvokableService.Call(param, out x, out y))
+                  .SetOut(expectedOutValue1, expectedOutValue2).ThenReturn(expectedResult);
 
                serverFacade.LocalServiceRegistry.RegisterService(serverInvokableService);
 
                var remoteServiceProxyContainer = clientFacade.RemoteServiceProxyContainer;
                var clientInvokableService = remoteServiceProxyContainer.Get<IInvokableService>(clientSideServerContext);
 
-               string outValue;
-               AssertEquals(expectedResult, clientInvokableService.Call(param, out outValue));
-               AssertEquals(expectedOutValue, outValue);
+               AssertEquals(expectedResult, clientInvokableService.Call(param, out var outValue1, out var outValue2));
+               AssertEquals(expectedOutValue1, outValue1);
+               AssertEquals(expectedOutValue2, outValue2);
                VerifyExpectationsAndNoMoreInteractions();
             }
          } catch (Exception e) {
@@ -66,7 +67,7 @@ namespace Dargon.Courier.ServiceTier {
 
       [Guid("7B862166-1E4C-4F54-83B0-082683B63EE1")]
       public interface IInvokableService {
-         string Call(string arg1, out string out1);
+         string Call(string arg1, out string out1, out int out2);
       }
    }
 
