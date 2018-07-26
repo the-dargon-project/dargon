@@ -14,6 +14,7 @@ using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.ServiceTier.Vox;
 using Dargon.Courier.TransportTier;
 using Dargon.Ryu;
+using Dargon.Ryu.Modules;
 using NLog;
 
 namespace Dargon.Courier {
@@ -120,6 +121,26 @@ namespace Dargon.Courier {
          container.Set(facade);
 
          return container;
+      }
+   }
+
+   public class CourierRyuModule : RyuModule {
+      public override RyuModuleFlags Flags => RyuModuleFlags.Default;
+
+      public CourierRyuModule() {
+         OptionalSingleton(c => c.Identity);
+         OptionalSingleton(c => c.InboundMessageRouter);
+         OptionalSingleton(c => c.PeerTable);
+         OptionalSingleton(c => c.RoutingTable);
+         OptionalSingleton(c => c.Messenger);
+         OptionalSingleton(c => c.LocalServiceRegistry);
+         OptionalSingleton(c => c.RemoteServiceProxyContainer);
+         OptionalSingleton(c => c.MobOperations);
+         OptionalSingleton(c => c.ManagementObjectService);
+      }
+
+      private void OptionalSingleton<T>(Func<CourierFacade, T> cb) {
+         Optional.Singleton(ryu => cb(ryu.GetOrActivate<CourierFacade>()));
       }
    }
 }
