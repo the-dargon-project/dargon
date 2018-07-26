@@ -60,13 +60,13 @@ namespace Dargon.Courier.ServiceTier.Client {
             }
          }
 
-         invocation.ReturnValue = responseDto.ReturnValue;
+         invocation.ReturnValue = VoxSerializationQuirks.CastToDesiredTypeIfIntegerLike(responseDto.ReturnValue, method.ReturnType);
 
          var parameters = method.GetParameters();
          var outValues = responseDto.Outs;
          for (int i = 0, outIndex = 0; i < parameters.Length && outIndex < outValues.Length; i++) {
             if (parameters[i].IsOut) {
-               invocation.Arguments[i] = outValues[outIndex++];
+               invocation.Arguments[i] = VoxSerializationQuirks.CastToDesiredTypeIfIntegerLike(outValues[outIndex++], parameters[i].ParameterType);
             }
          }
          var exception = responseDto.Exception as Exception;
