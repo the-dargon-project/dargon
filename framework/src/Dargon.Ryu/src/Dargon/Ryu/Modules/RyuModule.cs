@@ -28,7 +28,7 @@ namespace Dargon.Ryu.Modules {
       public IReadOnlyDictionary<Type, RyuType> TypeInfoByType => typeInfoByType;
       public abstract RyuModuleFlags Flags { get; }
 
-      public RyuRegisterOptions Register => new RyuRegisterOptions { Module = this };
+      internal RyuRegisterOptions Register => new RyuRegisterOptions { Module = this };
       public RyuFluentOptions Optional => new RyuFluentOptions { Module = this, Flags = RyuTypeFlags.None };
       public RyuFluentOptions Required => new RyuFluentOptions { Module = this, Flags = RyuTypeFlags.Required };
 
@@ -41,8 +41,8 @@ namespace Dargon.Ryu.Modules {
    }
 
    public class RyuFluentOptions {
-      public RyuModule Module { get; set; }
-      public RyuTypeFlags Flags { get; set; }
+      internal RyuModule Module { get; set; }
+      internal RyuTypeFlags Flags { get; set; }
 
       public RyuFluentAdditions<T> Transient<T>(RyuTypeActivator activator = null) => Helper<T>(RyuTypeFlags.None, activator);
       public RyuFluentAdditions<T> Singleton<T>(RyuTypeActivator activator = null) => Helper<T>(RyuTypeFlags.Cache, activator);
