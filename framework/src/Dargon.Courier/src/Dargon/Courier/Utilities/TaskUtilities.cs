@@ -45,7 +45,8 @@ namespace Dargon.Courier.Utilities {
          await task.ConfigureAwait(false);
          if (task.GetType().IsGenericType) {
             var taskResult = task.GetType().GetProperty("Result").GetValue(task);
-            if (taskResult.GetType().Name != "VoidTaskResult") {
+
+            if (taskResult != null && taskResult.GetType().Name != "VoidTaskResult") {
                result = taskResult;
             }
          }

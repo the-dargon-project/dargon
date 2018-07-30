@@ -11,6 +11,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using NMockito.Expectations;
 using Xunit;
 
 namespace Dargon.Courier.ServiceTier {
@@ -25,6 +26,7 @@ namespace Dargon.Courier.ServiceTier {
 
       [Fact]
       public async Task RunAsync() {
+         // ReSharper disable ExpressionIsAlwaysNull
          try {
             using (var timeout = new CancellationTokenSource(213333337)) {
                // await discovery between nodes
@@ -38,22 +40,28 @@ namespace Dargon.Courier.ServiceTier {
                Console.WriteLine("SSCC " + serverSideClientContext.Discovered + " " + serverSideClientContext.Identity.Id);
 
                var param = CreatePlaceholder<string>();
-               var expectedResult = CreatePlaceholder<string>();
+               var expectedResult1 = (string)null;
+               var expectedResult2 = CreatePlaceholder<string>();
+               var expectedResult3a = (string)null;
+               var expectedResult3b = CreatePlaceholder<string>();
                var expectedOutValue1 = CreatePlaceholder<string>();
                var expectedOutValue2 = CreatePlaceholder<int>();
 
                var serverInvokableService = CreateMock<IInvokableService>();
-               Expect(serverInvokableService.Call1(param)).ThenReturn(expectedResult);
+               Expect(serverInvokableService.Call1(param)).ThenReturn(expectedResult1);
                Expect<string, int, string>((x, y) => serverInvokableService.Call2(param, out x, out y))
-                  .SetOut(expectedOutValue1, expectedOutValue2).ThenReturn(expectedResult);
+                  .SetOut(expectedOutValue1, expectedOutValue2).ThenReturn(expectedResult2);
+               Expect(serverInvokableService.Call3Async()).ThenResolve(expectedResult3a, expectedResult3b);
 
                serverFacade.LocalServiceRegistry.RegisterService(serverInvokableService);
 
                var remoteServiceProxyContainer = clientFacade.RemoteServiceProxyContainer;
                var clientInvokableService = remoteServiceProxyContainer.Get<IInvokableService>(clientSideServerContext);
 
-               AssertEquals(expectedResult, CourierClientRmiStatics.Async(() => clientInvokableService.Call1(param)).Result);
-               AssertEquals(expectedResult, clientInvokableService.Call2(param, out var outValue1, out var outValue2));
+               AssertEquals(expectedResult1, CourierClientRmiStatics.Async(() => clientInvokableService.Call1(param)).Result);
+               AssertEquals(expectedResult2, clientInvokableService.Call2(param, out var outValue1, out var outValue2));
+               AssertEquals(expectedResult3a, clientInvokableService.Call3Async().Result);
+               AssertEquals(expectedResult3b, clientInvokableService.Call3Async().Result);
                AssertEquals(expectedOutValue1, outValue1);
                AssertEquals(expectedOutValue2, outValue2);
                VerifyExpectationsAndNoMoreInteractions();
@@ -71,6 +79,7 @@ namespace Dargon.Courier.ServiceTier {
       public interface IInvokableService {
          string Call1(string arg1);
          string Call2(string arg1, out string out1, out int out2);
+         Task<string> Call3Async();
       }
    }
 
