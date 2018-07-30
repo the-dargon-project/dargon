@@ -1,8 +1,6 @@
 ﻿using Dargon.Courier.ManagementTier;
-using Dargon.Courier.PeeringTier;
-using Dargon.Ryu;
 
-namespace Dargon.Courier.Management.UI {
+namespace Dargon.Courier.Management.Repl {
    public static class ReplGlobals {
       public static CourierFacade CourierFacade { get; set; }
       public static IManagementObjectService ManagementObjectService { get; set; }

@@ -5,9 +5,8 @@ using Dargon.Commons;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Repl;
-using Dargon.Ryu;
 
-namespace Dargon.Courier.Management.UI {
+namespace Dargon.Courier.Management.Repl {
    public class UseCommand : DispatcherCommand {
       public UseCommand() : base("use") {
          var courierUdp = new CourierUdpClusterCommand();

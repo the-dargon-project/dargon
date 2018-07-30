@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Dargon.Repl;
 
-namespace Dargon.Courier.Management.UI {
+namespace Dargon.Courier.Management.Repl {
    public class DispatcherMultiCommand : ICommand {
       private readonly string name;
       private readonly IEnumerable<string> commands;

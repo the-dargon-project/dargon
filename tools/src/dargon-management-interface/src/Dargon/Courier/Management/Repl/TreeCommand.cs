@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Repl;
 
-namespace Dargon.Courier.Management.UI {
+namespace Dargon.Courier.Management.Repl {
    public class TreeCommand : ICommand {
       public string Name => "tree";
 

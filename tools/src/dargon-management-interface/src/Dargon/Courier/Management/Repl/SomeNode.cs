@@ -1,10 +1,10 @@
-﻿using Dargon.Commons;
-using Dargon.Courier.ManagementTier;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using Dargon.Commons;
+using Dargon.Courier.ManagementTier;
 using Dargon.Courier.ManagementTier.Vox;
 
-namespace Dargon.Courier.Management.UI {
+namespace Dargon.Courier.Management.Repl {
    public class SomeNode { 
       public string Name { get; set; }
       public SomeNode Parent { get; set; }

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+    <RootNamespace />
+    <ApplicationIcon />
+    <OutputType>Exe</OutputType>
+    <StartupObject />
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\framework\src\Dargon.Commons\src\Dargon.Commons.csproj" />
+    <ProjectReference Include="..\..\..\..\framework\src\Dargon.Courier\src\Dargon.Courier.csproj" />
+    <ProjectReference Include="..\..\..\..\framework\src\Dargon.Repl\src\Dargon.Repl.csproj" />
+  </ItemGroup>
+
+</Project>

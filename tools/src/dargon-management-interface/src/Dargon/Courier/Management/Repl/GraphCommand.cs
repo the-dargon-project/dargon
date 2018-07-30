@@ -1,14 +1,14 @@
-﻿using Dargon.Commons;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using Dargon.Commons;
+using Dargon.Courier.AuditingTier;
 using Dargon.Courier.ManagementTier.Vox;
 using Dargon.Repl;
 using Dargon.Vox.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Dargon.Courier.AuditingTier;
-using System.Diagnostics;
 
-namespace Dargon.Courier.Management.UI {
+namespace Dargon.Courier.Management.Repl {
    public class GraphCommand : ICommand {
       private const char kMu = '\u03BC';
       private const char kLowerBlock = '\u2584';

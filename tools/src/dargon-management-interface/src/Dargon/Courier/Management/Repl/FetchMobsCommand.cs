@@ -1,19 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Dargon.Commons;
-using Dargon.Courier.ManagementTier;
-using Dargon.Repl;
+﻿using Dargon.Repl;
 
-namespace Dargon.Courier.Management.UI {
+namespace Dargon.Courier.Management.Repl {
    public class FetchMobsCommand : ICommand {
       public string Name => "fetch-mobs";
 
       public int Eval(string args) {
          var mobs = ReplGlobals.ManagementObjectService.EnumerateManagementObjects();
 
-         var root = new SomeNode();
+         var root = new SomeNode { Name = "" };
 
          foreach (var mob in mobs) {
             var breadcrumbs = mob.FullName.Split('.', '/');

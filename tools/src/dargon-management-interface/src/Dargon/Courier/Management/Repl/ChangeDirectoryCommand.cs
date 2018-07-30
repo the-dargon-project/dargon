@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Repl;
 
-namespace Dargon.Courier.Management.UI {
+namespace Dargon.Courier.Management.Repl {
    public class ChangeDirectoryCommand : ICommand {
       public string Name => "cd";
 
@@ -23,13 +21,9 @@ namespace Dargon.Courier.Management.UI {
 
          if (path.StartsWith("!!")) {
             var nodeName = path.Substring(2);
-            var node = ReplGlobals.Root.RecursivelyDescend(
-               new List<SomeNode>(),
-               AccumulatorInclusion.Include,
-               AccumulatorInclusion.Include,
-               x => x.Children.Count == 0,
-               x => x.Children).First(x => x.Item1.Name.Equals(nodeName, StringComparison.OrdinalIgnoreCase));
-            ReplGlobals.Current = node.Item1;
+            var node = ReplGlobals.Root.Bfs(n => n.Children)
+                                  .First(x => x.Name.Equals(nodeName, StringComparison.OrdinalIgnoreCase));
+            ReplGlobals.Current = node;
             return 0;
          }
 

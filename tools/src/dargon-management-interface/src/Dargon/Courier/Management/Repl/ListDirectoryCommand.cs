@@ -1,8 +1,8 @@
-﻿using Dargon.Commons;
+﻿using System;
+using Dargon.Commons;
 using Dargon.Repl;
-using System;
 
-namespace Dargon.Courier.Management.UI {
+namespace Dargon.Courier.Management.Repl {
    public class ListDirectoryCommand : ICommand {
       public string Name => "ls";
 
