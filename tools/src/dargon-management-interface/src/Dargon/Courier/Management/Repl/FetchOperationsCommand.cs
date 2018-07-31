@@ -23,6 +23,8 @@ namespace Dargon.Courier.Management.Repl {
             var dataSetNode = ReplGlobals.Current.GetOrAddChild(dataSet.Name);
             dataSetNode.DataSetDto = dataSet;
          }
+
+         Console.WriteLine("Fetched management object operations.");
          return 0;
       }
    }

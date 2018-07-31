@@ -1,4 +1,5 @@
-﻿using Dargon.Repl;
+﻿using System;
+using Dargon.Repl;
 
 namespace Dargon.Courier.Management.Repl {
    public class FetchMobsCommand : ICommand {
@@ -19,6 +20,8 @@ namespace Dargon.Courier.Management.Repl {
          }
 
          ReplGlobals.Root = root;
+
+         Console.WriteLine("Fetched remote management objects.");
          return 0;
       }
    }
