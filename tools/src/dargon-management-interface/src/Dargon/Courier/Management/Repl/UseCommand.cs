@@ -5,6 +5,7 @@ using Dargon.Commons;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Repl;
+using Dargon.Ryu;
 
 namespace Dargon.Courier.Management.Repl {
    public class UseCommand : DispatcherCommand {
@@ -29,10 +30,9 @@ namespace Dargon.Courier.Management.Repl {
                return 1;
             }
 
-
             Identity remoteIdentity = null;
             ManualResetEvent completionLatch = new ManualResetEvent(false);
-            var courierFacade = CourierBuilder.Create()
+            var courierFacade = CourierBuilder.Create(new RyuContainer(null, null))
                                               .UseTcpClientTransport(
                                                  endpoint.Address, 
                                                  endpoint.Port,
