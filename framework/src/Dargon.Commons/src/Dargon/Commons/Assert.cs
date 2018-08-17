@@ -5,7 +5,12 @@ namespace Dargon.Commons {
    public static class Assert {
       public static void IsTrue(bool val, string message = null) {
          if (!val) {
-            Fail(message ?? "(No Message)");
+            Fail(message ?? "(Value not true)");
+         }
+      }
+      public static void IsNull(object val, string message = null) {
+         if (val != null) {
+            Fail(message ?? "(Value not null)");
          }
       }
 
