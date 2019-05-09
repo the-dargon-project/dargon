@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Runtime.Serialization;
 using Dargon.Commons;
 using Dargon.Commons.Exceptions;
 using Dargon.Vox.Internals.TypePlaceholders;
@@ -36,10 +37,10 @@ namespace Dargon.Vox {
             return (IThingReaderWriter)enumThingReaderWriter;
          } else {
             ITypeSerializer serializer;
-            if (arg.GetAttributeOrNull<AutoSerializableAttribute>() != null) {
-               serializer = AutoTypeSerializerFactory.Create(arg);
-            } else if (typeof(ISerializableType).IsAssignableFrom(arg)) {
+            if (typeof(ISerializableType).IsAssignableFrom(arg)) {
                serializer = (ITypeSerializer)Activator.CreateInstance(typeof(SerializableTypeTypeSerializerProxy<>).MakeGenericType(arg));
+            } else if (arg.GetAttributeOrNull<AutoSerializableAttribute>() != null || arg.GetAttributeOrNull<SerializableAttribute>() != null) {
+               serializer = AutoTypeSerializerFactory.Create(arg);
             } else {
                logger.Error("Unable to serialize type " + arg.FullName);
                throw new NotImplementedException();
