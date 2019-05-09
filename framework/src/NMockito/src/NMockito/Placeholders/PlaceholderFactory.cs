@@ -56,6 +56,13 @@ namespace NMockito.Placeholders {
          } else if (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition().Name.StartsWith("ValueTuple`")) {
             var genericArgs = type.GetGenericArguments();
             return Activator.CreateInstance(type, genericArgs.Select(CreatePlaceholder).ToArray());
+         } else if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && type != typeof(Guid)) { // struct {}
+            var inst = Activator.CreateInstance(type);
+            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+            foreach (var field in type.GetFields(bindingFlags)) {
+               field.SetValue(inst, CreatePlaceholder(field.FieldType));
+            }
+            return inst;
          } else {
             var counter = Interlocked.Increment(ref placeholderCounter);
             switch (type.Name) {
