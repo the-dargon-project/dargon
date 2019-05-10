@@ -36,17 +36,6 @@ namespace Dargon.Commons.Pooling {
          }
       }
 
-      class X {
-         public int Q { get; set; }
-      }
-
-      void Y() {
-         var ctor = typeof(X).GetTypeInfo().DeclaredConstructors.First();
-         var x = new X();
-         ctor.Invoke(x, null);
-         Console.WriteLine(ctor);
-      }
-
       public void ReturnObject(T item) {
          zero?.Invoke(item);
          container.Value.Push(item);
