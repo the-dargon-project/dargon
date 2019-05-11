@@ -35,6 +35,13 @@ namespace Dargon.Commons {
          // We don't throw as that could be caught by a catch.
 #error Trace/Debug not defined so assertions cannot fail.
 #endif
+
+         // welp, if we get here that's because Debug/Trace asserts are getting caught (e.g. by Unity). Throw.
+         throw new AssertionFailureException(message);
+      }
+
+      private class AssertionFailureException : Exception {
+         public AssertionFailureException(string message) : base(message) { }
       }
    }
 }
