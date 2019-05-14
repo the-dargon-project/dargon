@@ -8,6 +8,13 @@ namespace Dargon.Commons {
             Fail(message ?? "(Value not true)");
          }
       }
+
+      public static void IsFalse(bool val, string message = null) {
+         if (val) {
+            Fail(message ?? "(Value not false)");
+         }
+      }
+
       public static void IsNull(object val, string message = null) {
          if (val != null) {
             Fail(message ?? "(Value not null)");
