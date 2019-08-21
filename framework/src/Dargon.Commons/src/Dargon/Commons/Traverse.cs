@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Dargon.Commons {
    public static class Traverse {
-      public static IEnumerable<T> Dfs<T>(this T root, Func<T, IEnumerable<T>> next) {
+      public static IEnumerable<T> Dfs<T>(this T root, Func<T, IEnumerable<T>> next, Func<T, bool> acceptCond = null) {
          var s = new Stack<T>();
          s.Push(root);
 
@@ -12,6 +12,7 @@ namespace Dargon.Commons {
 
          while (s.Count != 0) {
             var n = s.Pop();
+            if (acceptCond != null && !acceptCond(n)) continue;
             yield return n;
 
             foreach (var c in next(n)) temp.Push(c);

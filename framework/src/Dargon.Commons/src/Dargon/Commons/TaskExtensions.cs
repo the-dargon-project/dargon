@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Dargon.Commons {
@@ -16,6 +17,14 @@ namespace Dargon.Commons {
       public static T Tap<T>(this T self, Action<T> func) {
          func(self);
          return self;
+      }
+
+
+      public static IEnumerable<T> TapEach<T>(this IEnumerable<T> self, Action<T> func) {
+         foreach (var x in self) {
+            func(x);
+            yield return x;
+         }
       }
 
       public static async Task Tap(this Task self, Action func) {

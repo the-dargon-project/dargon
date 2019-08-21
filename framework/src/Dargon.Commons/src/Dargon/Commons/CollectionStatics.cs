@@ -9,6 +9,15 @@ using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons {
    public static class CollectionStatics {
+      public static T FirstAndOnly<T>(this IEnumerable<T> e) {
+         using (var it = e.GetEnumerator()) {
+            if (!it.MoveNext()) throw new ArgumentOutOfRangeException("No element 0");
+            var res = it.Current;
+            if (it.MoveNext()) throw new InvalidOperationException("More than one element!");
+            return res;
+         }
+      }
+
       #region Indexing
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static T Get<T>(this T[] collection, int index) {
