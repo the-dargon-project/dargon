@@ -18,6 +18,16 @@ namespace Dargon.Commons {
          }
       }
 
+      public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> source, out TKey Key, out TValue Value) {
+         Key = source.Key;
+         Value = source.Value;
+      }
+
+      public static void Deconstruct<TKey, TValue>(this IGrouping<TKey, TValue> source, out TKey Key, out IEnumerable<TValue> Value) {
+         Key = source.Key;
+         Value = source;
+      }
+
       #region Indexing
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static T Get<T>(this T[] collection, int index) {
