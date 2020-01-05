@@ -1,106 +1,125 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Dargon.Commons.Collections {
-   public class PriorityQueue<TItem> {
-      private const int HeapBranchFactor = 2;
+   /// <summary>
+   /// (Ripped from PlayOn)
+   /// 
+   /// Because no other implementation exists that doesn't suck.
+   /// Traditional minheap-based pq. Allows duplicate entry, supports resizing.
+   /// </summary>
+   public class PriorityQueue<TItem> : IReadOnlyCollection<TItem> {
+      // 1 + 4 + 16 + 64 = 5 + 16 + 64 = 21 + 64 = 85
+      private const int HeapBranchFactor = 4;
       private const int InitialCapacity = 1 + HeapBranchFactor;
+      private const bool DisableValidation = true;
 
-      private readonly IComparer<TItem> _comparer;
-      private TItem[] _storage = new TItem[InitialCapacity];
-      private int _size;
+      private readonly ComparerProxy<TItem> comparer;
+      private TItem[] storage = new TItem[InitialCapacity];
+      private int size;
 
-      public PriorityQueue(IComparer<TItem> comparer) {
-         _comparer = comparer;
+      public PriorityQueue() : this(Comparer<TItem>.Default) { }
+
+      public PriorityQueue(IComparer<TItem> itemComparer)
+         : this(new ComparerProxy<TItem> { comparer = itemComparer }) { }
+
+      public PriorityQueue(Comparison<TItem> itemComparisonFunc)
+         : this(new ComparerProxy<TItem> { comparison = itemComparisonFunc }) { }
+
+      private PriorityQueue(ComparerProxy<TItem> comparerProxy) {
+         comparer = comparerProxy;
       }
 
-      public int Count => _size;
+      public int Capacity => storage.Length;
+      public bool IsEmpty => size == 0;
+      public int Count => size;
 
-      public PriorityQueue<TItem> Copy() {
-         var copy = new PriorityQueue<TItem>(_comparer);
-         copy._storage = new TItem[_storage.Length];
-         Array.Copy(_storage, copy._storage, _size);
-         copy._size = _size;
-         return copy;
+      public bool Any() => size != 0;
+
+      public TItem Peek() {
+         return size == 0 
+            ? throw new InvalidOperationException("The queue is empty") 
+            : storage[0];
+      }
+
+      public bool TryPeek(out TItem item) {
+         item = size > 0 ? storage[0] : default;
+         return size > 0;
       }
 
       public void Enqueue(TItem item) {
          // expand heap 1 level if storage is too small to fit another item.
-         if (_size == _storage.Length) {
-            var newStorage = new TItem[_storage.Length * HeapBranchFactor + 1];
-            Array.Copy(_storage, newStorage, _storage.Length);
-            _storage = newStorage;
+         if (size == storage.Length) {
+            var newStorage = new TItem[storage.Length * HeapBranchFactor + 1];
+            Array.Copy(storage, newStorage, storage.Length);
+            storage = newStorage;
          }
 
          // imaginary put of item into index _size
-         _size++;
+         size++;
 
          // start percolating inserted item up from its current index, _size
-         var childIndex = _size - 1;
+         var childIndex = size - 1;
          while (childIndex > 0) {
             // if inserted item is greater than or equal to its parent, stop percolation.
             var parentIndex = (childIndex - 1) / HeapBranchFactor;
-            if (_comparer.Compare(item, _storage[parentIndex]) >= 0)
+            if (comparer.Compare(item, storage[parentIndex]) >= 0)
                break;
 
             // Otherwise shift its parent down and continue percolating one level closer to root.
-            _storage[childIndex] = _storage[parentIndex];
+            storage[childIndex] = storage[parentIndex];
             childIndex = parentIndex;
          }
 
          // actually place item into the heap
-         _storage[childIndex] = item;
-      }
-
-      public bool TryPeek(out TItem item) {
-         item = _size > 0 ? _storage[0] : default(TItem);
-         return _size > 0;
+         storage[childIndex] = item;
       }
 
       public bool TryDequeue(out TItem item) {
-         if (_size == 0) {
+         if (size == 0) {
             item = default(TItem);
             return false;
          }
 
          // remove heap head
-         item = _storage[0];
-         _size--;
+         item = storage[0];
+         size--;
 
          // remove heap tail
-         var tail = _storage[_size];
-         _storage[_size] = default(TItem);
+         var tail = storage[size];
+         storage[size] = default(TItem);
 
          // percolate heap tail down from root; at iteration start, _storage[parentIndex] needs to be filled.
          var parentIndex = 0;
          while (true) {
-            var childrenStartIndexInclusive = Math.Min(parentIndex * HeapBranchFactor + 1, _size);
-            var childrenEndIndexExclusive = Math.Min(parentIndex * HeapBranchFactor + HeapBranchFactor + 1, _size);
+            ComputeChildrenIndices(parentIndex, out var childrenStartIndexInclusive, out var childrenEndIndexExclusive);
             var childCount = childrenEndIndexExclusive - childrenStartIndexInclusive;
 
             // cannot percolate down beyond leaf node
             if (childCount == 0) {
-               _storage[parentIndex] = tail;
+               storage[parentIndex] = tail;
                break;
             }
 
             // find smallest child
             var smallestChildIndex = childrenStartIndexInclusive;
             for (var i = childrenStartIndexInclusive + 1; i < childrenEndIndexExclusive; i++) {
-               if (_comparer.Compare(_storage[smallestChildIndex], _storage[i]) > 0) {
+               if (comparer.Compare(storage[smallestChildIndex], storage[i]) > 0) {
                   smallestChildIndex = i;
                }
             }
 
             // if smallest child is greater than the percolate down subject (heap tail), end percolation
-            if (_comparer.Compare(_storage[smallestChildIndex], tail) > 0) {
-               _storage[parentIndex] = tail;
+            if (comparer.Compare(storage[smallestChildIndex], tail) > 0) {
+               storage[parentIndex] = tail;
                break;
             }
 
             // shift smallest child up the heap, continue percolation from its old index
-            _storage[parentIndex] = _storage[smallestChildIndex];
+            storage[parentIndex] = storage[smallestChildIndex];
             parentIndex = smallestChildIndex;
          }
          return true;
@@ -113,6 +132,61 @@ namespace Dargon.Commons.Collections {
          return result;
       }
 
-      public bool Any() => _size != 0;
+      public PriorityQueue<TItem> Copy() {
+         var copy = new PriorityQueue<TItem>();
+         copy.storage = new TItem[storage.Length];
+         Array.Copy(storage, copy.storage, size);
+         copy.size = size;
+         return copy;
+      }
+
+      public IEnumerator<TItem> GetEnumerator() {
+         var clone = new PriorityQueue<TItem>(comparer);
+         clone.storage = new TItem[storage.Length];
+         clone.size = size;
+         for (var i = 0; i < size; i++) {
+            clone.storage[i] = storage[i];
+         }
+         while (!clone.IsEmpty) {
+            yield return clone.Dequeue();
+         }
+      }
+
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+      private void Validate() {
+         if (IsEmpty || DisableValidation) return;
+
+         var s = new Stack<int>();
+         s.Push(0);
+
+         while (s.Count > 0) {
+            var current = s.Pop();
+            int childrenStartIndexInclusive, childrenEndIndexExclusive;
+            ComputeChildrenIndices(current, out childrenStartIndexInclusive, out childrenEndIndexExclusive);
+
+            for (int childIndex = childrenStartIndexInclusive; childIndex < childrenEndIndexExclusive; childIndex++) {
+               s.Push(childIndex);
+               if (comparer.Compare(storage[current], storage[childIndex]) > 0) {
+                  throw new InvalidOperationException("Priority Queue - Heap breaks invariant!");
+               }
+            }
+         }
+      }
+
+      private void ComputeChildrenIndices(int currentIndex, out int childrenStartIndexInclusive, out int childrenEndIndexExclusive) {
+         childrenStartIndexInclusive = Math.Min(size, currentIndex * HeapBranchFactor + 1);
+         childrenEndIndexExclusive = Math.Min(size, currentIndex * HeapBranchFactor + HeapBranchFactor + 1);
+      }
+
+      public struct ComparerProxy<T> : IComparer<T> {
+         public Comparison<T> comparison;
+         public IComparer<T> comparer;
+
+         public int Compare(T x, T y) {
+            if (comparison != null) return comparison(x, y);
+            return comparer.Compare(x, y);
+         }
+      }
    }
 }

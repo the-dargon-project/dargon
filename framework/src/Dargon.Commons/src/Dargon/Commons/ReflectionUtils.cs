@@ -28,11 +28,8 @@ namespace Dargon.Commons {
             var method = new DynamicMethod("", null, new[] { typeof(T) }, typeof(T), true);
             var emitter = method.GetILGenerator();
 
-            var i = 0;
             foreach (var field in typeof(T).GetTypeInfo().DeclaredFields) {
-               // if (i++ == 7) break;
                if (field.IsStatic) continue;
-               //Console.WriteLine(field.Name);
 
                emitter.Emit(OpCodes.Ldarg_0);
                var fieldType = field.FieldType;
