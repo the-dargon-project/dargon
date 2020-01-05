@@ -9,6 +9,17 @@ using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons {
    public static class CollectionStatics {
+      public static bool TryFindFirst<T>(this IEnumerable<T> enumerable, Predicate<T> predicate, out T firstMatch) {
+         foreach (var x in enumerable) {
+            if (predicate(x)) {
+               firstMatch = x;
+               return true;
+            }
+         }
+         firstMatch = default(T);
+         return false;
+      }
+
       public static T FirstAndOnly<T>(this IEnumerable<T> e) {
          using (var it = e.GetEnumerator()) {
             if (!it.MoveNext()) throw new ArgumentOutOfRangeException("No element 0");
@@ -39,6 +50,8 @@ namespace Dargon.Commons {
          return collection[index];
       }
 
+      public static V Get<K, V>(this Dictionary<K, V> dict, K key) => dict[key];
+
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static V Get<K, V>(this IDictionary<K, V> dict, K key) {
          return dict[key];
@@ -48,7 +61,7 @@ namespace Dargon.Commons {
       public static V GetValueOrDefault<K, V>(this Dictionary<K, V> dict, K key) {
          return ((IDictionary<K, V>)dict).GetValueOrDefault(key);
       }
-
+      
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static V GetValueOrDefault<K, V>(this IDictionary<K, V> dict, K key) {
          V result;
@@ -83,6 +96,31 @@ namespace Dargon.Commons {
       }
       #endregion
 
+      public static bool Add<K, V>(this Dictionary<K, HashSet<V>> dict, K key, V value) {
+         HashSet<V> set;
+         if (!dict.TryGetValue(key, out set)) {
+            set = new HashSet<V>();
+            dict[key] = set;
+         }
+         return set.Add(value);
+      }
+
+      public static bool Remove<K, V>(this Dictionary<K, HashSet<V>> dict, K key, V value) {
+         HashSet<V> set;
+         if (!dict.TryGetValue(key, out set)) {
+            return false;
+         }
+         var res = set.Remove(value);
+         if (set.Count == 0) {
+            dict.Remove(key);
+         }
+         return res;
+      }
+
+      public static IEnumerable<KeyValuePair<int, T>> Enumerate<T>(this IEnumerable<T> items) {
+         return items.Select((item, key) => new KeyValuePair<int, T>(key, item));
+      }
+
       public static U[] Map<T, U>(this IReadOnlyList<T> arr, Func<T, U> projector) {
          U[] result = new U[arr.Count];
          for (var i = 0; i < result.Length; i++) {
@@ -98,6 +136,43 @@ namespace Dargon.Commons {
          }
          return result;
       }
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static U[] Map<T, U>(this IReadOnlyList<T> arr, Func<T, int, U> projector) {
+         var result = new U[arr.Count];
+         for (int i = 0; i < arr.Count; i++) {
+            result[i] = projector(arr[i], i);
+         }
+         return result;
+      }
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static Dictionary<K, R> Map<K, V, R>(this IReadOnlyDictionary<K, V> dict, Func<K, V, R> map) {
+         if (dict is Dictionary<K, V> d) {
+            return d.Map(map);
+         }
+         return dict.ToDictionary(kvp => kvp.Key, kvp => map(kvp.Key, kvp.Value));
+      }
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static Dictionary<RK, RV> Map<K, V, RK, RV>(this IReadOnlyDictionary<K, V> dict, Func<K, V, RK> kmap, Func<K, V, RV> vmap) {
+         return dict.ToDictionary(kvp => kmap(kvp.Key, kvp.Value), kvp => vmap(kvp.Key, kvp.Value));
+      }
+
+      public static U[] MapMany<T, U>(this T[] arr, Func<T, IReadOnlyList<U>> cheapMap) {
+         var result = new U[arr.Sum(x => cheapMap(x).Count)];
+         var nextIndex = 0;
+         for (var i = 0; i < arr.Length; i++) {
+            var x = cheapMap(arr[i]);
+            for (var j = 0; j < x.Count; j++) {
+               result[nextIndex] = x[j];
+               nextIndex++;
+            }
+         }
+         return result;
+      }
+
+      public static IEnumerable<Tuple<T, U>> Zip<T, U>(this IEnumerable<T> e1, IEnumerable<U> e2) => e1.Zip(e2, Tuple.Create);
 
       public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> action) {
          if (enumerable.GetType().IsArray) {
@@ -173,6 +248,27 @@ namespace Dargon.Commons {
          }
       }
 
+      //http://stackoverflow.com/questions/4681949/use-linq-to-group-a-sequence-of-numbers-with-no-gaps
+      public static IEnumerable<IEnumerable<T>> GroupAdjacentBy<T>(
+         this IEnumerable<T> source, Func<T, T, bool> predicate) {
+         using (var e = source.GetEnumerator()) {
+            if (e.MoveNext()) {
+               var list = new List<T> { e.Current };
+               var pred = e.Current;
+               while (e.MoveNext()) {
+                  if (predicate(pred, e.Current)) {
+                     list.Add(e.Current);
+                  } else {
+                     yield return list;
+                     list = new List<T> { e.Current };
+                  }
+                  pred = e.Current;
+               }
+               yield return list;
+            }
+         }
+      }
+
       public static IEnumerable<Chunk<T>> Chunk<T>(this IEnumerable<T> source, int chunkSize) {
          var chunkCounter = 0;
          var current = new List<T>();
@@ -206,13 +302,13 @@ namespace Dargon.Commons {
       }
 
       public static T SelectRandom<T>(this IEnumerable<T> source, Random rng = null) {
-         int rand = rng?.Next() ?? StaticRandom.Next(int.MaxValue);
+         int rand = rng?.Next() ?? StaticRandom.Next(Int32.MaxValue);
          var options = source.ToList();
          return options[rand % options.Count];
       }
 
       public static T SelectRandomWeighted<T>(this IEnumerable<T> source, Func<T, int> weighter, Random rng = null) {
-         int rand = rng?.Next() ?? StaticRandom.Next(int.MaxValue);
+         int rand = rng?.Next() ?? StaticRandom.Next(Int32.MaxValue);
          var options = source as List<T> ?? source.ToList();
          var optionsAndWeights = options.Map(o => new { Weight = weighter(o), Option = o });
          var totalWeight = optionsAndWeights.Sum(o => o.Weight);
@@ -244,6 +340,18 @@ namespace Dargon.Commons {
 
             buffer[j] = buffer[i];
          }
+      }
+
+      public static IEnumerable<T> RotateLeft<T>(this IEnumerable<T> e) {
+         var it = e.GetEnumerator();
+         if (!it.MoveNext()) {
+            yield break;
+         }
+         var first = it.Current;
+         while (it.MoveNext()) {
+            yield return it.Current;
+         }
+         yield return first;
       }
 
       // Via http://stackoverflow.com/questions/9027530/linq-not-any-vs-all-dont
@@ -313,6 +421,41 @@ namespace Dargon.Commons {
             throw new InvalidStateException();
          }
          return entry;
+      }
+
+      public static IReadOnlyList<T> CastToReadOnlyList<T>(this IList<T> list) {
+         return (IReadOnlyList<T>)list;
+      }
+
+      public static HashSet<T> ToHashSet<T>(this IEnumerable<T> e) => new HashSet<T>(e);
+
+      public static MultiValueDictionary<K, V> ToMultiValueDictionary<I, K, V>(this IReadOnlyList<I> coll, Func<I, K> keyMapper, Func<I, V> valueMapper) {
+         var dict = new MultiValueDictionary<K, V>();
+         for (var i = 0; i < coll.Count; i++) {
+            var x = coll[i];
+            dict.Add(keyMapper(x), valueMapper(x));
+         }
+         return dict;
+      }
+
+      public static T[] ToArray<T>(this IEnumerable<T> e, int len) {
+         var enumerator = e.GetEnumerator();
+         var result = new T[len];
+         for (var i = 0; i < len; i++) {
+            if (!enumerator.MoveNext()) {
+               throw new IndexOutOfRangeException($"Enumerator didn't yield enough items. Stopped at i={i} of len={len}.");
+            }
+            result[i] = enumerator.Current;
+         }
+         return result;
+      }
+
+      public static void Resize<T>(this List<T> list, int size) {
+         if (size < list.Count) {
+            list.RemoveRange(size, list.Count - size);
+         } else if (size > list.Count) {
+            list.AddRange(new T[size - list.Count]);
+         }
       }
    }
 
