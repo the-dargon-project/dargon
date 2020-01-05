@@ -100,8 +100,14 @@ namespace Dargon.Commons {
       }
 
       public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> action) {
-         foreach (var element in enumerable) {
-            action(element);
+         if (enumerable.GetType().IsArray) {
+            foreach (var element in (T[])(object)enumerable) {
+               action(element);
+            }
+         } else {
+            foreach (var element in enumerable) {
+               action(element);
+            }
          }
       }
 
