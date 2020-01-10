@@ -69,12 +69,14 @@ namespace Dargon.Commons {
          return result;
       }
 
+      /* // Now implemented in System.Collections.Generic.CollectionExtensions
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static V GetValueOrDefault<K, V>(this IReadOnlyDictionary<K, V> dict, K key) {
          V result;
          dict.TryGetValue(key, out result);
          return result;
       }
+      */
 
       public static T[] LogicalIndex<T>(this IReadOnlyList<T> input, IReadOnlyList<bool> indexConditions) {
          if (input.Count != indexConditions.Count)
@@ -427,7 +429,9 @@ namespace Dargon.Commons {
          return (IReadOnlyList<T>)list;
       }
 
+#if !NETCOREAPP
       public static HashSet<T> ToHashSet<T>(this IEnumerable<T> e) => new HashSet<T>(e);
+#endif
 
       public static MultiValueDictionary<K, V> ToMultiValueDictionary<I, K, V>(this IReadOnlyList<I> coll, Func<I, K> keyMapper, Func<I, V> valueMapper) {
          var dict = new MultiValueDictionary<K, V>();

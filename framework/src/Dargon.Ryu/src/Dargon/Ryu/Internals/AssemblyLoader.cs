@@ -2,6 +2,7 @@
 using Dargon.Ryu.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -21,6 +22,8 @@ namespace Dargon.Ryu.Internals {
       public AssemblyLoader(IRyuLogger logger) {
          this.logger = logger;
       }
+
+      public Assembly x;
 
       public IReadOnlySet<Assembly> LoadAssembliesFromNeighboringDirectories() {
          var seedAssemblies = new[] { Assembly.GetEntryAssembly(), typeof(AssemblyLoader).GetTypeInfo().Assembly };
@@ -49,9 +52,11 @@ namespace Dargon.Ryu.Internals {
             if (path.EndsWithAny(kAssemblyExtensions, StringComparison.OrdinalIgnoreCase) &&
                 !path.ContainsAny(kExcludedFilePathFilter, StringComparison.OrdinalIgnoreCase)) {
                try {
+                  if (path.Contains("Dargon.Courier.dll")) Debugger.Break();
                   var assembly = Assembly.LoadFile(path);
                   //var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(path); 
                   logger.LoadedAssemblyFromPath(path);
+                  if (path.Contains("Dargon.Courier.dll")) Debugger.Break();
                   loadedAssemblies.Add(assembly);
                } catch (BadImageFormatException) {
                   // skip - probably a native dll dependency
@@ -69,6 +74,13 @@ namespace Dargon.Ryu.Internals {
                //assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(name);
             } catch (FileLoadException) {
                // skip - probably a native dll dependency
+               continue;
+            } catch (FileNotFoundException e) when (e.FileName.Contains("Microsoft")) {
+               // e.g. System.IO.FileNotFoundException :
+               // Could not load file or assembly 'Microsoft.Extensions.DependencyModel, Version=1.0.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60'.
+               // The system cannot find the file specified.
+               // 
+               // on netcoreapp3.1... seems to be nonfatal and due to vstest dependency?
                continue;
             }
 

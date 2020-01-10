@@ -23,6 +23,8 @@ namespace NMockito {
          lock (g_patchAppDomainManagerLock) {
             if (Assembly.GetEntryAssembly() != null) return;
 
+#if NETCOREAPP
+#else
             // via https://github.com/Microsoft/vstest/issues/649
             var manager = new AppDomainManager();
             var entryAssemblyField = manager.GetType().GetField("m_entryAssembly", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -37,6 +39,7 @@ namespace NMockito {
             if (Assembly.GetEntryAssembly() != entryAssembly) {
                throw new Exception("Failed to set Assembly.GetEntryAssembly()!");
             }
+#endif
          }
       }
 

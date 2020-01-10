@@ -11,9 +11,9 @@ using NLog.Config;
 using NLog.Targets;
 using NLog.Targets.Wrappers;
 
-namespace Dargon.Courier {
+namespace Dargon.Courier.Impl.IntegrationTests {
    public static class Program {
-      public static void Main() => RunTests();
+      public static void Main(string[] args) => RunTests();
 
       public static void RunTests() {
          InitializeLogging();
