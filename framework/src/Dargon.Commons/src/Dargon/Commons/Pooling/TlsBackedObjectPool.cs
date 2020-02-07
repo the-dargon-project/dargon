@@ -52,6 +52,7 @@ namespace Dargon.Commons.Pooling {
 
    public static class TlsBackedObjectPool {
       public static TlsBackedObjectPool<T> Create<T>() where T : new() => new TlsBackedObjectPool<T>(x => new T());
+      
       public static TlsBackedObjectPool<T> CreateWithObjectZeroAndReconstruction<T>() where T : new() {
          return new TlsBackedObjectPool<T>(
             x => new T(),
@@ -97,13 +98,14 @@ namespace Dargon.Commons.Pooling {
    }
 
    public static class TlsTakeManyReturnOnceObjectPool {
+      // reentrancy = 0 allows for a single level (no reentrancy)
       public static TlsTakeManyReturnOnceObjectPool<T> Create<T>(int reentrancy) where T : new() {
-         var pools = Arrays.Create(reentrancy, i => TlsBackedObjectPool.Create<T>());
+         var pools = Arrays.Create(reentrancy + 1, i => TlsBackedObjectPool.Create<T>());
          return new TlsTakeManyReturnOnceObjectPool<T>(pools);
       }
 
       public static TlsTakeManyReturnOnceObjectPool<T> CreateWithObjectZeroAndReconstruction<T>(int reentrancy) where T : new() {
-         var pools = Arrays.Create(reentrancy, i => TlsBackedObjectPool.CreateWithObjectZeroAndReconstruction<T>());
+         var pools = Arrays.Create(reentrancy + 1, i => TlsBackedObjectPool.CreateWithObjectZeroAndReconstruction<T>());
          return new TlsTakeManyReturnOnceObjectPool<T>(pools);
       }
    }

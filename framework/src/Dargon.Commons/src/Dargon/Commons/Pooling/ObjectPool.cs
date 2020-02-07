@@ -31,7 +31,7 @@ namespace Dargon.Commons.Pooling {
       }
 
       public static IObjectPool<T> CreateSingleThreadedStackBacked<T>(Func<IObjectPool<T>, T> generator, string name) {
-         return new SingleThreadedStackBackedObjectPool<T>(generator, name);
+         return new SingleThreadedStackBackedObjectPool<T>(generator, name, null, null);
       }
 
       public static IObjectPool<T> CreateConcurrentQueueBacked<T>(Func<T> generator) {
