@@ -25,7 +25,6 @@ namespace Dargon.Commons.Pooling {
             return res;
          } else {
             var res = store[ni];
-            reinit(res);
             ni++;
             return res;
          }
@@ -34,6 +33,16 @@ namespace Dargon.Commons.Pooling {
       public void ReturnAll() {
          if (zero != null) {
             for (var i = 0; i < ni; i++) zero(store[i]);
+         }
+
+         // note: Moved reinit here instead of at take to improve
+         // instruction/cache locality.
+         //
+         // At least in Terragami, this improves clip time 2ms
+         // & otherwise there is a noticeable cost for reinit when
+         // taking object. --miyu
+         if (reinit != null) {
+            for (var i = 0; i < ni; i++) reinit(store[i]);
          }
 
          ni = 0;
@@ -56,7 +65,9 @@ namespace Dargon.Commons.Pooling {
       }
 
       public T Take() {
+#if DEBUG
          if (selectedPoolIndex == -1) throw new InvalidOperationException();
+#endif
          var inst = pools[selectedPoolIndex].TakeObject();
          return inst;
       }
