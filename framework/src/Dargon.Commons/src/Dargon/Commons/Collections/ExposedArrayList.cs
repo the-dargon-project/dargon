@@ -43,7 +43,7 @@ namespace Dargon.Commons.Collections {
 #endif
       }
 
-      private void EnsureCapacity(int sz) {
+      public void EnsureCapacity(int sz) {
          if (sz > store.Length) {
             var capacity = store.Length;
             while (capacity < sz) {
@@ -78,15 +78,15 @@ namespace Dargon.Commons.Collections {
 
       public T this[int index] {
          get {
-            if (index < 0 || index >= size) {
-               throw new ArgumentOutOfRangeException();
-            }
+            // if ((uint)index >= (uint)size) {
+            //    throw new ArgumentOutOfRangeException();
+            // }
             return store[index];
          }
          set {
-            if (index < 0 || index >= size) {
-               throw new ArgumentOutOfRangeException();
-            }
+            // if ((uint)index >= (uint)size) {
+            //    throw new ArgumentOutOfRangeException();
+            // }
             store[index] = value;
          }
       }
