@@ -53,7 +53,9 @@ namespace Dargon.Commons {
             clear(store);
          }
 
-         public void Dispose() { }
+         public void Dispose() {
+            optDisposable?.Dispose();
+         }
       }
 
       public class TraversalEnumerator {
@@ -85,6 +87,7 @@ namespace Dargon.Commons {
                state.clear,
                state));
          }
+
          public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dfs(T initial, Action<Action<T>, T> pushSuccsUser) {
             var state = tlsStates.TakeObject();
             state.pushSuccsUserOpt = pushSuccsUser;
@@ -112,9 +115,11 @@ namespace Dargon.Commons {
                s.pool = pool;
                s.store = new Stack<T>();
                s.popNext = store => store.Pop();
+
+               Action<T> storePush = s.store.Push;
                s.pushSuccs = (_, el) => {
                   if (s.pushSuccsUserOpt != null) {
-                     s.pushSuccsUserOpt(s.store.Push, el);
+                     s.pushSuccsUserOpt(storePush, el);
                   }
                   if (s.succUserOpt != null) {
                      s.store.Push(s.succUserOpt(el));
@@ -166,7 +171,8 @@ namespace Dargon.Commons {
                s.pool = pool;
                s.store = new Queue<T>();
                s.popNext = store => store.Dequeue();
-               s.pushSuccs = (_, el) => s.pushSuccsUser(s.store.Enqueue, el);
+               Action<T> storeEnqueue = s.store.Enqueue;
+               s.pushSuccs = (_, el) => s.pushSuccsUser(storeEnqueue, el);
                s.clear = store => store.Clear();
                s.pushSuccsUser = null;
                return s;
