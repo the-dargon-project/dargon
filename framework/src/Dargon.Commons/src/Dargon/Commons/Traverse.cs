@@ -8,8 +8,7 @@ using Dargon.Commons.Pooling;
 namespace Dargon.Commons {
    public static class Traverse {
       public struct TraversalEnumeratorBase<T, TCollection> : IEnumerator<T> 
-         where TCollection : IReadOnlyCollection<T>
-         where T : class {
+         where TCollection : IReadOnlyCollection<T> {
          private TCollection store;
          private T initial;
          private Func<TCollection, T> popNext;
@@ -37,7 +36,7 @@ namespace Dargon.Commons {
 
          public bool MoveNext() {
             if (!nextOpt.exists) {
-               current = null;
+               current = default;
                return false;
             }
             
@@ -48,7 +47,7 @@ namespace Dargon.Commons {
          }
 
          public void Reset() {
-            current = null;
+            current = default;
             nextOpt = (true, initial);
             clear(store);
          }
@@ -66,13 +65,12 @@ namespace Dargon.Commons {
             Action<TCollection, T> pushSuccs,
             Action<TCollection> clear,
             IDisposable optDisposable
-         )  where TCollection : IReadOnlyCollection<T>
-            where T : class {
+         )  where TCollection : IReadOnlyCollection<T> {
             return new TraversalEnumeratorBase<T, TCollection>(store, initial, popNext, pushSuccs, clear, optDisposable);
          }
       }
 
-      private static class DfsInternals<T> where T : class {
+      private static class DfsInternals<T> {
          private static readonly TlsBackedObjectPool<State> tlsStates = new TlsBackedObjectPool<State>(State.Create);
 
          public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dive(T initial, Func<T, T> succUser) {
@@ -139,11 +137,11 @@ namespace Dargon.Commons {
       public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dfs<T>(
          this T root, 
          Action<Action<T>, T> pushSuccsUser
-      ) where T : class {
+      ) {
          return DfsInternals<T>.Dfs(root, pushSuccsUser);
       }
 
-      private static class BfsInternals<T> where T : class {
+      private static class BfsInternals<T> {
          private static readonly TlsBackedObjectPool<State> tlsStates = new TlsBackedObjectPool<State>(State.Create);
 
          public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Queue<T>>> Bfs(T initial, Action<Action<T>, T> pushSuccsUser) {
@@ -184,11 +182,11 @@ namespace Dargon.Commons {
          }
       }
 
-      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Queue<T>>> Bfs<T>(this T root, Action<Action<T>, T> pushSuccsUser) where T : class {
+      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Queue<T>>> Bfs<T>(this T root, Action<Action<T>, T> pushSuccsUser) {
          return BfsInternals<T>.Bfs(root, pushSuccsUser);
       }
 
-      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dive<T>(this T root, Func<T, T> next) where T : class {
+      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dive<T>(this T root, Func<T, T> next) {
          return DfsInternals<T>.Dive(root, next);
       }
    }

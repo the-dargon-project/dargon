@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 
 namespace Dargon.Commons.Collections {
-   public struct EnumeratorToEnumerableAdapter<TItem, TEnumerator> where TEnumerator : struct, IEnumerator<TItem> {
+   public struct EnumeratorToEnumerableAdapter<TItem, TEnumerator> : IEnumerable<TItem> where TEnumerator : struct, IEnumerator<TItem> {
       private readonly TEnumerator enumerable;
 
       public EnumeratorToEnumerableAdapter(TEnumerator enumerable) {
@@ -9,6 +10,8 @@ namespace Dargon.Commons.Collections {
       }
 
       public TEnumerator GetEnumerator() => enumerable;
+      IEnumerator<TItem> IEnumerable<TItem>.GetEnumerator() => GetEnumerator();
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
    }
 
    public static class EnumeratorToEnumerableAdapter<TItem> {
