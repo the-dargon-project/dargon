@@ -29,6 +29,15 @@ namespace Dargon.Commons {
          }
       }
 
+      public static T FirstAndOnlyOrDefault<T>(this IEnumerable<T> e) {
+         using (var it = e.GetEnumerator()) {
+            if (!it.MoveNext()) return default;
+            var res = it.Current;
+            if (it.MoveNext()) return default;
+            return res;
+         }
+      }
+
       public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> source, out TKey Key, out TValue Value) {
          Key = source.Key;
          Value = source.Value;
