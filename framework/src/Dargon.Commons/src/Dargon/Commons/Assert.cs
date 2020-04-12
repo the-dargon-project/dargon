@@ -21,6 +21,12 @@ namespace Dargon.Commons {
          }
       }
 
+      public static void IsNotNull(object val, string message = null) {
+         if (val == null) {
+            Fail(message ?? "(Value was null)");
+         }
+      }
+
       public static void Equals<T>(T expected, T actual) {
          if (!Object.Equals(expected, actual)) {
             Fail($"AssertEquals failed. Expected: {expected}, Actual: {actual}");
