@@ -44,7 +44,7 @@ namespace Dargon.Repl {
          }
       }
 
-      private bool ExecCommand(string input, bool trailingNewLine = true) {
+      public bool ExecCommand(string input, bool trailingNewLine = true) {
          try {
             if (input.Contains("&&")) {
                return input.Split("&&").Aggregate(true, (x, cmd) => x && ExecCommand(cmd.Trim(), false));
