@@ -5,11 +5,17 @@ using System.Collections.Generic;
 namespace Dargon.Commons.Collections {
    public class AddOnlyOrderedHashSet<T> : IList<T>, IReadOnlyList<T> {
       private readonly ExposedArrayList<T> list = new ExposedArrayList<T>();
-      private readonly Dictionary<T, int> dict = new Dictionary<T, int>();
+      private readonly Dictionary<T, int> dict;
 
       public ExposedArrayList<T> List => list;
       public int Count => list.Count;
       public T this[int idx] { get => list[idx]; set => throw new NotImplementedException(); }
+
+      public AddOnlyOrderedHashSet() : this(EqualityComparer<T>.Default) { }
+
+      public AddOnlyOrderedHashSet(IEqualityComparer<T> equalityComparer) {
+         dict = new Dictionary<T, int>(equalityComparer);
+      }
 
       public void Add(T item) {
          TryAdd(item, out _);
