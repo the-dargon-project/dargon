@@ -2,10 +2,57 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
-namespace Dargon.Commons
-{
+namespace Dargon.Commons {
    public static class StringExtensions {
+      /**
+       * foreach (var x in new[] { "testString", "TestString", "This is a test", "hello-world" }) {
+       *    Console.WriteLine(x + " " + x.ToUpperCamelCase() + " " + x.ToLowerCamelCase() + " " + x.ToDashedSnakeCase());
+       * }
+       */
+      public static string ToUpperCamelCase(this string s) => ToCase(s, true, true, null);
+
+      public static string ToLowerCamelCase(this string s) => ToCase(s, false, true, null);
+
+      public static string ToDashedSnakeCase(this string s) => ToCase(s, false, false, "-");
+
+      private static string ToCase(string s, bool upperElseLowerFirst, bool upperElseLowerFollowing, string snakeDash) {
+         var sb = new StringBuilder();
+         var firstWord = true;
+         var mode = 0; // 0: out of word, 1: entered word, 2: in word
+
+         for (var i = 0; i < s.Length; i++) {
+            var c = s[i];
+            if (!char.IsLetter(c)) {
+               if (mode != 0 && snakeDash != null) sb.Append(snakeDash);
+               mode = 0;
+               continue;
+            }
+
+            if (mode == 2 && char.IsUpper(c)) {
+               if (snakeDash != null) sb.Append(snakeDash);
+               mode = 0;
+            }
+
+            var upperElseLower = mode == 0 
+               ? (firstWord ? upperElseLowerFirst : upperElseLowerFollowing) 
+               : false;
+            firstWord = false;
+
+            if (mode == 0) mode = 1;
+            else if (mode == 1 && !char.IsUpper(c)) mode = 2;
+          
+            sb.Append(upperElseLower ? char.ToUpper(c) : char.ToLower(c));
+         }
+
+         return sb.ToString();
+      }
+
+      private static Regex base64Regex = new Regex("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$");
+
+      public static bool IsBase64(this string s) => base64Regex.IsMatch(s);
+
       /// <summary>
       /// Reverses the given string.
       /// http://dotnetperls.com/reverse-string
@@ -40,6 +87,7 @@ namespace Dargon.Commons
          for (int i = 0; i < n; i++) {
             sb.Append(s);
          }
+
          return sb.ToString();
       }
 
@@ -75,9 +123,11 @@ namespace Dargon.Commons
             } else
                curPartSB.Append(s[i]);
          }
+
          if (curPartSB.ToString() != "") {
             finalParts.Add(curPartSB.ToString());
          }
+
          return finalParts.ToArray();
       }
 
@@ -89,7 +139,7 @@ namespace Dargon.Commons
             char lastChar = s[s.Length - 1];
             if ((s[0] == '\'' && lastChar == '\'') ||
                 (s[0] == '"' && lastChar == '"')
-               )
+            )
                return s.Substring(1, s.Length - 2);
             else
                return s;
