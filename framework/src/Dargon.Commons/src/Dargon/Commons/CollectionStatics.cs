@@ -475,6 +475,46 @@ namespace Dargon.Commons {
             list.AddRange(new T[size - list.Count]);
          }
       }
+
+      public static IEnumerable<T> MergeSorted<T, U>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, U> cheapKeyFunc) {
+         return MergeSorted(
+            first,
+            second,
+            (a, b) => Comparer<U>.Default.Compare(cheapKeyFunc(a), cheapKeyFunc(b)));
+      }
+
+      // See https://stackoverflow.com/questions/9807701/is-there-an-easy-way-to-merge-two-ordered-sequences-using-linq
+      public static IEnumerable<T> MergeSorted<T>(this IEnumerable<T> first, IEnumerable<T> second, Func<T, T, int> comparer) {
+         using (var firstEnumerator = first.GetEnumerator())
+         using (var secondEnumerator = second.GetEnumerator()) {
+
+            var elementsLeftInFirst = firstEnumerator.MoveNext();
+            var elementsLeftInSecond = secondEnumerator.MoveNext();
+            while (elementsLeftInFirst || elementsLeftInSecond) {
+               if (!elementsLeftInFirst) {
+                  do {
+                     yield return secondEnumerator.Current;
+                  } while (secondEnumerator.MoveNext());
+                  yield break;
+               }
+
+               if (!elementsLeftInSecond) {
+                  do {
+                     yield return firstEnumerator.Current;
+                  } while (firstEnumerator.MoveNext());
+                  yield break;
+               }
+
+               if (comparer(firstEnumerator.Current, secondEnumerator.Current) < 0) {
+                  yield return firstEnumerator.Current;
+                  elementsLeftInFirst = firstEnumerator.MoveNext();
+               } else {
+                  yield return secondEnumerator.Current;
+                  elementsLeftInSecond = secondEnumerator.MoveNext();
+               }
+            }
+         }
+      }
    }
 
    public class Chunk<T> {
