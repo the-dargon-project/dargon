@@ -21,7 +21,7 @@ namespace Dargon.Courier.Management.Repl {
 
          if (path.StartsWith("!!")) {
             var nodeName = path.Substring(2);
-            var node = ReplGlobals.Root.Bfs(n => n.Children)
+            var node = ReplGlobals.Root.Bfs((push, n) => n.Children.ForEach(push))
                                   .First(x => x.Name.Equals(nodeName, StringComparison.OrdinalIgnoreCase));
             ReplGlobals.Current = node;
             return 0;
