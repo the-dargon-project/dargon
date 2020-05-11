@@ -20,6 +20,22 @@ namespace Dargon.Commons {
          return false;
       }
 
+      public static bool TryFindFirstIndex<T>(this IList<T> list, Predicate<T> predicate, out int firstMatchIndex) {
+         return TryFindFirstIndex(list, predicate, 0, list.Count, out firstMatchIndex);
+      }
+
+      public static bool TryFindFirstIndex<T>(this IList<T> list, Predicate<T> predicate, int startIndex, int length, out int firstMatchIndex) {
+         for(int i = 0, j = startIndex; i < length; i++, j++) {
+            if (predicate(list[j])) {
+               firstMatchIndex = j;
+               return true;
+            }
+         }
+
+         firstMatchIndex = -1;
+         return false;
+      }
+
       public static T FirstAndOnly<T>(this IEnumerable<T> e) {
          using (var it = e.GetEnumerator()) {
             if (!it.MoveNext()) throw new ArgumentOutOfRangeException("No element 0");
@@ -156,6 +172,32 @@ namespace Dargon.Commons {
          }
          return result;
       }
+
+      public static List<U> MapList<T, U>(this IReadOnlyList<T> arr, Func<T, U> projector) {
+         var result = new List<U>(arr.Count);
+         for (var i = 0; i < arr.Count; i++) {
+            result.Add(projector(arr[i]));
+         }
+         return result;
+      }
+
+      public static List<U> MapList<T, U>(this IReadOnlyList<T> arr, Func<U> projector) {
+         var result = new List<U>(arr.Count);
+         for (var i = 0; i < arr.Count; i++) {
+            result.Add(projector());
+         }
+         return result;
+      }
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static List<U> MapList<T, U>(this IReadOnlyList<T> arr, Func<T, int, U> projector) {
+         var result = new List<U>(arr.Count);
+         for (int i = 0; i < arr.Count; i++) {
+            result.Add(projector(arr[i], i));
+         }
+         return result;
+      }
+
 
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static Dictionary<K, R> Map<K, V, R>(this IReadOnlyDictionary<K, V> dict, Func<K, V, R> map) {
@@ -368,6 +410,28 @@ namespace Dargon.Commons {
             yield return it.Current;
          }
          yield return first;
+      }
+
+      public static IEnumerable<T> RotateLeft<T>(this IEnumerable<T> e, int n) {
+         var front = new List<T>();
+
+         using (var it = e.GetEnumerator()) {
+            for (var i = 0; i < n; i++) {
+               if (it.MoveNext()) {
+                  front.Add(it.Current);
+               } else {
+                  throw new NotImplementedException();
+               }
+            }
+
+            while (it.MoveNext()) {
+               yield return it.Current;
+            }
+
+            foreach (var x in front) {
+               yield return x;
+            }
+         }
       }
 
       // Via http://stackoverflow.com/questions/9027530/linq-not-any-vs-all-dont
