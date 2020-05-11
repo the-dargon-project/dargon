@@ -34,6 +34,36 @@ namespace Dargon.Commons {
          }
       }
 
+      public static void NotEquals<T>(T val, T actual) {
+         if (Object.Equals(val, actual)) {
+            Fail($"AssertNotEquals failed. Val: {val}, Actual: {actual}");
+         }
+      }
+
+      public static void IsLessThan(float left, float right) {
+         if (left >= right) {
+            Fail($"{nameof(IsLessThan)} failed. {left} >= {right}");
+         }
+      }
+
+      public static void IsLessThanOrEqualTo(float left, float right) {
+         if (left > right) {
+            Fail($"{nameof(IsLessThanOrEqualTo)} failed. {left} > {right}");
+         }
+      }
+
+      public static void IsGreaterThan(float left, float right) {
+         if (left <= right) {
+            Fail($"{nameof(IsGreaterThan)} failed. {left} <= {right}");
+         }
+      }
+
+      public static void IsGreaterThanOrEqualTo(float left, float right) {
+         if (left < right) {
+            Fail($"{nameof(IsGreaterThanOrEqualTo)} failed. {left} < {right}");
+         }
+      }
+
       public static void Fail(string message) {
          var testAssemblyNames = new[] {
             "Microsoft.VisualStudio.QualityTools.UnitTestFramework",
@@ -43,7 +73,7 @@ namespace Dargon.Commons {
          var isRunningInTest = AppDomain.CurrentDomain.GetAssemblies()
                                         .Any(a => testAssemblyNames.Any(a.FullName.Contains));
 
-         if (!isRunningInTest) {
+         if (!isRunningInTest && Debugger.IsAttached) {
             // undefined behavior in test runner (e.g. some test runners/profilers actually
             // attach a debugger)
             Debugger.Break();
@@ -54,7 +84,7 @@ namespace Dargon.Commons {
          Console.Error.Flush();
 
          // asserts crash test runner, as opposed to failing test.
-         if (!isRunningInTest) {
+         if (!isRunningInTest && Debugger.IsAttached) {
 #if DEBUG
             Debug.Assert(false, message);
 #elif TRACE
