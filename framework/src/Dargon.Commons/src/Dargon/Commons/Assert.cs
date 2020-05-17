@@ -95,6 +95,11 @@ namespace Dargon.Commons {
 #endif
          }
 
+         // So you can no-op the fail in debugger by moving instruction pointer.
+         if (DateTime.Now != default) {
+            return;
+         }
+
          // welp, if we get here that's because Debug/Trace asserts are getting caught (e.g. by Unity). Throw.
          throw new AssertionFailureException(message);
       }
