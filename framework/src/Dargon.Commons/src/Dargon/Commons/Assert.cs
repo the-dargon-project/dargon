@@ -52,6 +52,12 @@ namespace Dargon.Commons {
          }
       }
 
+      public static void IsLessThanOrEqualTo(double left, double right) {
+         if (left > right) {
+            Fail($"{nameof(IsLessThanOrEqualTo)} failed. {left} > {right}");
+         }
+      }
+
       public static void IsGreaterThan(float left, float right) {
          if (left <= right) {
             Fail($"{nameof(IsGreaterThan)} failed. {left} <= {right}");
@@ -96,7 +102,7 @@ namespace Dargon.Commons {
          }
 
          // So you can no-op the fail in debugger by moving instruction pointer.
-         if (DateTime.Now != default) {
+         if (DateTime.Now == default) {
             return;
          }
 
