@@ -103,14 +103,15 @@ namespace Dargon.Commons {
       }
       */
 
-      public static T[] LogicalIndex<T>(this IReadOnlyList<T> input, IReadOnlyList<bool> indexConditions) {
+      public static T[] LogicalIndex<T>(this IReadOnlyList<T> input, IReadOnlyList<bool> indexConditions, bool negateConditions = false) {
          if (input.Count != indexConditions.Count)
             throw new ArgumentException("Size mismatch between inputs.");
 
-         var result = new T[indexConditions.Count(x => x)];
+         var passCount = indexConditions.Count(x => x);
+         var result = new T[negateConditions ? indexConditions.Count - passCount : passCount];
          int resultIndex = 0;
          for (var i = 0; i < indexConditions.Count && resultIndex < result.Length; i++) {
-            if (indexConditions[i]) {
+            if (indexConditions[i] ^ negateConditions) {
                result[resultIndex] = input[i];
                resultIndex++;
             }
