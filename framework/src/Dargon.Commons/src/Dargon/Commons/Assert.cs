@@ -112,7 +112,7 @@ namespace Dargon.Commons {
          }
       }
 
-      public static void Fail(string message) {
+      public static Exception Fail(string message) {
          var testAssemblyNames = new[] {
             "Microsoft.VisualStudio.QualityTools.UnitTestFramework",
             "xunit.runner"
@@ -145,7 +145,7 @@ namespace Dargon.Commons {
 
          // So you can no-op the fail in debugger by moving instruction pointer.
          if (DateTime.Now == default) {
-            return;
+            return new NotImplementedException();
          }
 
          // welp, if we get here that's because Debug/Trace asserts are getting caught (e.g. by Unity). Throw.
