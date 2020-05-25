@@ -13,17 +13,17 @@ namespace Dargon.Commons {
          private T initial;
          private Func<TCollection, T> popNext;
          private Action<TCollection, T> pushSuccs;
-         private Action<TCollection> clear;
+         private Action clearState;
          private IDisposable optDisposable;
          private T current;
          private (bool exists, T val) nextOpt;
 
-         internal TraversalEnumeratorBase(TCollection store, T initial, Func<TCollection, T> popNext, Action<TCollection, T> pushSuccs, Action<TCollection> clear, IDisposable optDisposable) {
+         internal TraversalEnumeratorBase(TCollection store, T initial, Func<TCollection, T> popNext, Action<TCollection, T> pushSuccs, Action clearState, IDisposable optDisposable) {
             this.store = store;
             this.initial = initial;
             this.popNext = popNext;
             this.pushSuccs = pushSuccs;
-            this.clear = clear;
+            this.clearState = clearState;
             this.optDisposable = optDisposable;
             this.current = default;
             this.nextOpt = default;
@@ -49,7 +49,7 @@ namespace Dargon.Commons {
          public void Reset() {
             current = default;
             nextOpt = (true, initial);
-            clear(store);
+            clearState();
          }
 
          public void Dispose() {
@@ -63,10 +63,10 @@ namespace Dargon.Commons {
             T initial, 
             Func<TCollection, T> popNext, 
             Action<TCollection, T> pushSuccs,
-            Action<TCollection> clear,
+            Action clearState,
             IDisposable optDisposable
          )  where TCollection : IReadOnlyCollection<T> {
-            return new TraversalEnumeratorBase<T, TCollection>(store, initial, popNext, pushSuccs, clear, optDisposable);
+            return new TraversalEnumeratorBase<T, TCollection>(store, initial, popNext, pushSuccs, clearState, optDisposable);
          }
       }
 
@@ -82,7 +82,7 @@ namespace Dargon.Commons {
                initial,
                state.popNext,
                state.pushSuccs,
-               state.clear,
+               state.clearStates,
                state));
          }
 
@@ -95,16 +95,17 @@ namespace Dargon.Commons {
                initial,
                state.popNext,
                state.pushSuccs,
-               state.clear,
+               state.clearStates,
                state));
          }
 
          public class State : IDisposable {
             public IObjectPool<State> pool;
             public Stack<T> store;
+            public HashSet<T> visited;
             public Func<Stack<T>, T> popNext;
             public Action<Stack<T>, T> pushSuccs;
-            public Action<Stack<T>> clear;
+            public Action clearStates;
             public Action<Action<T>, T> pushSuccsUserOpt;
             public Func<T, T> succUserOpt;
 
@@ -112,18 +113,26 @@ namespace Dargon.Commons {
                var s = new State();
                s.pool = pool;
                s.store = new Stack<T>();
+               s.visited = new HashSet<T>();
                s.popNext = store => store.Pop();
 
-               Action<T> storePush = s.store.Push;
+               Action<T> storePushConditionally = x => {
+                  if (s.visited.Add(x)) {
+                     s.store.Push(x);
+                  }
+               };
                s.pushSuccs = (_, el) => {
                   if (s.pushSuccsUserOpt != null) {
-                     s.pushSuccsUserOpt(storePush, el);
+                     s.pushSuccsUserOpt(storePushConditionally, el);
                   }
                   if (s.succUserOpt != null) {
                      s.store.Push(s.succUserOpt(el));
                   }
                };
-               s.clear = store => store.Clear();
+               s.clearStates = () => {
+                  s.store.Clear();
+                  s.visited.Clear();
+               };
                s.pushSuccsUserOpt = null;
                return s;
             }
@@ -159,19 +168,28 @@ namespace Dargon.Commons {
          public class State : IDisposable {
             public IObjectPool<State> pool;
             public Queue<T> store;
+            public HashSet<T> visited;
             public Func<Queue<T>, T> popNext;
             public Action<Queue<T>, T> pushSuccs;
-            public Action<Queue<T>> clear;
+            public Action clear;
             public Action<Action<T>, T> pushSuccsUser;
 
             public static State Create(IObjectPool<State> pool) {
                var s = new State();
                s.pool = pool;
                s.store = new Queue<T>();
+               s.visited = new HashSet<T>();
                s.popNext = store => store.Dequeue();
-               Action<T> storeEnqueue = s.store.Enqueue;
-               s.pushSuccs = (_, el) => s.pushSuccsUser(storeEnqueue, el);
-               s.clear = store => store.Clear();
+               Action<T> storeEnqueueConditionally = x => {
+                  if (s.visited.Add(x)) {
+                     s.store.Enqueue(x);
+                  }
+               };
+               s.pushSuccs = (_, el) => s.pushSuccsUser(storeEnqueueConditionally, el);
+               s.clear = () => {
+                  s.store.Clear();
+                  s.visited.Clear();
+               };
                s.pushSuccsUser = null;
                return s;
             }
