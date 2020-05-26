@@ -126,7 +126,10 @@ namespace Dargon.Commons {
                      s.pushSuccsUserOpt(storePushConditionally, el);
                   }
                   if (s.succUserOpt != null) {
-                     s.store.Push(s.succUserOpt(el));
+                     var item = s.succUserOpt(el);
+                     if (item != null) {
+                        s.store.Push(item);
+                     }
                   }
                };
                s.clearStates = () => {
