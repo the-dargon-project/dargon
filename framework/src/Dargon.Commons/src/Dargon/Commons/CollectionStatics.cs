@@ -157,19 +157,28 @@ namespace Dargon.Commons {
          return result;
       }
 
-      public static U[] Map<T, U>(this IReadOnlyList<T> arr, Func<U> projector) {
-         U[] result = new U[arr.Count];
-         for (var i = 0; i < result.Length; i++) {
-            result[i] = projector();
-         }
-         return result;
-      }
-
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static U[] Map<T, U>(this IReadOnlyList<T> arr, Func<T, int, U> projector) {
          var result = new U[arr.Count];
          for (int i = 0; i < arr.Count; i++) {
             result[i] = projector(arr[i], i);
+         }
+         return result;
+      }
+
+      public static U[] Map<T, U>(this IReadOnlyList<T> arr, int offset, int length, Func<T, U> projector) {
+         U[] result = new U[length];
+         for (var i = 0; i < result.Length; i++) {
+            result[i] = projector(arr[offset + i]);
+         }
+         return result;
+      }
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static U[] Map<T, U>(this IReadOnlyList<T> arr, int offset, int length, Func<T, int, U> projector) {
+         var result = new U[length];
+         for (int i = 0; i < arr.Count; i++) {
+            result[i] = projector(arr[offset + i], offset + i);
          }
          return result;
       }

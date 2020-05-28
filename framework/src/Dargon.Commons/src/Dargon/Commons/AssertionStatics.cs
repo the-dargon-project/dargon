@@ -6,7 +6,7 @@
       }
 
       public static bool AssertIsFalse(this bool val, string message = null) {
-         Assert.IsTrue(val, message);
+         Assert.IsFalse(val, message);
          return val;
       }
 
