@@ -74,7 +74,14 @@ namespace Dargon.Commons.Collections {
 
       public void Insert(int index, T item) => throw new NotSupportedException();
 
-      public void RemoveAt(int index) => throw new NotSupportedException();
+      public void RemoveAt(int index) {
+         if (index + 1 == size) {
+            size--;
+            return;
+         }
+
+         throw new NotSupportedException();
+      }
 
       public T this[int index] {
          get {
