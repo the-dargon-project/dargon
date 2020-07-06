@@ -178,5 +178,52 @@ namespace Dargon.Commons {
       public static bool ContainsAny(this string self, string[] strings, StringComparison comp = StringComparison.CurrentCulture) {
          return strings.Any(x => self.IndexOf(x, comp) >= 0);
       }
+
+      public static string ToEscapedStringLiteral(this string s) {
+         var sb = new StringBuilder(s.Length * 2 + 2);
+         sb.Append('"');
+
+         // https://en.wikipedia.org/wiki/Escape_sequences_in_C, \e \? not in c#
+         foreach (var c in s) {
+            sb.Append(c.ToStringLiteralChar());
+         }
+
+         sb.Append('"');
+         return sb.ToString();
+      }
+
+      /// <summary>
+      /// E.g. \0 => \\0
+      /// Output isn't surrounded by quotes. E.g. \\0, not "\\0".
+      /// </summary>
+      public static string ToStringLiteralChar(this char c) {
+         if (c == '\0') {
+            return "\\0";
+         } else if (c == '\a') {
+            return "\\a";
+         } else if (c == '\b') {
+            return "\\b";
+         } else if (c == '\f') {
+            return "\\f";
+         } else if (c == '\n') {
+            return "\\n";
+         } else if (c == '\r') {
+            return "\\r";
+         } else if (c == '\t') {
+            return "\\t";
+         } else if (c == '\v') {
+            return "\\v";
+         } else if (c == '\\') {
+            return "\\\\";
+         } else if (c == '\'') {
+            return "\\'";
+         } else if (c == '\"') {
+            return "\\\"";
+         } else if (c >= 0x20 && c <= 0x7e) {
+            return c.ToString();
+         } else {
+            return @"\u" + ((int)c).ToString("x4");
+         }
+      }
    }
 }
