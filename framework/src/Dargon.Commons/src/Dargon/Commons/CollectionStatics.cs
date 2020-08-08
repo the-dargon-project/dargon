@@ -9,6 +9,12 @@ using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons {
    public static class CollectionStatics {
+      public static void AddRange<T>(this ICollection<T> c, IEnumerable<T> items) {
+         foreach (T x in items) {
+            c.Add(x);
+         }
+      }
+
       public static bool TryFindFirst<T>(this IEnumerable<T> enumerable, Predicate<T> predicate, out T firstMatch) {
          foreach (var x in enumerable) {
             if (predicate(x)) {
