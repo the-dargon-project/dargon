@@ -127,6 +127,7 @@ namespace Dargon.Commons {
             Debugger.Break();
          }
 
+         Console.Out.Flush();
          Console.Error.WriteLine("Assertion Failure: " + message);
          Console.Error.WriteLine(Environment.StackTrace);
          Console.Error.Flush();
