@@ -98,11 +98,11 @@ namespace Dargon.Vox {
          }
 
          public static void EmitWrite(ILGenerator ilGenerator) {
-            ilGenerator.Emit(OpCodes.Call, writerMethod);
+            ilGenerator.Emit(OpCodes.Callvirt, writerMethod);
          }
 
          public static void EmitRead(ILGenerator ilGenerator) {
-            ilGenerator.Emit(OpCodes.Call, readerMethod);
+            ilGenerator.Emit(OpCodes.Callvirt, readerMethod);
          }
       }
    }

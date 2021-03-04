@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
 using Dargon.Commons;
+using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons.Collections
 {
@@ -123,6 +124,26 @@ namespace Dargon.Commons.Collections
       IEnumerator IEnumerable.GetEnumerator()
       {
          return storage.Keys.GetEnumerator();
+      }
+
+      public bool IsProperSubsetOf(IEnumerable<T> other) {
+         throw new NotYetImplementedException();
+      }
+
+      public bool IsProperSupersetOf(IEnumerable<T> other) {
+         throw new NotYetImplementedException();
+      }
+
+      public bool IsSubsetOf(IEnumerable<T> other) {
+         throw new NotYetImplementedException();
+      }
+
+      public bool IsSupersetOf(IEnumerable<T> other) {
+         throw new NotYetImplementedException();
+      }
+
+      public bool Overlaps(IEnumerable<T> other) {
+         throw new NotYetImplementedException();
       }
    }
 }
