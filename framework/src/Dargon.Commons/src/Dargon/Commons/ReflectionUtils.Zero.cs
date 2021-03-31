@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Dargon.Commons {
-   public static class ReflectionUtils {
+   public static partial class ReflectionUtils {
       public static void Zero<T>(T x) {
          // Todo: Support byref value types
          if (typeof(T).IsClass) ClassZeroUtils<T>.Invoke(x);

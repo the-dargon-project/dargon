@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Dargon.Commons {
@@ -41,7 +44,7 @@ namespace Dargon.Commons {
             Emit(x.ToString());
             return;
          }
-
+            
          if (x is IEnumerable enumerable) {
             if (t.IsArray) {
                Emit("new");
@@ -65,7 +68,35 @@ namespace Dargon.Commons {
             return;
          }
 
-         throw Assert.Fail("Unsupported for codegen serialization: " + t.ToString());
+         // assume simple struct
+         var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+         var properties = t.GetProperties(bindingFlags);
+         var fields = t.GetFields(bindingFlags);
+
+         var supported = properties.All(p => p.IsAutoProperty_Slow()) &&
+                         fields.All(f => f.IsPublic);
+
+         if (!supported) {
+            throw Assert.Fail("Unsupported for codegen serialization: " + t.ToString());
+         }
+
+
+         EmitDefaultConstruction(t);
+         Emit("{");
+
+         var setterCallbacks = new SortedDictionary<string, Action>();
+
+         foreach (var field in fields) {
+            setterCallbacks.Add(field.Name, () => this.EmitInitializerSet(field.Name, field.GetValue(x)));
+         }
+         foreach (var prop in properties) {
+            setterCallbacks.Add(prop.Name, () => this.EmitInitializerSet(prop.Name, prop.GetValue(x)));
+         }
+
+         foreach (var (_, cb) in setterCallbacks) {
+            cb();
+         }
+         Emit("}");
       }
 
       public void EmitConstructionStart(Type t) {
@@ -110,6 +141,15 @@ namespace Dargon.Commons {
       void EmitDefaultConstruction(Type t);
       void EmitTypeName(Type t);
       void Emit(string token);
+   }
+
+   public static class CodegenEmitterHelpers {
+      public static void EmitInitializerSet(this ICodegenEmitter emitter, string propertyName, object value) {
+         emitter.Emit(propertyName);
+         emitter.Emit("=");
+         emitter.Visit(value);
+         emitter.Emit(",");
+      }
    }
 
    public interface ICodegenEmitable {

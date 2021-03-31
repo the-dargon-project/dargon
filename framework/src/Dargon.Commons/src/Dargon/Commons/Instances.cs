@@ -27,71 +27,69 @@ namespace Dargon.Commons {
          }
       }
 
-      public static bool HasAttribute<TAttribute>(this Enum enumValue)
+      public static bool HasAttribute<TAttribute>(this Enum enumValue, bool inherit = true)
          where TAttribute : Attribute {
-         return enumValue.GetAttributeOrNull<TAttribute>() != null;
+         return enumValue.GetAttributeOrNull<TAttribute>(inherit) != null;
       }
 
-      public static bool HasAttribute<TAttribute>(this object instance)
+      public static bool HasAttribute<TAttribute>(this object instance, bool inherit = true)
          where TAttribute : Attribute {
-         return instance.GetAttributeOrNull<TAttribute>() != null;
+         return instance.GetAttributeOrNull<TAttribute>(inherit) != null;
       }
 
-      public static bool HasAttribute<TAttribute>(this Type type)
+      public static bool HasAttribute<TAttribute>(this Type type, bool inherit = true)
          where TAttribute : Attribute {
-         return type.GetAttributeOrNull<TAttribute>() != null;
+         return type.GetAttributeOrNull<TAttribute>(inherit) != null;
       }
 
-      public static bool HasAttribute<TAttribute>(this TypeInfo typeInfo)
+      public static bool HasAttribute<TAttribute>(this TypeInfo typeInfo, bool inherit = true)
          where TAttribute : Attribute {
-         return typeInfo.GetCustomAttribute<TAttribute>() != null;
+         return typeInfo.GetCustomAttribute<TAttribute>(inherit) != null;
       }
 
-      public static bool HasAttribute<TAttribute>(this MethodInfo methodInfo)
+      public static bool HasAttribute<TAttribute>(this MethodInfo methodInfo, bool inherit = true)
          where TAttribute : Attribute {
-         return methodInfo.GetCustomAttribute<TAttribute>() != null;
+         return methodInfo.GetCustomAttribute<TAttribute>(inherit) != null;
       }
 
-      public static bool HasAttribute<TAttribute>(this FieldInfo fieldInfo)
+      public static bool HasAttribute<TAttribute>(this FieldInfo fieldInfo, bool inherit = true)
          where TAttribute : Attribute {
-         return fieldInfo.GetCustomAttribute<TAttribute>() != null;
+         return fieldInfo.GetCustomAttribute<TAttribute>(inherit) != null;
       }
 
-      public static bool HasAttribute<TAttribute>(this PropertyInfo propertyInfo)
+      public static bool HasAttribute<TAttribute>(this PropertyInfo propertyInfo, bool inherit = true)
          where TAttribute : Attribute {
-         return propertyInfo.GetCustomAttribute<TAttribute>() != null;
+         return propertyInfo.GetCustomAttribute<TAttribute>(inherit) != null;
       }
 
       /// <summary>
       /// Gets the attribute of Enum value
       /// </summary>
-      /// <typeparam name="TAttribute"></typeparam>
-      /// <param name="enumValue"></param>
       /// <returns></returns>
-      public static TAttribute GetAttributeOrNull<TAttribute>(this Enum enumValue)
+      public static TAttribute GetAttributeOrNull<TAttribute>(this Enum enumValue, bool inherit = true)
          where TAttribute : Attribute {
          var enumType = enumValue.GetType();
          var memberInfo = enumType.GetTypeInfo().DeclaredMembers.First(member => member.Name.Equals(enumValue.ToString()));
-         var attributes = memberInfo.GetCustomAttributes(typeof(TAttribute), false);
+         var attributes = memberInfo.GetCustomAttributes(typeof(TAttribute), inherit);
          return (TAttribute)attributes.FirstOrDefault();
       }
 
-      public static TAttribute GetAttributeOrNull<TAttribute>(this object instance)
+      public static TAttribute GetAttributeOrNull<TAttribute>(this object instance, bool inherit = true)
          where TAttribute : Attribute {
          var instanceType = instance as Type ?? instance.GetType();
-         return GetAttributeOrNull<TAttribute>(instanceType);
+         return GetAttributeOrNull<TAttribute>(instanceType, inherit);
       }
 
-      public static TAttribute GetAttributeOrNull<TAttribute>(this Type type)
+      public static TAttribute GetAttributeOrNull<TAttribute>(this Type type, bool inherit = true)
          where TAttribute : Attribute {
          var typeInfo = type.GetTypeInfo();
-         return GetAttributeOrNull<TAttribute>(typeInfo);
+         return GetAttributeOrNull<TAttribute>(typeInfo, inherit);
       }
 
 
-      public static TAttribute GetAttributeOrNull<TAttribute>(this TypeInfo typeInfo)
+      public static TAttribute GetAttributeOrNull<TAttribute>(this TypeInfo typeInfo, bool inherit = true)
          where TAttribute : Attribute {
-         var attributes = typeInfo.GetCustomAttributes(typeof(TAttribute), false);
+         var attributes = typeInfo.GetCustomAttributes(typeof(TAttribute), inherit);
          return (TAttribute)attributes.FirstOrDefault();
       }
 
