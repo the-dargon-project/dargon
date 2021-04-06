@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -7,28 +8,89 @@ using System.Threading.Tasks;
 
 namespace Dargon.Commons.Collections {
    /// <summary>
-   /// Variation of MIT-licensed SortedSet from .NET Foundation 
+   /// Variation of MIT-licensed SortedSet from .NET Foundation
+   ///
+   /// Implements Split/Join as described in:
+   ///    Guy E. Blelloch, Daniel Ferizovic, and Yihan Sun. 2016.
+   ///    Just Join for Parallel Ordered Sets. In Proceedings of the 28th ACM Symposium
+   ///    on Parallelism in Algorithms and Architectures (SPAA '16). Association for
+   ///    Computing Machinery, New York, NY, USA, 253–264. DOI:https://doi.org/10.1145/2935764.2935768
    /// </summary>
    /// <typeparam name="T"></typeparam>
    /// <typeparam name="TComparer"></typeparam>
    public class SplitJoinRedBlackTree<T, TComparer> where TComparer : struct, IComparer<T> {
+      private const bool kEnableDebugPrintSplitJoin = false;
+      
       private readonly TComparer comparer;
       private Node root;
       private int count;
+      private bool isDestroyed = false;
 
       public SplitJoinRedBlackTree(TComparer comparer) {
          this.comparer = comparer;
       }
 
-      public string ToGraphvizStringDebug() {
+      public SplitJoinRedBlackTree(TComparer comparer, T[] initialValues) {
+         this.comparer = comparer;
+
+         root = BuildRBTree(initialValues);
+         count = initialValues.Length;
+      }
+
+      public int Count => count;
+
+      private Node BuildRBTree(T[] values) {
+         if (values.Length == 0) {
+            return null;
+         }
+
+         // (assume depth of 1 node is 0)
+         // 1 node  -> 0 // perfect tree
+         // 2 nodes -> 1 // bottom row is red
+         // 3 nodes -> 0 // perfect tree
+         // 4 nodes -> 2 // bottom row is red
+         // 5 nodes -> 2 // bottom row is red
+         // 6 nodes -> 2 // bottom row is red
+         // 7 nodes -> 0 // perfect tree
+         var nPlus1 = values.Length + 1;
+         var nPlus1IsPowerOf2 = (nPlus1 & (nPlus1 - 1)) == 0;
+
+         var redDepth =
+            nPlus1IsPowerOf2
+               ? -1
+               : (int)Math.Floor(Math.Log2(values.Length) + 1E-5 /* Epsilon maybe unnecessary */);
+         
+         return BuildRBTree(values, 0, values.Length - 1, 0, redDepth);
+      }
+
+      private Node BuildRBTree(T[] values, int lo, int hi, int depth, int redDepth) {
+         if (lo > hi) {
+            return null;
+         }
+         
+         var mid = (lo + hi) / 2;
+         var left = BuildRBTree(values, lo, mid - 1, depth + 1, redDepth);
+         var right = BuildRBTree(values, mid + 1, hi, depth + 1, redDepth);
+         
+         return new Node(
+            values[mid],
+            depth == redDepth ? RedBlackColor.Red : RedBlackColor.Black,
+            left,
+            right,
+            Node.GetBlackHeightOfParent(left));
+      }
+
+      public string ToGraphvizStringDebug() => ToGraphvizStringDebug(root);
+
+      private string ToGraphvizStringDebug(Node initialNode) {
          var sb = new StringBuilder();
          sb.AppendLine("digraph RedBlackTree {");
 
          var nextNodeId = 0;
 
          var s = new Stack<(Node node, int nodeId, Node pred, int predId)>();
-         if (root != null) {
-            s.Push((root, nextNodeId++, null, -1));
+         if (initialNode != null) {
+            s.Push((initialNode, nextNodeId++, null, -1));
          }
 
          while (s.Count > 0) {
@@ -76,6 +138,10 @@ namespace Dargon.Commons.Collections {
             // (alternatively, no red node has a red parent)
             if (parentOrNull is { } parent) {
                Assert.IsFalse(n.IsRed && parent.IsRed);
+
+               // BST invariant
+               var expectedCmpNe = n == parentOrNull.Left ? 1 : -1; 
+               Assert.NotEquals(expectedCmpNe, Math.Sign(comparer.Compare(n.Value, parent.Value)));
             }
 
             if (n.Left == null && n.Right == null) {
@@ -96,7 +162,8 @@ namespace Dargon.Commons.Collections {
 
          // Every node tracks its black height, the number of black nodes to its leaves
          foreach (var (node, rootToNodeBlacks) in nodeToRootToNodeBlacks) {
-            var actualBlackHeight = rootToLeafBlackCount - rootToNodeBlacks;
+            // +1 because null children count as black nodes.
+            var actualBlackHeight = rootToLeafBlackCount - rootToNodeBlacks + 1;
             Assert.Equals(node.BlackHeight, actualBlackHeight);
          }
       }
@@ -243,6 +310,8 @@ namespace Dargon.Commons.Collections {
       }
 
       public bool TryAdd(T value) {
+         AssertIsNotDestroyed();
+
          if (root == null) {
             root = new Node(value, RedBlackColor.Black);
             return true;
@@ -275,6 +344,8 @@ namespace Dargon.Commons.Collections {
       public bool Remove(T item) => DoRemove(item);
 
       internal bool DoRemove(T item) {
+         AssertIsNotDestroyed();
+
          if (root == null) {
             return false;
          }
@@ -379,6 +450,167 @@ namespace Dargon.Commons.Collections {
          return foundMatch;
       }
 
+      private static Node JoinRightRB(Node left, T k, Node right) {
+         if (Node.GetBlackHeight(left) == Node.GetBlackHeight(right)) {
+            return new Node(k, RedBlackColor.Red) {
+               Left = left,
+               Right = right,
+               BlackHeight = Node.GetBlackHeightOfParent(left),
+            };
+         }
+
+         var tprime = left;
+         tprime.Right = JoinRightRB(left.Right, k, right);
+         if (tprime.Color == RedBlackColor.Black && Node.IsNonNullRed(tprime.Right) && Node.IsNonNullRed(tprime.Right.Right)) {
+            tprime.Right.Right.Color = RedBlackColor.Black;
+
+            var res = tprime.RotateLeft();
+            res.BlackHeight = Node.GetBlackHeightOfParent(res.Left);
+            return res;
+         }
+
+         return tprime;
+      }
+
+      private static Node JoinLeftRB(Node left, T k, Node right) {
+         if (Node.GetBlackHeight(left) == Node.GetBlackHeight(right)) {
+            return new Node(k, RedBlackColor.Red) {
+               Left = left,
+               Right = right,
+               BlackHeight = Node.GetBlackHeightOfParent(right),
+            };
+         }
+
+         var tprime = right;
+         tprime.Left = JoinLeftRB(left, k, right.Left);
+         if (tprime.Color == RedBlackColor.Black && Node.IsNonNullRed(tprime.Left) && Node.IsNonNullRed(tprime.Left.Left)) {
+            tprime.Left.Left.Color = RedBlackColor.Black;
+            
+            var res = tprime.RotateRight();
+            res.BlackHeight = Node.GetBlackHeightOfParent(res.Right);
+            return res;
+         }
+
+         return tprime;
+      }
+
+      private static Node JoinRB(Node left, T k, Node right) {
+         Node res;
+         if (Node.GetBlackHeight(left) > Node.GetBlackHeight(right)) {
+            res = JoinRightRB(left, k, right);
+         } else if (Node.GetBlackHeight(left) < Node.GetBlackHeight(right)) {
+            res = JoinLeftRB(left, k, right);
+         } else if (Node.IsNullOrBlack(left) && Node.IsNullOrBlack(right)) {
+            res = new Node(k, RedBlackColor.Red, left, right, Node.GetBlackHeightOfParent(left));
+         } else {
+            res = new Node(k, RedBlackColor.Black, left, right, Node.GetBlackHeightOfParent(left));
+         }
+
+         return FixJoinRoot(res);
+      }
+
+      private static Node FixJoinRoot(Node node) {
+         if (!node.IsRed) {
+            return node;
+         }
+
+         var leftHeight = Node.GetBlackHeight(node.Left);
+         var rightHeight = Node.GetBlackHeight(node.Right);
+         
+         if (leftHeight == rightHeight) {
+            node.Color = RedBlackColor.Black;
+            return node;
+         } else if (leftHeight < rightHeight) {
+            var res = node.RotateLeft();
+            res.Color = RedBlackColor.Black;
+            res.Left.BlackHeight = Node.GetBlackHeightOfParent(res.Left.Right);
+            res.BlackHeight = Node.GetBlackHeightOfParent(res.Left);
+            return res;
+         } else {
+            var res = node.RotateRight();
+            res.Color = RedBlackColor.Black;
+            res.Right.BlackHeight = Node.GetBlackHeightOfParent(res.Right.Left);
+            res.BlackHeight = Node.GetBlackHeightOfParent(res.Right);
+            return res;
+         }
+      }
+
+      private (bool success, Node left, Node right) TrySplit(Node node, T k) {
+         if (node == null) {
+            return (false, null, null);
+         } else {
+            var cmp = comparer.Compare(node.Value, k);
+            if (cmp == 0) {
+               return (true, node.Left, node.Right);
+            } else if (cmp > 0) {
+               var (b, ll, lr) = TrySplit(node.Left, k);
+               return (b, ll, JoinRB(lr, node.Value, node.Right));
+            } else {
+               var (b, rl, rr) = TrySplit(node.Right, k);
+               return (b, JoinRB(node.Left, node.Value, rl), rr);
+            }
+         }
+      }
+
+      private (Node, T) SplitLast(Node node) {
+         if (node.Right == null) {
+            return (node.Left, node.Value);
+         } else {
+            var (tprime, kprime) = SplitLast(node.Right);
+            if (kEnableDebugPrintSplitJoin) Console.WriteLine("Split yields " + kprime);
+            if (kEnableDebugPrintSplitJoin) Console.WriteLine("Split joinrb input " + ToGraphvizStringDebug(node.Left));
+            if (kEnableDebugPrintSplitJoin) Console.WriteLine("Split joinrb input " + node.Value);
+            if (kEnableDebugPrintSplitJoin) Console.WriteLine("Split joinrb input " + ToGraphvizStringDebug(tprime));
+            var splitTree = JoinRB(node.Left, node.Value, tprime);
+            if (kEnableDebugPrintSplitJoin) Console.WriteLine("Split joinrb out: " + ToGraphvizStringDebug(splitTree));
+            return (splitTree, kprime);
+         }
+      }
+
+      private Node Join2(Node tl, Node tr) {
+         if (tl == null) return tr;
+         if (tr == null) return tl;
+
+         var (tlprime, k) = SplitLast(tl);
+         return JoinRB(tlprime, k, tr);
+      }
+
+      public SplitJoinRedBlackTree<T, TComparer> DestructiveJoin(SplitJoinRedBlackTree<T, TComparer> right) {
+         AssertIsNotDestroyed();
+         
+         var res = new SplitJoinRedBlackTree<T, TComparer>(comparer) {
+            count = count + right.count,
+            root = Join2(root, right.root),
+         };
+         MarkDestroyed();
+         right.MarkDestroyed();
+         return res;
+      }
+
+      private void MarkDestroyed() {
+         isDestroyed = true;
+         root = null;
+      }
+
+      private void AssertIsNotDestroyed() {
+         Assert.IsFalse(isDestroyed, "Tree is destroyed (e.g. in response to a Join operation?)");
+      }
+
+      public T[] ToArray() {
+         var res = new T[count];
+         var nextIndex = 0;
+         ToArrayHelper(root, res, ref nextIndex);
+         Assert.Equals(nextIndex, res.Length);
+         return res;
+      }
+
+      private void ToArrayHelper(Node current, T[] res, ref int nextIndex) {
+         if (current == null) return;
+         ToArrayHelper(current.Left, res, ref nextIndex);
+         res[nextIndex++] = current.Value;
+         ToArrayHelper(current.Right, res, ref nextIndex);
+      }
+
       public class Node {
          public Node Left, Right;
          public T Value;
@@ -391,6 +623,15 @@ namespace Dargon.Commons.Collections {
          public Node(T value, RedBlackColor color) {
             Value = value;
             Color = color;
+            BlackHeight = 1; // a node without children has implicit NIL leaves.
+         }
+
+         public Node(T value, RedBlackColor color, Node left, Node right, int blackHeight) {
+            Value = value;
+            Color = color;
+            Left = left;
+            Right = right;
+            BlackHeight = blackHeight;
          }
 
          public bool IsRed => Color == RedBlackColor.Red;
@@ -400,11 +641,14 @@ namespace Dargon.Commons.Collections {
          public static bool IsNonNullBlack(Node node) => node != null && node.IsBlack;
 
          public static bool IsNonNullRed(Node node) => node != null && node.IsRed;
+         public static bool IsNonNullLeaf(Node node) => node != null && node.IsLeaf;
 
          public static bool IsNullOrBlack(Node node) => node == null || node.IsBlack;
 
          public bool Is4Node => IsNonNullRed(Left) && IsNonNullRed(Right);
          public bool Is2Node => IsBlack && IsNullOrBlack(Left) && IsNullOrBlack(Right);
+
+         public bool IsLeaf => Left == null && Right == null;
 
          /// <summary>
          /// Gets the rotation this node should undergo during a removal.
@@ -463,8 +707,13 @@ namespace Dargon.Commons.Collections {
          }
 
          public static int GetBlackHeightOfParent(Node n) {
-            if (n == null) return 0;
+            if (n == null) return 1;
             return n.BlackHeight + (n.IsBlack ? 1 : 0);
+         }
+
+         public static int GetBlackHeight(Node n) {
+            if (n == null) return 0;
+            return n.BlackHeight;
          }
 
          /// <summary>
@@ -551,6 +800,10 @@ namespace Dargon.Commons.Collections {
             BlackHeight--;
             Left.Color = RedBlackColor.Red;
             Right.Color = RedBlackColor.Red;
+         }
+
+         public (Node, (T, RedBlackColor), Node) Expose() {
+            return (Left, (Value, Color), Right);
          }
       }
    }
