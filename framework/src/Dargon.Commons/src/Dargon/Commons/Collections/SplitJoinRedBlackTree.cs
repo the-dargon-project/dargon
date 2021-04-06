@@ -20,6 +20,70 @@ namespace Dargon.Commons.Collections {
          this.comparer = comparer;
       }
 
+      public string ToGraphvizStringDebug() {
+         var sb = new StringBuilder();
+         sb.AppendLine("digraph RedBlackTree {");
+
+         var nextNodeId = 0;
+
+         var s = new Stack<(Node node, int nodeId, Node pred, int predId)>();
+         if (root != null) {
+            s.Push((root, nextNodeId++, null, -1));
+         }
+
+         while (s.Count > 0) {
+            var (n, nid, p, pid) = s.Pop();
+            var color = n.IsRed ? "red" : "black";
+            sb.AppendLine($"  {nid} [label=\"{n.Value}\" color=\"{color}\"]");
+
+            if (pid >= 0) {
+               sb.AppendLine($"  {pid} -> {nid}");
+            }
+
+            if (n.Left != null) s.Push((n.Left, nextNodeId++, n, nid));
+            if (n.Right != null) s.Push((n.Right, nextNodeId++, n, nid));
+         }
+
+         sb.AppendLine("}");
+         return sb.ToString();
+      }
+
+      public void AssertOnInvariants() {
+         if (root == null) return;
+
+         root.Color.AssertEquals(RedBlackColor.Black);
+
+         var q = new Queue<(Node n, int parentBlackNodesSeen, Node parent)>();
+         q.Enqueue((root, 0, null));
+
+         var leavesAndBlackNodesSeen = new List<(Node n, int blackNodesSeen)>();
+
+         while (q.Count > 0) {
+            var (n, parentBlackNodesSeen, parentOrNull) = q.Dequeue();
+
+            var nodeBlackNodesSeen = parentBlackNodesSeen + (n.IsBlack ? 1 : 0);
+
+            // If a node is red, then both its children are black.
+            // (alternatively, no red node has a red parent)
+            if (parentOrNull is { } parent) {
+               Assert.IsFalse(n.IsRed && parent.IsRed);
+            }
+
+            if (n.Left == null && n.Right == null) {
+               leavesAndBlackNodesSeen.Add((n, nodeBlackNodesSeen));
+            } else {
+               if (n.Left != null) q.Enqueue((n.Left, nodeBlackNodesSeen, n));
+               if (n.Right != null) q.Enqueue((n.Right, nodeBlackNodesSeen, n));
+            }
+         }
+
+         // Every path from a given node to any of its descendant NIL leaves goes through the same number of black nodes.
+         var expectedBlackNodesSeen = leavesAndBlackNodesSeen[0].blackNodesSeen;
+         foreach (var (_, actualBlackNodesSeen) in leavesAndBlackNodesSeen) {
+            Assert.Equals(expectedBlackNodesSeen, actualBlackNodesSeen);
+         }
+      }
+
       private struct SearchResult {
          public Node Node, Parent, Grandparent, GreatGrandParent;
          public bool Match;
@@ -185,8 +249,9 @@ namespace Dargon.Commons.Collections {
          return true;
       }
 
+      public bool Remove(T item) => DoRemove(item);
 
-      internal virtual bool DoRemove(T item) {
+      internal bool DoRemove(T item) {
          if (root == null) {
             return false;
          }
