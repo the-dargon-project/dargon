@@ -34,7 +34,7 @@ namespace Dargon.Commons.Collections {
          while (s.Count > 0) {
             var (n, nid, p, pid) = s.Pop();
             var color = n.IsRed ? "red" : "black";
-            sb.AppendLine($"  {nid} [label=\"{n.Value}\" color=\"{color}\"]");
+            sb.AppendLine($"  {nid} [label=\"h={n.BlackHeight}, v={n.Value}\" color=\"{color}\"]");
 
             if (pid >= 0) {
                sb.AppendLine($"  {pid} -> {nid}");
@@ -49,19 +49,28 @@ namespace Dargon.Commons.Collections {
       }
 
       public void AssertOnInvariants() {
+         // Invariants:
+         // (1) Each node is either red or black. - A given with our implementation
+         // (2) All NIL leaves(figure 1) are considered black (Implicit NIL leaves with our implementation - nothing to compute)
+         // (3) If a node is red, then both its children are black.
+         // (4) Every path from a given node to any of its descendant NIL leaves goes through the same number of black nodes.
+         // 
+         // Additionally (for join/split support):
+         // (5) Every node tracks its black height, the number of black nodes to its leaves
          if (root == null) return;
 
          root.Color.AssertEquals(RedBlackColor.Black);
 
-         var q = new Queue<(Node n, int parentBlackNodesSeen, Node parent)>();
-         q.Enqueue((root, 0, null));
+         // rootToNodeBlacks: number of black nodes in [root, ..., node]
+         var q = new Queue<(Node n, int rootToNodeBlacks, Node parent)>();
+         q.Enqueue((root, root.IsBlack ? 1 : 0, null));
 
-         var leavesAndBlackNodesSeen = new List<(Node n, int blackNodesSeen)>();
+         var leaves = new List<Node>();
+         var nodeToRootToNodeBlacks = new Dictionary<Node, int>();
 
          while (q.Count > 0) {
-            var (n, parentBlackNodesSeen, parentOrNull) = q.Dequeue();
-
-            var nodeBlackNodesSeen = parentBlackNodesSeen + (n.IsBlack ? 1 : 0);
+            var (n, rootToNodeBlacks, parentOrNull) = q.Dequeue();
+            nodeToRootToNodeBlacks[n] = rootToNodeBlacks;
 
             // If a node is red, then both its children are black.
             // (alternatively, no red node has a red parent)
@@ -70,17 +79,25 @@ namespace Dargon.Commons.Collections {
             }
 
             if (n.Left == null && n.Right == null) {
-               leavesAndBlackNodesSeen.Add((n, nodeBlackNodesSeen));
+               leaves.Add(n);
             } else {
-               if (n.Left != null) q.Enqueue((n.Left, nodeBlackNodesSeen, n));
-               if (n.Right != null) q.Enqueue((n.Right, nodeBlackNodesSeen, n));
+               if (n.Left != null) q.Enqueue((n.Left, rootToNodeBlacks + (n.Left.IsBlack ? 1 : 0), n));
+               if (n.Right != null) q.Enqueue((n.Right, rootToNodeBlacks + (n.Right.IsBlack ? 1 : 0), n));
             }
          }
 
          // Every path from a given node to any of its descendant NIL leaves goes through the same number of black nodes.
-         var expectedBlackNodesSeen = leavesAndBlackNodesSeen[0].blackNodesSeen;
-         foreach (var (_, actualBlackNodesSeen) in leavesAndBlackNodesSeen) {
-            Assert.Equals(expectedBlackNodesSeen, actualBlackNodesSeen);
+         var rootToLeafBlackCount = nodeToRootToNodeBlacks[leaves[0]];
+         foreach (var leaf in leaves) {
+            Assert.Equals(rootToLeafBlackCount, nodeToRootToNodeBlacks[leaf]);
+         }
+
+         // Console.WriteLine("Root->Leaf Blacks " + rootToLeafBlackCount);
+
+         // Every node tracks its black height, the number of black nodes to its leaves
+         foreach (var (node, rootToNodeBlacks) in nodeToRootToNodeBlacks) {
+            var actualBlackHeight = rootToLeafBlackCount - rootToNodeBlacks;
+            Assert.Equals(node.BlackHeight, actualBlackHeight);
          }
       }
 
@@ -112,9 +129,7 @@ namespace Dargon.Commons.Collections {
             }
 
             if (split4Nodes && current.Is4Node) {
-               current.Color = RedBlackColor.Red;
-               current.Left.Color = RedBlackColor.Black;
-               current.Right.Color = RedBlackColor.Black;
+               current.Split4Node();
 
                if (Node.IsNonNullRed(parent)) {
                   InsertionBalance(current, ref parent, grandparent, greatGrandparent);
@@ -217,6 +232,14 @@ namespace Dargon.Commons.Collections {
          }
 
          ReplaceChildOrRoot(parentOfMatch, match, successor!);
+
+         if (successor != null) {
+            successor.BlackHeight = Node.GetBlackHeightOfParent(successor.Left);
+         }
+
+         if (parentOfMatch != null) {
+            parentOfMatch.BlackHeight = Node.GetBlackHeightOfParent(successor);
+         }
       }
 
       public bool TryAdd(T value) {
@@ -289,7 +312,9 @@ namespace Dargon.Commons.Collections {
                         parent.RotateRight();
                      }
 
+                     // parent from black to red, sibling from red to black.
                      parent.Color = RedBlackColor.Red;
+                     // parent.BlackHeight++;
                      sibling.Color = RedBlackColor.Black; // The red parent can't have black children.
                                            // `sibling` becomes the child of `grandParent` or `root` after rotation. Update the link from that node.
                      ReplaceChildOrRoot(grandParent, parent, sibling);
@@ -314,6 +339,9 @@ namespace Dargon.Commons.Collections {
                      newGrandParent.Color = parent.Color;
                      parent.Color = RedBlackColor.Black;
                      current.Color = RedBlackColor.Red;
+
+                     parent.BlackHeight = Node.GetBlackHeightOfParent(current);
+                     newGrandParent.BlackHeight = Node.GetBlackHeightOfParent(parent);
 
                      ReplaceChildOrRoot(grandParent, parent, newGrandParent);
                      if (parent == match) {
@@ -355,6 +383,10 @@ namespace Dargon.Commons.Collections {
          public Node Left, Right;
          public T Value;
          public RedBlackColor Color;
+
+         // The black height of a black leaf is 0.
+         // The black height of the root of a 2-node tree of black nodes is 1.
+         public int BlackHeight;
 
          public Node(T value, RedBlackColor color) {
             Value = value;
@@ -415,20 +447,31 @@ namespace Dargon.Commons.Collections {
             }
          }
 
+         private const bool kEnableDebugPrint = false;
+
          /// <summary>
          /// Does a left rotation on this tree, making this node the new left child of the current right child.
          /// </summary>
          public Node RotateLeft() {
+            if (kEnableDebugPrint) Console.WriteLine("rotL");
+
             Node child = Right!;
             Right = child.Left;
             child.Left = this;
+
             return child;
+         }
+
+         public static int GetBlackHeightOfParent(Node n) {
+            if (n == null) return 0;
+            return n.BlackHeight + (n.IsBlack ? 1 : 0);
          }
 
          /// <summary>
          /// Does a left-right rotation on this tree. The left child is rotated left, then this node is rotated right.
          /// </summary>
          public Node RotateLeftRight() {
+            if (kEnableDebugPrint) Console.WriteLine("rotLR");
             Node child = Left!;
             Node grandChild = child.Right!;
 
@@ -436,6 +479,7 @@ namespace Dargon.Commons.Collections {
             grandChild.Right = this;
             child.Right = grandChild.Left;
             grandChild.Left = child;
+
             return grandChild;
          }
 
@@ -443,9 +487,11 @@ namespace Dargon.Commons.Collections {
          /// Does a right rotation on this tree, making this node the new right child of the current left child.
          /// </summary>
          public Node RotateRight() {
+            if (kEnableDebugPrint) Console.WriteLine("rotR");
             Node child = Left!;
             Left = child.Right;
             child.Right = this;
+
             return child;
          }
 
@@ -453,6 +499,7 @@ namespace Dargon.Commons.Collections {
          /// Does a right-left rotation on this tree. The right child is rotated right, then this node is rotated left.
          /// </summary>
          public Node RotateRightLeft() {
+            if (kEnableDebugPrint) Console.WriteLine("rotRL");
             Node child = Right!;
             Node grandChild = child.Left!;
 
@@ -460,6 +507,7 @@ namespace Dargon.Commons.Collections {
             grandChild.Left = this;
             child.Left = grandChild.Right;
             grandChild.Right = child;
+
             return grandChild;
          }
 
@@ -484,6 +532,13 @@ namespace Dargon.Commons.Collections {
             return node == Left ? Right! : Left!;
          }
 
+         public void Split4Node() {
+            Color = RedBlackColor.Red;
+            BlackHeight++;
+            Left.Color = RedBlackColor.Black;
+            Right.Color = RedBlackColor.Black;
+         }
+
          /// <summary>
          /// Combines two 2-nodes into a 4-node.
          /// </summary>
@@ -493,6 +548,7 @@ namespace Dargon.Commons.Collections {
             Debug.Assert(Right!.Is2Node);
 
             Color = RedBlackColor.Black;
+            BlackHeight--;
             Left.Color = RedBlackColor.Red;
             Right.Color = RedBlackColor.Red;
          }
