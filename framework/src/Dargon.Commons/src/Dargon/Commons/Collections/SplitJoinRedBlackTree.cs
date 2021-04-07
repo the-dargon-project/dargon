@@ -19,8 +19,9 @@ namespace Dargon.Commons.Collections {
    /// <typeparam name="T"></typeparam>
    /// <typeparam name="TComparer"></typeparam>
    public class SplitJoinRedBlackTree<T, TComparer> where TComparer : struct, IComparer<T> {
+      public const int COUNT_UNKNOWN = -133337;
       private const bool kEnableDebugPrintSplitJoin = false;
-      
+
       private readonly TComparer comparer;
       private Node root;
       private int count;
@@ -37,7 +38,21 @@ namespace Dargon.Commons.Collections {
          count = initialValues.Length;
       }
 
-      public int Count => count;
+      public int Count => count.AssertIsGreaterThanOrEqualTo(0);
+
+      public bool IsCountComputed => count >= 0;
+
+      public void ComputeCount() {
+         count = 0;
+         ComputeCountHelper(root);
+      }
+
+      private void ComputeCountHelper(Node n) {
+         if (n == null) return;
+         count++;
+         ComputeCountHelper(n.Left);
+         ComputeCountHelper(n.Right);
+      }
 
       private Node BuildRBTree(T[] values) {
          if (values.Length == 0) {
@@ -506,10 +521,14 @@ namespace Dargon.Commons.Collections {
             res = new Node(k, RedBlackColor.Black, left, right, Node.GetBlackHeightOfParent(left));
          }
 
-         return FixJoinRoot(res);
+         return FixRedJoinRoot(res);
       }
 
-      private static Node FixJoinRoot(Node node) {
+      private static Node FixRedJoinRoot(Node node) {
+         if (node == null) {
+            return null;
+         }
+
          if (!node.IsRed) {
             return node;
          }
@@ -540,14 +559,15 @@ namespace Dargon.Commons.Collections {
             return (false, null, null);
          } else {
             var cmp = comparer.Compare(node.Value, k);
+            // Console.WriteLine("cmp " + node.Value + " vs " + k + " " + cmp);
             if (cmp == 0) {
-               return (true, node.Left, node.Right);
+               return (true, FixRedJoinRoot(node.Left), FixRedJoinRoot(node.Right));
             } else if (cmp > 0) {
                var (b, ll, lr) = TrySplit(node.Left, k);
-               return (b, ll, JoinRB(lr, node.Value, node.Right));
+               return (b, ll, JoinRB(lr, node.Value, FixRedJoinRoot(node.Right)));
             } else {
                var (b, rl, rr) = TrySplit(node.Right, k);
-               return (b, JoinRB(node.Left, node.Value, rl), rr);
+               return (b, JoinRB(FixRedJoinRoot(node.Left), node.Value, rl), rr);
             }
          }
       }
@@ -577,14 +597,56 @@ namespace Dargon.Commons.Collections {
 
       public SplitJoinRedBlackTree<T, TComparer> DestructiveJoin(SplitJoinRedBlackTree<T, TComparer> right) {
          AssertIsNotDestroyed();
-         
+
          var res = new SplitJoinRedBlackTree<T, TComparer>(comparer) {
-            count = count + right.count,
+            count = count == COUNT_UNKNOWN || right.count == COUNT_UNKNOWN
+               ? COUNT_UNKNOWN
+               : count + right.count,
             root = Join2(root, right.root),
          };
          MarkDestroyed();
          right.MarkDestroyed();
          return res;
+      }
+      public SplitJoinRedBlackTree<T, TComparer> DestructiveJoin(T k, SplitJoinRedBlackTree<T, TComparer> right) {
+         AssertIsNotDestroyed();
+
+         var res = new SplitJoinRedBlackTree<T, TComparer>(comparer) {
+            count = count == COUNT_UNKNOWN || right.count == COUNT_UNKNOWN
+               ? COUNT_UNKNOWN
+               : count + 1 + right.count,
+            root = JoinRB(root, k, right.root),
+         };
+         MarkDestroyed();
+         right.MarkDestroyed();
+         return res;
+      }
+
+      public struct SplitResult {
+         public SplitJoinRedBlackTree<T, TComparer> Left;
+         public SplitJoinRedBlackTree<T, TComparer> Right;
+         public T Splitter;
+         public bool SplitterFound;
+      }
+
+      public SplitResult DestructiveSplit(T splitter) {
+         AssertIsNotDestroyed();
+
+         var (found, left, right) = TrySplit(root, splitter);
+         MarkDestroyed();
+
+         return new SplitResult {
+            Left = new SplitJoinRedBlackTree<T, TComparer>(comparer) {
+               count = COUNT_UNKNOWN,
+               root = left,
+            },
+            Right = new SplitJoinRedBlackTree<T, TComparer>(comparer) {
+               count = COUNT_UNKNOWN,
+               root = right,
+            },
+            Splitter = splitter,
+            SplitterFound = found,
+         };
       }
 
       private void MarkDestroyed() {
@@ -597,6 +659,11 @@ namespace Dargon.Commons.Collections {
       }
 
       public T[] ToArray() {
+         if (!IsCountComputed) {
+            // this is an O(N) operation anyway, so no biggie.
+            ComputeCount();
+         }
+
          var res = new T[count];
          var nextIndex = 0;
          ToArrayHelper(root, res, ref nextIndex);
@@ -807,7 +874,6 @@ namespace Dargon.Commons.Collections {
          }
       }
    }
-
 
    public enum RedBlackColor {
       Black,
