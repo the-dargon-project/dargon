@@ -140,6 +140,18 @@ namespace Dargon.Commons.Collections {
          return copy;
       }
 
+      public void Clear(bool zeroStore = true) {
+         if (zeroStore) {
+            // jit hint
+            this.size.AssertIsLessThanOrEqualTo(this.storage.Length);
+            for (var i = 0; i < this.size; i++) {
+               this.storage[i] = default;
+            }
+         }
+       
+         this.size = 0;
+      }
+
       public IEnumerator<TItem> GetEnumerator() {
          var clone = new PriorityQueue<TItem>(comparer);
          clone.storage = new TItem[storage.Length];

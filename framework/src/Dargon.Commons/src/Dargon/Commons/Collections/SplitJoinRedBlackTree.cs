@@ -22,21 +22,23 @@ namespace Dargon.Commons.Collections {
       public const int COUNT_UNKNOWN = -133337;
       private const bool kEnableDebugPrintSplitJoin = false;
 
-      private readonly TComparer comparer;
+      public TComparer Comparer;
       private Node root;
       private int count;
-      private bool isDestroyed = false;
+      private bool isInvalidated = false;
 
       public SplitJoinRedBlackTree(TComparer comparer) {
-         this.comparer = comparer;
+         this.Comparer = comparer;
       }
 
       public SplitJoinRedBlackTree(TComparer comparer, T[] initialValues) {
-         this.comparer = comparer;
+         this.Comparer = comparer;
 
          root = BuildRBTree(initialValues);
          count = initialValues.Length;
       }
+
+      public bool HasRoot => root != null;
 
       public int Count => count.AssertIsGreaterThanOrEqualTo(0);
 
@@ -45,6 +47,12 @@ namespace Dargon.Commons.Collections {
       public void ComputeCount() {
          count = 0;
          ComputeCountHelper(root);
+      }
+
+      public void Clear() {
+         count = 0;
+         root = null;
+         isInvalidated = false;
       }
 
       private void ComputeCountHelper(Node n) {
@@ -156,7 +164,7 @@ namespace Dargon.Commons.Collections {
 
                // BST invariant
                var expectedCmpNe = n == parentOrNull.Left ? 1 : -1; 
-               Assert.NotEquals(expectedCmpNe, Math.Sign(comparer.Compare(n.Value, parent.Value)));
+               Assert.NotEquals(expectedCmpNe, Math.Sign(Comparer.Compare(n.Value, parent.Value)));
             }
 
             if (n.Left == null && n.Right == null) {
@@ -205,7 +213,7 @@ namespace Dargon.Commons.Collections {
          int valueVsParentComparison = -1;
 
          while (current != null) {
-            valueVsCurrentComparison = comparer.Compare(value, current.Value);
+            valueVsCurrentComparison = Comparer.Compare(value, current.Value);
             if (valueVsCurrentComparison == 0) {
                break;
             }
@@ -324,8 +332,10 @@ namespace Dargon.Commons.Collections {
          }
       }
 
+      public bool AddOrThrow(T value) => TryAdd(value).AssertIsTrue();
+
       public bool TryAdd(T value) {
-         AssertIsNotDestroyed();
+         AssertIsNotInvalidated();
 
          if (root == null) {
             root = new Node(value, RedBlackColor.Black);
@@ -359,7 +369,7 @@ namespace Dargon.Commons.Collections {
       public bool Remove(T item) => DoRemove(item);
 
       internal bool DoRemove(T item) {
-         AssertIsNotDestroyed();
+         AssertIsNotInvalidated();
 
          if (root == null) {
             return false;
@@ -439,7 +449,7 @@ namespace Dargon.Commons.Collections {
             }
 
             // We don't need to compare after we find the match.
-            int order = foundMatch ? -1 : comparer.Compare(item, current.Value);
+            int order = foundMatch ? -1 : Comparer.Compare(item, current.Value);
             if (order == 0) {
                // Save the matching node.
                foundMatch = true;
@@ -558,7 +568,7 @@ namespace Dargon.Commons.Collections {
          if (node == null) {
             return (false, null, null);
          } else {
-            var cmp = comparer.Compare(node.Value, k);
+            var cmp = Comparer.Compare(node.Value, k);
             // Console.WriteLine("cmp " + node.Value + " vs " + k + " " + cmp);
             if (cmp == 0) {
                return (true, FixRedJoinRoot(node.Left), FixRedJoinRoot(node.Right));
@@ -596,29 +606,29 @@ namespace Dargon.Commons.Collections {
       }
 
       public SplitJoinRedBlackTree<T, TComparer> DestructiveJoin(SplitJoinRedBlackTree<T, TComparer> right) {
-         AssertIsNotDestroyed();
+         AssertIsNotInvalidated();
 
-         var res = new SplitJoinRedBlackTree<T, TComparer>(comparer) {
+         var res = new SplitJoinRedBlackTree<T, TComparer>(Comparer) {
             count = count == COUNT_UNKNOWN || right.count == COUNT_UNKNOWN
                ? COUNT_UNKNOWN
                : count + right.count,
             root = Join2(root, right.root),
          };
-         MarkDestroyed();
-         right.MarkDestroyed();
+         MarkInvalidated();
+         right.MarkInvalidated();
          return res;
       }
       public SplitJoinRedBlackTree<T, TComparer> DestructiveJoin(T k, SplitJoinRedBlackTree<T, TComparer> right) {
-         AssertIsNotDestroyed();
+         AssertIsNotInvalidated();
 
-         var res = new SplitJoinRedBlackTree<T, TComparer>(comparer) {
+         var res = new SplitJoinRedBlackTree<T, TComparer>(Comparer) {
             count = count == COUNT_UNKNOWN || right.count == COUNT_UNKNOWN
                ? COUNT_UNKNOWN
                : count + 1 + right.count,
             root = JoinRB(root, k, right.root),
          };
-         MarkDestroyed();
-         right.MarkDestroyed();
+         MarkInvalidated();
+         right.MarkInvalidated();
          return res;
       }
 
@@ -630,17 +640,17 @@ namespace Dargon.Commons.Collections {
       }
 
       public SplitResult DestructiveSplit(T splitter) {
-         AssertIsNotDestroyed();
+         AssertIsNotInvalidated();
 
          var (found, left, right) = TrySplit(root, splitter);
-         MarkDestroyed();
+         MarkInvalidated();
 
          return new SplitResult {
-            Left = new SplitJoinRedBlackTree<T, TComparer>(comparer) {
+            Left = new SplitJoinRedBlackTree<T, TComparer>(Comparer) {
                count = COUNT_UNKNOWN,
                root = left,
             },
-            Right = new SplitJoinRedBlackTree<T, TComparer>(comparer) {
+            Right = new SplitJoinRedBlackTree<T, TComparer>(Comparer) {
                count = COUNT_UNKNOWN,
                root = right,
             },
@@ -649,13 +659,13 @@ namespace Dargon.Commons.Collections {
          };
       }
 
-      private void MarkDestroyed() {
-         isDestroyed = true;
+      private void MarkInvalidated() {
+         isInvalidated = true;
          root = null;
       }
 
-      private void AssertIsNotDestroyed() {
-         Assert.IsFalse(isDestroyed, "Tree is destroyed (e.g. in response to a Join operation?)");
+      private void AssertIsNotInvalidated() {
+         Assert.IsFalse(isInvalidated, "Tree is invalidated (e.g. in response to a Join/Split operation). Clear before using again.");
       }
 
       public T[] ToArray() {
