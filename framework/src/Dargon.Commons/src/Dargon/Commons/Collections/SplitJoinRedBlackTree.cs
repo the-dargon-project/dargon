@@ -31,11 +31,8 @@ namespace Dargon.Commons.Collections {
          this.Comparer = comparer;
       }
 
-      public SplitJoinRedBlackTree(TComparer comparer, T[] initialValues) {
-         this.Comparer = comparer;
-
-         root = BuildRBTree(initialValues);
-         count = initialValues.Length;
+      public SplitJoinRedBlackTree(TComparer comparer, T[] initialValues, int initialValuesStartIndex = -1, int initialValuesLength = -1) : this(comparer) {
+         InsertInOrderContiguous(initialValues, initialValuesStartIndex, initialValuesLength);
       }
 
       public bool HasRoot => root != null;
@@ -62,8 +59,13 @@ namespace Dargon.Commons.Collections {
          ComputeCountHelper(n.Right);
       }
 
-      private Node BuildRBTree(T[] values) {
-         if (values.Length == 0) {
+      private Node BuildRBTree(T[] values, int startIndex, int length) {
+         startIndex.AssertIsGreaterThanOrEqualTo(0);
+         startIndex.AssertIsLessThanOrEqualTo(values.Length);
+         length.AssertIsGreaterThanOrEqualTo(0);
+         (startIndex + length).AssertIsLessThanOrEqualTo(values.Length);
+
+         if (length == 0) {
             return null;
          }
 
@@ -75,26 +77,26 @@ namespace Dargon.Commons.Collections {
          // 5 nodes -> 2 // bottom row is red
          // 6 nodes -> 2 // bottom row is red
          // 7 nodes -> 0 // perfect tree
-         var nPlus1 = values.Length + 1;
+         var nPlus1 = length + 1;
          var nPlus1IsPowerOf2 = (nPlus1 & (nPlus1 - 1)) == 0;
 
          var redDepth =
             nPlus1IsPowerOf2
                ? -1
-               : (int)Math.Floor(Math.Log2(values.Length) + 1E-5 /* Epsilon maybe unnecessary */);
-         
-         return BuildRBTree(values, 0, values.Length - 1, 0, redDepth);
+               : (int)Math.Floor(Math.Log2(length) + 1E-5 /* Epsilon maybe unnecessary */);
+
+         return BuildRBTree(values, startIndex, startIndex + length - 1, 0, redDepth);
       }
 
       private Node BuildRBTree(T[] values, int lo, int hi, int depth, int redDepth) {
          if (lo > hi) {
             return null;
          }
-         
+
          var mid = (lo + hi) / 2;
          var left = BuildRBTree(values, lo, mid - 1, depth + 1, redDepth);
          var right = BuildRBTree(values, mid + 1, hi, depth + 1, redDepth);
-         
+
          return new Node(
             values[mid],
             depth == redDepth ? RedBlackColor.Red : RedBlackColor.Black,
@@ -163,7 +165,7 @@ namespace Dargon.Commons.Collections {
                Assert.IsFalse(n.IsRed && parent.IsRed);
 
                // BST invariant
-               var expectedCmpNe = n == parentOrNull.Left ? 1 : -1; 
+               var expectedCmpNe = n == parentOrNull.Left ? 1 : -1;
                Assert.NotEquals(expectedCmpNe, Math.Sign(Comparer.Compare(n.Value, parent.Value)));
             }
 
@@ -412,7 +414,7 @@ namespace Dargon.Commons.Collections {
                      parent.Color = RedBlackColor.Red;
                      // parent.BlackHeight++;
                      sibling.Color = RedBlackColor.Black; // The red parent can't have black children.
-                                           // `sibling` becomes the child of `grandParent` or `root` after rotation. Update the link from that node.
+                     // `sibling` becomes the child of `grandParent` or `root` after rotation. Update the link from that node.
                      ReplaceChildOrRoot(grandParent, parent, sibling);
                      // `sibling` will become the grandparent of `current`.
                      grandParent = sibling;
@@ -443,6 +445,7 @@ namespace Dargon.Commons.Collections {
                      if (parent == match) {
                         parentOfMatch = newGrandParent;
                      }
+
                      grandParent = newGrandParent;
                   }
                }
@@ -472,6 +475,7 @@ namespace Dargon.Commons.Collections {
          if (root != null) {
             root.Color = RedBlackColor.Black;
          }
+
          return foundMatch;
       }
 
@@ -510,7 +514,7 @@ namespace Dargon.Commons.Collections {
          tprime.Left = JoinLeftRB(left, k, right.Left);
          if (tprime.Color == RedBlackColor.Black && Node.IsNonNullRed(tprime.Left) && Node.IsNonNullRed(tprime.Left.Left)) {
             tprime.Left.Left.Color = RedBlackColor.Black;
-            
+
             var res = tprime.RotateRight();
             res.BlackHeight = Node.GetBlackHeightOfParent(res.Right);
             return res;
@@ -545,7 +549,7 @@ namespace Dargon.Commons.Collections {
 
          var leftHeight = Node.GetBlackHeight(node.Left);
          var rightHeight = Node.GetBlackHeight(node.Right);
-         
+
          if (leftHeight == rightHeight) {
             node.Color = RedBlackColor.Black;
             return node;
@@ -597,6 +601,16 @@ namespace Dargon.Commons.Collections {
          }
       }
 
+      private (Node, T) SplitFirst(Node node) {
+         if (node.Left == null) {
+            return (node.Right, node.Value);
+         } else {
+            var (tprime, kprime) = SplitFirst(node.Left);
+            var splitTree = JoinRB(tprime, node.Value, node.Right);
+            return (splitTree, kprime);
+         }
+      }
+
       private Node Join2(Node tl, Node tr) {
          if (tl == null) return tr;
          if (tr == null) return tl;
@@ -618,6 +632,7 @@ namespace Dargon.Commons.Collections {
          right.MarkInvalidated();
          return res;
       }
+
       public SplitJoinRedBlackTree<T, TComparer> DestructiveJoin(T k, SplitJoinRedBlackTree<T, TComparer> right) {
          AssertIsNotInvalidated();
 
@@ -689,6 +704,7 @@ namespace Dargon.Commons.Collections {
       }
 
       public class Node {
+         public Node Parent;
          public Node Left, Right;
          public T Value;
          public RedBlackColor Color;
@@ -709,6 +725,9 @@ namespace Dargon.Commons.Collections {
             Left = left;
             Right = right;
             BlackHeight = blackHeight;
+
+            Left.Parent = this;
+            Right.Parent = this;
          }
 
          public bool IsRed => Color == RedBlackColor.Red;
@@ -737,10 +756,9 @@ namespace Dargon.Commons.Collections {
 #endif
 
             bool currentIsLeftChild = Left == current;
-            return IsNonNullRed(sibling.Left) ?
-               (currentIsLeftChild ? TreeRotation.RightLeft : TreeRotation.Right) :
-               (currentIsLeftChild ? TreeRotation.Left : TreeRotation.LeftRight);
+            return IsNonNullRed(sibling.Left) ? (currentIsLeftChild ? TreeRotation.RightLeft : TreeRotation.Right) : (currentIsLeftChild ? TreeRotation.Left : TreeRotation.LeftRight);
          }
+
          /// <summary>
          /// Does a rotation on this tree. May change the color of a grandchild from red to black.
          /// </summary>
@@ -883,16 +901,51 @@ namespace Dargon.Commons.Collections {
             return (Left, (Value, Color), Right);
          }
       }
-   }
 
-   public enum RedBlackColor {
-      Black,
-      Red,
-   }
-   public enum TreeRotation : byte {
-      Left,
-      LeftRight,
-      Right,
-      RightLeft
+      public void InsertInOrderContiguous(T[] values) {
+         InsertInOrderContiguous(values, 0, values.Length);
+      }
+
+      public void InsertInOrderContiguous(T[] values, int index, int length) {
+         if (length == 0) {
+            return;
+         } else if (length == 1) {
+            // note for length >= 2, we can't simulate this invoke with tryadd
+            // in the case where inserted values are equal according to cmp
+            TryAdd(values[index]);
+            return;
+         }
+
+         if (count == 0) {
+            root = BuildRBTree(values, index, length);
+            count = values.Length;
+            return;
+         }
+         
+         var (v0Found, left, temp) = TrySplit(root, values[index]);
+         var (vfFound, center, right) = TrySplit(temp, values[index + length - 1]);
+
+         if (center != null) {
+            throw new InvalidOperationException("The inserted sequence would not have been in-order contiguous.");
+         }
+
+         // centerTree = BuildRBTree(values, index + 1, length - 2);
+
+         // var leftCenterJoin = JoinRB(leftTree, values[index], centerTree);
+         // root = JoinRB(leftCenterJoin, values[index + length - 1], rightTree);
+         // count += length - (v0Found ? 1 : 0) - (vfFound ? 1 : 0);
+      }
+
+      public enum RedBlackColor {
+         Black,
+         Red,
+      }
+
+      public enum TreeRotation : byte {
+         Left,
+         LeftRight,
+         Right,
+         RightLeft
+      }
    }
 }
