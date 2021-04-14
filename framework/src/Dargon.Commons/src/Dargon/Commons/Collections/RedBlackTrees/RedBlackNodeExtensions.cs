@@ -33,9 +33,11 @@ namespace Dargon.Commons.Collections {
       public static void ReplaceChild<T>(this RedBlackNode<T> node, RedBlackNode<T> child, RedBlackNode<T> newChild) {
          if (node.Left == child) {
             node.Left = newChild;
+            if (newChild != null) newChild.Parent = node;
          } else {
             Debug.Assert(node.Right == child);
             node.Right = newChild;
+            if (newChild != null) newChild.Parent = node;
          }
       }
 

@@ -6,7 +6,12 @@ using System.Threading.Tasks;
 
 namespace Dargon.Commons.Collections.RedBlackTrees {
    public partial class RedBlackNodeCollectionOperations<T, TComparer> where TComparer : struct, IComparer<T> {
-      public void VerifyInvariants(RedBlackNode<T> root) {
+      /// <summary>
+      /// Disables runtime checks on invariants that should always pass
+      /// </summary>
+      private const bool kEnableDebugVerifyInvariants = false;
+
+      public void VerifyInvariants(RedBlackNode<T> initialNode, bool assertTreeRootInvariants = true) {
          // Invariants:
          // (1) Each node is either red or black. - A given with our implementation
          // (2) All NIL leaves(figure 1) are considered black (Implicit NIL leaves with our implementation - nothing to compute)
@@ -15,13 +20,15 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          // 
          // Additionally (for join/split support):
          // (5) Every node tracks its black height, the number of black nodes to its leaves
-         if (root == null) return;
+         if (initialNode == null) return;
 
-         root.Color.AssertEquals(RedBlackColor.Black);
+         if (assertTreeRootInvariants) {
+            initialNode.Color.AssertEquals(RedBlackColor.Black);
+         }
 
          // rootToNode<T>Blacks: number of black nodes in [root, ..., node]
          var q = new Queue<(RedBlackNode<T> n, int rootToNodeBlacks, RedBlackNode<T> parent)>();
-         q.Enqueue((root, root.IsBlack ? 1 : 0, null));
+         q.Enqueue((initialNode, initialNode.IsBlack ? 1 : 0, null));
 
          var leaves = new List<RedBlackNode<T>>();
          var nodeToRootToNodeBlacks = new Dictionary<RedBlackNode<T>, int>();
@@ -30,14 +37,18 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             var (n, rootToNodeBlacks, parentOrNull) = q.Dequeue();
             nodeToRootToNodeBlacks[n] = rootToNodeBlacks;
 
-            // If a node is red, then both its children are black.
-            // (alternatively, no red node has a red parent)
-            if (parentOrNull is { } parent) {
-               Assert.IsFalse(n.IsRed && parent.IsRed);
+            if (assertTreeRootInvariants || n != initialNode) {
+               Assert.Equals(parentOrNull, n.Parent);
 
-               // BST invariant
-               var expectedCmpNe = n == parentOrNull.Left ? 1 : -1;
-               Assert.NotEquals(expectedCmpNe, Math.Sign(comparer.Compare(n.Value, parent.Value)));
+               if (parentOrNull is { } parent) {
+                  // If a node is red, then both its children are black.
+                  // (alternatively, no red node has a red parent)
+                  Assert.IsFalse(n.IsRed && parent.IsRed);
+
+                  // BST invariant
+                  var expectedCmpNe = n == parentOrNull.Left ? 1 : -1;
+                  Assert.NotEquals(expectedCmpNe, Math.Sign(comparer.Compare(n.Value, parent.Value)));
+               }
             }
 
             if (n.Left == null && n.Right == null) {
@@ -62,6 +73,16 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             var actualBlackHeight = rootToLeafBlackCount - rootToNodeBlacks + 1;
             Assert.Equals(node.BlackHeight, actualBlackHeight);
          }
+      }
+
+      private void DebugVerifyRootInvariants(RedBlackNode<T> root) {
+         if (!kEnableDebugVerifyInvariants) return;
+         VerifyInvariants(root, true);
+      }
+
+      private void DebugVerifyInternalNodeInvariants(RedBlackNode<T> node) {
+         if (!kEnableDebugVerifyInvariants) return;
+         VerifyInvariants(node, false);
       }
    }
 }

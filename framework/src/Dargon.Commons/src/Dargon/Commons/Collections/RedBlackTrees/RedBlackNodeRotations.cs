@@ -58,6 +58,10 @@ namespace Dargon.Commons.Collections {
          node.Right = child.Left;
          child.Left = node;
 
+         // update parent link
+         node.Parent = child;
+         if (node.Right != null) node.Right.Parent = node;
+
          return child;
       }
 
@@ -74,6 +78,12 @@ namespace Dargon.Commons.Collections {
          child.Right = grandChild.Left;
          grandChild.Left = child;
 
+         // update parent links
+         if (node.Left != null) node.Left.Parent = node;
+         node.Parent = grandChild;
+         if (child.Right != null) child.Right.Parent = child;
+         child.Parent = grandChild;
+
          return grandChild;
       }
 
@@ -85,6 +95,10 @@ namespace Dargon.Commons.Collections {
          RedBlackNode<T> child = node.Left!;
          node.Left = child.Right;
          child.Right = node;
+
+         // update parent link
+         node.Parent = child;
+         if (node.Left != null) node.Left.Parent = node;
 
          return child;
       }
@@ -101,6 +115,12 @@ namespace Dargon.Commons.Collections {
          grandChild.Left = node;
          child.Left = grandChild.Right;
          grandChild.Right = child;
+
+         // update parent links
+         if (node.Right != null) node.Right.Parent = node;
+         node.Parent = grandChild;
+         if (child.Left != null) child.Left.Parent = child;
+         child.Parent = grandChild;
 
          return grandChild;
       }

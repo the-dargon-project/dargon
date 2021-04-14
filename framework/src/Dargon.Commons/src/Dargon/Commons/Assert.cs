@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using Dargon.Commons.Comparers;
+using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons {
    public static class Assert {
+      [ThreadStatic] private static int assertionOutputSuppressionCounter;
+
       public static void IsTrue(bool val, string message = null) {
          if (!val) {
             Fail(message ?? "(Value not true)");
@@ -127,10 +131,12 @@ namespace Dargon.Commons {
             Debugger.Break();
          }
 
-         Console.Out.Flush();
-         Console.Error.WriteLine("Assertion Failure: " + message);
-         Console.Error.WriteLine(Environment.StackTrace);
-         Console.Error.Flush();
+         if (assertionOutputSuppressionCounter == 0) {
+            Console.Out.Flush();
+            Console.Error.WriteLine("Assertion Failure: " + message);
+            Console.Error.WriteLine(Environment.StackTrace);
+            Console.Error.Flush();
+         }
 
          // asserts crash test runner, as opposed to failing test.
          if (!isRunningInTest && Debugger.IsAttached) {
@@ -155,6 +161,23 @@ namespace Dargon.Commons {
 
       private class AssertionFailureException : Exception {
          public AssertionFailureException(string message) : base(message) { }
+      }
+
+      public static ThreadOutputSuppressionSession OpenThreadOutputSuppressionBlock() {
+         assertionOutputSuppressionCounter++;
+         return new ThreadOutputSuppressionSession();
+      }
+
+      public class ThreadOutputSuppressionSession : IDisposable {
+         public void Dispose() {
+            assertionOutputSuppressionCounter--;
+            GC.SuppressFinalize(this);
+         }
+
+         ~ThreadOutputSuppressionSession() {
+            assertionOutputSuppressionCounter--;
+            throw new InvalidStateException($"{nameof(ThreadOutputSuppressionSession)} finalizer invoked - did dispose get called?");
+         }
       }
    }
 }

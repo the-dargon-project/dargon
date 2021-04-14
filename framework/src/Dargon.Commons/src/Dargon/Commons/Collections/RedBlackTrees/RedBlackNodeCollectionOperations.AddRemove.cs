@@ -2,17 +2,31 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Dargon.Commons.Collections.RedBlackTrees {
    public partial class RedBlackNodeCollectionOperations<T, TComparer> where TComparer : struct, IComparer<T> {
+      public struct ConstComparerPositive : IComparer<T> {
+         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+         public int Compare(T x, T y) => 1;
+      }
+
+      public struct ConstComparerNegative : IComparer<T> {
+         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+         public int Compare(T x, T y) => -1;
+      }
+
       /// <summary>
       /// Terminates either with:
       /// 1. Current is nonnull, Match = True
       /// 2. Current is null, Parent is where we'd do an insert.
+      ///
+      /// Comparer returning -1 descends left, 1 descends right.
       /// </summary>
-      private RedBlackNodeSearchResult<T> Search(RedBlackNode<T> root, T value, bool split4Nodes) {
+      private RedBlackNodeSearchResult<T> Search<TCmp2>(RedBlackNode<T> root, T value, bool split4Nodes, in TCmp2 cmp)
+         where TCmp2 : struct, IComparer<T> {
          RedBlackNode<T> current = root,
             parent = null,
             grandparent = null,
@@ -22,7 +36,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          int valueVsParentComparison = -1;
 
          while (current != null) {
-            valueVsCurrentComparison = comparer.Compare(value, current.Value);
+            valueVsCurrentComparison = cmp.Compare(value, current.Value);
             if (valueVsCurrentComparison == 0) {
                break;
             }
@@ -96,6 +110,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             parent.ReplaceChild(child, newChild);
          } else {
             root = newChild;
+            if (root != null) root.Parent = null;
          }
       }
 
@@ -121,10 +136,13 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             if (parentOfSuccessor != match) {
                // Detach the successor from its parent and set its right child.
                parentOfSuccessor.Left = successor.Right;
+               if (parentOfSuccessor.Left != null) parentOfSuccessor.Left.Parent = parentOfSuccessor;
                successor.Right = match.Right;
+               if (successor.Right != null) successor.Right.Parent = successor;
             }
 
             successor.Left = match.Left;
+            if (successor.Left != null) successor.Left.Parent = successor;
          }
 
          if (successor != null) {
@@ -148,7 +166,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             return (true, root, root);
          }
 
-         var search = Search(root, value, true);
+         var search = Search(root, value, true, in comparer);
          root = search.NewRoot;
 
          if (search.Match) {
@@ -160,8 +178,10 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          var parent = search.Parent;
          if (search.ValueVsParentComparison > 0) {
             parent.Right = node;
+            node.Parent = parent;
          } else {
             parent.Left = node;
+            node.Parent = parent;
          }
 
          if (parent.IsRed) {
@@ -170,6 +190,78 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
 
          root.Color = RedBlackColor.Black;
          return (true, root, node);
+      }
+
+      public (RedBlackNode<T> NewRoot, RedBlackNode<T> Node) AddLeft(RedBlackNode<T> root, T value) {
+         var node = new RedBlackNode<T>(value, RedBlackColor.Black);
+         return (AddLeft(root, node), node);
+      }
+
+      public RedBlackNode<T> AddLeft(RedBlackNode<T> root, RedBlackNode<T> valueNode) {
+         valueNode.Left.AssertIsNull();
+         valueNode.Right.AssertIsNull();
+         valueNode.Parent.AssertIsNull();
+         valueNode.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent<T>(null));
+
+         if (root == null) {
+            valueNode.Color = RedBlackColor.Black;
+            return valueNode;
+         }
+
+         var cmp = new ConstComparerNegative();
+         var search = Search(root, valueNode.Value, true, in cmp);
+         root = search.NewRoot;
+         Assert.IsFalse(search.Match);
+
+         var node = valueNode;
+         node.Color = RedBlackColor.Red;
+
+         var parent = search.Parent;
+         parent.Left = node;
+         node.Parent = parent;
+
+         if (parent.IsRed) {
+            InsertionBalance(node, ref parent, search.Grandparent, search.GreatGrandParent, ref root);
+         }
+
+         root.Color = RedBlackColor.Black;
+         return root;
+      }
+
+      public (RedBlackNode<T> NewRoot, RedBlackNode<T> Node) AddRight(RedBlackNode<T> root, T value) {
+         var node = new RedBlackNode<T>(value, RedBlackColor.Black);
+         return (AddRight(root, node), node);
+      }
+
+      public RedBlackNode<T> AddRight(RedBlackNode<T> root, RedBlackNode<T> valueNode) {
+         valueNode.Left.AssertIsNull();
+         valueNode.Right.AssertIsNull();
+         valueNode.Parent.AssertIsNull();
+         valueNode.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent<T>(null));
+
+         if (root == null) {
+            valueNode.Color = RedBlackColor.Black;
+            return valueNode;
+         }
+
+         var cmp = new ConstComparerPositive();
+         var search = Search(root, valueNode.Value, true, in cmp);
+         root = search.NewRoot;
+         Assert.IsFalse(search.Match);
+
+         var node = valueNode;
+         valueNode.Color = RedBlackColor.Red;
+
+         var parent = search.Parent;
+         parent.Right = node;
+         node.Parent = parent;
+
+         if (parent.IsRed) {
+            InsertionBalance(node, ref parent, search.Grandparent, search.GreatGrandParent, ref root);
+         }
+
+         root.Color = RedBlackColor.Black;
+         return root;
       }
 
 
