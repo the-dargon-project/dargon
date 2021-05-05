@@ -12,7 +12,7 @@ namespace Dargon.Commons.Collections {
       public static TreeRotation GetRotation<T>(this RedBlackNode<T> node, RedBlackNode<T> current, RedBlackNode<T> sibling) {
          Debug.Assert(sibling.Left.IsNonNullRed() || sibling.Right.IsNonNullRed());
 #if DEBUG
-                Debug.Assert(HasChildren(current, sibling));
+         Debug.Assert((node.Left == current && node.Right == sibling) || (node.Left == sibling && node.Right == current));
 #endif
 
          bool currentIsLeftChild = node.Left == current;

@@ -4,8 +4,10 @@ namespace Dargon.Commons.Collections {
    public class RedBlackNode<T> {
       public RedBlackNode<T> Parent;
       public RedBlackNode<T> Left, Right;
-      public readonly T Value;
+      public T Value;
       public RedBlackColor Color;
+
+      public ref T Data => ref Value;
 
       // The black height of a black leaf is 0.
       // The black height of the root of a 2-node tree of black nodes is 1.
@@ -31,5 +33,28 @@ namespace Dargon.Commons.Collections {
       public bool IsRed => Color == RedBlackColor.Red;
       public bool IsBlack => Color == RedBlackColor.Black;
       public bool IsLeaf => Left == null && Right == null;
+
+      public RedBlackNode<T> Singleify(RedBlackColor color) {
+         Parent = null;
+         Left = null;
+         Right = null;
+         Color = color;
+         BlackHeight = BlackHeightUtils.ComputeForParent<T>(null);
+         return this;
+      }
+
+      public void SetLeftElseRightChild(bool leftElseRight, RedBlackNode<T> replacement) {
+         if (replacement != null) replacement.Parent = this;
+
+         if (leftElseRight) {
+            Left = replacement;
+         } else {
+            Right = replacement;
+         }
+      }
+   }
+
+   public static class RedBlackNode {
+      public static RedBlackNode<T> CreateForInsertion<T>(T val) => new(val, default);
    }
 }

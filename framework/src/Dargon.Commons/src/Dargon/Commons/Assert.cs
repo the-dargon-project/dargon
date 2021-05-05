@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Dargon.Commons.Comparers;
@@ -7,6 +8,7 @@ using Dargon.Commons.Exceptions;
 namespace Dargon.Commons {
    public static class Assert {
       [ThreadStatic] private static int assertionOutputSuppressionCounter;
+      [ThreadStatic] private static int assertionBreakpointSuppressionCounter;
 
       public static void IsTrue(bool val, string message = null) {
          if (!val) {
@@ -33,13 +35,13 @@ namespace Dargon.Commons {
       }
 
       public static void Equals<T>(T expected, T actual) {
-         if (!Object.Equals(expected, actual)) {
+         if (!EqualityComparer<T>.Default.Equals(expected, actual)) {
             Fail($"AssertEquals failed. Expected: {expected}, Actual: {actual}");
          }
       }
 
       public static void NotEquals<T>(T val, T actual) {
-         if (Object.Equals(val, actual)) {
+         if (EqualityComparer<T>.Default.Equals(val, actual)) {
             Fail($"AssertNotEquals failed. Val: {val}, Actual: {actual}");
          }
       }
@@ -125,7 +127,7 @@ namespace Dargon.Commons {
          var isRunningInTest = AppDomain.CurrentDomain.GetAssemblies()
                                         .Any(a => testAssemblyNames.Any(a.FullName.Contains));
 
-         if (!isRunningInTest && Debugger.IsAttached) {
+         if (assertionBreakpointSuppressionCounter == 0 && !isRunningInTest && Debugger.IsAttached) {
             // undefined behavior in test runner (e.g. some test runners/profilers actually
             // attach a debugger)
             Debugger.Break();
@@ -139,7 +141,7 @@ namespace Dargon.Commons {
          }
 
          // asserts crash test runner, as opposed to failing test.
-         if (!isRunningInTest && Debugger.IsAttached) {
+         if (assertionBreakpointSuppressionCounter == 0 && !isRunningInTest && Debugger.IsAttached) {
 #if DEBUG
             Debug.Assert(false, message);
 #elif TRACE
@@ -163,20 +165,35 @@ namespace Dargon.Commons {
          public AssertionFailureException(string message) : base(message) { }
       }
 
-      public static ThreadOutputSuppressionSession OpenThreadOutputSuppressionBlock() {
-         assertionOutputSuppressionCounter++;
-         return new ThreadOutputSuppressionSession();
+      public static ThreadAssertionFailureSuppressionSession OpenFailureLogAndBreakpointSuppressionBlock(bool suppressLog = true, bool suppressBreakpoint = true) {
+         return new ThreadAssertionFailureSuppressionSession(suppressLog, suppressBreakpoint);
       }
 
-      public class ThreadOutputSuppressionSession : IDisposable {
+      public class ThreadAssertionFailureSuppressionSession : IDisposable {
+         private readonly bool suppressLog;
+         private readonly bool suppressBreakpoint;
+
+         public ThreadAssertionFailureSuppressionSession(bool suppressLog, bool suppressBreakpoint) {
+            this.suppressLog = suppressLog;
+            this.suppressBreakpoint = suppressBreakpoint;
+
+            if (suppressLog) assertionOutputSuppressionCounter++;
+            if (suppressBreakpoint) assertionBreakpointSuppressionCounter++;
+         }
+
          public void Dispose() {
-            assertionOutputSuppressionCounter--;
+            CleanupInternal();
             GC.SuppressFinalize(this);
          }
 
-         ~ThreadOutputSuppressionSession() {
-            assertionOutputSuppressionCounter--;
-            throw new InvalidStateException($"{nameof(ThreadOutputSuppressionSession)} finalizer invoked - did dispose get called?");
+         ~ThreadAssertionFailureSuppressionSession() {
+            CleanupInternal();
+            throw new InvalidStateException($"{nameof(ThreadAssertionFailureSuppressionSession)} finalizer invoked - did dispose get called?");
+         }
+
+         private void CleanupInternal() {
+            if (suppressLog) assertionOutputSuppressionCounter--;
+            if (suppressBreakpoint) assertionBreakpointSuppressionCounter--;
          }
       }
    }

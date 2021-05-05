@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Dargon.Commons.Collections.RedBlackTrees {
-   public partial class RedBlackNodeCollectionOperations<T, TComparer> where TComparer : struct, IComparer<T> {
+   public partial class RedBlackNodeCollectionOperations<T> {
       /// <summary>
       /// Join R into L, inserting value M, where Values(L) &lt; value(M) &lt; Values(R).
       /// Do this by walking down the right spine of L.
@@ -34,12 +34,24 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             current = current.Right;
          }
 
+         return MergeRightTree(parent, grandparent, greatGrandparent, root, mid, right);
+      }
+
+      private RedBlackNode<T> MergeRightTree(
+         RedBlackNode<T> parent, 
+         RedBlackNode<T> grandparent, 
+         RedBlackNode<T> greatGrandparent, 
+         RedBlackNode<T> root, 
+         RedBlackNode<T> mid, 
+         RedBlackNode<T> rightInsertee
+      ) {
+         // Assert.Equals(parent.Right, current);
+         var current = parent.Right;
+
          // blackHeight(current) == blackHeight(insertee)
          // parent is either a 2-node (red) or a 3-node (red with 1 black / 1 red child).
          Assert.IsFalse(parent.Is4Node());
          Assert.IsNotNull(parent);
-
-         Assert.Equals(parent.Right, current);
 
          if (parent.IsRed) {
             // parent is 2 node (red)
@@ -47,7 +59,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             mid.Color = RedBlackColor.Red;
             mid.Parent = parent;
             mid.Left = current;
-            mid.Right = insertee;
+            mid.Right = rightInsertee;
             mid.BlackHeight = parent.BlackHeight;
 
             parent.Right = mid;
@@ -64,7 +76,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
                mid.Color = RedBlackColor.Red;
                mid.Parent = parent;
                mid.Left = current;
-               mid.Right = right;
+               mid.Right = rightInsertee;
                mid.BlackHeight = parent.BlackHeight;
 
                parent.Right = mid;
@@ -112,8 +124,8 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
                mid.Left = g;
                if (g != null) g.Parent = mid;
 
-               mid.Right = insertee;
-               insertee.Parent = mid;
+               mid.Right = rightInsertee;
+               rightInsertee.Parent = mid;
 
                mid.Color = RedBlackColor.Red;
                mid.BlackHeight = c.BlackHeight;
@@ -150,18 +162,29 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             current = current.Left;
          }
 
+         return MergeLeftTree(parent, grandparent, greatGrandparent, root, mid, left);
+      }
+      private RedBlackNode<T> MergeLeftTree(
+         RedBlackNode<T> parent,
+         RedBlackNode<T> grandparent,
+         RedBlackNode<T> greatGrandparent,
+         RedBlackNode<T> root,
+         RedBlackNode<T> mid,
+         RedBlackNode<T> leftInsertee
+      ) {
+         //Assert.Equals(parent.Left, current);
+         var current = parent.Left;
+         
          // blackHeight(current) == blackHeight(insertee)
          // parent is either a 2-node (red) or a 3-node (red with 1 black / 1 red child).
          Assert.IsFalse(parent.Is4Node());
          Assert.IsNotNull(parent);
 
-         Assert.Equals(parent.Left, current);
-
          if (parent.IsRed) {
             mid.Color = RedBlackColor.Red;
             mid.Parent = parent;
             mid.Right = current;
-            mid.Left = insertee;
+            mid.Left = leftInsertee;
             mid.BlackHeight = parent.BlackHeight;
 
             parent.Left = mid;
@@ -174,7 +197,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
                mid.Color = RedBlackColor.Red;
                mid.Parent = parent;
                mid.Right = current;
-               mid.Left = left;
+               mid.Left = leftInsertee;
                mid.BlackHeight = parent.BlackHeight;
 
                parent.Left = mid;
@@ -209,8 +232,8 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
                mid.Right = g;
                if (g != null) g.Parent = mid;
 
-               mid.Left = insertee;
-               insertee.Parent = mid;
+               mid.Left = leftInsertee;
+               leftInsertee.Parent = mid;
 
                mid.Color = RedBlackColor.Red;
                mid.BlackHeight = c.BlackHeight;
@@ -298,7 +321,8 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          }
       }
 
-      public (RedBlackNode<T> Left, RedBlackNode<T> Match, RedBlackNode<T> Right) TrySplit(RedBlackNode<T> node, T k) {
+      public (RedBlackNode<T> Left, RedBlackNode<T> Match, RedBlackNode<T> Right) TrySplit<TComparer>(RedBlackNode<T> node, T k, in TComparer comparer)
+         where TComparer : struct, IComparer<T> {
          if (node == null) {
             return (null, null, null);
          } else {
@@ -309,22 +333,22 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             if (cmp == 0) {
                return (Rootify(left), Singleify(node), Rootify(right));
             } else if (cmp > 0) {
-               var (ll, match, lr) = TrySplit(left, k);
+               var (ll, match, lr) = TrySplit(left, k, in comparer);
                return (ll, match, JoinRB(lr, Singleify(node), Rootify(right)));
             } else {
-               var (rl, match, rr) = TrySplit(right, k);
+               var (rl, match, rr) = TrySplit(right, k, in comparer);
                return (JoinRB(Rootify(left), Singleify(node), rl), match, rr);
             }
          }
       }
 
       public (RedBlackNode<T> Left, RedBlackNode<T> Last) SplitLast(RedBlackNode<T> node) {
-         DebugVerifyRootInvariants(node);
+         // DebugVerifyRootInvariants(node);
          return SplitLastInternal(node);
       }
 
       private (RedBlackNode<T> Left, RedBlackNode<T> Last) SplitLastInternal(RedBlackNode<T> node) {
-         DebugVerifyInternalNodeInvariants(node);
+         // DebugVerifyInternalNodeInvariants(node);
 
          if (node.Right == null) {
             var left = node.Left;
@@ -363,12 +387,12 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
       }
 
       public (RedBlackNode<T> First, RedBlackNode<T> Right) SplitFirst(RedBlackNode<T> node) {
-         DebugVerifyRootInvariants(node);
+         // DebugVerifyRootInvariants(node);
          return SplitFirstInternal(node);
       }
 
       private (RedBlackNode<T> First, RedBlackNode<T> Right) SplitFirstInternal(RedBlackNode<T> node) {
-         DebugVerifyInternalNodeInvariants(node);
+         // DebugVerifyInternalNodeInvariants(node);
 
          if (node.Left == null) {
             var right = node.Right;
@@ -388,5 +412,10 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          var (tlprime, k) = SplitLast(tl);
          return JoinRB(tlprime, k, tr);
       }
+   }
+
+   public partial class RedBlackNodeCollectionOperations<T, TComparer> where TComparer : struct, IComparer<T> {
+      public (RedBlackNode<T> Left, RedBlackNode<T> Match, RedBlackNode<T> Right) TrySplit(RedBlackNode<T> node, T k)
+         => TrySplit(node, k, in comparer);
    }
 }

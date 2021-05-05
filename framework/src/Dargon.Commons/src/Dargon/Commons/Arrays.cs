@@ -26,5 +26,17 @@ namespace Dargon.Commons {
          }
          return result;
       }
+
+      /// <summary>
+      /// Fisher-Yates shuffle
+      /// </summary>
+      public static T[] ShuffleInPlace<T>(this T[] arr, Random rng) {
+         for (var i = arr.Length - 1; i > 0; i--) {
+            var j = rng.Next(i + 1);
+            (arr[j], arr[i]) = (arr[i], arr[j]);
+         }
+
+         return arr;
+      }
    }
 }

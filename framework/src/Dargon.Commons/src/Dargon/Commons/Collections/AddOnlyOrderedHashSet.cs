@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Dargon.Commons.Collections {
    public class AddOnlyOrderedHashSet<T> : IList<T>, IReadOnlyList<T> {
-      private readonly ExposedArrayList<T> list = new ExposedArrayList<T>();
+      private readonly ExposedArrayList<T> list;
       private readonly Dictionary<T, int> dict;
 
       public ExposedArrayList<T> List => list;
@@ -13,8 +13,15 @@ namespace Dargon.Commons.Collections {
 
       public AddOnlyOrderedHashSet() : this(EqualityComparer<T>.Default) { }
 
+      public AddOnlyOrderedHashSet(int capacity) : this(EqualityComparer<T>.Default) { }
+
       public AddOnlyOrderedHashSet(IEqualityComparer<T> equalityComparer) {
+         list = new ExposedArrayList<T>();
          dict = new Dictionary<T, int>(equalityComparer);
+      }
+      public AddOnlyOrderedHashSet(int capacity, IEqualityComparer<T> equalityComparer) {
+         list = new ExposedArrayList<T>(capacity);
+         dict = new Dictionary<T, int>(capacity, equalityComparer);
       }
 
       public void Add(T item) {
@@ -36,6 +43,10 @@ namespace Dargon.Commons.Collections {
       public bool IsReadOnly => true;
       public bool Remove(T item) => throw new InvalidOperationException();
       public int IndexOf(T item) => dict.TryGetValue(item, out var i) ? i : -1;
+
+      public bool TryGetIndexOf(T item, out int index)
+         => dict.TryGetValue(item, out index);
+
       public void Insert(int index, T item) => throw new InvalidOperationException();
       public void RemoveAt(int index) => throw new InvalidOperationException();
 
