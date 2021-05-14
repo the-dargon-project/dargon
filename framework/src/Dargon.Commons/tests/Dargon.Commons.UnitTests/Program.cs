@@ -11,6 +11,7 @@ namespace Dargon.Commons {
       public static void Main() {
          // new AsyncLocalBufferManagerTests().Run().Wait();
          // new ReflectionTests().ZeroAndDefaultReconstructTest();
+         // new RedBlackTreeCollectionOperationsTests().RedBlackTree_AddSuccessorPredecessorFT();
          new RedBlackTreeCollectionOperationsTests().RedBlackTree_AddContiguousFT();
       }
    }

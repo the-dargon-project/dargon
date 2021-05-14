@@ -159,6 +159,10 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          return newNode;
       }
 
+      public static void AddSuccessor<T>(this RedBlackNodeCollectionOperations<T> ops, ref RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode) {
+         root = ops.AddSuccessor(root, origin, value, out newNode);
+      }
+
       public static void AddSuccessor<T>(this RedBlackNodeCollectionOperations<T> ops, ref RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode) {
          root = ops.AddSuccessor(root, origin, insertedNode);
       }
@@ -167,6 +171,11 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          root = ops.AddPredecessor(root, origin, value, out var newNode);
          return newNode;
       }
+
+      public static void AddPredecessor<T>(this RedBlackNodeCollectionOperations<T> ops, ref RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode) {
+         root = ops.AddPredecessor(root, origin, value, out newNode);
+      }
+
       public static void AddPredecessor<T>(this RedBlackNodeCollectionOperations<T> ops, ref RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode) {
          root = ops.AddPredecessor(root, origin, insertedNode);
       }

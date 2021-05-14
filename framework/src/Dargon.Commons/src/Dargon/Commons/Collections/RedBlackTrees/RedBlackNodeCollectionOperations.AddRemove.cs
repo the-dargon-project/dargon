@@ -225,19 +225,19 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
       }
 
       public RedBlackNode<T> AddSuccessor(RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode) {
-         return AddPredecessorOrSuccessorInternal<MODE_SUCCESSOR>(root, origin, value, out newNode);
+         return AddPredecessorOrSuccessor<MODE_SUCCESSOR>(root, origin, value, out newNode);
       }
 
       public RedBlackNode<T> AddSuccessor(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode) {
-         return AddPredecessorOrSuccessorInternal<MODE_SUCCESSOR>(root, origin, insertedNode);
+         return AddPredecessorOrSuccessor<MODE_SUCCESSOR>(root, origin, insertedNode);
       }
 
       public RedBlackNode<T> AddPredecessor(RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode) {
-         return AddPredecessorOrSuccessorInternal<MODE_PREDECESSOR>(root, origin, value, out newNode);
+         return AddPredecessorOrSuccessor<MODE_PREDECESSOR>(root, origin, value, out newNode);
       }
 
       public RedBlackNode<T> AddPredecessor(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode) {
-         return AddPredecessorOrSuccessorInternal<MODE_PREDECESSOR>(root, origin, insertedNode);
+         return AddPredecessorOrSuccessor<MODE_PREDECESSOR>(root, origin, insertedNode);
       }
 
       public RedBlackNode<T> AddPredecessorOrSuccessor(RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode, int valueVsOriginComparison) {
@@ -258,74 +258,176 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
       private struct MODE_PREDECESSOR { }
       private struct MODE_SUCCESSOR { }
 
-      private RedBlackNode<T> AddPredecessorOrSuccessorInternal<TMode>(RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode) {
-         newNode = RedBlackNode.CreateForInsertion(value);
-         return AddPredecessorOrSuccessorInternal<TMode>(root, origin, newNode);
-      }
-
-      private RedBlackNode<T> AddPredecessorOrSuccessorInternal<TMode>(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode) {
+      private void AssertIsPredecessorOrSuccessorMode<TMode>() {
          if (typeof(TMode) != typeof(MODE_SUCCESSOR) && typeof(TMode) != typeof(MODE_PREDECESSOR)) {
             throw new ArgumentException($"Unknown TMode {typeof(TMode).FullName}");
          }
+      }
 
-         var successorModeElsePredecessor = typeof(TMode) == typeof(MODE_SUCCESSOR);
+      private RedBlackNode<T> AddPredecessorOrSuccessor<TMode>(RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode) {
+         newNode = RedBlackNode.CreateForInsertion(value);
+         return AddPredecessorOrSuccessor<TMode>(root, origin, newNode);
+      }
 
-         var current = origin;
-         var parent = origin.Parent;
-         var grandparent = parent?.Parent;
-         var greatGrandparent = grandparent?.Parent;
+      private RedBlackNode<T> AddPredecessorOrSuccessor<TMode>(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode) {
+         AssertIsPredecessorOrSuccessorMode<TMode>();
 
-         // Ensure we can properly insertion-balance below 
-         if (grandparent.IsNonNullBlack() && parent != null && parent.Is4Node()) {
-            parent.Split4Node();
-         }
-
-         var iterations = 0;
-         while (current != null) {
-            if (current.Is4Node()) {
-               current.Split4Node();
-
-               if (parent.IsNonNullRed()) {
-                  InsertionBalance(current, ref parent, grandparent, greatGrandparent, ref root);
-               }
-            }
-
-            greatGrandparent = grandparent;
-            grandparent = parent;
-            parent = current;
-            if (successorModeElsePredecessor) {
-               current = iterations == 0 ? current.Right : current.Left;
+         if (typeof(TMode) == typeof(MODE_SUCCESSOR)) {
+            if (origin.Right == null) {
+               return InsertNode(root, origin, insertedNode, Direction.Right);
             } else {
-               current = iterations == 0 ? current.Left : current.Right;
+               return InsertNode(root, GetLeftmost(origin.Right), insertedNode, Direction.Left);
+            }
+         } else {
+            if (origin.Left == null) {
+               return InsertNode(root, origin, insertedNode, Direction.Left);
+            } else {
+               return InsertNode(root, GetRightmost(origin.Left), insertedNode, Direction.Right);
+            }
+         }
+      }
+
+      private enum Direction {
+         Left,
+         Right,
+      }
+
+      private Direction FlipDirection(Direction d) => d == Direction.Left ? Direction.Right : Direction.Left;
+
+      private Direction GetDirectionFromParent(RedBlackNode<T> node) {
+#if DEBUG
+         node.Parent.AssertIsNotNull();
+         Assert.IsTrue(node.Parent.Left == node || node.Parent.Right == node);
+#endif
+         return node.Parent.Left == node ? Direction.Left : Direction.Right;
+      }
+
+      private RedBlackNode<T> GetChildOfDirection(RedBlackNode<T> node, Direction d) => d == Direction.Left ? node.Left : node.Right;
+
+
+      private RedBlackNode<T> InsertNode(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode, Direction direction) {
+         const bool kEnableDebug = false;
+
+         root.AssertIsNotNull();
+         origin.AssertIsNotNull();
+         GetChildOfDirection(origin, direction).AssertIsNull();
+         insertedNode.Parent.AssertIsNull();
+         insertedNode.Left.AssertIsNull();
+         insertedNode.Right.AssertIsNull();
+
+         var parent = origin;
+         var node = insertedNode;
+
+         node.Color = RedBlackColor.Red;
+         node.BlackHeight = BlackHeightUtils.ComputeForParent<T>(null);
+         parent.SetLeftElseRightChild(direction == Direction.Left, node);
+
+         // inserted node is red. While its parent is red, fix up the tree.
+         // var it = 0;
+         while (parent != null) {
+            // if (kEnableDebug) Console.WriteLine("ITERATION " + it);
+            // it++;
+            if (kEnableDebug) DumpToConsoleColoredWithoutTestingInOrderInvariants(root);
+
+            if (parent.IsBlack) {
+               break; // done!
             }
 
-            iterations++;
-         }
+            var grandparent = parent.Parent;
+            if (grandparent == null) {
+               parent.Color = RedBlackColor.Black;
 
-         current.AssertIsNull();
-         parent.AssertIsNotNull();
+#if DEBUG
+               parent.AssertEquals(root);
+               parent.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent(parent.Left));
+#endif
+               break;
+            }
 
-         iterations.AssertIsGreaterThanOrEqualTo(1);
+            direction = GetDirectionFromParent(parent);
+            var uncle = GetChildOfDirection(grandparent, FlipDirection(direction));
+            if (uncle.IsNullOrBlack()) {
+               if (node == GetChildOfDirection(parent, FlipDirection(direction))) {
+                  var parentReplacement = direction == Direction.Left ? parent.RotateLeft() : parent.RotateRight();
+                  ReplaceChildOrRoot(grandparent, parent, parentReplacement, ref root);
+                  parentReplacement.BlackHeight = BlackHeightUtils.ComputeForParent(parentReplacement.Left);
 
-         var node = insertedNode.Singleify(RedBlackColor.Red);
-         var appendRight = (iterations == 1) ^ !successorModeElsePredecessor; // in succ mode, append right if it == 1, else left.
-         if (appendRight) {
-            parent.Right.AssertIsNull();
-            parent.Right = node;
-            node.Parent = parent;
-         } else {
-            parent.Left.AssertIsNull();
-            parent.Left = node;
-            node.Parent = parent;
-         }
+                  if (parentReplacement.Parent != null) {
+                     parentReplacement.Parent.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent(parentReplacement));
+                  }
 
-         if (parent.IsRed) {
-            InsertionBalance(node, ref parent, grandparent, greatGrandparent, ref root);
+                  node = parent;
+                  parent = node.Parent;
+               }
+
+               RotateDirRoot(ref root, grandparent, FlipDirection(direction));
+               
+               // note here grandparent is no longer parent.parent, so parent.parent's black count is updaed later
+               parent.Color = RedBlackColor.Black;
+               grandparent.Color = RedBlackColor.Red;
+
+               // assert failed: parent.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent(parent.Left));
+               // so this line is mandatory, haven't traced what's happening
+               parent.BlackHeight = BlackHeightUtils.ComputeForParent(parent.Left);
+#if DEBUG
+               grandparent.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent(grandparent.Left));
+               if (grandparent.Parent != null) {
+                  grandparent.Parent.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent(grandparent));
+               }
+#endif
+
+               if (parent.Parent != null) {
+                  parent.Parent.BlackHeight = BlackHeightUtils.ComputeForParent(parent);
+               }
+               break;
+            }
+
+            parent.Color = RedBlackColor.Black;
+            uncle.Color = RedBlackColor.Black;
+            grandparent.Color = RedBlackColor.Red;
+
+            uncle.BlackHeight = BlackHeightUtils.ComputeForParent(uncle.Left);
+            parent.BlackHeight = BlackHeightUtils.ComputeForParent(parent.Left);
+            grandparent.BlackHeight = BlackHeightUtils.ComputeForParent(grandparent.Left);
+
+            if (grandparent.Parent != null) {
+               grandparent.Parent.BlackHeight = BlackHeightUtils.ComputeForParent(grandparent);
+            }
+
+            node = grandparent;
+            parent = node.Parent;
          }
 
          root.Color = RedBlackColor.Black;
+         root.BlackHeight = BlackHeightUtils.ComputeForParent(root.Left);
          return root;
       }
+
+      private RedBlackNode<T> RotateDirRoot(ref RedBlackNode<T> root, RedBlackNode<T> P, Direction direction) {
+         var G = P.Parent;
+         var S = GetChildOfDirection(P, FlipDirection(direction));
+         S.AssertIsNotNull();
+         var C = GetChildOfDirection(S, direction);
+         P.SetLeftElseRightChild(direction == Direction.Right, C);
+         if (C != null) C.Parent = P;
+         S.SetLeftElseRightChild(direction == Direction.Left, P);
+         P.Parent = S;
+         S.Parent = G;
+         if (G != null) {
+            G.SetLeftElseRightChild(P == G.Right ? false : true, S);
+         } else {
+            root = S;
+         }
+
+         P.BlackHeight = BlackHeightUtils.ComputeForParent(P.Left);
+         S.BlackHeight = BlackHeightUtils.ComputeForParent(S.Left);
+         if (G != null) {
+            G.BlackHeight = BlackHeightUtils.ComputeForParent(G.Left);
+         }
+
+         return S;
+      }
+
       public (RedBlackNode<T> NewRoot, RedBlackNode<T> Node) AddLeft(RedBlackNode<T> root, T value) {
          var node = new RedBlackNode<T>(value, RedBlackColor.Black);
          return (AddLeft(root, node), node);

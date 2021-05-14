@@ -161,10 +161,6 @@ namespace Dargon.Commons {
          throw new AssertionFailureException(message);
       }
 
-      private class AssertionFailureException : Exception {
-         public AssertionFailureException(string message) : base(message) { }
-      }
-
       public static ThreadAssertionFailureSuppressionSession OpenFailureLogAndBreakpointSuppressionBlock(bool suppressLog = true, bool suppressBreakpoint = true) {
          return new ThreadAssertionFailureSuppressionSession(suppressLog, suppressBreakpoint);
       }
@@ -196,5 +192,8 @@ namespace Dargon.Commons {
             if (suppressBreakpoint) assertionBreakpointSuppressionCounter--;
          }
       }
+   }
+   public class AssertionFailureException : Exception {
+      public AssertionFailureException(string message) : base(message) { }
    }
 }

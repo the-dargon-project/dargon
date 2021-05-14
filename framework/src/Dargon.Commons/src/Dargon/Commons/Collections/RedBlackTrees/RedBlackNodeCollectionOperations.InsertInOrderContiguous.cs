@@ -9,6 +9,8 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
    public partial class RedBlackNodeCollectionOperations<T> {
       public (bool Success, RedBlackNode<T> NewRoot) AddContiguous<TComparer>(RedBlackNode<T> root, T[] values, in TComparer comparer)
          where TComparer : struct, IComparer<T> {
+         const bool kEnableDebugPrint = false;
+
          if (root == null) {
             root = Treeify(values);
             return (true, root);
@@ -35,14 +37,23 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             return (true, InsertInOrderContiguousViaJoinSplit(root, values, in comparer));
          }
 
+         if (kEnableDebugPrint) Console.WriteLine("================================");
+         if (kEnableDebugPrint) DumpToConsoleColoredWithoutTestingInOrderInvariants(root);
+         if (kEnableDebugPrint) Console.WriteLine("INSERTING " + values.Join(","));
+         if (kEnableDebugPrint) DumpToConsoleColoredWithoutTestingInOrderInvariants(root);
+
+         if (kEnableDebugPrint) Console.WriteLine("INSERT " + values[0]);
          root = this.AddOrThrow(root, values[0], out var lastNode, in comparer);
+         if (kEnableDebugPrint) DumpToConsoleColoredWithoutTestingInOrderInvariants(root);
 
          for (var i = 1; i < values.Length; i++) {
             // assertion proves search is constant time. Since rebalancing is amortized O(1),
             // then for a large insertee size k, addcontiguous is 1 logN (search) + k O(1) AddSuccessors.
             lastNode.BlackHeight.AssertIsLessThanOrEqualTo(2);
 
+            if (kEnableDebugPrint) Console.WriteLine("INSERT " + values[i]);
             root = AddSuccessor(root, lastNode, values[i], out var newNode);
+            if (kEnableDebugPrint) DumpToConsoleColoredWithoutTestingInOrderInvariants(root);
             lastNode = newNode;
          }
 

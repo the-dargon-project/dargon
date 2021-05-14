@@ -1,4 +1,4 @@
-﻿// #define PFOR
+﻿#define PFOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +13,87 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
       private struct IntComparer : IComparer<int> {
          public int Compare(int x, int y) {
             return x - y;
+         }
+      }
+
+      [Fact]
+      public void RedBlackTree_AddSuccessorPredecessorFT() {
+         var configs = new List<(int niters, int numInitialNodesMax, int cubeRootNumAdds)> {
+            (1000, 10, 10),
+            (1000, 100, 4),
+         };
+
+         foreach (var (niters, numInitialNodesMax, cubeRootNumAdds) in configs) {
+            Console.WriteLine($"{nameof(RedBlackTree_AddSuccessorPredecessorFT)} with {niters} {numInitialNodesMax} {cubeRootNumAdds}");
+#if PFOR
+            Parallel.For(0, niters, iteration => {
+#else
+            for (var iteration = 0; iteration <= niters; iteration++) {
+               // Console.WriteLine("Iteration " + iteration);
+#endif
+               var r = new Random(iteration);
+
+               var ops = new RedBlackNodeCollectionOperations<int, IntComparer>(new IntComparer());
+               var numInitialNodes = r.Next(numInitialNodesMax) + 1;
+               var root = ops.CreateEmptyTree();
+               var nodes = new List<RedBlackNode<int>>();
+               for (var i = 0; i < numInitialNodes; i++) {
+                  ops.AddOrThrow(ref root, i * 1000000, out var node);
+                  nodes.Add(node);
+               }
+
+               ops.VerifyInvariants(root);
+
+               nodes = nodes.ToArray().ShuffleInPlace(new Random(r.Next())).ToList();
+
+               foreach (var node in nodes) {
+                  var nadds = r.Next(cubeRootNumAdds);
+                  nadds = nadds * nadds * nadds;
+
+                  if (r.Next(2) == 0) {
+                     for (var offset = -nadds; offset < 0; offset++) {
+                        var v = node.Value + offset;
+                        var n = RedBlackNode.CreateForInsertion(v);
+                        ops.AddPredecessor(ref root, node, n);
+                        n.BlackHeight.AssertIsLessThanOrEqualTo(2);
+                        // ops.VerifyInvariants(root);
+                     }
+
+                     for (var offset = nadds; offset > 0; offset--) {
+                        var v = node.Value + offset;
+                        var n = RedBlackNode.CreateForInsertion(v);
+                        ops.AddSuccessor(ref root, node, n);
+                        n.BlackHeight.AssertIsLessThanOrEqualTo(2);
+                        // ops.VerifyInvariants(root);
+                     }
+
+                     ops.VerifyInvariants(root);
+                  } else {
+                     var cur = node;
+                     for (var i = 0; i < nadds; i++) {
+                        ops.AddPredecessor(ref root, cur, cur.Value - 1, out var next);
+                        cur = next;
+                        next.BlackHeight.AssertIsLessThanOrEqualTo(2);
+                        // ops.VerifyInvariants(root);
+                     }
+
+                     cur = node;
+                     for (var i = 1; i < nadds; i++) {
+                        ops.AddSuccessor(ref root, cur, cur.Value + 1, out var next);
+                        cur = next;
+                        next.BlackHeight.AssertIsLessThanOrEqualTo(2);
+                        // ops.VerifyInvariants(root);
+                     }
+
+                     ops.VerifyInvariants(root);
+                  }
+               }
+
+#if PFOR
+            });
+#else
+            }
+#endif
          }
       }
 
