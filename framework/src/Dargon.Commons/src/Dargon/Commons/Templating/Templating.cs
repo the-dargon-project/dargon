@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,4 +22,16 @@ namespace Dargon.Commons.Templating {
 
    public class TTrue : TArg<TTrue> {}
    public class TFalse : TArg<TFalse> { }
+
+   public interface ITemplateInt64 {
+      public long Value { get; }
+   }
+
+   public struct TInt64_10_000 : ITemplateInt64 {
+      public long Value => 10000;
+   }
+
+   public struct TInt64_10_000_000_000 : ITemplateInt64 {
+      public long Value => 10_000_000_000;
+   }
 }
