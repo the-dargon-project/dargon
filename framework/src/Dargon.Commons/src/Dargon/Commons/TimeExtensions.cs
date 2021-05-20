@@ -12,6 +12,10 @@ namespace Dargon.Commons {
          return (long)(val.ToUniversalTime() - kUnixEpochUtc).TotalMilliseconds;
       }
 
+      public static double ToUnixTimeMillisD(this DateTime val) {
+         return (double)(val.ToUniversalTime() - kUnixEpochUtc).TotalMilliseconds;
+      }
+
       public static string ToHttpTimestamp(this DateTime dt) {
          DateTime utc = dt.ToUniversalTime();
          string day = utc.Day.ToString().PadLeft(2, '0');
