@@ -27,7 +27,7 @@
 
       public static T AssertNotEquals<T>(this T val, T actual) {
          Assert.NotEquals(val, actual);
-         return actual;
+         return val;
       }
 
       public static float AssertIsLessThan(this float left, float right) {
