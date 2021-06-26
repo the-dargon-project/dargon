@@ -104,6 +104,12 @@ namespace Dargon.Commons.Collections {
          return res;
       }
 
+      /// <summary>
+      /// Returns a span pointing into the internal store with the current list size.
+      /// Span reference is broken if the EAL expands (e.g. due to an insert resize)
+      /// </summary>
+      public Span<T> AsSpan() => store.AsSpan(0, size);
+
       // basically copied from bcl
       public struct Enumerator : IEnumerator<T>, IDisposable, IEnumerator {
          private ExposedArrayList<T> list;

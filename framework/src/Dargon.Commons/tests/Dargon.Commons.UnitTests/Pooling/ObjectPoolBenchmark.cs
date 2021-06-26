@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Dargon.Commons.Pooling {
    public class ObjectPoolBenchmark {
-      [Fact]
+      [Fact(Skip = "Benchmark")]
       public void Run() {
          for (var i = 0; i < 10; i++) {
             Console.WriteLine("Run " + i + ": ");

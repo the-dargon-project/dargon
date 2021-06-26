@@ -1,42 +1,71 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons.Collections.RedBlackTrees {
-   public partial class RedBlackNodeCollectionOperations<T, TComparer> where TComparer : struct, IComparer<T> {
-      public struct ConstComparerPositive : IComparer<T> {
+   public interface IBstSearchComparer<T> {
+      [Pure]
+      int CompareQueryVsValue(T value);
+   }
+
+   public partial class RedBlackNodeCollectionOperations<T> {
+      public readonly struct PositiveSearchComparer : IBstSearchComparer<T> {
          [MethodImpl(MethodImplOptions.AggressiveInlining)]
-         public int Compare(T x, T y) => 1;
+         public int CompareQueryVsValue(T value) => 1;
       }
 
-      public struct ConstComparerNegative : IComparer<T> {
+      public readonly struct NegativeSearchComparer : IBstSearchComparer<T> {
          [MethodImpl(MethodImplOptions.AggressiveInlining)]
-         public int Compare(T x, T y) => -1;
+         public int CompareQueryVsValue(T value) => -1;
       }
+
+      public readonly struct StructComparerWrappingSearchComparer<TCmp2> : IBstSearchComparer<T> where TCmp2 : struct, IComparer<T> {
+         private readonly TCmp2 comparer;
+         private readonly T query;
+
+         public StructComparerWrappingSearchComparer(TCmp2 comparer, T query) {
+            this.comparer = comparer;
+            this.query = query;
+         }
+
+         public int CompareQueryVsValue(T value) => comparer.Compare(query, value);
+      }
+
+
+      public RedBlackNodeSearchResult<T> Search<TCmp2>(RedBlackNode<T> root, T value, bool split4Nodes, in TCmp2 cmp)
+         where TCmp2 : struct, IComparer<T>
+         => Search(root, new StructComparerWrappingSearchComparer<TCmp2>(cmp, value), split4Nodes);
 
       /// <summary>
       /// Terminates either with:
       /// 1. Current is nonnull, Match = True
       /// 2. Current is null, Parent is where we'd do an insert.
-      ///
+      /// 
       /// Comparer returning -1 descends left, 1 descends right.
       /// </summary>
-      private RedBlackNodeSearchResult<T> Search<TCmp2>(RedBlackNode<T> root, T value, bool split4Nodes, in TCmp2 cmp)
-         where TCmp2 : struct, IComparer<T> {
+      /// <param name="root"></param>
+      /// <param name="value"></param>
+      /// <param name="split4Nodes"></param>
+      /// <param name="cmp">Search invokes Compare(value, node.Value)</param>
+      public RedBlackNodeSearchResult<T> Search<TSearchComparer>(RedBlackNode<T> root, in TSearchComparer cmp, bool split4Nodes)
+         where TSearchComparer : struct, IBstSearchComparer<T> {
          RedBlackNode<T> current = root,
             parent = null,
             grandparent = null,
             greatGrandparent = null;
 
-         int valueVsCurrentComparison = -1;
-         int valueVsParentComparison = -1;
+         const int UnknownComparisonResult = int.MaxValue;
+         int valueVsCurrentComparison = UnknownComparisonResult;
+         int valueVsParentComparison = UnknownComparisonResult;
 
          while (current != null) {
-            valueVsCurrentComparison = cmp.Compare(value, current.Value);
+            valueVsCurrentComparison = cmp.CompareQueryVsValue(current.Value);
             if (valueVsCurrentComparison == 0) {
                break;
             }
@@ -55,7 +84,11 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             current = valueVsCurrentComparison < 0 ? current.Left : current.Right;
 
             valueVsParentComparison = valueVsCurrentComparison;
-            valueVsCurrentComparison = -1;
+            valueVsCurrentComparison = UnknownComparisonResult;
+         }
+
+         if (current != null && valueVsCurrentComparison == UnknownComparisonResult) {
+            valueVsCurrentComparison = cmp.CompareQueryVsValue(current.Value);
          }
 
          return new RedBlackNodeSearchResult<T> {
@@ -117,7 +150,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
       /// <summary>
       /// Replaces the matching node with its successor.
       /// </summary>
-      private void ReplaceNode(RedBlackNode<T> match, RedBlackNode<T> parentOfMatch, RedBlackNode<T> successor, RedBlackNode<T> parentOfSuccessor, ref RedBlackNode<T> root) {
+      private void TryRemoveReplaceNodeHelper(RedBlackNode<T> match, RedBlackNode<T> parentOfMatch, RedBlackNode<T> successor, RedBlackNode<T> parentOfSuccessor, ref RedBlackNode<T> root) {
          Debug.Assert(match != null);
 
          if (successor == match) {
@@ -159,8 +192,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             parentOfMatch.BlackHeight = BlackHeightUtils.ComputeForParent(successor);
          }
       }
-
-      public (bool Success, RedBlackNode<T> NewRoot, RedBlackNode<T> Node) TryAdd(RedBlackNode<T> root, T value) {
+      public (bool Success, RedBlackNode<T> NewRoot, RedBlackNode<T> Node) TryAdd<TCmp2>(RedBlackNode<T> root, T value, in TCmp2 comparer) where TCmp2 : struct, IComparer<T> {
          if (root == null) {
             root = new RedBlackNode<T>(value, RedBlackColor.Black);
             return (true, root, root);
@@ -192,6 +224,210 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          return (true, root, node);
       }
 
+      public RedBlackNode<T> AddSuccessor(RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode) {
+         return AddPredecessorOrSuccessor<MODE_SUCCESSOR>(root, origin, value, out newNode);
+      }
+
+      public RedBlackNode<T> AddSuccessor(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode) {
+         return AddPredecessorOrSuccessor<MODE_SUCCESSOR>(root, origin, insertedNode);
+      }
+
+      public RedBlackNode<T> AddPredecessor(RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode) {
+         return AddPredecessorOrSuccessor<MODE_PREDECESSOR>(root, origin, value, out newNode);
+      }
+
+      public RedBlackNode<T> AddPredecessor(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode) {
+         return AddPredecessorOrSuccessor<MODE_PREDECESSOR>(root, origin, insertedNode);
+      }
+
+      public RedBlackNode<T> AddPredecessorOrSuccessor(RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode, int valueVsOriginComparison) {
+         newNode = RedBlackNode.CreateForInsertion(value);
+         return AddPredecessorOrSuccessor(root, origin, newNode, valueVsOriginComparison);
+      }
+
+      public RedBlackNode<T> AddPredecessorOrSuccessor(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode, int valueVsOriginComparison) {
+         valueVsOriginComparison.AssertNotEquals(0);
+
+         if (valueVsOriginComparison < 0) {
+            return AddPredecessor(root, origin, insertedNode);
+         } else {
+            return AddSuccessor(root, origin, insertedNode);
+         }
+      }
+
+      private struct MODE_PREDECESSOR { }
+      private struct MODE_SUCCESSOR { }
+
+      private void AssertIsPredecessorOrSuccessorMode<TMode>() {
+         if (typeof(TMode) != typeof(MODE_SUCCESSOR) && typeof(TMode) != typeof(MODE_PREDECESSOR)) {
+            throw new ArgumentException($"Unknown TMode {typeof(TMode).FullName}");
+         }
+      }
+
+      private RedBlackNode<T> AddPredecessorOrSuccessor<TMode>(RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode) {
+         newNode = RedBlackNode.CreateForInsertion(value);
+         return AddPredecessorOrSuccessor<TMode>(root, origin, newNode);
+      }
+
+      private RedBlackNode<T> AddPredecessorOrSuccessor<TMode>(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode) {
+         AssertIsPredecessorOrSuccessorMode<TMode>();
+
+         if (typeof(TMode) == typeof(MODE_SUCCESSOR)) {
+            if (origin.Right == null) {
+               return InsertNode(root, origin, insertedNode, Direction.Right);
+            } else {
+               return InsertNode(root, GetLeftmost(origin.Right), insertedNode, Direction.Left);
+            }
+         } else {
+            if (origin.Left == null) {
+               return InsertNode(root, origin, insertedNode, Direction.Left);
+            } else {
+               return InsertNode(root, GetRightmost(origin.Left), insertedNode, Direction.Right);
+            }
+         }
+      }
+
+      private enum Direction {
+         Left,
+         Right,
+      }
+
+      private Direction FlipDirection(Direction d) => d == Direction.Left ? Direction.Right : Direction.Left;
+
+      private Direction GetDirectionFromParent(RedBlackNode<T> node) {
+#if DEBUG
+         node.Parent.AssertIsNotNull();
+         Assert.IsTrue(node.Parent.Left == node || node.Parent.Right == node);
+#endif
+         return node.Parent.Left == node ? Direction.Left : Direction.Right;
+      }
+
+      private RedBlackNode<T> GetChildOfDirection(RedBlackNode<T> node, Direction d) => d == Direction.Left ? node.Left : node.Right;
+
+
+      private RedBlackNode<T> InsertNode(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode, Direction direction) {
+         const bool kEnableDebug = false;
+
+         root.AssertIsNotNull();
+         origin.AssertIsNotNull();
+         GetChildOfDirection(origin, direction).AssertIsNull();
+         insertedNode.Parent.AssertIsNull();
+         insertedNode.Left.AssertIsNull();
+         insertedNode.Right.AssertIsNull();
+
+         var parent = origin;
+         var node = insertedNode;
+
+         node.Color = RedBlackColor.Red;
+         node.BlackHeight = BlackHeightUtils.ComputeForParent<T>(null);
+         parent.SetLeftElseRightChild(direction == Direction.Left, node);
+
+         // inserted node is red. While its parent is red, fix up the tree.
+         // var it = 0;
+         while (parent != null) {
+            // if (kEnableDebug) Console.WriteLine("ITERATION " + it);
+            // it++;
+            if (kEnableDebug) DumpToConsoleColoredWithoutTestingInOrderInvariants(root);
+
+            if (parent.IsBlack) {
+               break; // done!
+            }
+
+            var grandparent = parent.Parent;
+            if (grandparent == null) {
+               parent.Color = RedBlackColor.Black;
+
+#if DEBUG
+               parent.AssertEquals(root);
+               parent.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent(parent.Left));
+#endif
+               break;
+            }
+
+            direction = GetDirectionFromParent(parent);
+            var uncle = GetChildOfDirection(grandparent, FlipDirection(direction));
+            if (uncle.IsNullOrBlack()) {
+               if (node == GetChildOfDirection(parent, FlipDirection(direction))) {
+                  var parentReplacement = direction == Direction.Left ? parent.RotateLeft() : parent.RotateRight();
+                  ReplaceChildOrRoot(grandparent, parent, parentReplacement, ref root);
+                  parentReplacement.BlackHeight = BlackHeightUtils.ComputeForParent(parentReplacement.Left);
+
+                  if (parentReplacement.Parent != null) {
+                     parentReplacement.Parent.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent(parentReplacement));
+                  }
+
+                  node = parent;
+                  parent = node.Parent;
+               }
+
+               RotateDirRoot(ref root, grandparent, FlipDirection(direction));
+               
+               // note here grandparent is no longer parent.parent, so parent.parent's black count is updaed later
+               parent.Color = RedBlackColor.Black;
+               grandparent.Color = RedBlackColor.Red;
+
+               // assert failed: parent.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent(parent.Left));
+               // so this line is mandatory, haven't traced what's happening
+               parent.BlackHeight = BlackHeightUtils.ComputeForParent(parent.Left);
+#if DEBUG
+               grandparent.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent(grandparent.Left));
+               if (grandparent.Parent != null) {
+                  grandparent.Parent.BlackHeight.AssertEquals(BlackHeightUtils.ComputeForParent(grandparent));
+               }
+#endif
+
+               if (parent.Parent != null) {
+                  parent.Parent.BlackHeight = BlackHeightUtils.ComputeForParent(parent);
+               }
+               break;
+            }
+
+            parent.Color = RedBlackColor.Black;
+            uncle.Color = RedBlackColor.Black;
+            grandparent.Color = RedBlackColor.Red;
+
+            uncle.BlackHeight = BlackHeightUtils.ComputeForParent(uncle.Left);
+            parent.BlackHeight = BlackHeightUtils.ComputeForParent(parent.Left);
+            grandparent.BlackHeight = BlackHeightUtils.ComputeForParent(grandparent.Left);
+
+            if (grandparent.Parent != null) {
+               grandparent.Parent.BlackHeight = BlackHeightUtils.ComputeForParent(grandparent);
+            }
+
+            node = grandparent;
+            parent = node.Parent;
+         }
+
+         root.Color = RedBlackColor.Black;
+         root.BlackHeight = BlackHeightUtils.ComputeForParent(root.Left);
+         return root;
+      }
+
+      private RedBlackNode<T> RotateDirRoot(ref RedBlackNode<T> root, RedBlackNode<T> P, Direction direction) {
+         var G = P.Parent;
+         var S = GetChildOfDirection(P, FlipDirection(direction));
+         S.AssertIsNotNull();
+         var C = GetChildOfDirection(S, direction);
+         P.SetLeftElseRightChild(direction == Direction.Right, C);
+         if (C != null) C.Parent = P;
+         S.SetLeftElseRightChild(direction == Direction.Left, P);
+         P.Parent = S;
+         S.Parent = G;
+         if (G != null) {
+            G.SetLeftElseRightChild(P == G.Right ? false : true, S);
+         } else {
+            root = S;
+         }
+
+         P.BlackHeight = BlackHeightUtils.ComputeForParent(P.Left);
+         S.BlackHeight = BlackHeightUtils.ComputeForParent(S.Left);
+         if (G != null) {
+            G.BlackHeight = BlackHeightUtils.ComputeForParent(G.Left);
+         }
+
+         return S;
+      }
+
       public (RedBlackNode<T> NewRoot, RedBlackNode<T> Node) AddLeft(RedBlackNode<T> root, T value) {
          var node = new RedBlackNode<T>(value, RedBlackColor.Black);
          return (AddLeft(root, node), node);
@@ -208,8 +444,8 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             return valueNode;
          }
 
-         var cmp = new ConstComparerNegative();
-         var search = Search(root, valueNode.Value, true, in cmp);
+         var cmp = new NegativeSearchComparer();
+         var search = Search(root, in cmp, true);
          root = search.NewRoot;
          Assert.IsFalse(search.Match);
 
@@ -244,8 +480,8 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             return valueNode;
          }
 
-         var cmp = new ConstComparerPositive();
-         var search = Search(root, valueNode.Value, true, in cmp);
+         var cmp = new PositiveSearchComparer();
+         var search = Search(root, in cmp, true);
          root = search.NewRoot;
          Assert.IsFalse(search.Match);
 
@@ -264,8 +500,13 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          return root;
       }
 
+      public (bool Success, RedBlackNode<T> NewRoot, RedBlackNode<T> Node) TryRemove<TComparer>(RedBlackNode<T> root, T value, in TComparer comparer) where TComparer : struct, IComparer<T> {
+         var searchComparer = new StructComparerWrappingSearchComparer<TComparer>(comparer, value);
+         return TryRemove(root, in searchComparer);
+      }
 
-      public (bool Success, RedBlackNode<T> NewRoot, RedBlackNode<T> Node) TryRemove(RedBlackNode<T> root, T item) {
+      public (bool Success, RedBlackNode<T> NewRoot, RedBlackNode<T> Node) TryRemove<TSearchComparer>(RedBlackNode<T> root, in TSearchComparer cmp)
+         where TSearchComparer : struct, IBstSearchComparer<T> {
          if (root == null) {
             return (false, root, null);
          }
@@ -345,7 +586,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             }
 
             // We don't need to compare after we find the match.
-            int order = foundMatch ? -1 : comparer.Compare(item, current.Value);
+            int order = foundMatch ? -1 : cmp.CompareQueryVsValue(current.Value);
             if (order == 0) {
                // Save the matching node.
                foundMatch = true;
@@ -361,7 +602,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
 
          // Move successor to the matching node position and replace links.
          if (match != null) {
-            ReplaceNode(match, parentOfMatch!, parent!, grandParent!, ref root);
+            TryRemoveReplaceNodeHelper(match, parentOfMatch!, parent!, grandParent!, ref root);
          }
 
          if (root != null) {
@@ -369,6 +610,40 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          }
 
          return (foundMatch, root, match);
+      }
+
+   }
+
+   public partial class RedBlackNodeCollectionOperations<T, TComparer> where TComparer : struct, IComparer<T> {
+      public struct DefaultSearchComparer : IBstSearchComparer<T> {
+         private readonly RedBlackNodeCollectionOperations<T, TComparer> ops;
+         private readonly T query;
+
+         public DefaultSearchComparer(RedBlackNodeCollectionOperations<T, TComparer> ops, T query) {
+            this.ops = ops;
+            this.query = query;
+         }
+
+         public int CompareQueryVsValue(T value) => ops.comparer.Compare(query, value);
+      }
+
+      public RedBlackNodeSearchResult<T> Search(RedBlackNode<T> root, T value, bool split4Nodes) {
+         var cmp = new DefaultSearchComparer(this, value);
+         return Search(root, in cmp, split4Nodes);
+      }
+
+      public (bool Success, RedBlackNode<T> NewRoot, RedBlackNode<T> Node) TryAdd(RedBlackNode<T> root, T value)
+         => TryAdd(root, value, in comparer);
+
+      public RedBlackNode<T> AddPredecessorOrSuccessor(RedBlackNode<T> root, RedBlackNode<T> origin, T value, out RedBlackNode<T> newNode)
+         => AddPredecessorOrSuccessor(root, origin, value, out newNode, comparer.Compare(value, origin.Value));
+
+      public RedBlackNode<T> AddPredecessorOrSuccessor(RedBlackNode<T> root, RedBlackNode<T> origin, RedBlackNode<T> insertedNode)
+         => AddPredecessorOrSuccessor(root, origin, insertedNode, comparer.Compare(insertedNode.Value, origin.Value));
+
+      public (bool Success, RedBlackNode<T> NewRoot, RedBlackNode<T> Node) TryRemove(RedBlackNode<T> root, T item) {
+         var cmp = new DefaultSearchComparer(this, item);
+         return TryRemove(root, in cmp);
       }
    }
 

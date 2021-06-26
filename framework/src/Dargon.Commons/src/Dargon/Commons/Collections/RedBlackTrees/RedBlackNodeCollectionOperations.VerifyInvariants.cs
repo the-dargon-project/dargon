@@ -5,13 +5,23 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Dargon.Commons.Collections.RedBlackTrees {
-   public partial class RedBlackNodeCollectionOperations<T, TComparer> where TComparer : struct, IComparer<T> {
+   public partial class RedBlackNodeCollectionOperations<T> {
       /// <summary>
       /// Disables runtime checks on invariants that should always pass
       /// </summary>
-      private const bool kEnableDebugVerifyInvariants = false;
+      protected const bool kEnableDebugVerifyInvariants = false;
 
-      public void VerifyInvariants(RedBlackNode<T> initialNode, bool assertTreeRootInvariants = true) {
+      [ThreadStatic] private static Queue<(RedBlackNode<T> n, int rootToNodeBlacks, RedBlackNode<T> parent)> tlsVerifyInvariantsNodeQueue;
+      [ThreadStatic] private static List<RedBlackNode<T>> tlsVerifyInvariantsLeavesList;
+      [ThreadStatic] private static Dictionary<RedBlackNode<T>, int> tlsVerifyInvariantsNodeToRootToNodeBlacks;
+
+      public void VerifyInvariantsExceptOrdering(RedBlackNode<T> initialNode, bool assertTreeRootInvariants = true) {
+         var cmp = new DummyComparer();
+         VerifyInvariants(initialNode, cmp, assertTreeRootInvariants, false);
+      }
+
+      public void VerifyInvariants<TComparer>(RedBlackNode<T> initialNode, in TComparer comparer, bool assertTreeRootInvariants = true, bool testInOrderInvariants = true)
+         where TComparer : struct, IComparer<T> {
          // Invariants:
          // (1) Each node is either red or black. - A given with our implementation
          // (2) All NIL leaves(figure 1) are considered black (Implicit NIL leaves with our implementation - nothing to compute)
@@ -27,11 +37,16 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          }
 
          // rootToNode<T>Blacks: number of black nodes in [root, ..., node]
-         var q = new Queue<(RedBlackNode<T> n, int rootToNodeBlacks, RedBlackNode<T> parent)>();
+         var q = tlsVerifyInvariantsNodeQueue ??= new Queue<(RedBlackNode<T> n, int rootToNodeBlacks, RedBlackNode<T> parent)>();
+         q.Clear();
          q.Enqueue((initialNode, initialNode.IsBlack ? 1 : 0, null));
 
-         var leaves = new List<RedBlackNode<T>>();
-         var nodeToRootToNodeBlacks = new Dictionary<RedBlackNode<T>, int>();
+         var treeSize = CountNodes(initialNode);
+         var leaves = tlsVerifyInvariantsLeavesList ??= new List<RedBlackNode<T>>(treeSize);
+         leaves.Clear();
+
+         var nodeToRootToNodeBlacks = tlsVerifyInvariantsNodeToRootToNodeBlacks ??= new Dictionary<RedBlackNode<T>, int>(treeSize);
+         nodeToRootToNodeBlacks.Clear();
 
          while (q.Count > 0) {
             var (n, rootToNodeBlacks, parentOrNull) = q.Dequeue();
@@ -46,8 +61,10 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
                   Assert.IsFalse(n.IsRed && parent.IsRed);
 
                   // BST invariant
-                  var expectedCmpNe = n == parentOrNull.Left ? 1 : -1;
-                  Assert.NotEquals(expectedCmpNe, Math.Sign(comparer.Compare(n.Value, parent.Value)));
+                  if (testInOrderInvariants) {
+                     var expectedCmpNe = n == parentOrNull.Left ? 1 : -1;
+                     Assert.NotEquals(expectedCmpNe, Math.Sign(comparer.Compare(n.Value, parent.Value)));
+                  }
                }
             }
 
@@ -57,6 +74,9 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
                if (n.Left != null) q.Enqueue((n.Left, rootToNodeBlacks + (n.Left.IsBlack ? 1 : 0), n));
                if (n.Right != null) q.Enqueue((n.Right, rootToNodeBlacks + (n.Right.IsBlack ? 1 : 0), n));
             }
+
+            Assert.Equals(n.BlackHeight, BlackHeightUtils.ComputeForParent(n.Left));
+            Assert.Equals(n.BlackHeight, BlackHeightUtils.ComputeForParent(n.Right));
          }
 
          // Every path from a given node to any of its descendant NIL leaves goes through the same number of black nodes.
@@ -73,14 +93,34 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
             var actualBlackHeight = rootToLeafBlackCount - rootToNodeBlacks + 1;
             Assert.Equals(node.BlackHeight, actualBlackHeight);
          }
+
+         tlsVerifyInvariantsNodeQueue.Clear();
+         tlsVerifyInvariantsLeavesList.Clear();
+         tlsVerifyInvariantsNodeToRootToNodeBlacks.Clear();
       }
 
-      private void DebugVerifyRootInvariants(RedBlackNode<T> root) {
+      internal void DebugVerifyRootInvariants<TComparer>(RedBlackNode<T> root, in TComparer comparer) where TComparer : struct, IComparer<T> {
+         if (!kEnableDebugVerifyInvariants) return;
+         VerifyInvariants(root, in comparer, true);
+      }
+
+      internal void DebugVerifyInternalNodeInvariants<TComparer>(RedBlackNode<T> node, in TComparer comparer) where TComparer : struct, IComparer<T> {
+         if (!kEnableDebugVerifyInvariants) return;
+         VerifyInvariants(node, in comparer, false);
+      }
+   }
+
+   public partial class RedBlackNodeCollectionOperations<T, TComparer> where TComparer : struct, IComparer<T> {
+      public void VerifyInvariants(RedBlackNode<T> initialNode, bool assertTreeRootInvariants = true) {
+         VerifyInvariants(initialNode, in comparer, assertTreeRootInvariants);
+      }
+
+      internal void DebugVerifyRootInvariants(RedBlackNode<T> root) {
          if (!kEnableDebugVerifyInvariants) return;
          VerifyInvariants(root, true);
       }
 
-      private void DebugVerifyInternalNodeInvariants(RedBlackNode<T> node) {
+      internal void DebugVerifyInternalNodeInvariants(RedBlackNode<T> node) {
          if (!kEnableDebugVerifyInvariants) return;
          VerifyInvariants(node, false);
       }

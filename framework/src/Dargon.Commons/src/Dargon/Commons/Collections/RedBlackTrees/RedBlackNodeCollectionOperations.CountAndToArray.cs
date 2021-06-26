@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Dargon.Commons.Collections.RedBlackTrees {
-   public partial class RedBlackNodeCollectionOperations<T, TComparer> where TComparer : struct, IComparer<T> {
+   public partial class RedBlackNodeCollectionOperations<T> {
       public int CountNodes(RedBlackNode<T> root) {
          return root == null ? 0 : 1 + CountNodes(root.Left) + CountNodes(root.Right);
       }
@@ -27,6 +27,25 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          ToArrayHelper(current.Left, res, ref nextIndex);
          res[nextIndex++] = current.Value;
          ToArrayHelper(current.Right, res, ref nextIndex);
+      }
+
+      public RedBlackNode<T>[] ToNodeArray(RedBlackNode<T> root) {
+         return ToNodeArray(root, CountNodes(root));
+      }
+
+      public RedBlackNode<T>[] ToNodeArray(RedBlackNode<T> root, int count) {
+         var res = new RedBlackNode<T>[count];
+         var nextIndex = 0;
+         ToNodeArrayHelper(root, res, ref nextIndex);
+         Assert.Equals(nextIndex, res.Length);
+         return res;
+      }
+
+      private void ToNodeArrayHelper(RedBlackNode<T> current, RedBlackNode<T>[] res, ref int nextIndex) {
+         if (current == null) return;
+         ToNodeArrayHelper(current.Left, res, ref nextIndex);
+         res[nextIndex++] = current;
+         ToNodeArrayHelper(current.Right, res, ref nextIndex);
       }
    }
 }
