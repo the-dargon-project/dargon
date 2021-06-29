@@ -89,5 +89,19 @@
          Assert.IsGreaterThanOrEqualTo(left, right);
          return left;
       }
+
+      public static float AssertIsNumber(this float val, string message = null) {
+         Assert.IsTrue(!float.IsNaN(val), "Value was NaN");
+         Assert.IsTrue(!float.IsPositiveInfinity(val), "Value was +Infinity");
+         Assert.IsTrue(!float.IsNegativeInfinity(val), "Value was -Infinity");
+         return val;
+      }
+
+      public static double AssertIsNumber(this double val, string message = null) {
+         Assert.IsTrue(!double.IsNaN(val), "Value was NaN");
+         Assert.IsTrue(!double.IsPositiveInfinity(val), "Value was +Infinity");
+         Assert.IsTrue(!double.IsNegativeInfinity(val), "Value was -Infinity");
+         return val;
+      }
    }
 }
