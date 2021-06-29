@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons {
    /// <summary>
@@ -106,5 +108,20 @@ namespace Dargon.Commons {
       }
 
       public static void Noop(this object self) { }
+
+      /// <summary>
+      /// Returns what is conceptually equivalent to some hashcode of the object's underlying ID
+      /// in runtime. Realistically I'm just providing this extension so I can avoid namespace
+      /// importing System.Runtime.CompilerServices everywhere, since that brings in a whole
+      /// bunch of scope pollution (e.g. DependencyAttribute).
+      ///
+      /// Like any hashcode, this value should not be presumed to be unique; it would be valid
+      /// (though poor for performance) if this always returned 0, for example.
+      /// </summary>
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static int GetObjectIdHash<T>(this T o) {
+         if (typeof(T).IsValueType) throw new GenericArgumentException<T>(); // inlined and elided.
+         return RuntimeHelpers.GetHashCode(o);
+      }
    }
 }
