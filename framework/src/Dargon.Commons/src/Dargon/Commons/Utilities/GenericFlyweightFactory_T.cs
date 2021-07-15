@@ -1,7 +1,7 @@
 ﻿using System;
 using Dargon.Commons.Collections;
 
-namespace Dargon.Vox.Utilities {
+namespace Dargon.Commons.Utilities {
    public interface IGenericFlyweightFactory<T> {
       T Get(Type type);
    }

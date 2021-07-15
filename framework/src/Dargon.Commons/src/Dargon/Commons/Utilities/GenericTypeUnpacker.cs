@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace Dargon.Vox.Utilities {
+namespace Dargon.Commons.Utilities {
    public class GenericTypeUnpacker<T> {
       private static readonly Type[] arguments;
 
