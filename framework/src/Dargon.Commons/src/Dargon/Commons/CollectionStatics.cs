@@ -109,6 +109,15 @@ namespace Dargon.Commons {
       }
       */
 
+      public static bool TryGetValueNullable<K, V>(this Dictionary<K, V>? dict, K key, out V value) {
+         if (dict == null) {
+            value = default;
+            return false;
+         }
+
+         return dict.TryGetValue(key, out value);
+      }
+
       public static T[] LogicalIndex<T>(this IReadOnlyList<T> input, IReadOnlyList<bool> indexConditions, bool negateConditions = false) {
          if (input.Count != indexConditions.Count)
             throw new ArgumentException("Size mismatch between inputs.");

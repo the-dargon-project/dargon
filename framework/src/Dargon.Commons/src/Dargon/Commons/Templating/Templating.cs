@@ -19,7 +19,7 @@ namespace Dargon.Commons.Templating {
    }
 
    public class TBool : TBool<TTrue, TFalse> {}
-
+   public class TDummy : TArg<TDummy> { }
    public class TTrue : TArg<TTrue> {}
    public class TFalse : TArg<TFalse> { }
 
