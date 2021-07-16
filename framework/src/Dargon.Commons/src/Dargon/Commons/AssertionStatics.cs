@@ -10,12 +10,12 @@
          return val;
       }
 
-      public static T AssertIsNull<T>(this T val, string message = null) {
+      public static T? AssertIsNull<T>(this T val, string message = null) {
          Assert.IsNull(val, message);
          return val;
       }
 
-      public static T AssertIsNotNull<T>(this T val, string message = null) {
+      public static T AssertIsNotNull<T>(this T? val, string message = null) {
          Assert.IsNotNull(val, message);
          return val;
       }
