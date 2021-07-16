@@ -50,7 +50,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 //      private HashSet<Guid> seenIds = new HashSet<Guid>();
       private ConcurrentSet<Guid> seenIds = new ConcurrentSet<Guid>(1024, 30000);
 
-      public SCG.IReadOnlyDictionary<Guid, bool> TestPacketIdsAreNew(IReadOnlySet<Guid> queryIds) {
+      public SCG.IReadOnlyDictionary<Guid, bool> TestPacketIdsAreNew(SCG.IReadOnlySet<Guid> queryIds) {
          return queryIds.ToDictionary(
             q => q,
             seenIds.TryAdd);
