@@ -15,6 +15,12 @@ namespace Dargon.Commons {
 
       public static string ToLowerCamelCase(this string s) => ToCase(s, false, true, null);
 
+      /// <summary>
+      /// a2i => a2i
+      /// ascii2Integer => ascii2-integer
+      /// UpperCamel => upper-camel
+      /// lowerCamel => lower-camel
+      /// </summary>
       public static string ToDashedSnakeCase(this string s) => ToCase(s, false, false, "-");
 
       private static string ToCase(string s, bool upperElseLowerFirst, bool upperElseLowerFollowing, string snakeDash) {
@@ -24,6 +30,10 @@ namespace Dargon.Commons {
 
          for (var i = 0; i < s.Length; i++) {
             var c = s[i];
+            if (char.IsNumber(c)) {
+               sb.Append(c);
+               continue;
+            }
             if (!char.IsLetter(c)) {
                if (mode != 0 && snakeDash != null) sb.Append(snakeDash);
                mode = 0;
