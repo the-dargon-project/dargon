@@ -250,6 +250,8 @@ namespace Dargon.Commons {
          return result;
       }
 
+      public static Dictionary<K, V> ToDictionary<K, V>(this Dictionary<K, V> dict) => dict.Map(v => v);
+
       public static IEnumerable<Tuple<T, U>> Zip<T, U>(this IEnumerable<T> e1, IEnumerable<U> e2) => e1.Zip(e2, Tuple.Create);
 
       public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> action) {
