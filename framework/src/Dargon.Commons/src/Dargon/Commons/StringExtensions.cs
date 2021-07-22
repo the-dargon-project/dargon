@@ -235,5 +235,11 @@ namespace Dargon.Commons {
             return @"\u" + ((int)c).ToString("x4");
          }
       }
+
+      private static readonly char[] newlineChars = new[] { '\n', '\r' };
+
+      public static string TrimNewlines(this string s) => s.Trim(newlineChars);
+      public static string TrimLeadingNewlines(this string s) => s.TrimStart(newlineChars);
+      public static string TrimTrailingNewlines(this string s) => s.TrimEnd(newlineChars);
    }
 }
