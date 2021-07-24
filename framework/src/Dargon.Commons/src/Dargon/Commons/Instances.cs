@@ -108,6 +108,7 @@ namespace Dargon.Commons {
       }
 
       public static void Noop(this object self) { }
+      public static void Noop<T>(this T self) { }
 
       /// <summary>
       /// Returns what is conceptually equivalent to some hashcode of the object's underlying ID
