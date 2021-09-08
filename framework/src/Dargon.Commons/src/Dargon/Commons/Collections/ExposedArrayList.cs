@@ -1,14 +1,18 @@
 ﻿// #define ENABLE_VERSION_CHECK
+// #define ENABLE_INDEXER_RANGE_CHECK
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Dargon.Commons.Collections {
    // Doesn't zero free/cleared slots, exposes internal storage.
    // Ripped from PlayOn.
    public class ExposedArrayList<T> : IList<T>, IReadOnlyList<T> {
+      private static bool ShouldZeroOnRemove = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
+
       public int size = 0;
       public T[] store;
 
@@ -77,23 +81,52 @@ namespace Dargon.Commons.Collections {
       public void RemoveAt(int index) {
          if (index + 1 == size) {
             size--;
+            if (ShouldZeroOnRemove) {
+               store[index] = default;
+            }
             return;
          }
 
          throw new NotSupportedException();
       }
 
-      public T this[int index] {
+      public ref T this[int index] {
          get {
-            // if ((uint)index >= (uint)size) {
-            //    throw new ArgumentOutOfRangeException();
-            // }
+#if ENABLE_INDEXER_RANGE_CHECK
+            if ((uint)index >= (uint)size) {
+               throw new ArgumentOutOfRangeException();
+            }
+#endif
+            return ref store[index];
+         }
+      }
+
+      T IReadOnlyList<T>.this[int index] {
+         get {
+#if ENABLE_INDEXER_RANGE_CHECK
+            if ((uint)index >= (uint)size) {
+               throw new ArgumentOutOfRangeException();
+            }
+#endif
+            return store[index];
+         }
+      }
+
+      T IList<T>.this[int index] {
+         get {
+#if ENABLE_INDEXER_RANGE_CHECK
+            if ((uint)index >= (uint)size) {
+               throw new ArgumentOutOfRangeException();
+            }
+#endif
             return store[index];
          }
          set {
-            // if ((uint)index >= (uint)size) {
-            //    throw new ArgumentOutOfRangeException();
-            // }
+#if ENABLE_INDEXER_RANGE_CHECK
+            if ((uint)index >= (uint)size) {
+               throw new ArgumentOutOfRangeException();
+            }
+#endif
             store[index] = value;
          }
       }
