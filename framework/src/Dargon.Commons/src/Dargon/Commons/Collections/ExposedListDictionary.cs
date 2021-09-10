@@ -36,7 +36,7 @@ namespace Dargon.Commons.Collections {
       }
 
       private bool TryFindIndex(TKey key, out int index) {
-         for (var i = 0; i < list.store.Length; i++) {
+         for (var i = 0; i < list.Count; i++) {
             if (keyEqualityComparer.Equals(key, list.store[i].Key)) {
                index = i;
                return true;
