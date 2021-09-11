@@ -2,8 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using Dargon.Commons.Collections;
 using Dargon.Commons.Pooling;
+using Dargon.Commons.Templating;
 
 namespace Dargon.Commons {
    public static class Traverse {
@@ -70,7 +72,7 @@ namespace Dargon.Commons {
          }
       }
 
-      private static class DfsInternals<T> {
+      private static class DfsInternals<T, TBoolHandleDuplicatesAndLoops> {
          private static readonly TlsBackedObjectPool<State> tlsStates = new TlsBackedObjectPool<State>(State.Create);
 
          public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dive(T initial, Func<T, T> succUser) {
@@ -116,14 +118,14 @@ namespace Dargon.Commons {
                s.visited = new HashSet<T>();
                s.popNext = store => store.Pop();
 
-               Action<T> storePushConditionally = x => {
-                  if (s.visited.Add(x)) {
+               Action<T> storePushCallback = x => {
+                  if (TBool.IsFalse<TBoolHandleDuplicatesAndLoops>() || s.visited.Add(x)) {
                      s.store.Push(x);
                   }
                };
                s.pushSuccs = (_, el) => {
                   if (s.pushSuccsUserOpt != null) {
-                     s.pushSuccsUserOpt(storePushConditionally, el);
+                     s.pushSuccsUserOpt(storePushCallback, el);
                   }
                   if (s.succUserOpt != null) {
                      var item = s.succUserOpt(el);
@@ -146,11 +148,18 @@ namespace Dargon.Commons {
          }
       }
 
-      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dfs<T>(
-         this T root, 
+      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> DfsWithDedupe<T>(
+         this T root,
          Action<Action<T>, T> pushSuccsUser
       ) {
-         return DfsInternals<T>.Dfs(root, pushSuccsUser);
+         return DfsInternals<T, TTrue>.Dfs(root, pushSuccsUser);
+      }
+
+      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> DfsWithoutDedupe<T>(
+         this T root,
+         Action<Action<T>, T> pushSuccsUser
+      ) {
+         return DfsInternals<T, TFalse>.Dfs(root, pushSuccsUser);
       }
 
       private static class BfsInternals<T> {
@@ -208,7 +217,7 @@ namespace Dargon.Commons {
       }
 
       public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dive<T>(this T root, Func<T, T> next) {
-         return DfsInternals<T>.Dive(root, next);
+         return DfsInternals<T, TFalse>.Dive(root, next);
       }
    }
 }
