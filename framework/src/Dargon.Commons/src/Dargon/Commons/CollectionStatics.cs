@@ -606,6 +606,10 @@ namespace Dargon.Commons {
             }
          }
       }
+
+      public static Range RangeWithLength(this int startInclusive, int length) => RangeToExclusive(startInclusive, startInclusive + length);
+      public static Range RangeToInclusive(this int startInclusive, int endInclusive) => new Range(startInclusive, endInclusive + 1);
+      public static Range RangeToExclusive(this int startInclusive, int endExclusive) => new Range(startInclusive, endExclusive);
    }
 
    public class Chunk<T> {
