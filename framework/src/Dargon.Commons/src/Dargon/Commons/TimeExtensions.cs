@@ -1,11 +1,21 @@
 ﻿using System;
 
 namespace Dargon.Commons {
+   /// <summary>
+   /// Note: Adding ToUnixTimeSecondsF is a horrible idea.
+   /// Unix time is already taking the 31st bit of precision in an i32...
+   /// storing it into a float32 will of course heavily quantize it,
+   /// making the value useless. --miyu
+   /// </summary>
    public static class TimeExtensions {
       private static readonly DateTime kUnixEpochUtc = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
       public static long ToUnixTimeSeconds(this DateTime val) {
          return (long)(val.ToUniversalTime() - kUnixEpochUtc).TotalSeconds;
+      }
+
+      public static double ToUnixTimeSecondsD(this DateTime val) {
+         return (double)(val.ToUniversalTime() - kUnixEpochUtc).TotalSeconds;
       }
 
       public static long ToUnixTimeMillis(this DateTime val) {
