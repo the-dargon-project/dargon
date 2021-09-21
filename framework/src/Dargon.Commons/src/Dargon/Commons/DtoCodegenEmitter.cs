@@ -1,13 +1,20 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using Dargon.Commons.Collections;
 
 namespace Dargon.Commons {
    public class DtoCodegenEmitter : ICodegenEmitter {
+      private Dictionary<object, int> captures = new(ReferenceEqualityComparer.Instance);
+      private Dictionary<int, bool> isEmitComplete = new();
+      private List<Action> lateEmits = new List<Action>();
+      private int visitDepth = 0;
+
       public static string EmitAsString(object x) {
          var sb = new StringBuilder();
          var tw = new StringBuilderTokenWriter { StringBuilder = sb };
@@ -24,19 +31,21 @@ namespace Dargon.Commons {
             return;
          }
 
-         if (x is ICodegenEmitable cd) {
-            cd.EmitCodegen(this);
-            return;
-         }
-
          var t = x.GetType();
          if (t == typeof(char)) {
             Emit("'" + ((char)(object)x).ToStringLiteralChar() + "'");
             return;
-         }
-
-         if (t == typeof(string)) {
+         } else if (t == typeof(string)) {
             Emit(((string)(object)x).ToEscapedStringLiteral());
+            return;
+         } else if (t == typeof(float)) {
+            Emit(((float)(object)x).ToString("R") + "f");
+            return;
+         } else if (t == typeof(double)) {
+            Emit(((double)(object)x).ToString("R"));
+            return;
+         } else if (t == typeof(bool)) {
+            Emit((bool)(object)x ? "true" : "false");
             return;
          }
 
@@ -44,8 +53,30 @@ namespace Dargon.Commons {
             Emit(x.ToString());
             return;
          }
-            
-         if (x is IEnumerable enumerable) {
+
+         int? captureIdOrNull = null;
+         if (!x.GetType().IsValueType) {
+            if (captures.TryGetValue(x, out var existingId)) {
+               EmitTypeName(typeof(TlsDtoCodegenEmitDeserializationState));
+               Emit(".");
+               Emit(nameof(TlsDtoCodegenEmitDeserializationState.CodegenGet));
+               Emit("<");
+               EmitTypeName(x.GetType());
+               Emit(">");
+               Emit("(");
+               Visit(existingId);
+               Emit(")");
+               return;
+            }
+
+            captureIdOrNull = captures.Count;
+            captures.Add(x, captureIdOrNull.Value);
+            isEmitComplete[captureIdOrNull.Value] = false;
+         }
+
+         if (x is ICodegenEmitable cd) {
+            cd.EmitCodegen(this);
+         } else if (x is IEnumerable enumerable) {
             if (t.IsArray) {
                Emit("new");
                EmitTypeName(t.GetElementType());
@@ -65,38 +96,65 @@ namespace Dargon.Commons {
             }
 
             Emit("}");
-            return;
+         } else {
+            // assume simple struct
+            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+            var properties = t.GetProperties(bindingFlags);
+            var fields = t.GetFields(bindingFlags);
+
+            var supported = properties.All(p => p.IsAutoProperty_Slow()) &&
+                            fields.All(f => f.IsPublic);
+
+            if (!supported) {
+               throw Assert.Fail("Unsupported for codegen serialization: " + t.ToString());
+            }
+
+
+            EmitDefaultConstruction(t);
+            Emit("{");
+
+            var setterCallbacks = new SortedDictionary<string, Action>();
+
+            foreach (var field in fields) {
+               setterCallbacks.Add(field.Name, () => this.EmitInitializerSet(x, field.Name, field.GetValue(x), ","));
+            }
+
+            foreach (var prop in properties) {
+               setterCallbacks.Add(prop.Name, () => this.EmitInitializerSet(x, prop.Name, prop.GetValue(x), ","));
+            }
+
+            visitDepth++;
+            foreach (var (_, cb) in setterCallbacks) {
+               cb();
+            }
+            visitDepth--;
+
+            Emit("}");
          }
 
-         // assume simple struct
-         var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-         var properties = t.GetProperties(bindingFlags);
-         var fields = t.GetFields(bindingFlags);
-
-         var supported = properties.All(p => p.IsAutoProperty_Slow()) &&
-                         fields.All(f => f.IsPublic);
-
-         if (!supported) {
-            throw Assert.Fail("Unsupported for codegen serialization: " + t.ToString());
+         if (captureIdOrNull.HasValue) {
+            Emit(".");
+            Emit(nameof(TlsDtoCodegenEmitDeserializationState.CodegenStoreAtIndex));
+            Emit("(");
+            Visit(captureIdOrNull.Value);
+            Emit(")");
+          
+            isEmitComplete[captureIdOrNull.Value] = true;
          }
 
-
-         EmitDefaultConstruction(t);
-         Emit("{");
-
-         var setterCallbacks = new SortedDictionary<string, Action>();
-
-         foreach (var field in fields) {
-            setterCallbacks.Add(field.Name, () => this.EmitInitializerSet(field.Name, field.GetValue(x)));
+         if (visitDepth == 0) {
+            Emit(".");
+            Emit(nameof(Instances.Tee));
+            Emit("(");
+            Emit("()");
+            Emit("=>");
+            Emit("{");
+            foreach (var le in lateEmits) {
+               le();
+            }
+            Emit("}");
+            Emit(")");
          }
-         foreach (var prop in properties) {
-            setterCallbacks.Add(prop.Name, () => this.EmitInitializerSet(prop.Name, prop.GetValue(x)));
-         }
-
-         foreach (var (_, cb) in setterCallbacks) {
-            cb();
-         }
-         Emit("}");
       }
 
       public void EmitConstructionStart(Type t) {
@@ -132,6 +190,14 @@ namespace Dargon.Commons {
       }
 
       public void Emit(string token) => TokenWriter.Write(token);
+
+      public bool IsObservedButNotYetEmitted(object x, out int instanceId) {
+         return captures.TryGetValue(x, out instanceId) && !isEmitComplete[instanceId];
+      }
+
+      public void AddLateEmit(Action a) {
+         lateEmits.Add(a);
+      }
    }
 
    public interface ICodegenEmitter {
@@ -141,14 +207,45 @@ namespace Dargon.Commons {
       void EmitDefaultConstruction(Type t);
       void EmitTypeName(Type t);
       void Emit(string token);
+      bool IsObservedButNotYetEmitted(object x, out int instanceId);
+      void AddLateEmit(Action a);
    }
 
    public static class CodegenEmitterHelpers {
-      public static void EmitInitializerSet(this ICodegenEmitter emitter, string propertyName, object value) {
-         emitter.Emit(propertyName);
-         emitter.Emit("=");
-         emitter.Visit(value);
-         emitter.Emit(",");
+      private static Dictionary<Type, bool> typeShouldLateEmitReferenceMembers = new();
+
+      private static bool ShouldLateEmitReferenceMembers(Type t) =>
+         typeShouldLateEmitReferenceMembers.TryGetValue(t, out var res)
+            ? res
+            : typeShouldLateEmitReferenceMembers[t] = t.HasAttribute<DtoCodegenEmitterRecursiveAttribute>();
+
+      public static void EmitInitializerSet(this ICodegenEmitter emitter, object source, string propertyName, object value, string trailingTokenOpt = null, bool isLateEmitCall = false) {
+         if (!isLateEmitCall && value is not null && (
+               ShouldLateEmitReferenceMembers(value.GetType()) ||
+               emitter.IsObservedButNotYetEmitted(value, out var instanceId)
+             )) {
+            emitter.AddLateEmit(() => {
+               emitter.IsObservedButNotYetEmitted(source, out instanceId).AssertIsFalse();
+
+               emitter.EmitTypeName(typeof(TlsDtoCodegenEmitDeserializationState));
+               emitter.Emit(".");
+               emitter.Emit(nameof(TlsDtoCodegenEmitDeserializationState.CodegenGet));
+               emitter.Emit("<");
+               emitter.EmitTypeName(source.GetType());
+               emitter.Emit(">");
+               emitter.Emit("(");
+               emitter.Visit(instanceId);
+               emitter.Emit(")");
+               emitter.Emit(".");
+               EmitInitializerSet(emitter, source, propertyName, value, null, true);
+               emitter.Emit(";");
+            });
+         } else {
+            emitter.Emit(propertyName);
+            emitter.Emit("=");
+            emitter.Visit(value);
+            if (trailingTokenOpt != null) emitter.Emit(trailingTokenOpt);
+         }
       }
    }
 
@@ -169,9 +266,30 @@ namespace Dargon.Commons {
       }
    }
 
+   public static class TlsDtoCodegenEmitDeserializationState {
+      [ThreadStatic] private static ExposedArrayList<object> tlsObjectByIdStore;
+      private static ExposedArrayList<object> TlsObjectById => tlsObjectByIdStore ??= new ExposedArrayList<object>(4); // must nonzero initial capacity
+
+      public static T CodegenStoreAtIndex<T>(this T o, int index) {
+         TlsObjectById.EnsureCapacity(index + 1);
+         TlsObjectById.size = TlsObjectById.store.Length;
+         TlsObjectById[index] = o;
+         return o;
+      }
+
+      public static T CodegenGet<T>(int index) => (T)tlsObjectByIdStore[index].AssertIsNotNull();
+
+      public static T CodegenClearAndPass<T>(this T t) {
+         TlsObjectById.Clear();
+         return t;
+      }
+   }
+
    public static class DtoCodegenEmitterStatics {
       public static string ToCodegenDump(this object x) {
          return DtoCodegenEmitter.EmitAsString(x);
       }
    }
+
+   public class DtoCodegenEmitterRecursiveAttribute : Attribute { }
 }

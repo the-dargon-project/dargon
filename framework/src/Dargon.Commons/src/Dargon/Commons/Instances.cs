@@ -108,7 +108,20 @@ namespace Dargon.Commons {
       }
 
       public static void Noop(this object self) { }
+
       public static void Noop<T>(this T self) { }
+
+      public static T Tee<T>(this T self, Action cb) {
+         cb();
+         return self;
+      }
+
+      public static T Tee<T>(this T self, Action<T> cb) {
+         cb(self);
+         return self;
+      }
+
+      public static U Pipe<T, U>(this T self, Func<T, U> cb) => cb(self);
 
       /// <summary>
       /// Returns what is conceptually equivalent to some hashcode of the object's underlying ID
