@@ -19,12 +19,20 @@ namespace Dargon.Commons {
          return self;
       }
 
-
-      public static IEnumerable<T> TapEach<T>(this IEnumerable<T> self, Action<T> func) {
+      public static T[] TapEach<T>(this T[] self, Action<T> func) {
          foreach (var x in self) {
             func(x);
-            yield return x;
          }
+
+         return self;
+      }
+
+      public static TEnumerable TapEach<T, TEnumerable>(this TEnumerable self, Action<T> func) where TEnumerable : IEnumerable<T> {
+         foreach (var x in self) {
+            func(x);
+         }
+
+         return self;
       }
 
       public static async Task Tap(this Task self, Action func) {
