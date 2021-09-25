@@ -104,6 +104,7 @@ namespace Dargon.Commons {
          public class State : IDisposable {
             public IObjectPool<State> pool;
             public Stack<T> store;
+            public Stack<T> intermediateReverseStore;
             public HashSet<T> visited;
             public Func<Stack<T>, T> popNext;
             public Action<Stack<T>, T> pushSuccs;
@@ -115,17 +116,21 @@ namespace Dargon.Commons {
                var s = new State();
                s.pool = pool;
                s.store = new Stack<T>();
-               s.visited = new HashSet<T>();
+               s.intermediateReverseStore = new Stack<T>();
+               s.visited = TBool.IsTrue<TBoolHandleDuplicatesAndLoops>() ? new HashSet<T>() : null;
                s.popNext = store => store.Pop();
 
-               Action<T> storePushCallback = x => {
+               Action<T> intermediateReverseStorePushCallback = x => {
                   if (TBool.IsFalse<TBoolHandleDuplicatesAndLoops>() || s.visited.Add(x)) {
-                     s.store.Push(x);
+                     s.intermediateReverseStore.Push(x);
                   }
                };
                s.pushSuccs = (_, el) => {
                   if (s.pushSuccsUserOpt != null) {
-                     s.pushSuccsUserOpt(storePushCallback, el);
+                     s.pushSuccsUserOpt(intermediateReverseStorePushCallback, el);
+                     while (s.intermediateReverseStore.Count > 0) {
+                        s.store.Push(s.intermediateReverseStore.Pop());
+                     }
                   }
                   if (s.succUserOpt != null) {
                      var item = s.succUserOpt(el);
@@ -136,7 +141,9 @@ namespace Dargon.Commons {
                };
                s.clearStates = () => {
                   s.store.Clear();
-                  s.visited.Clear();
+                  if (TBool.IsTrue<TBoolHandleDuplicatesAndLoops>()) {
+                     s.visited.Clear();
+                  }
                };
                s.pushSuccsUserOpt = null;
                return s;
@@ -162,7 +169,7 @@ namespace Dargon.Commons {
          return DfsInternals<T, TFalse>.Dfs(root, pushSuccsUser);
       }
 
-      private static class BfsInternals<T> {
+      private static class BfsInternals<T, TBoolHandleDuplicatesAndLoops> {
          private static readonly TlsBackedObjectPool<State> tlsStates = new TlsBackedObjectPool<State>(State.Create);
 
          public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Queue<T>>> Bfs(T initial, Action<Action<T>, T> pushSuccsUser) {
@@ -190,17 +197,19 @@ namespace Dargon.Commons {
                var s = new State();
                s.pool = pool;
                s.store = new Queue<T>();
-               s.visited = new HashSet<T>();
+               s.visited = TBool.IsTrue<TBoolHandleDuplicatesAndLoops>() ? new HashSet<T>() : null;
                s.popNext = store => store.Dequeue();
                Action<T> storeEnqueueConditionally = x => {
-                  if (s.visited.Add(x)) {
+                  if (TBool.IsFalse<TBoolHandleDuplicatesAndLoops>() || s.visited.Add(x)) {
                      s.store.Enqueue(x);
                   }
                };
                s.pushSuccs = (_, el) => s.pushSuccsUser(storeEnqueueConditionally, el);
                s.clear = () => {
                   s.store.Clear();
-                  s.visited.Clear();
+                  if (TBool.IsTrue<TBoolHandleDuplicatesAndLoops>()) {
+                     s.visited.Clear();
+                  }
                };
                s.pushSuccsUser = null;
                return s;
@@ -212,8 +221,12 @@ namespace Dargon.Commons {
          }
       }
 
-      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Queue<T>>> Bfs<T>(this T root, Action<Action<T>, T> pushSuccsUser) {
-         return BfsInternals<T>.Bfs(root, pushSuccsUser);
+      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Queue<T>>> BfsWithDedupe<T>(this T root, Action<Action<T>, T> pushSuccsUser) {
+         return BfsInternals<T, TTrue>.Bfs(root, pushSuccsUser);
+      }
+
+      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Queue<T>>> BfsWithoutDedupe<T>(this T root, Action<Action<T>, T> pushSuccsUser) {
+         return BfsInternals<T, TFalse>.Bfs(root, pushSuccsUser);
       }
 
       public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dive<T>(this T root, Func<T, T> next) {
