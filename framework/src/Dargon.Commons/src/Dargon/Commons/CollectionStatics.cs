@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -160,8 +161,92 @@ namespace Dargon.Commons {
          return res;
       }
 
-      public static IEnumerable<KeyValuePair<int, T>> Enumerate<T>(this IEnumerable<T> items) {
-         return items.Select((item, key) => new KeyValuePair<int, T>(key, item));
+      public struct TEnumerateWithIndexEnumerator<T, TEnumerator> : IEnumerator<(int index, T value)> where TEnumerator : IEnumerator<T> {
+         private TEnumerator inner;
+         private int index;
+
+         public TEnumerateWithIndexEnumerator(TEnumerator inner) {
+            this.inner = inner;
+            this.index = -1;
+         }
+
+         public bool MoveNext() {
+            if (inner.MoveNext()) {
+               index++;
+               return true;
+            }
+            return false;
+         }
+
+         public void Reset() {
+            inner.Reset();
+            index = -1;
+         }
+
+         public (int index, T value) Current => (index, inner.Current);
+         object IEnumerator.Current => Current;
+
+         public void Dispose() {
+            inner.Dispose();
+         }
+      }
+
+      public static EnumeratorToEnumerableAdapter<(int, T), TEnumerateWithIndexEnumerator<T, ArrayEnumerator<T>>> Enumerate<T>(this T[] items) =>
+         EnumeratorToEnumerableAdapter<(int, T)>.Create(
+            new TEnumerateWithIndexEnumerator<T, ArrayEnumerator<T>>(
+               new ArrayEnumerator<T>(items)));
+
+      public static EnumeratorToEnumerableAdapter<(int, T), TEnumerateWithIndexEnumerator<T, List<T>.Enumerator>> Enumerate<T>(this List<T> items) =>
+         EnumeratorToEnumerableAdapter<(int, T)>.Create(
+            new TEnumerateWithIndexEnumerator<T, List<T>.Enumerator>(
+               items.GetEnumerator()));
+
+      public static EnumeratorToEnumerableAdapter<(int, T), TEnumerateWithIndexEnumerator<T, HashSet<T>.Enumerator>> Enumerate<T>(this HashSet<T> items) =>
+         EnumeratorToEnumerableAdapter<(int, T)>.Create(
+            new TEnumerateWithIndexEnumerator<T, HashSet<T>.Enumerator>(
+               items.GetEnumerator()));
+
+      public static EnumeratorToEnumerableAdapter<(int, KeyValuePair<K, V>), TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, Dictionary<K, V>.Enumerator>> Enumerate<K, V>(this Dictionary<K, V> items) =>
+         EnumeratorToEnumerableAdapter<(int, KeyValuePair<K, V>)>.Create(
+            new TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, Dictionary<K, V>.Enumerator>(
+               items.GetEnumerator()));
+
+      public static EnumeratorToEnumerableAdapter<(int, T), TEnumerateWithIndexEnumerator<T, ExposedArrayList<T>.Enumerator>> Enumerate<T>(this ExposedArrayList<T> items) =>
+         EnumeratorToEnumerableAdapter<(int, T)>.Create(
+            new TEnumerateWithIndexEnumerator<T, ExposedArrayList<T>.Enumerator>(
+               items.GetEnumerator()));
+
+      public static EnumeratorToEnumerableAdapter<(int, ExposedKeyValuePair<K, V>), TEnumerateWithIndexEnumerator<ExposedKeyValuePair<K, V>, ExposedArrayList<ExposedKeyValuePair<K, V>>.Enumerator>> Enumerate<K, V>(this ExposedListDictionary<K, V> items)
+         => Enumerate(items.list);
+
+      public static T[] ToReversedArray<T>(this T[] items) {
+         var res = new T[items.Length];
+         var ni = res.Length - 1;
+         for (var i = 0; i < items.Length; i++) {
+            res[ni] = items[i];
+            ni--;
+         }
+         return res;
+      }
+
+      public static T[] ToReversedArray<T>(this List<T> items) {
+         var res = new T[items.Count];
+         var ni = res.Length - 1;
+         for (var i = 0; i < items.Count; i++) {
+            res[ni] = items[i];
+            ni--;
+         }
+         return res;
+      }
+
+      public static T[] ToReversedArray<T>(this ExposedArrayList<T> items) {
+         var res = new T[items.Count];
+         var ni = res.Length - 1;
+         for (var i = 0; i < items.Count; i++) {
+            res[ni] = items[i];
+            ni--;
+         }
+         return res;
       }
 
       public static U[] Map<T, U>(this IReadOnlyList<T> arr, Func<T, U> projector) {
