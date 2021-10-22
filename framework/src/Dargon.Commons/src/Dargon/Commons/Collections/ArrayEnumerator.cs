@@ -8,7 +8,7 @@ namespace Dargon.Commons.Collections {
 
       public ArrayEnumerator(T[] arr) {
          this.arr = arr;
-         this.currentIndex = 0;
+         this.currentIndex = -1;
       }
 
       public bool MoveNext() {
@@ -18,7 +18,7 @@ namespace Dargon.Commons.Collections {
       }
 
       public void Reset() {
-         currentIndex = 0;
+         currentIndex = -1;
       }
 
       public T Current => arr[currentIndex];
