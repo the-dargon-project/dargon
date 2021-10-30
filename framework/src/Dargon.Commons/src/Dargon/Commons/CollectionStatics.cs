@@ -119,6 +119,14 @@ namespace Dargon.Commons {
          return dict.TryGetValue(key, out value);
       }
 
+      public static T[] Index<T>(this T[] arr, int[] indices) {
+         var res = new T[indices.Length];
+         for (var i = 0; i < indices.Length; i++) {
+            res[i] = arr[indices[i]];
+         }
+         return res;
+      }
+
       public static T[] LogicalIndex<T>(this IReadOnlyList<T> input, IReadOnlyList<bool> indexConditions, bool negateConditions = false) {
          if (input.Count != indexConditions.Count)
             throw new ArgumentException("Size mismatch between inputs.");
