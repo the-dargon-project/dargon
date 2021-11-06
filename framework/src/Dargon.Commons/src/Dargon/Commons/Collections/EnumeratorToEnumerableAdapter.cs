@@ -3,20 +3,20 @@ using System.Collections.Generic;
 
 namespace Dargon.Commons.Collections {
    public struct EnumeratorToEnumerableAdapter<TItem, TEnumerator> : IEnumerable<TItem> where TEnumerator : struct, IEnumerator<TItem> {
-      private readonly TEnumerator enumerable;
+      private readonly TEnumerator enumerator;
 
-      public EnumeratorToEnumerableAdapter(TEnumerator enumerable) {
-         this.enumerable = enumerable;
+      public EnumeratorToEnumerableAdapter(TEnumerator enumerator) {
+         this.enumerator = enumerator;
       }
 
-      public TEnumerator GetEnumerator() => enumerable;
+      public TEnumerator GetEnumerator() => enumerator;
       IEnumerator<TItem> IEnumerable<TItem>.GetEnumerator() => GetEnumerator();
       IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
    }
 
    public static class EnumeratorToEnumerableAdapter<TItem> {
-      public static EnumeratorToEnumerableAdapter<TItem, TEnumerable> Create<TEnumerable>(TEnumerable enumerable) where TEnumerable : struct, IEnumerator<TItem> {
-         return new EnumeratorToEnumerableAdapter<TItem, TEnumerable>(enumerable);
+      public static EnumeratorToEnumerableAdapter<TItem, TEnumerator> Create<TEnumerator>(TEnumerator enumerator) where TEnumerator : struct, IEnumerator<TItem> {
+         return new EnumeratorToEnumerableAdapter<TItem, TEnumerator>(enumerator);
       }
    }
 }
