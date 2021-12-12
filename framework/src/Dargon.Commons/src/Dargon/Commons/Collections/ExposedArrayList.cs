@@ -47,6 +47,19 @@ namespace Dargon.Commons.Collections {
 #endif
       }
 
+      public void AddRange(T[] items) {
+         AddRange(items, 0, items.Length);
+      }
+
+      public void AddRange(T[] items, int offset, int length) {
+         EnsureCapacity(size + length);
+         Array.Copy(items, offset, store, size, length);
+         size += length;
+#if ENABLE_VERSION_CHECK
+         version++;
+#endif
+      }
+
       public void EnsureCapacity(int sz) {
          if (sz > store.Length) {
             var capacity = store.Length;
@@ -207,6 +220,12 @@ namespace Dargon.Commons.Collections {
             this.index = 0;
             this.current = default(T);
          }
+      }
+
+      public T[] ShrinkStore() {
+         if (store.Length == Count) return store;
+         store = ToArray();
+         return store;
       }
    }
 }

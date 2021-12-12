@@ -12,7 +12,7 @@ namespace Dargon.Commons.Pooling {
 
       public SingleThreadedStackBackedObjectPool(Func<IObjectPool<T>, T> generator) : this(generator, null, null, null) { }
 
-      public SingleThreadedStackBackedObjectPool(Func<IObjectPool<T>, T> generator, string name, Action<T> zero, Action<T> reinit) {
+      public SingleThreadedStackBackedObjectPool(Func<IObjectPool<T>, T> generator, string name = null, Action<T> zero = null, Action<T> reinit = null) {
          generator.ThrowIfNull("generator");
 
          this.generator = generator;
