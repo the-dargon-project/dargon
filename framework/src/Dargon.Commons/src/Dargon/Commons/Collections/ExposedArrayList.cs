@@ -26,6 +26,11 @@ namespace Dargon.Commons.Collections {
          store = new T[capacity];
       }
 
+      public ExposedArrayList(ExposedArrayList<T> source) {
+         size = source.size;
+         store = source.store.ToArray();
+      }
+
       public ExposedArrayList<T>.Enumerator GetEnumerator() => new ExposedArrayList<T>.Enumerator(this);
 
       IEnumerator<T> IEnumerable<T>.GetEnumerator() => store.Take(size).GetEnumerator();

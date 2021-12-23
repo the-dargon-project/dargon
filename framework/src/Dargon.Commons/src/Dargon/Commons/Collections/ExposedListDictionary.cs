@@ -12,6 +12,7 @@ namespace Dargon.Commons.Collections {
       public ExposedListDictionary(int capacity) : base(capacity, new EqualityComparerWrapper(EqualityComparer<TKey>.Default)) { }
       public ExposedListDictionary(EqualityComparer<TKey> equalityComparer) : base(new EqualityComparerWrapper(equalityComparer)) { }
       public ExposedListDictionary(int capacity, EqualityComparer<TKey> equalityComparer) : base(capacity, new EqualityComparerWrapper(equalityComparer)) { }
+      public ExposedListDictionary(ExposedListDictionary<TKey, TValue> source) : base(source) {}
 
       public struct EqualityComparerWrapper : IEqualityComparer<TKey> {
          private readonly EqualityComparer<TKey> inner;
@@ -21,6 +22,8 @@ namespace Dargon.Commons.Collections {
          public bool Equals(TKey x, TKey y) => inner.Equals(x, y);
          public int GetHashCode(TKey obj) => inner.GetHashCode(obj);
       }
+
+      public new ExposedListDictionary<TKey, TValue> Clone() => new(this);
    }
 
    public class ExposedListDictionary<TKey, TValue, TKeyEqualityComparer> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue> where TKeyEqualityComparer : struct, IEqualityComparer<TKey> {
@@ -33,6 +36,11 @@ namespace Dargon.Commons.Collections {
       public ExposedListDictionary(int capacity, TKeyEqualityComparer keyEqualityComparer) {
          this.keyEqualityComparer = keyEqualityComparer;
          this.list = new ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>(capacity);
+      }
+
+      public ExposedListDictionary(ExposedListDictionary<TKey, TValue, TKeyEqualityComparer> source) {
+         this.keyEqualityComparer = source.keyEqualityComparer;
+         this.list = new ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>(source.list);
       }
 
       private bool TryFindIndex(TKey key, out int index) {
@@ -179,5 +187,7 @@ namespace Dargon.Commons.Collections {
       IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
       public ICollection<TValue> Values { get { return Arrays.Create(list.Count, i => list[i].Value); } }
       IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
+
+      public ExposedListDictionary<TKey, TValue, TKeyEqualityComparer> Clone() => new(this);
    }
 }

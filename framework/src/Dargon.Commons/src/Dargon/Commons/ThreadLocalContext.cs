@@ -10,6 +10,10 @@ namespace Dargon.Commons {
          return (TContext)this;
       }
 
+      public PopContextOnDispose PushForScope() {
+         return WithContextScope((TContext)this);
+      }
+
       private static class Store<TUnique> where TUnique : struct {
          [ThreadStatic] public static State_t s_tlsState;
 
