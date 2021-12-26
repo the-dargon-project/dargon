@@ -21,11 +21,22 @@ namespace Dargon.Commons.Collections {
          return new StructLinqWhere<T, TInnerEnumerator>(inner, cond);
       }
 
-      public static StructLinqWhere<T, TInnerEnumerator> Where<TInnerEnumerator, TDelegateStaticAssertMemo>(TInnerEnumerator inner, Func<T, bool> cond, TDelegateStaticAssertMemo dummy) 
-         where TInnerEnumerator : struct, IEnumerator<T> 
+      public static StructLinqWhere<T, TInnerEnumerator> Where<TInnerEnumerator, TDelegateStaticAssertMemo>(TInnerEnumerator inner, Func<T, bool> cond, TDelegateStaticAssertMemo dummy = default)
+         where TInnerEnumerator : struct, IEnumerator<T>
          where TDelegateStaticAssertMemo : struct {
          DelegateMethodIsStatic<TDelegateStaticAssertMemo>.VerifyOnce(cond);
          return new StructLinqWhere<T, TInnerEnumerator>(inner, cond);
+      }
+
+      public static StructLinqMap<T, TInnerEnumerator, U> Map<TInnerEnumerator, U>(TInnerEnumerator inner, Func<T, U> mapper) where TInnerEnumerator : struct, IEnumerator<T> {
+         return new StructLinqMap<T, TInnerEnumerator, U>(inner, mapper);
+      }
+
+      public static StructLinqMap<T, TInnerEnumerator, U> Map<TInnerEnumerator, TDelegateStaticAssertMemo, U>(TInnerEnumerator inner, Func<T, U> mapper, TDelegateStaticAssertMemo dummy = default)
+         where TInnerEnumerator : struct, IEnumerator<T>
+         where TDelegateStaticAssertMemo : struct {
+         DelegateMethodIsStatic<TDelegateStaticAssertMemo>.VerifyOnce(mapper);
+         return new StructLinqMap<T, TInnerEnumerator, U>(inner, mapper);
       }
 
       private static class DelegateMethodIsStatic<TFuncStaticAssertMemo> where TFuncStaticAssertMemo : struct {
@@ -70,6 +81,25 @@ namespace Dargon.Commons.Collections {
       public void Dispose() => inner.Dispose();
 
       public IEnumerator<T> GetEnumerator() => this;
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+   }
+
+   public struct StructLinqMap<T, TInnerEnumerator, U> : IEnumerator<U>, IEnumerable<U> where TInnerEnumerator : IEnumerator<T> {
+      private TInnerEnumerator inner;
+      private Func<T, U> mapper;
+
+      public StructLinqMap(TInnerEnumerator inner, Func<T, U> mapper) {
+         this.inner = inner;
+         this.mapper = mapper;
+      }
+
+      public bool MoveNext() => inner.MoveNext();
+      public void Reset() => inner.Reset();
+      public U Current => mapper(inner.Current);
+      object IEnumerator.Current => Current;
+      public void Dispose() => inner.Dispose();
+
+      public IEnumerator<U> GetEnumerator() => this;
       IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
    }
 

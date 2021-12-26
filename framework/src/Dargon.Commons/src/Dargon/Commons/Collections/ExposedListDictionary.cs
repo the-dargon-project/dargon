@@ -98,9 +98,12 @@ namespace Dargon.Commons.Collections {
 
       public ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>.Enumerator GetEnumerator() => list.GetEnumerator();
 
-      IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => throw new NotYetImplementedException();
+      IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() 
+         => StructLinq<ExposedKeyValuePair<TKey, TValue>>.Map(
+            list.GetEnumerator(),
+            kvp => new KeyValuePair<TKey, TValue>(kvp.Key, kvp.Value));
 
-      IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
       void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item) => AddOrThrow(item);
 
