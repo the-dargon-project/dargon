@@ -58,6 +58,8 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.inboundReceiveProcessDispatchLatencyAggregator = inboundReceiveProcessDispatchLatencyAggregator;
       }
 
+      public UdpTransportConfiguration Configuration => configuration;
+
       public void StartReceiving(IUdpDispatcher udpDispatcher) {
          this.udpDispatcher = udpDispatcher;
          for (var i = 0; i < 8; i++) {

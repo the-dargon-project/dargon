@@ -48,15 +48,15 @@ namespace Dargon.Ryu.Internals {
       }
 
       private void LoadAssembliesFromDirectory(string directory, HashSet<Assembly> loadedAssemblies) {
-         foreach (var path in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)) {
+         var filePaths = Directory.GetFiles(directory, "*", SearchOption.AllDirectories);
+         for (var i = 0; i < filePaths.Length; i++) {
+            var path = filePaths[i];
+
             if (path.EndsWithAny(kAssemblyExtensions, StringComparison.OrdinalIgnoreCase) &&
                 !path.ContainsAny(kExcludedFilePathFilter, StringComparison.OrdinalIgnoreCase)) {
                try {
-                  if (path.Contains("Dargon.Courier.dll")) Debugger.Break();
-                  var assembly = Assembly.LoadFile(path);
-                  //var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(path); 
+                  var assembly = Assembly.LoadFrom(path);
                   logger.LoadedAssemblyFromPath(path);
-                  if (path.Contains("Dargon.Courier.dll")) Debugger.Break();
                   loadedAssemblies.Add(assembly);
                } catch (BadImageFormatException) {
                   // skip - probably a native dll dependency

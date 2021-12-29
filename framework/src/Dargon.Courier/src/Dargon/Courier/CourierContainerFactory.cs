@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
+using Dargon.Commons;
 using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Collections;
 using Dargon.Courier.AuditingTier;
@@ -75,6 +76,7 @@ namespace Dargon.Courier {
          var mobContextContainer = new MobContextContainer();
          var mobContextFactory = new MobContextFactory(auditService);
          var mobOperations = new MobOperations(mobContextFactory, mobContextContainer);
+         // var courierContainerMobNamespace = "Dargon.Courier.Instances." + this.GetObjectIdHash().ToString("X8");
 
          // Other Courier Stuff
          var identity = Identity.Create(forceId);

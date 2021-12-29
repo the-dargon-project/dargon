@@ -1,4 +1,5 @@
-﻿using Dargon.Courier.AuditingTier;
+﻿using System;
+using Dargon.Courier.AuditingTier;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
@@ -8,6 +9,16 @@ using System.Net;
 using System.Threading.Tasks;
 
 namespace Dargon.Courier.TransportTier.Tcp {
+   public class TcpTransportConnectionFailureEventArgs {
+      public TcpTransportConnectionFailureEventArgs(Exception e) {
+         Exception = e;
+      }
+
+      public Exception Exception { get; }
+   }
+
+   public delegate void TcpTransportConnectionFailureHandler(TcpTransportConnectionFailureEventArgs e);
+
    public class TcpTransportHandshakeCompletionEventArgs {
       public TcpTransportHandshakeCompletionEventArgs(Identity remoteIdentity) {
          RemoteIdentity = remoteIdentity;
@@ -27,11 +38,16 @@ namespace Dargon.Courier.TransportTier.Tcp {
       public IPEndPoint RemoteEndpoint { get; }
       public TcpRole Role { get; }
 
+      public event TcpTransportConnectionFailureHandler ConnectionFailure;
       public event TcpTransportHandshakeCompletionHandler HandshakeCompleted;
 
       internal void HandleRemoteHandshakeCompletion(Identity remoteIdentity) {
-         var e = new TcpTransportHandshakeCompletionEventArgs(remoteIdentity);
-         HandshakeCompleted?.Invoke(e);
+         HandshakeCompleted?.Invoke(new TcpTransportHandshakeCompletionEventArgs(remoteIdentity));
+      }
+
+      internal void HandleConnectionFailure(Exception e) {
+         Console.WriteLine("HCF " + e);
+         ConnectionFailure?.Invoke(new TcpTransportConnectionFailureEventArgs(e));
       }
    }
 
@@ -50,7 +66,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
          var payloadUtils = new PayloadUtils(inboundBytesAggregator, outboundBytesAggregator);
          var transport = new TcpTransport(configuration, identity, routingTable, peerTable, inboundMessageDispatcher, tcpRoutingContextContainer, payloadUtils);
          transport.Initialize();
-         mobOperations.RegisterMob(new TcpDebugMob(tcpRoutingContextContainer));
+         mobOperations.RegisterMob(Guid.NewGuid(), new TcpDebugMob(tcpRoutingContextContainer));
          return Task.FromResult<ITransport>(transport);
       }
 

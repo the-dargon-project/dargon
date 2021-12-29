@@ -4,8 +4,9 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.TransportTier {
    public interface ITransport {
-      Task SendMessageBroadcastAsync(MessageDto message);
+      string Description { get; }
 
+      Task SendMessageBroadcastAsync(MessageDto message);
       Task ShutdownAsync();
    }
 }

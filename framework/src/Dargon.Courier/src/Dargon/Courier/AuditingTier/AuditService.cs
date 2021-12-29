@@ -8,7 +8,7 @@ using Dargon.Courier.AuditingTier.Utilities;
 
 namespace Dargon.Courier.AuditingTier {
    public class AuditService {
-      private const int kLogExpirationMillis = 30 * 60 * 1000;
+      private const int kLogExpirationMillis = 24 * 60 * 60 * 1000; // 1 day
       private const int kUpdateIntervalMillis = 1000;
       private const int kLogLength = kLogExpirationMillis / kUpdateIntervalMillis;
 

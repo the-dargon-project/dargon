@@ -31,6 +31,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       private Socket __listenerSocket;
 
       public TcpTransport(TcpTransportConfiguration configuration, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, TcpRoutingContextContainer tcpRoutingContextContainer, PayloadUtils payloadUtils) {
+         this.Description = $"TCP Transport on {configuration.RemoteEndpoint}; {configuration.Role} ({this.GetObjectIdHash():X8})";
          this.configuration = configuration;
          this.identity = identity;
          this.routingTable = routingTable;
@@ -40,21 +41,29 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          this.payloadUtils = payloadUtils;
       }
 
+      public string Description { get; init; }
+
       public void Initialize() {
          runAsyncTask = RunAsync().Forgettable();
       }
 
       private async Task RunAsync() {
-         if (configuration.Role == TcpRole.Server) {
-            await RunServerAsync().ConfigureAwait(false);
-         } else if (configuration.Role == TcpRole.Client) {
-            await RunClientAsync().ConfigureAwait(false);
-         } else {
-            throw new InvalidStateException();
+         try {
+            if (configuration.Role == TcpRole.Server) {
+               await RunServerAsync().ConfigureAwait(false);
+            } else if (configuration.Role == TcpRole.Client) {
+               await RunClientAsync().ConfigureAwait(false);
+            } else {
+               throw new InvalidStateException();
+            }
+         } catch (Exception e) {
+            logger.Error(e, $"Top level exception in {nameof(RunAsync)}");
+            throw;
          }
       }
 
       private async Task RunServerAsync() {
+         bool firstError = true;
          logger.Debug("Entered RunServerAsync");
          while (!shutdownCancellationTokenSource.IsCancellationRequested) {
             try {
@@ -67,15 +76,18 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
 
                while (!shutdownCancellationTokenSource.IsCancellationRequested) {
                   var client = await Task.Factory.FromAsync(listener.BeginAccept, listener.EndAccept, null).ConfigureAwait(false);
-                  Console.BackgroundColor = ConsoleColor.Red;
                   logger.Debug($"Got client socket from {client.RemoteEndPoint}.");
-                  Console.BackgroundColor = ConsoleColor.Black;
 
                   var routingContext = new TcpRoutingContext(configuration, tcpRoutingContextContainer, client, inboundMessageDispatcher, identity, routingTable, peerTable, payloadUtils);
                   tcpRoutingContextContainer.AddOrThrow(routingContext);
                   routingContext.RunAsync().Forget();
                }
-            } catch (SocketException) {
+            } catch (SocketException e) {
+               if (firstError) {
+                  logger.Error(e, $"First socket error in {nameof(RunServerAsync)}");
+                  firstError = false;
+               }
+
                await Task.Delay(kConnectionRetryIntervalMillis).ConfigureAwait(false);
             } catch (ObjectDisposedException) {
                // socket disposed
@@ -85,16 +97,27 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       }
 
       private async Task RunClientAsync() {
+         bool firstError = true;
          while (!shutdownCancellationTokenSource.IsCancellationRequested) {
             try {
+               Console.WriteLine("Connecting to endpoint " + configuration.RemoteEndpoint);
+               logger.Debug($"Connecting to endpoint {configuration.RemoteEndpoint}.");
                var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                client.Connect(configuration.RemoteEndpoint);
+               logger.Debug($"Connected to endpoint {configuration.RemoteEndpoint}.");
 
                var routingContext = new TcpRoutingContext(configuration, tcpRoutingContextContainer, client, inboundMessageDispatcher, identity, routingTable, peerTable, payloadUtils);
                tcpRoutingContextContainer.AddOrThrow(routingContext);
                await routingContext.RunAsync().ConfigureAwait(false);
-            } catch (SocketException) {
+               Console.WriteLine("Exit");
+            } catch (SocketException e) {
+               if (firstError) {
+                  logger.Error(e, $"First socket error in {nameof(RunClientAsync)}");
+                  firstError = false;
+               }
+
                await Task.Delay(kConnectionRetryIntervalMillis).ConfigureAwait(false);
+               configuration.HandleConnectionFailure(e);
             }
          }
       }

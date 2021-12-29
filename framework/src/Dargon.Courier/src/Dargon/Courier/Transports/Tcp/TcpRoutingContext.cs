@@ -62,20 +62,25 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
 
       private async Task RunAsyncHelper() {
          try {
-            await Task.WhenAny(
-               shutdownCancellationTokenSource.Token.AsTask(),
-               Task.WhenAll(
-                  Go(async () => {
-                     var remoteToLocalHandshake = (HandshakeDto)await payloadUtils.ReadPayloadAsync(ns, shutdownCancellationTokenSource.Token).ConfigureAwait(false);
-                     remoteIdentity = remoteToLocalHandshake.Identity;
-                  }),
-                  Go(async () => {
-                     var localToRemoteHandshake = new HandshakeDto { Identity = localIdentity };
-                     await payloadUtils.WritePayloadAsync(ns, localToRemoteHandshake, writerLock, shutdownCancellationTokenSource.Token).ConfigureAwait(false);
-                  }))).ConfigureAwait(false);
+            var shutdownCtsTask = shutdownCancellationTokenSource.Token.AsTask();
+            var sendAndRecvHandshakesTask = Task.WhenAll(
+               Go(async () => {
+                  var remoteToLocalHandshake = (HandshakeDto)await payloadUtils.ReadPayloadAsync(ns, shutdownCancellationTokenSource.Token).ConfigureAwait(false);
+                  remoteIdentity = remoteToLocalHandshake.Identity;
+               }),
+               Go(async () => {
+                  var localToRemoteHandshake = new HandshakeDto { Identity = localIdentity };
+                  await payloadUtils.WritePayloadAsync(ns, localToRemoteHandshake, writerLock, shutdownCancellationTokenSource.Token).ConfigureAwait(false);
+               })
+            );
+            await Task.WhenAny(shutdownCtsTask, sendAndRecvHandshakesTask).ConfigureAwait(false);
 
             if (shutdownCancellationTokenSource.IsCancellationRequested) {
                return;
+            }
+
+            if (sendAndRecvHandshakesTask.IsFaulted) {
+               await sendAndRecvHandshakesTask;
             }
 
             isHandshakeComplete = true;
@@ -94,7 +99,8 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                await Task.WhenAny(
                   readerTask,
                   writerTask,
-                  shutdownCancellationTokenSource.Token.AsTask()
+                  shutdownCtsTask
+
                ).ConfigureAwait(false);
                shutdownCancellationTokenSource.Cancel();
             } catch (OperationCanceledException) when (isShutdown) { }
@@ -210,10 +216,10 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                guids.Add(localIdentity.Id);
             }
 
-            Console.BackgroundColor = guids.IndexOf(localIdentity.Id) == 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkCyan;
+            // Console.BackgroundColor = guids.IndexOf(localIdentity.Id) == 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkCyan;
             logger.Debug($"[{localIdentity.Id.ToString("n").Substring(0, 6)} / {isHandshakeComplete}] {message}");
             logger.Factory.Flush();
-            Console.BackgroundColor = ConsoleColor.Black;
+            // Console.BackgroundColor = ConsoleColor.Black;
          }
       }
 

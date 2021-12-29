@@ -4,6 +4,7 @@ using System.Threading;
 using Dargon.Commons;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.TransportTier.Tcp;
+using Dargon.Courier.Utils;
 using Dargon.Repl;
 using Dargon.Ryu;
 
@@ -25,7 +26,7 @@ namespace Dargon.Courier.Management.Repl {
             ipAndPortString = string.IsNullOrWhiteSpace(ipAndPortString) ? "127.0.0.1:21337" : ipAndPortString;
 
             IPEndPoint endpoint;
-            if (!TryParseIpEndpoint(ipAndPortString, out endpoint)) {
+            if (!IPEndPointUtils.TryParseIpEndpoint(ipAndPortString, out endpoint)) {
                Console.Error.WriteLine($"Failed to parse '{ipAndPortString}' as tcp endpoint.");
                return 1;
             }
@@ -52,20 +53,6 @@ namespace Dargon.Courier.Management.Repl {
             ReplGlobals.ManagementObjectService = managementObjectService;
 
             return 0;
-         }
-
-         private bool TryParseIpEndpoint(string s, out IPEndPoint endpoint) {
-            var parts = s.Split(":");
-            if (parts.Length != 2) {
-               endpoint = null;
-               return false;
-            }
-            IPAddress address;
-            if (!IPAddress.TryParse(parts[0], out address)) {
-               address = Dns.GetHostAddresses(parts[0])[0];
-            }
-            endpoint = new IPEndPoint(address, int.Parse(parts[1]));
-            return true;
          }
       }
    }

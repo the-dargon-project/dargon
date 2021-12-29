@@ -30,6 +30,8 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.udpClient = udpClient;
       }
 
+      public UdpTransportConfiguration Configuration => udpClient.Configuration;
+
       public async Task SendBroadcastAsync(MessageDto message) {
          var packet = PacketDto.Create(
             identity.Id,
@@ -452,9 +454,17 @@ namespace Dargon.Courier.TransportTier.Udp {
       private readonly UdpFacade udpFacade;
 
       public UdpTransport(UdpBroadcaster udpBroadcaster, UdpFacade udpFacade) {
+         // var configuration = udpBroadcaster.Configuration;
+         this.Description = BuildDescription(udpBroadcaster.Configuration);
          this.udpBroadcaster = udpBroadcaster;
          this.udpFacade = udpFacade;
       }
+
+      private string BuildDescription(UdpTransportConfiguration configuration) {
+         return $"UDP Transport RECV_UNICAST {configuration.UnicastReceiveEndpoint}; ADDR_MULTICAST {configuration.MulticastAddress}; RECV_MULTICAST {configuration.MulticastReceiveEndpoint}; SEND_MULTICAST {configuration.MulticastSendEndpoint}; ({this.GetObjectIdHash():X8})";
+      }
+
+      public string Description { get; init; }
 
       public Task SendMessageBroadcastAsync(MessageDto message) {
          return udpBroadcaster.SendBroadcastAsync(message);

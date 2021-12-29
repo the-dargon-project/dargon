@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
+using Dargon.Commons;
 using Dargon.Commons.Collections;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
@@ -14,12 +16,15 @@ namespace Dargon.Courier.TransportTier.Test {
       private readonly InboundMessageDispatcher inboundMessageDispatcher;
 
       public TestTransport(TestTransportFactory testTransportFactory, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher) {
+         this.Description = $"Test Transport ({this.GetObjectIdHash():X8})";
          this.testTransportFactory = testTransportFactory;
          this.identity = identity;
          this.routingTable = routingTable;
          this.peerTable = peerTable;
          this.inboundMessageDispatcher = inboundMessageDispatcher;
       }
+
+      public string Description { get; init; }
 
       public Identity Identity => identity;
       public RoutingTable RoutingTable => routingTable;

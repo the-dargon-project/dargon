@@ -50,6 +50,12 @@ namespace dummy_management_object_server {
          var testMob = new TestMob();
          courierFacade.MobOperations.RegisterMob(testMob);
 
+         Console.WriteLine("Dummy MOB Server Initialized on:");
+
+         foreach (var t in courierFacade.Transports) {
+            Console.WriteLine(" - Transport: " + t.Description);
+         }
+
          new CountdownEvent(1).Wait();
       }
    }

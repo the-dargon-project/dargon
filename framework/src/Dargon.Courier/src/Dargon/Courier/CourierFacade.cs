@@ -21,6 +21,7 @@ namespace Dargon.Courier {
          this.container = container;
       }
 
+      public IReadOnlySet<ITransport> Transports => transports;
       public IRyuContainer Container { get; set; }
       public Identity Identity => container.GetOrThrow<Identity>();
       public InboundMessageRouter InboundMessageRouter => container.GetOrThrow<InboundMessageRouter>();

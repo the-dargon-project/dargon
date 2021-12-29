@@ -26,7 +26,7 @@ namespace Dargon.Courier.ServiceTier.Client {
          Trace.Assert(x.Message.ReceiverId == localIdentity.Id);
 
          var response = x.Body;
-         logger.Info("Handling invocation response for {0}.", response.InvocationId);
+         logger.Trace("Handling invocation response for {0}.", response.InvocationId);
          AsyncBox<RmiResponseDto> responseBox;
          if (!responseBoxes.TryRemove(response.InvocationId, out responseBox)) {
             logger.Error("Could not find response box for invocation id {0}.", response.InvocationId);
