@@ -1,4 +1,7 @@
-﻿namespace Dargon.Commons {
+﻿using System.Collections;
+using System.Collections.Generic;
+
+namespace Dargon.Commons {
    public static class AssertionStatics {
       public static bool AssertIsTrue(this bool val, string message = null) {
          Assert.IsTrue(val, message);
@@ -102,6 +105,16 @@
          Assert.IsTrue(!double.IsPositiveInfinity(val), "Value was +Infinity");
          Assert.IsTrue(!double.IsNegativeInfinity(val), "Value was -Infinity");
          return val;
+      }
+
+      public static T[] AssertLengthEquals<T>(this T[] actual, int expected) {
+         Assert.Equals(expected, actual.Length);
+         return actual;
+      }
+
+      public static List<T> AssertLengthEquals<T>(this List<T> actual, int expected) {
+         Assert.Equals(actual.Count, expected);
+         return actual;
       }
    }
 }

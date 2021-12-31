@@ -44,6 +44,12 @@ namespace Dargon.Commons {
       }
 
       public static T FirstAndOnly<T>(this IEnumerable<T> e) {
+         if (e is T[] arr) {
+            if (arr.Length == 0) throw new ArgumentOutOfRangeException("No element 0");
+            else if (arr.Length >= 2) throw new InvalidOperationException("More than one element!");
+            return arr[0];
+         }
+
          using (var it = e.GetEnumerator()) {
             if (!it.MoveNext()) throw new ArgumentOutOfRangeException("No element 0");
             var res = it.Current;
