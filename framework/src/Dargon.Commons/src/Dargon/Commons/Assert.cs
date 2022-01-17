@@ -46,6 +46,18 @@ namespace Dargon.Commons {
          }
       }
 
+      public static void ReferenceEquals<T>(T expected, T actual) {
+         if (!object.ReferenceEquals(expected, actual)) {
+            Fail($"AssertReferenceEquals failed. Expected: {expected}, Actual: {actual}");
+         }
+      }
+
+      public static void ReferenceNotEquals<T>(T val, T actual) {
+         if (object.ReferenceEquals(val, actual)) {
+            Fail($"AssertReferenceNotEquals failed. Val: {val}, Actual: {actual}");
+         }
+      }
+
       public static void IsLessThan(float left, float right) {
          if (left >= right) {
             Fail($"{nameof(IsLessThan)} failed. {left} >= {right}");

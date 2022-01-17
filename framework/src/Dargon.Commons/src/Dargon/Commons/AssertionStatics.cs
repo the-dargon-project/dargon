@@ -33,6 +33,16 @@ namespace Dargon.Commons {
          return val;
       }
 
+      public static T AssertReferenceEquals<T>(this T actual, T expected) where T : class {
+         Assert.ReferenceEquals(expected, actual);
+         return actual;
+      }
+
+      public static T AssertReferenceNotEquals<T>(this T val, T actual) where T : class {
+         Assert.ReferenceNotEquals(val, actual);
+         return val;
+      }
+
       public static float AssertIsLessThan(this float left, float right) {
          Assert.IsLessThan(left, right);
          return left;
