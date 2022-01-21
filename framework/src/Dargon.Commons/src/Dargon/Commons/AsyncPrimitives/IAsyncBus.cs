@@ -7,10 +7,12 @@ namespace Dargon.Commons.AsyncPrimitives {
    }
 
    public interface IAsyncSubscriber<T> {
-      void Subscribe(Func<IAsyncSubscriber<T>, T, Task> handler);
+      Task<IDisposable> SubscribeAsync(SubscriberCallbackFunc<T> handler);
    }
 
    public interface IAsyncBus<T> : IAsyncPoster<T>, IAsyncSubscriber<T> { }
+
+   public delegate Task SubscriberCallbackFunc<T>(IAsyncSubscriber<T> self, T thing);
 
    public static class EventBusStatics {
       public static IAsyncPoster<T> Poster<T>(this IAsyncBus<T> bus) => bus;

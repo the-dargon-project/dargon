@@ -185,12 +185,12 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          return SendHelperAsync(destination, message);
       }
 
-      private async Task SendHelperAsync(Guid destination, MessageDto message) {
+      private Task SendHelperAsync(Guid destination, MessageDto message) {
          Debug(
             $"Sending to {destination.ToString("n").Substring(0, 6)} message {message}. " + Environment.NewLine +
             $"clientIdentity matches destination: {remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)}");
          if (!isHandshakeComplete || !remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)) {
-            return;
+            return Task.CompletedTask;
          }
 
          var completionLatch = new AsyncLatch();
@@ -199,6 +199,11 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          outboundMessageQueue.Enqueue(message);
          outboundMessageSignal.Release();
 
+         return SendHelperWaitForCompletionLatchAndCleanupAsync(destination, message, completionLatch);
+
+      }
+
+      private async Task SendHelperWaitForCompletionLatchAndCleanupAsync(Guid destination, MessageDto message, AsyncLatch completionLatch) {
          Debug($"Awaiting completion for send to {destination.ToString("n").Substring(0, 6)} message {message}.");
          await completionLatch.WaitAsync().ConfigureAwait(false);
          sendCompletionLatchByMessage.RemoveOrThrow(message, completionLatch);

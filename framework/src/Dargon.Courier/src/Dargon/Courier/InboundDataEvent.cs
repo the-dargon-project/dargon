@@ -10,18 +10,31 @@ namespace Dargon.Courier {
       object Body { get; }
    }
 
-   public interface IInboundMessageEvent<out T> {
+   public interface IInboundMessageEvent {
       MessageDto Message { get; }
-      T Body { get; }
       PeerContext Sender { get; }
-      Guid SenderId { get; }
+      Guid SenderId => Message.SenderId;
    }
 
+   public interface IInboundMessageEvent<out T> : IInboundMessageEvent {
+      T Body { get; }
+   }
+
+   public static class InboundMessageEventExtensions {
+      public static IInboundMessageEvent<TBody> CastWithMessageBodyType<TBody>(this IInboundMessageEvent e) {
+         return (IInboundMessageEvent<TBody>)e;
+      }
+   }
+
+   /// <summary>
+   /// Do not hold onto references of <seealso cref="InboundMessageEvent{T}"/>! They are pooled/reused
+   /// and only valid for the duration of a message route / message handler / remote invocation.
+   /// </summary>
+   /// <typeparam name="T"></typeparam>
    public class InboundMessageEvent<T> : IInboundMessageEvent<T>, InternalRoutableInboundMessageEvent {
       public MessageDto Message { get; set; }
       public T Body => (T)Message.Body;
       public PeerContext Sender { get; set; }
-      public Guid SenderId => Message.SenderId;
 
       object InternalRoutableInboundMessageEvent.Body => Body;
 

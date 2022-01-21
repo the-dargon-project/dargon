@@ -4,6 +4,7 @@ using Dargon.Commons;
 using Dargon.Commons.Pooling;
 using Dargon.Commons.Utilities;
 using Dargon.Courier.PeeringTier;
+using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.Vox;
 using Dargon.Vox.Utilities;
 using NLog;
@@ -34,6 +35,8 @@ namespace Dargon.Courier {
          PeerContext peerContext = null;
          if (message.SenderId != Guid.Empty) {
             peerContext = peerTable.GetOrAdd(message.SenderId);
+            // BUG: Without a timeout this is a potential denial of service: flood
+            // messages without sending an identity.
             await peerContext.WaitForDiscoveryAsync().ConfigureAwait(false);
          }
 
@@ -60,9 +63,13 @@ namespace Dargon.Courier {
                e.Message = message;
                e.Sender = peer;
 
+               CourierGlobals.AlsCurrentInboundMessageEventStore.Value = e;
+
                if (!await router.TryRouteAsync(e).ConfigureAwait(false)) {
                   logger.Trace($"Failed to route inbound message of body type {e.Body?.GetType().Name ?? "[null]"}");
                }
+               
+               CourierGlobals.AlsCurrentInboundMessageEventStore.Value = null;
 
                e.Message = null;
                eventPool.ReturnObject(e);

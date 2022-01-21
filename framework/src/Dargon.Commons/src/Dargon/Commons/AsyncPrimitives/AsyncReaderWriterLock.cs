@@ -10,17 +10,17 @@ namespace Dargon.Commons.AsyncPrimitives {
       private int pendingReadersCount = 0;
       private int readerCount = 0;
 
-      public async Task<IDisposable> WriterLockAsync() {
+      public async Task<DecrementOnDisposeAndReleaseOnCallbackZeroResult> WriterLockAsync() {
          await semaphore.WaitAsync().ConfigureAwait(false);
          return new DecrementOnDisposeAndReleaseOnCallbackZeroResult(
             () => 0,
             semaphore);
       }
 
-      public Task<IDisposable> ReaderLockAsync() {
+      public Task<DecrementOnDisposeAndReleaseOnCallbackZeroResult> ReaderLockAsync() {
          var spinner = new SpinWait();
          while (true) {
-            var originalReaderCount = readerCount;
+            var originalReaderCount = Interlocked.CompareExchange(ref readerCount, 0, 0);
             var nextReaderCount = originalReaderCount + 1;
             if (Interlocked.CompareExchange(ref readerCount, nextReaderCount, originalReaderCount) == originalReaderCount) {
                if (originalReaderCount == 0) {
@@ -33,19 +33,20 @@ namespace Dargon.Commons.AsyncPrimitives {
          }
       }
 
-      private async Task<IDisposable> ReaderLockCoordinatorRoleAsync() {
+      private async Task<DecrementOnDisposeAndReleaseOnCallbackZeroResult> ReaderLockCoordinatorRoleAsync() {
          await semaphore.WaitAsync().ConfigureAwait(false);
 
-         int allReadersCount = 0;
+         int allReadersCount;
          while (true) {
-            var existingReaderCount = readerCount;
-            allReadersCount += existingReaderCount;
-            if (Interlocked.Add(ref readerCount, -existingReaderCount) == 0) {
+            var readerCountCapture = readerCount;
+            // allReadersCount += existingReaderCount;
+            if (Interlocked.CompareExchange(ref readerCount, 0, readerCountCapture) == readerCountCapture) {
+               allReadersCount = readerCountCapture;
                break;
             }
          }
 
-         pendingReadersCount = allReadersCount;
+         Interlocked.CompareExchange(ref pendingReadersCount, allReadersCount, 0).AssertEquals(0);
 
          var spinner = new SpinWait();
          for (var i = 0; i < allReadersCount - 1; i++) {
@@ -60,7 +61,7 @@ namespace Dargon.Commons.AsyncPrimitives {
             semaphore);
       }
 
-      private async Task<IDisposable> ReaderLockFollowerRoleAsync() {
+      private async Task<DecrementOnDisposeAndReleaseOnCallbackZeroResult> ReaderLockFollowerRoleAsync() {
          var latch = new AsyncLatch();
          readerQueue.Enqueue(latch);
          await latch.WaitAsync(CancellationToken.None).ConfigureAwait(false);
@@ -69,7 +70,7 @@ namespace Dargon.Commons.AsyncPrimitives {
             semaphore);
       }
 
-      private class DecrementOnDisposeAndReleaseOnCallbackZeroResult : IDisposable {
+      public struct DecrementOnDisposeAndReleaseOnCallbackZeroResult : IDisposable {
          private readonly Func<int> callback;
          private readonly AsyncSemaphore semaphore;
 

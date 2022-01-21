@@ -1,6 +1,7 @@
 ﻿using Dargon.Courier.AuditingTier;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.ManagementTier.Vox;
+using Dargon.Courier.PubSubTier.Vox;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Vox;
 using Dargon.Courier.TransportTier.Tcp.Vox;
@@ -9,7 +10,11 @@ using Dargon.Vox;
 
 namespace Dargon.Courier.TransportTier.Udp.Vox {
    public class CourierVoxTypes : VoxTypes {
-      public CourierVoxTypes() : base(0) {
+      // reservation is actually from 1 to 99, but for pretty baseIds (e.g. 30 vs 29) I'm coding 0 to 99 instead.
+      private const int kVoxIdBase = 0;
+      private const int KVoxIdReservationLength = 100;
+
+      public CourierVoxTypes() : base(kVoxIdBase, 100) {
          // Courier Core (starts at 1 - note can't use 0 as that's TNull in Vox).
          Register<MessageDto>(1);
 
@@ -42,6 +47,10 @@ namespace Dargon.Courier.TransportTier.Udp.Vox {
          Register(managementBaseId + 6, typeof(ManagementDataSetDto<>));
          Register(managementBaseId + 7, typeof(DataPoint<>));
          Register(managementBaseId + 8, typeof(AggregateStatistics<>));
+
+         // PubSub
+         var pubSubBaseId = 50;
+         Register<PubSubNotification>(pubSubBaseId + 0);
       }
    }
 }

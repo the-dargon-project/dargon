@@ -54,4 +54,8 @@ namespace Dargon.Commons.Templating {
    public struct TInt64_10_000_000_000 : ITemplateInt64 {
       public long Value => 10_000_000_000;
    }
+
+   public interface ITemplateString {
+      public string Value { get; }
+   }
 }

@@ -46,7 +46,7 @@ namespace Dargon.Courier.ServiceTier.Server {
 
       public async Task HandleInvocationRequestAsync(IInboundMessageEvent<RmiRequestDto> e) {
          Trace.Assert(e.Message.ReceiverId == identity.Id);
-
+         
          if (logger.IsDebugEnabled) {
             logger.Debug($"Received RMI {e.Body.InvocationId.ToString("n").Substring(0, 6)} Request on method {e.Body.MethodName} for service {e.Body.ServiceId.ToString("n").Substring(0, 6)}");
          }
@@ -60,6 +60,7 @@ namespace Dargon.Courier.ServiceTier.Server {
             return;
          }
 
+         // TODO: Cache this reflection
          var typeInfo = service.GetType().GetTypeInfo();
          var method = typeInfo.GetMethod(request.MethodName);
          if (method.IsGenericMethodDefinition) {

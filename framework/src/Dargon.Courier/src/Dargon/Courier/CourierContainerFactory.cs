@@ -9,6 +9,9 @@ using Dargon.Commons.Collections;
 using Dargon.Courier.AuditingTier;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
+using Dargon.Courier.PubSubTier;
+using Dargon.Courier.PubSubTier.Publishers;
+using Dargon.Courier.PubSubTier.Subscribers;
 using Dargon.Courier.RoutingTier;
 using Dargon.Courier.ServiceTier;
 using Dargon.Courier.ServiceTier.Client;
@@ -68,37 +71,42 @@ namespace Dargon.Courier {
          var proxyGenerator = container.GetOrDefault<ProxyGenerator>() ?? new ProxyGenerator();
          var shutdownCancellationTokenSource = new CancellationTokenSource();
 
-         // Auditing Subsystem
+         // Auditing Tier Containers
          var auditService = new AuditService(shutdownCancellationTokenSource.Token);
          auditService.Initialize();
 
-         // management tier containers
+         // Management Tier Containers (depended upon by core systems)
          var mobContextContainer = new MobContextContainer();
          var mobContextFactory = new MobContextFactory(auditService);
          var mobOperations = new MobOperations(mobContextFactory, mobContextContainer);
+         container.Set(mobOperations);
          // var courierContainerMobNamespace = "Dargon.Courier.Instances." + this.GetObjectIdHash().ToString("X8");
 
-         // Other Courier Stuff
+         // Core layers
          var identity = Identity.Create(forceId);
-         var routingTable = new RoutingTable();
+         container.Set(identity);
+
+         // inbound
          var peerDiscoveryEventBus = new AsyncBus<PeerDiscoveryEvent>();
          var peerTable = new PeerTable(container, (table, peerId) => new PeerContext(table, peerId, peerDiscoveryEventBus));
-
          var inboundMessageRouter = new InboundMessageRouter();
          var inboundMessageDispatcher = new InboundMessageDispatcher(identity, peerTable, inboundMessageRouter);
+         container.Set(peerTable);
+         container.Set(inboundMessageRouter);
 
+         // outbound
+         var routingTable = new RoutingTable();
+         container.Set(routingTable);
+
+         // transports
          var transports = new ConcurrentSet<ITransport>();
          foreach (var transportFactory in transportFactories) {
             var transport = await transportFactory.CreateAsync(mobOperations, identity, routingTable, peerTable, inboundMessageDispatcher, auditService).ConfigureAwait(false);
             transports.TryAdd(transport);
          }
 
+         // messenger
          var messenger = new Messenger(identity, transports, routingTable);
-
-         container.Set(identity);
-         container.Set(routingTable);
-         container.Set(peerTable);
-         container.Set(inboundMessageRouter);
          container.Set(messenger);
 
          //----------------------------------------------------------------------------------------
@@ -117,9 +125,24 @@ namespace Dargon.Courier {
          //----------------------------------------------------------------------------------------
          var managementObjectService = new ManagementObjectService(mobContextContainer, mobOperations);
          localServiceRegistry.RegisterService<IManagementObjectService>(managementObjectService);
-         container.Set(mobOperations);
          container.Set(managementObjectService);
 
+         //----------------------------------------------------------------------------------------
+         // PubSub Tier
+         //----------------------------------------------------------------------------------------
+         var localTopicsTable = new LocalTopicsTable();
+         var publisher = new Publisher(messenger, localTopicsTable);
+         var subscriber = new Subscriber(inboundMessageRouter, remoteServiceProxyContainer);
+         var pubSubClient = new PubSubClient(publisher, subscriber);
+         container.Set(publisher);
+         container.Set(subscriber);
+         container.Set(pubSubClient);
+
+         var pubSubService = new PubSubService(localTopicsTable);
+         localServiceRegistry.RegisterService<IPubSubService>(pubSubService);
+         container.Set(pubSubService);
+
+         // Courier Facade
          var facade = new CourierFacade(transports, container);
          container.Set(facade);
 

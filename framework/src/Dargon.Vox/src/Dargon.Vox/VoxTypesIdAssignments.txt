@@ -1,0 +1,14 @@
+﻿Roughly -2^6-2^6 is serialized as 1 byte
+<=0: Vox Internal Types (see TypeId.cs)
+1-99: CourierVoxTypes.
+
+After 2^6-ish (we'll just say 100) TypeIds serialized as 2 bytes.
+Of note, the lowest 6 bits are encoded first, then the following 8 bits.
+For this reason, it's recommended to start applications at hexadecimal
+VoxIds like 0xXY00
+
+1000+: Standalone Applications
+
+0x0100 - Derp
+
+At roughly 2^13 (8192, 0x2000), TypeIDs get serialized as 3 bytes.

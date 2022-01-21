@@ -27,6 +27,7 @@ namespace Dargon.Courier.PeeringTier {
       public PeerTable PeerTable => peerTable;
       public bool Discovered { get; private set; }
       public Identity Identity { get; }
+      public DateTime LastIdentityUpdateTimeUtc { get; private set; }
 
       public Task WaitForDiscoveryAsync(CancellationToken cancellationToken = default(CancellationToken)) {
          return discoveryLatch.WaitAsync(cancellationToken);
@@ -35,6 +36,7 @@ namespace Dargon.Courier.PeeringTier {
       public void HandleInboundPeerIdentityUpdate(Identity identity) {
 //         logger.Trace($"Got announcement from peer {identity}!");
          Identity.Update(identity);
+         LastIdentityUpdateTimeUtc = DateTime.UtcNow;
 
          if (Interlocked.CompareExchange(ref discoveryState, kDiscovered, kNotDiscovered) == kNotDiscovered) {
             Go(async () => {
