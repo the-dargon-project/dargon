@@ -18,7 +18,7 @@ namespace Dargon.Ryu {
       public IRyuFacade Create(RyuConfiguration configuration) {
          IAssemblyLoader assemblyLoader = new AssemblyLoader(logger);
          IModuleLoader moduleLoader = new ModuleLoader();
-         IActivator activator = new Activator();
+         IActivator activator = new Activator(logger);
          IModuleSorter moduleSorter = new ModuleSorter();
          IModuleImporter moduleImporter = new ModuleImporter(moduleSorter);
          var bootstrapper = new Bootstrapper(assemblyLoader, moduleLoader, activator, moduleImporter);

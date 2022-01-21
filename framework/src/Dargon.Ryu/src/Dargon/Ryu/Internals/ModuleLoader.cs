@@ -18,7 +18,7 @@ namespace Dargon.Ryu.Internals {
          foreach (var assembly in assemblies) {
             var moduleTypes = assembly.GetTypes().Where(IsLoadableRyuModuleType);
             var moduleInstances = moduleTypes.Select(System.Activator.CreateInstance);
-            modules.AddRange(moduleInstances.Cast<IRyuModule>());
+            modules.AddRange(moduleInstances.Cast<IRyuModule>().Where(m => m.IsAutomaticLoadEnabled()));
          }
          modules.AddRange(configuration.AdditionalModules);
          return modules;
