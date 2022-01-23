@@ -11,7 +11,7 @@ namespace Dargon.Commons.Channels {
 
    public interface ReadableChannel<T> : CountableChannel {
       bool TryRead(out T message);
-      Task<T> ReadAsync(CancellationToken cancellationToken, Func<T, bool> acceptanceTest);
+      Task<T> ReadAsync(CancellationToken cancellationToken = default, Func<T, bool> acceptanceTest = null);
    }
 
    public interface WritableChannel<T> : CountableChannel {

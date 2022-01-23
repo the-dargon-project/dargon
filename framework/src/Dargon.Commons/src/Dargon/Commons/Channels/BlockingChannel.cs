@@ -31,37 +31,37 @@ namespace Dargon.Commons.Channels {
                }
             }
          } finally {
-            Assert.IsTrue(context.state == WriterContext.kStateCancelled ||
-                          context.state == WriterContext.kStateCompleted);
+            var stateCapture = Interlocked2.Read(ref context.state);
+            Assert.IsTrue(stateCapture == WriterContext.kStateCancelled ||
+                          stateCapture == WriterContext.kStateCompleted);
          }
       }
 
       public bool TryRead(out T message) {
-         if (!queueSemaphore.TryTake()) {
-            message = default(T);
-            return false;
-         }
-         SpinWait spinner = new SpinWait();
-         WriterContext context;
-         while (!writerQueue.TryDequeue(out context)) {
-            spinner.SpinOnce();
-         }
-         var oldState = Interlocked.CompareExchange(ref context.state, WriterContext.kStateCompleting, WriterContext.kStatePending);
-         if (oldState == WriterContext.kStatePending) {
-            Interlocked.CompareExchange(ref context.state, WriterContext.kStateCompleted, WriterContext.kStateCompleting);
-            context.completingFreedEvent.Set();
-            context.completionLatch.SetOrThrow();
-            message = context.value;
-            return true;
-         } else if (oldState == WriterContext.kStateCompleted) {
-            throw new InvalidStateException();
-         } else if (oldState == WriterContext.kStateCompleted) {
-            throw new InvalidStateException();
-         } else if (oldState == WriterContext.kStateCompleted) {
-            message = default(T);
-            return false;
-         } else {
-            throw new InvalidStateException();
+         while (true) {
+            if (!queueSemaphore.TryTake()) {
+               message = default(T);
+               return false;
+            }
+
+            SpinWait spinner = new SpinWait();
+            WriterContext context;
+            while (!writerQueue.TryDequeue(out context)) {
+               spinner.SpinOnce();
+            }
+
+            var oldState = Interlocked.CompareExchange(ref context.state, WriterContext.kStateCompleting, WriterContext.kStatePending);
+            if (oldState == WriterContext.kStatePending) {
+               Interlocked.CompareExchange(ref context.state, WriterContext.kStateCompleted, WriterContext.kStateCompleting);
+               context.completingFreedEvent.Set();
+               context.completionLatch.SetOrThrow();
+               message = context.value;
+               return true;
+            } else if (oldState == WriterContext.kStateCancelled) {
+               continue;
+            } else {
+               throw new InvalidStateException();
+            }
          }
       }
 

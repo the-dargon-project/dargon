@@ -111,6 +111,29 @@ namespace Dargon.Commons {
 
       public static void Noop<T>(this T self) { }
 
+      public static T GetDefaultOfType<T>(this T self) => default(T);
+
+      public static T Tap<T>(this T self, Action<T> func) {
+         func(self);
+         return self;
+      }
+
+      public static T[] TapEach<T>(this T[] self, Action<T> func) {
+         foreach (var x in self) {
+            func(x);
+         }
+
+         return self;
+      }
+
+      public static TEnumerable TapEach<T, TEnumerable>(this TEnumerable self, Action<T> func) where TEnumerable : IEnumerable<T> {
+         foreach (var x in self) {
+            func(x);
+         }
+
+         return self;
+      }
+
       public static T Tee<T>(this T self, Action cb) {
          cb();
          return self;
@@ -119,6 +142,10 @@ namespace Dargon.Commons {
       public static T Tee<T>(this T self, Action<T> cb) {
          cb(self);
          return self;
+      }
+
+      public static U Then<T, U>(this T self, Func<T, U> func) {
+         return func(self);
       }
 
       public static U Pipe<T, U>(this T self, Func<T, U> cb) => cb(self);

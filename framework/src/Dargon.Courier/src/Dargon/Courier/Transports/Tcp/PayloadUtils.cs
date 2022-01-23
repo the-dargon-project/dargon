@@ -51,10 +51,15 @@ namespace Dargon.Courier.TransportTier.Tcp {
          buffer = buffer ?? new byte[count];
          int bytesRemaining = count;
          int totalBytesRead = 0;
+         var spinner = new AsyncSpinner();
          while (bytesRemaining > 0) {
             int bytesRead = await stream.ReadAsync(buffer, totalBytesRead, bytesRemaining, cancellationToken).ConfigureAwait(false);
             bytesRemaining -= bytesRead;
             totalBytesRead += bytesRead;
+            if (bytesRead == 0) {
+               // TODO: Why is bytesRead sometimes 0? In that case ReadAsync returns 0 immediately.
+               await spinner.SpinAsync();
+            }
          }
          return buffer;
       }

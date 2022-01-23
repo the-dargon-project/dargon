@@ -143,7 +143,20 @@ namespace Dargon.Courier {
          container.Set(pubSubService);
 
          // Courier Facade
-         var facade = new CourierFacade(transports, container);
+         var facade = new CourierFacade(transports, container) {
+            Identity = identity,
+            InboundMessageRouter = inboundMessageRouter,
+            PeerTable = peerTable,
+            RoutingTable = routingTable,
+            Messenger = messenger,
+            LocalServiceRegistry = localServiceRegistry,
+            RemoteServiceProxyContainer = remoteServiceProxyContainer,
+            MobOperations = mobOperations,
+            ManagementObjectService = managementObjectService,
+            Publisher = publisher,
+            Subscriber = subscriber,
+            PubSubClient = pubSubClient,
+         };
          container.Set(facade);
 
          return container;
@@ -163,6 +176,9 @@ namespace Dargon.Courier {
          OptionalSingleton(c => c.RemoteServiceProxyContainer);
          OptionalSingleton(c => c.MobOperations);
          OptionalSingleton(c => c.ManagementObjectService);
+         OptionalSingleton(c => c.Publisher);
+         OptionalSingleton(c => c.Subscriber);
+         OptionalSingleton(c => c.PubSubClient);
       }
 
       private void OptionalSingleton<T>(Func<CourierFacade, T> cb) {

@@ -10,7 +10,8 @@ namespace Dargon.Courier {
       public async Task Run() {
          var bus = new AsyncBus<int>();
          int val = 0;
-         bus.Subscribe(async (producer, value) => {
+         // whatt is this test? it seems wrong
+         await bus.SubscribeAsync(async (producer, value) => {
             await Task.Delay(1000);
             val = value;
          });

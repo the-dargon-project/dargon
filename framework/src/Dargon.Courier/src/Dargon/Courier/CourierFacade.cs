@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using Dargon.Commons.Collections;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
+using Dargon.Courier.PubSubTier;
+using Dargon.Courier.PubSubTier.Publishers;
+using Dargon.Courier.PubSubTier.Subscribers;
 using Dargon.Courier.RoutingTier;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Server;
@@ -22,16 +25,20 @@ namespace Dargon.Courier {
       }
 
       public IReadOnlySet<ITransport> Transports => transports;
-      public IRyuContainer Container { get; set; }
-      public Identity Identity => container.GetOrThrow<Identity>();
-      public InboundMessageRouter InboundMessageRouter => container.GetOrThrow<InboundMessageRouter>();
-      public PeerTable PeerTable => container.GetOrThrow<PeerTable>();
-      public RoutingTable RoutingTable => container.GetOrThrow<RoutingTable>();
-      public Messenger Messenger => container.GetOrThrow<Messenger>();
-      public LocalServiceRegistry LocalServiceRegistry => container.GetOrThrow<LocalServiceRegistry>();
-      public RemoteServiceProxyContainer RemoteServiceProxyContainer => container.GetOrThrow<RemoteServiceProxyContainer>();
-      public MobOperations MobOperations => container.GetOrThrow<MobOperations>();
-      public ManagementObjectService ManagementObjectService => container.GetOrThrow<ManagementObjectService>();
+      public IRyuContainer Container => container;
+
+      public Identity Identity { get; init; }
+      public InboundMessageRouter InboundMessageRouter { get; init; }
+      public PeerTable PeerTable { get; init; }
+      public RoutingTable RoutingTable { get; init; }
+      public Messenger Messenger { get; init; }
+      public LocalServiceRegistry LocalServiceRegistry { get; init; }
+      public RemoteServiceProxyContainer RemoteServiceProxyContainer { get; init; }
+      public MobOperations MobOperations { get; init; }
+      public ManagementObjectService ManagementObjectService { get; init; }
+      public Publisher Publisher { get; init; }
+      public Subscriber Subscriber { get; init; }
+      public PubSubClient PubSubClient { get; init; }
 
       public async Task ShutdownAsync() {
          foreach (var transport in transports) {

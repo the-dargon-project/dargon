@@ -65,6 +65,15 @@ namespace Dargon.Commons.Collections {
 #endif
       }
 
+      public void AddRange(Span<T> items) {
+         EnsureCapacity(size + items.Length);
+         items.TryCopyTo(store.AsSpan(size)).AssertIsTrue();
+         size += items.Length;
+#if ENABLE_VERSION_CHECK
+         version++;
+#endif
+      }
+
       public void EnsureCapacity(int sz) {
          if (sz > store.Length) {
             var capacity = store.Length;

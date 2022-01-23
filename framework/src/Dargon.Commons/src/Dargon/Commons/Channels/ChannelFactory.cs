@@ -19,13 +19,19 @@ namespace Dargon.Commons.Channels {
          return new BlockingChannel<T>();
       }
 
+      public static ReadableChannel<bool> AtOrAfter(DateTimeOffset when)
+         => Timeout(when.ToUniversalTime() - DateTimeOffset.UtcNow);
+
       public static ReadableChannel<bool> Timeout(int millis) => Timeout(TimeSpan.FromMilliseconds(millis));
 
       public static ReadableChannel<bool> Timeout(TimeSpan interval) {
          var channel = Nonblocking<bool>(1);
 
          Go(async () => {
-            await Task.Delay(interval).ConfigureAwait(false);
+            if (interval > TimeSpan.Zero) {
+               await Task.Delay(interval).ConfigureAwait(false);
+            }
+
 //            Console.WriteLine("Time signalling");
             await channel.WriteAsync(true).ConfigureAwait(false);
          });

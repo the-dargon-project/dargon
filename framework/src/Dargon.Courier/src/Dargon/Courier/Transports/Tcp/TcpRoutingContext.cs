@@ -5,6 +5,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Castle.Core.Logging;
 using Dargon.Commons;
 using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Exceptions;
@@ -54,13 +55,15 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       }
 
       public async Task RunAsync() {
-         Debug($"Entered RunAsync.");
+         Log($"Entered RunAsync.");
          runAsyncInnerTask = RunAsyncHelper();
          await runAsyncInnerTask.ConfigureAwait(false);
-         Debug($"Left RunAsync.");
+         Log($"Left RunAsync.");
       }
 
       private async Task RunAsyncHelper() {
+         bool isRemoteIdentityAssociated = false;
+         bool isRoutingTableRouteRegistered = false;
          try {
             var shutdownCtsTask = shutdownCancellationTokenSource.Token.AsTask();
             var sendAndRecvHandshakesTask = Task.WhenAll(
@@ -89,7 +92,9 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             var writerTask = RunWriterAsync(shutdownCancellationTokenSource.Token).Forgettable();
 
             tcpRoutingContextContainer.AssociateRemoteIdentityOrThrow(remoteIdentity.Id, this);
+            isRemoteIdentityAssociated = true;
             routingTable.Register(remoteIdentity.Id, this);
+            isRoutingTableRouteRegistered = true;
 
             peerTable.GetOrAdd(remoteIdentity.Id).HandleInboundPeerIdentityUpdate(remoteIdentity);
 
@@ -105,18 +110,22 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                shutdownCancellationTokenSource.Cancel();
             } catch (OperationCanceledException) when (isShutdown) { }
          } catch (Exception e) {
-            Debug($"RunAsync threw {e}");
+            Log($"RunAsync threw {e}", LogLevel.Error);
          } finally {
-            if (remoteIdentity != null) {
+            if (isRoutingTableRouteRegistered) {
                routingTable.Unregister(remoteIdentity.Id, this);
-               tcpRoutingContextContainer.RemoveOrThrow(this);
+            }
+
+            if (isRemoteIdentityAssociated) {
                tcpRoutingContextContainer.UnassociateRemoteIdentityOrThrow(remoteIdentity.Id, this);
             }
+
+            tcpRoutingContextContainer.RemoveOrThrow(this);
          }
       }
 
       private async Task RunReaderAsync(CancellationToken token) {
-         Debug($"Entered RunReaderAsync.");
+         Log($"Entered RunReaderAsync.");
          try {
             while (!isShutdown) {
                var payload = await payloadUtils.ReadPayloadAsync(ns, token).ConfigureAwait(false);
@@ -131,30 +140,30 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          } catch (IOException) when (isShutdown) {
             // shutdown
          } catch (Exception e) {
-            Debug($"RunReaderAsync threw {e}");
+            Log($"RunReaderAsync threw {e}", LogLevel.Error);
          }
 
-         Debug($"Exiting RunReaderAsync.");
+         Log($"Exiting RunReaderAsync.");
          ShutdownAsync().Forget();
       }
 
       private async Task RunWriterAsync(CancellationToken token) {
-         Debug($"Entered runWriterAsync.");
+         Log($"Entered runWriterAsync.");
          try {
             while (!isShutdown) {
                await outboundMessageSignal.WaitAsync(token).ConfigureAwait(false);
                Go(async () => {
-                  Debug($"Entered message writer task.");
+                  Log($"Entered message writer task.");
                   MessageDto message;
                   if (!outboundMessageQueue.TryDequeue(out message)) {
                      throw new InvalidStateException();
                   }
 
-                  Debug($"Writing message {message} destination {message.ReceiverId.ToString("n").Substring(0, 6)}.");
+                  Log($"Writing message {message} destination {message.ReceiverId.ToString("n").Substring(0, 6)}.");
                   await payloadUtils.WritePayloadAsync(ns, message, writerLock, token).ConfigureAwait(false);
-                  Debug($"Wrote message {message} destination {message.ReceiverId.ToString("n").Substring(0, 6)}.");
+                  Log($"Wrote message {message} destination {message.ReceiverId.ToString("n").Substring(0, 6)}.");
                   sendCompletionLatchByMessage[message].SetOrThrow();;
-                  Debug($"Exiting message writer task.");
+                  Log($"Exiting message writer task.");
                }).Forget();
             }
          } catch (ObjectDisposedException) when (isShutdown) {
@@ -164,10 +173,10 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          } catch (IOException) when (isShutdown) {
             // shutdown
          } catch (Exception e) {
-            Debug($"runWriterAsync threw {e}");
+            Log($"runWriterAsync threw {e}", LogLevel.Error);
          }
 
-         Debug($"exiting runWriterAsync");
+         Log($"exiting runWriterAsync", LogLevel.Debug);
          ShutdownAsync().Forget();
       }
 
@@ -186,7 +195,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       }
 
       private Task SendHelperAsync(Guid destination, MessageDto message) {
-         Debug(
+         Log(
             $"Sending to {destination.ToString("n").Substring(0, 6)} message {message}. " + Environment.NewLine +
             $"clientIdentity matches destination: {remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)}");
          if (!isHandshakeComplete || !remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)) {
@@ -204,17 +213,17 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       }
 
       private async Task SendHelperWaitForCompletionLatchAndCleanupAsync(Guid destination, MessageDto message, AsyncLatch completionLatch) {
-         Debug($"Awaiting completion for send to {destination.ToString("n").Substring(0, 6)} message {message}.");
+         Log($"Awaiting completion for send to {destination.ToString("n").Substring(0, 6)} message {message}.");
          await completionLatch.WaitAsync().ConfigureAwait(false);
          sendCompletionLatchByMessage.RemoveOrThrow(message, completionLatch);
 
-         Debug($"Completed send to {destination.ToString("n").Substring(0, 6)} message {message}.");
+         Log($"Completed send to {destination.ToString("n").Substring(0, 6)} message {message}.");
       }
 
       private static object aLock = new object();
       private static List<Guid> guids = new List<Guid>();
 
-      private void Debug(string message) {
+      private void Log(string message, LogLevel levelElseTraceOpt = null) {
          // yes this is ghetto
          lock (aLock) {
             if (!guids.Contains(localIdentity.Id)) {
@@ -222,7 +231,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             }
 
             // Console.BackgroundColor = guids.IndexOf(localIdentity.Id) == 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkCyan;
-            logger.Debug($"[{localIdentity.Id.ToString("n").Substring(0, 6)} / {isHandshakeComplete}] {message}");
+            logger.Log(levelElseTraceOpt ?? LogLevel.Trace, $"[{localIdentity.Id.ToString("n").Substring(0, 6)} / {isHandshakeComplete}] {message}");
             logger.Factory.Flush();
             // Console.BackgroundColor = ConsoleColor.Black;
          }

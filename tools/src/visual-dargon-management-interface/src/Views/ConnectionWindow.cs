@@ -9,6 +9,7 @@ using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Courier.TransportTier.Tcp.Server;
 using Dargon.Courier.Utils;
 using Dargon.Ryu;
+using Dargon.Vox.Ryu;
 using Resources;
 using Views;
 
@@ -158,10 +159,17 @@ namespace Dargon.Courier.Management.GUI.Views {
             completionLatch.Set();
          };
 
-         var courierFacade = CourierBuilder.Create(new RyuFactory().Create())
-                                     .UseTransport(new TcpTransportFactory(tcpTransportConfiguration))
-                                     .BuildAsync()
-                                     .Result;
+         var ryuConfig = new RyuConfiguration {
+            AdditionalModules = {
+               new CourierRyuModule(),
+               new VoxRyuExtensionModule(),
+            }
+         };
+         var ryu = new RyuFactory().Create(ryuConfig);
+         var courierFacade = CourierBuilder.Create(ryu)
+                                           .UseTransport(new TcpTransportFactory(tcpTransportConfiguration))
+                                           .BuildAsync()
+                                           .Result;
 
          completionLatch.WaitOne();
 

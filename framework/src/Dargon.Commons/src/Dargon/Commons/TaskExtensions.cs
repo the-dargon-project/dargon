@@ -14,27 +14,6 @@ namespace Dargon.Commons {
          await task.ConfigureAwait(false);
       }
 
-      public static T Tap<T>(this T self, Action<T> func) {
-         func(self);
-         return self;
-      }
-
-      public static T[] TapEach<T>(this T[] self, Action<T> func) {
-         foreach (var x in self) {
-            func(x);
-         }
-
-         return self;
-      }
-
-      public static TEnumerable TapEach<T, TEnumerable>(this TEnumerable self, Action<T> func) where TEnumerable : IEnumerable<T> {
-         foreach (var x in self) {
-            func(x);
-         }
-
-         return self;
-      }
-
       public static async Task Tap(this Task self, Action func) {
          await self;
          func();
@@ -55,10 +34,6 @@ namespace Dargon.Commons {
          var result = await self;
          await func(result);
          return result;
-      }
-
-      public static U Then<T, U>(this T self, Func<T, U> func) {
-         return func(self);
       }
 
       public static async Task<U> Then<U>(this Task self, Func<U> func) {

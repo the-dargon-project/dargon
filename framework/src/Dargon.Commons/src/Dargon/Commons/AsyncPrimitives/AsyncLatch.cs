@@ -13,6 +13,8 @@ namespace Dargon.Commons.AsyncPrimitives {
       private const int kStateSignalled = 1;
       private int state = kStateUnsignalled;
 
+      public bool IsSignalled => Interlocked2.Read(ref state) == kStateSignalled;
+
       public Task WaitAsync(CancellationToken token = default(CancellationToken)) {
          if (!token.CanBeCanceled) {
             return tcs.Task;
