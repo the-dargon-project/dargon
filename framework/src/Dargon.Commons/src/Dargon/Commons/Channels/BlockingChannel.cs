@@ -74,7 +74,7 @@ namespace Dargon.Commons.Channels {
             }
             var oldState = Interlocked.CompareExchange(ref context.state, WriterContext.kStateCompleting, WriterContext.kStatePending);
             if (oldState == WriterContext.kStatePending) {
-               if (acceptanceTest(context.value)) {
+               if (acceptanceTest?.Invoke(context.value) ?? true) {
                   Interlocked.CompareExchange(ref context.state, WriterContext.kStateCompleted, WriterContext.kStateCompleting);
                   context.completingFreedEvent.Set();
                   context.completionLatch.SetOrThrow();

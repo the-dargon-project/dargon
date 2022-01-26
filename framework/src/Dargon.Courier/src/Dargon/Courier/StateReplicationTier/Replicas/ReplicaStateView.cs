@@ -22,9 +22,11 @@ namespace Dargon.Courier.StateReplicationTier.Replicas {
          this.stateUpdateProcessor = stateUpdateProcessor;
       }
 
+      public Task WaitForAndProcessInitialStateUpdateAsync() => stateUpdateProcessor.WaitForAndProcessInitialStateUpdateAsync();
+
       public void ProcessUpdates() {
          if (stateUpdateProcessor.HasInboundUpdates) {
-            stateUpdateProcessor.IngestInboundUpdates();
+            stateUpdateProcessor.ProcessQueuedUpdates();
          }
       }
 

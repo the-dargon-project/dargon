@@ -4,11 +4,12 @@ using Dargon.Courier.ManagementTier.Vox;
 using Dargon.Courier.PubSubTier.Vox;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Vox;
+using Dargon.Courier.StateReplicationTier.Vox;
 using Dargon.Courier.TransportTier.Tcp.Vox;
-using Dargon.Courier.Vox;
+using Dargon.Courier.TransportTier.Udp.Vox;
 using Dargon.Vox;
 
-namespace Dargon.Courier.TransportTier.Udp.Vox {
+namespace Dargon.Courier.Vox {
    public class CourierVoxTypes : VoxTypes {
       // reservation is actually from 1 to 99, but for pretty baseIds (e.g. 30 vs 29) I'm coding 0 to 99 instead.
       private const int kVoxIdBase = 0;
@@ -51,6 +52,10 @@ namespace Dargon.Courier.TransportTier.Udp.Vox {
          // PubSub
          var pubSubBaseId = 50;
          Register<PubSubNotification>(pubSubBaseId + 0);
+
+         // StateTier
+         var stateTierBaseId = 60;
+         Register<StateUpdateDto>(stateTierBaseId + 0);
       }
    }
 }

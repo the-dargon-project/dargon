@@ -26,6 +26,7 @@ namespace Dargon.Courier {
    public class CourierBuilder {
       private readonly ConcurrentSet<ITransportFactory> transportFactories = new ConcurrentSet<ITransportFactory>();
       private readonly IRyuContainer parentContainer;
+      private SynchronizationContext synchronizationContext;
       private Guid? forceId;
 
       private CourierBuilder(IRyuContainer parentContainer) {
@@ -37,6 +38,11 @@ namespace Dargon.Courier {
          return this;
       }
 
+      public CourierBuilder UseSynchronizationContext(SynchronizationContext synchronizationContext) {
+         this.synchronizationContext = synchronizationContext;
+         return this;
+      }
+
       public CourierBuilder ForceIdentity(Guid? id) {
          forceId = id;
          return this;
@@ -44,7 +50,10 @@ namespace Dargon.Courier {
 
       public async Task<CourierFacade> BuildAsync() {
          var courierContainerFactory = new CourierContainerFactory(parentContainer);
-         var courierContainer = await courierContainerFactory.CreateAsync(transportFactories, forceId).ConfigureAwait(false);
+         var courierSynchronizationContexts = new CourierSynchronizationContexts {
+            CourierDefault = synchronizationContext ?? DefaultThreadPoolSynchronizationContext.Instance,
+         };
+         var courierContainer = await courierContainerFactory.CreateAsync(transportFactories, courierSynchronizationContexts, forceId).ConfigureAwait(false);
          return courierContainer.GetOrThrow<CourierFacade>();
       }
 
@@ -57,6 +66,10 @@ namespace Dargon.Courier {
       }
    }
 
+   public class CourierSynchronizationContexts {
+      public SynchronizationContext CourierDefault;
+   }
+
    public class CourierContainerFactory {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -66,8 +79,10 @@ namespace Dargon.Courier {
          this.root = root;
       }
 
-      public async Task<IRyuContainer> CreateAsync(IReadOnlySet<ITransportFactory> transportFactories, Guid? forceId = null) {
+      public async Task<IRyuContainer> CreateAsync(IReadOnlySet<ITransportFactory> transportFactories, CourierSynchronizationContexts synchronizationContexts, Guid? forceId = null) {
          var container = root.CreateChildContainer();
+         container.Set(synchronizationContexts);
+
          var proxyGenerator = container.GetOrDefault<ProxyGenerator>() ?? new ProxyGenerator();
          var shutdownCancellationTokenSource = new CancellationTokenSource();
 
@@ -144,6 +159,7 @@ namespace Dargon.Courier {
 
          // Courier Facade
          var facade = new CourierFacade(transports, container) {
+            SynchronizationContexts = synchronizationContexts,
             Identity = identity,
             InboundMessageRouter = inboundMessageRouter,
             PeerTable = peerTable,
@@ -167,6 +183,7 @@ namespace Dargon.Courier {
       public override RyuModuleFlags Flags => RyuModuleFlags.Default;
 
       public CourierRyuModule() {
+         OptionalSingleton(c => c.SynchronizationContexts);
          OptionalSingleton(c => c.Identity);
          OptionalSingleton(c => c.InboundMessageRouter);
          OptionalSingleton(c => c.PeerTable);

@@ -27,6 +27,7 @@ namespace Dargon.Courier {
       public IReadOnlySet<ITransport> Transports => transports;
       public IRyuContainer Container => container;
 
+      public CourierSynchronizationContexts SynchronizationContexts { get; set; }
       public Identity Identity { get; init; }
       public InboundMessageRouter InboundMessageRouter { get; init; }
       public PeerTable PeerTable { get; init; }

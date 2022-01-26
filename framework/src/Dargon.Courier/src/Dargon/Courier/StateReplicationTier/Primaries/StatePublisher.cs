@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Dargon.Commons;
+using Dargon.Commons.AsyncAwait;
 using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Channels;
+using Dargon.Commons.Utilities;
 using Dargon.Courier.PubSubTier.Publishers;
 using Dargon.Courier.StateReplicationTier.States;
 using Dargon.Courier.StateReplicationTier.Vox;
@@ -13,6 +15,7 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       where TSnapshot : IStateSnapshot 
       where TDelta : class, IStateDelta
       where TOperations : IStateDeltaOperations<TState, TSnapshot, TDelta> {
+      private const object kCreateCatchupSnapshotDtoMarker = null;
       private readonly Publisher publisher;
       private readonly TOperations ops;
       private readonly Guid topicId;
@@ -21,6 +24,8 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       private readonly AsyncLock sync = new AsyncLock();
       private IStateView<TState> stateView;
       private Task publishLoopTask;
+      private int snapshotEpoch = 0;
+      private int deltaSeq = 0;
 
       public StatePublisher(Publisher publisher, TOperations ops, Guid topicId) {
          this.publisher = publisher;
@@ -29,9 +34,16 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
          this.outboundChannel = ChannelFactory.Blocking<object>();
       }
 
-      public void Initialize(IStateView<TState> stateView) {
+      public async Task InitializeAsync(IStateView<TState> stateView, StateLock stateLock) {
          this.stateView = stateView;
-         outboundChannel.WriteAsync(ops.CaptureSnapshot(stateView.State)); // immediately queues (await would be for dequeue)
+         
+         await publisher.CreateLocalTopicAsync(topicId);
+
+         using (await stateLock.CreateReaderGuardAsync()) {
+            var captureSnapshot = ops.CaptureSnapshot(stateView.State);
+            outboundChannel.WriteAsync(captureSnapshot).Forget(); // immediately queues (await would be for dequeue)
+         }
+
          this.publishLoopTask = RunPublishLoopAsync();
       }
 
@@ -43,18 +55,20 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       }
 
       private async Task RunPublishLoopAsync() {
-         await publisher.CreateLocalTopicAsync(topicId);
-
-         int snapshotEpoch = 0;
-         int deltaSeq = 0;
          while (!shutdownLatch.IsSignalled) {
             var o = await outboundChannel.ReadAsync();
 
+            if (o == kCreateCatchupSnapshotDtoMarker) {
+               continue;
+            }
+
+            using var mut = await sync.LockAsync();
             if (o is TSnapshot) {
                snapshotEpoch++;
                deltaSeq = 0;
                await publisher.PublishToLocalTopicAsync(topicId, new StateUpdateDto {
                   IsSnapshot = true,
+                  IsOutOfBand = false,
                   SnapshotEpoch = snapshotEpoch,
                   DeltaSeq = deltaSeq,
                   Payload = o,
@@ -63,6 +77,7 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
                deltaSeq++;
                await publisher.PublishToLocalTopicAsync(topicId, new StateUpdateDto {
                   IsSnapshot = false,
+                  IsOutOfBand = false,
                   SnapshotEpoch = snapshotEpoch,
                   DeltaSeq = deltaSeq,
                   Payload = o,
@@ -76,7 +91,7 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       /// </summary>
       /// <returns>A task which contains a task that is completed when the publish event is dequeued but not yet processed</returns>
       public async Task<Task> QueueSnapshotPublishAsync(TSnapshot snapshot) {
-         using var publishLock = await sync.LockAsync();
+         using var mut = await sync.LockAsync();
          return outboundChannel.WriteAsync(snapshot); // queues but does not wait for dequeue
       }
 
@@ -85,8 +100,45 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       /// </summary>
       /// <returns>A task which contains a task that is completed when the publish event is dequeued but not yet processed</returns>
       public async Task<Task> QueueDeltaPublishAsync(TDelta delta) {
-         using var publishLock = await sync.LockAsync();
+         using var mut = await sync.LockAsync();
          return outboundChannel.WriteAsync(delta.AssertIsNotNull()); // queues but does not wait for dequeue
       }
+
+      /// <summary>
+      /// Creates a <seealso cref="StateUpdateDto"/> with the given up-to-date snapshot
+      /// and timestamped with the current snapshot epoch and delta seqnum.
+      ///
+      /// This dto can be used to get other clients up-to-date.
+      ///
+      /// This must only be invoked when:
+      /// * The state is locked (either with an exclusive write or for reading)
+      /// * We are inside that lock
+      /// </summary>
+      public async Task<StateUpdateDto> CreateOutOfBandCatchupSnapshotUpdateAsync(TSnapshot upToDateSnapshot) {
+         // queue a null to the outbound channel and wait for it to be dequeued, at which point
+         // we know we've processed all outbound delta/snapshot writes and snapshotEpoch/deltaSeq
+         // have caught up.
+         //
+         // since this method should only be called when we have exclusive access to state or it can
+         // only be read to, we know there will be no deltas applied during this call; state cannot change.
+         await outboundChannel.WriteAsync(kCreateCatchupSnapshotDtoMarker);
+
+         // lock sync for barrier to access deltaseq/snapshotepoch.
+         using var mut = await sync.LockAsync();
+
+         return new StateUpdateDto {
+            IsSnapshot = true,
+            IsOutOfBand = true,
+            SnapshotEpoch = snapshotEpoch,
+            DeltaSeq = deltaSeq,
+            Payload = upToDateSnapshot,
+         };
+      }
+   }
+
+   public class StateLock {
+      public readonly AsyncReaderWriterLock Lock = new AsyncReaderWriterLock();
+      public Task<AsyncReaderWriterLock.Guard> CreateReaderGuardAsync() => Lock.ReaderLockAsync();
+      public Task<AsyncReaderWriterLock.Guard> CreateWriterGuardAsync() => Lock.WriterLockAsync();
    }
 }

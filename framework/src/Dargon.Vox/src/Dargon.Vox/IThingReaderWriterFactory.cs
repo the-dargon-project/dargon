@@ -43,7 +43,7 @@ namespace Dargon.Vox {
                serializer = AutoTypeSerializerFactory.Create(arg);
             } else {
                logger.Error("Unable to serialize type " + arg.FullName);
-               throw new NotImplementedException();
+               throw new NotSupportedException($"The type {arg.FullName} does not implement {nameof(ISerializableType)}, have a registered {nameof(ITypeSerializer)}, or declare {nameof(AutoSerializableAttribute)}.");
             }
             var readerWriterType = typeof(UserObjectReaderWriter<>).MakeGenericType(arg);
             return (IThingReaderWriter)Activator.CreateInstance(

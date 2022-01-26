@@ -1,150 +1,88 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Dargon.Commons.AsyncPrimitives;
+using Dargon.Commons.Pooling;
 
 namespace Dargon.Commons.Scheduler {
-   public interface IJobQueue<TJobData> {
-      void Enqueue(TJobData data);
-      void EnqueueWithCallback(TJobData data, Action callback);
-      Task EnqueueAndAwaitAsync(TJobData data);
-   }
-
-   public interface IRequestResponseJobQueue<TJobRequest, TJobResponse> {
-      void EnqueueWithCallback(TJobRequest request, Action<TJobResponse> callback);
-      Task<TJobResponse> EnqueueAndAwaitAsync(TJobRequest request);
-   }
-
-   public interface IScheduler {
-      void Schedule(Action work);
-      void Schedule(Action work, Action callback);
-      void Schedule<T>(Func<T> work, Action<T> callback);
-
-      Task ExecuteAsync(Action work);
-      Task<T> ExecuteAsync<T>(Func<T> work);
-
-      IJobQueue<TJob> CreateJobQueue<TJob>(Action<TJob> jobHandler);
-      IRequestResponseJobQueue<TJobRequest, TJobResponse> CreateRequestResponseJobQueue<TJobRequest, TJobResponse>(Func<TJobRequest, TJobResponse> jobHandler);
-   }
-
-   public class SchedulerFactory {
-      private readonly IThreadFactory threadFactory;
-
-      public SchedulerFactory(IThreadFactory threadFactory) {
-         this.threadFactory = threadFactory;
-      }
-
-      public IScheduler CreateWithCustomThreadPool(string name) {
-         return new CustomThreadPoolScheduler(threadFactory, name, Environment.ProcessorCount);
-      }
-
-      public IScheduler CreateWithCustomThreadPool(string name, int initialThreadCount) {
-         return new CustomThreadPoolScheduler(threadFactory, name, initialThreadCount);
-      }
-   }
-
-   public interface IThread {
+   public interface IThreadInternal {
       void Start();
+      int ManagedThreadId { get; }
    }
 
    public interface IThreadFactory {
-      IThread Create(Action threadStart, string name = null);
+      IThreadInternal Create(Action threadStart, string name = null);
    }
 
    public class ThreadFactory : IThreadFactory {
-      public IThread Create(Action threadStart, string name = null) {
+      public IThreadInternal Create(Action threadStart, string name = null) {
          var thread = new Thread(() => threadStart()) { Name = name, IsBackground = true };
-         return new ThreadBox { Thread = thread };
+         return new ThreadInternalBox { Thread = thread };
       }
 
-      private class ThreadBox : IThread {
+      private class ThreadInternalBox : IThreadInternal {
          public Thread Thread;
 
          public void Start() {
             Thread.Start();
          }
-      }
-   }
 
-   public class CustomThreadPoolScheduler : IScheduler {
-      private readonly ConcurrentQueue<Action> workQueue = new ConcurrentQueue<Action>();
-      private readonly Semaphore workAvailableSignal = new Semaphore(0, Int32.MaxValue);
-      private readonly IReadOnlyList<IThread> workerThreads;
-
-      public CustomThreadPoolScheduler(IThreadFactory threadFactory, string name, int initialThreadCount) {
-         workerThreads = new List<IThread>(Arrays.Create(initialThreadCount, i => threadFactory.Create(WorkerThreadStart, $"{name}_{i}")));
-         workerThreads.ForEach(t => t.Start());
-      }
-
-      private void WorkerThreadStart() {
-         while (true) {
-            try {
-               workQueue.WaitThenDequeue(workAvailableSignal)();
-            } catch (Exception e) {
-               Console.Error.WriteLine("Error thrown at scheduler: " + e);
-            }
-         }
-      }
-
-      public void Schedule(Action work) {
-         workQueue.Enqueue(work);
-         workAvailableSignal.Release();
-      }
-
-      public void Schedule(Action work, Action callback) {
-         Action combinedWork = null;
-         combinedWork += work;
-         combinedWork += callback;
-
-         workQueue.Enqueue(combinedWork);
-      }
-
-      public void Schedule<T>(Func<T> work, Action<T> callback) {
-         Schedule(() => callback(work()));
-      }
-
-      public Task ExecuteAsync(Action work) {
-         var latch = new AsyncLatch();
-         Schedule(work, latch.SetOrThrow);
-         return latch.WaitAsync();
-      }
-
-      public Task<T> ExecuteAsync<T>(Func<T> work) {
-         var box = new AsyncBox<T>();
-         Schedule(work, box.SetResult);
-         return box.GetResultAsync();
-      }
-
-      public IJobQueue<TJob> CreateJobQueue<TJob>(Action<TJob> jobHandler) {
-         return new DefaultJobQueue<TJob>(this, jobHandler);
-      }
-
-      public IRequestResponseJobQueue<TJobRequest, TJobResponse> CreateRequestResponseJobQueue<TJobRequest, TJobResponse>(Func<TJobRequest, TJobResponse> jobHandler) {
-         return new DefaultRequestResponseJobQueue<TJobRequest, TJobResponse>(this, jobHandler);
+         public int ManagedThreadId => Thread.ManagedThreadId;
       }
    }
 
    public class DefaultJobQueue<TJobData> : IJobQueue<TJobData> {
       private readonly IScheduler scheduler;
       private readonly Action<TJobData> jobHandler;
+      private readonly IObjectPool<ExecutionContext> executionContextPool;
 
       public DefaultJobQueue(IScheduler scheduler, Action<TJobData> jobHandler) {
          this.scheduler = scheduler;
          this.jobHandler = jobHandler;
+         this.executionContextPool = ObjectPool.CreateConcurrentQueueBacked<ExecutionContext>(() => {
+            var ec = new ExecutionContext();
+            ec.SchedulerHandler = _ => jobHandler(ec.UserData);
+            ec.SchedulerState = null;
+            ec.SchedulerCallback = () => {
+               ec.UserCallback();
+               
+               ec.UserData = default;
+               ec.UserCallback = default;
+               executionContextPool.ReturnObject(ec);
+            };
+            return ec;
+         });
       }
 
       public void Enqueue(TJobData data) {
-         scheduler.Schedule(() => jobHandler(data));
+         var ec = executionContextPool.TakeObject();
+         ec.UserData = data;
+         ec.UserCallback = null;
+
+         scheduler.Schedule(ec.SchedulerHandler, ec.SchedulerState, ec.SchedulerCallback);
       }
 
       public void EnqueueWithCallback(TJobData data, Action callback) {
-         scheduler.Schedule(() => jobHandler(data), callback);
+         var ec = executionContextPool.TakeObject();
+         ec.UserData = data;
+         ec.UserCallback = callback;
+
+         scheduler.Schedule(ec.SchedulerHandler, ec.SchedulerState, ec.SchedulerCallback);
       }
 
       public Task EnqueueAndAwaitAsync(TJobData data) {
-         return scheduler.ExecuteAsync(() => jobHandler(data));
+         var tcs = new TaskCompletionSource();
+         EnqueueWithCallback(data, tcs.SetResult);
+         return tcs.Task;
+      }
+
+      public class ExecutionContext {
+         public Action<object> SchedulerHandler;
+         public object SchedulerState;
+         public Action SchedulerCallback;
+
+         public TJobData UserData;
+         public Action UserCallback;
       }
    }
 
@@ -158,7 +96,7 @@ namespace Dargon.Commons.Scheduler {
       }
 
       public void EnqueueWithCallback(TJobRequest request, Action<TJobResponse> callback) {
-         scheduler.Schedule(() => jobHandler(request), callback);
+         scheduler.Schedule(_ => jobHandler(request), callback);
       }
 
       public Task<TJobResponse> EnqueueAndAwaitAsync(TJobRequest request) {

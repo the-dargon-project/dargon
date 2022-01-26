@@ -6,10 +6,12 @@ namespace Dargon.Ryu {
    public class RyuFacade : IRyuFacade {
       private readonly IRyuContainer container;
       private readonly IActivator activator;
+      private readonly IModuleImporter moduleImporter;
 
-      public RyuFacade(IRyuContainer container, IActivator activator) {
+      public RyuFacade(IRyuContainer container, IActivator activator, IModuleImporter moduleImporter) {
          this.container = container;
          this.activator = activator;
+         this.moduleImporter = moduleImporter;
       }
 
       public void Initialize() {
@@ -26,5 +28,7 @@ namespace Dargon.Ryu {
 
       public IActivator Activator => activator;
       public object Activate(Type type) => activator.ActivateActivatorlessType(container, type);
+
+      public IModuleImporter ModuleImporter => moduleImporter;
    }
 }

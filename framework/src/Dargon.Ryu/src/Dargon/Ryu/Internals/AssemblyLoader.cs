@@ -20,6 +20,14 @@ namespace Dargon.Ryu.Internals {
          // xunit spam
          "xunit", 
 
+         // sharpdx spam (numerous assemblies, so wastes time)
+         "SharpDX",
+         "Vortice",
+         "dxil.dll",
+         "dxcompiler.dll",
+         "/runtimes/win", "\\runtimes\\win",
+         "/runtimes/unix", "\\runtimes\\unix",
+
          // .net core reference assemblies which only contain the public interface of
          // assemblies but no implementation
          //
@@ -103,7 +111,7 @@ namespace Dargon.Ryu.Internals {
       }
 
       private static Dictionary<string, Assembly> ComputeAlreadyLoadedAssemblyByCanonicalizedLocationDict(AssemblyLoadContext defaultLoadContext) {
-         var alreadyLoadedAssemblies = defaultLoadContext.Assemblies.ToArray();
+         var alreadyLoadedAssemblies = defaultLoadContext.Assemblies.Where(a => !a.IsDynamic).ToArray();
          var alreadyLoadedAssemblyByCanonicalizedLocation = alreadyLoadedAssemblies.ToDictionary(
             a => Path.GetFullPath(a.Location));
          return alreadyLoadedAssemblyByCanonicalizedLocation;

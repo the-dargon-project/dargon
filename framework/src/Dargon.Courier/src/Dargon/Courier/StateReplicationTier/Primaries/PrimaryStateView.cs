@@ -1,6 +1,8 @@
-﻿using Dargon.Commons;
+﻿using System.Threading.Tasks;
+using Dargon.Commons;
 using Dargon.Commons.Utilities;
 using Dargon.Courier.StateReplicationTier.States;
+using Dargon.Courier.StateReplicationTier.Vox;
 
 namespace Dargon.Courier.StateReplicationTier.Primaries {
    public class PrimaryStateView<TState, TSnapshot, TDelta, TOperations> : IStateView<TState>
@@ -35,6 +37,38 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
          }
 
          return success;
+      }
+   }
+
+   public interface IPrimaryStateService<TState, TSnapshot, TDelta>
+      where TState : class, IState
+      where TSnapshot : IStateSnapshot
+      where TDelta : class, IStateDelta {
+      Task<StateUpdateDto> GetOutOfBandSnapshotUpdateOfLatestStateAsync();
+   }
+
+   public class PrimaryStateService<TState, TSnapshot, TDelta, TOperations> : IPrimaryStateService<TState, TSnapshot, TDelta>
+      where TState : class, IState
+      where TSnapshot : IStateSnapshot
+      where TDelta : class, IStateDelta 
+      where TOperations : IStateDeltaOperations<TState, TSnapshot, TDelta> {
+      private readonly PrimaryStateView<TState, TSnapshot, TDelta, TOperations> primaryStateView;
+      private readonly TOperations ops;
+      private readonly StatePublisher<TState, TSnapshot, TDelta, TOperations> statePublisher;
+      private readonly StateLock stateLock;
+
+      public PrimaryStateService(PrimaryStateView<TState, TSnapshot, TDelta, TOperations> primaryStateView, TOperations ops, StatePublisher<TState, TSnapshot, TDelta, TOperations> statePublisher, StateLock stateLock) {
+         this.primaryStateView = primaryStateView;
+         this.ops = ops;
+         this.statePublisher = statePublisher;
+         this.stateLock = stateLock;
+      }
+
+      public async Task<StateUpdateDto> GetOutOfBandSnapshotUpdateOfLatestStateAsync() {
+         using var mut = await stateLock.CreateReaderGuardAsync();
+         var snapshot = ops.CaptureSnapshot(primaryStateView.State);
+         var update = await statePublisher.CreateOutOfBandCatchupSnapshotUpdateAsync(snapshot);
+         return update;
       }
    }
 }

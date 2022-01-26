@@ -12,17 +12,21 @@ using Dargon.Courier.PeeringTier;
 using Dargon.Courier.PubSubTier.Publishers;
 using Dargon.Courier.PubSubTier.Subscribers;
 using Dargon.Courier.PubSubTier.Vox;
+using Dargon.Courier.ServiceTier.Client;
+using Dargon.Courier.StateReplicationTier.Primaries;
 using Dargon.Courier.StateReplicationTier.States;
 using Dargon.Courier.StateReplicationTier.Vox;
 
 namespace Dargon.Courier.StateReplicationTier.Replicas {
-   public class RemoteStateSubscriber<TState, TSnapshot, TDelta> where TState : IState where TSnapshot : IStateSnapshot where TDelta : class, IStateDelta {
+   public class RemoteStateSubscriber<TState, TSnapshot, TDelta> where TState : class, IState where TSnapshot : IStateSnapshot where TDelta : class, IStateDelta {
+      private readonly RemoteServiceProxyContainer remoteServiceProxyContainer;
       private readonly Subscriber subscriber;
       private readonly PeerContext remote;
       private readonly Guid topicId;
       private readonly StateUpdateProcessor<TState, TSnapshot, TDelta> updateProcessor;
 
-      public RemoteStateSubscriber(Subscriber subscriber, PeerContext remote, Guid topicId, StateUpdateProcessor<TState, TSnapshot, TDelta> updateProcessor) {
+      public RemoteStateSubscriber(RemoteServiceProxyContainer remoteServiceProxyContainer, Subscriber subscriber, PeerContext remote, Guid topicId, StateUpdateProcessor<TState, TSnapshot, TDelta> updateProcessor) {
+         this.remoteServiceProxyContainer = remoteServiceProxyContainer;
          this.subscriber = subscriber;
          this.remote = remote;
          this.topicId = topicId;
@@ -31,6 +35,9 @@ namespace Dargon.Courier.StateReplicationTier.Replicas {
 
       public async Task InitializeAsync() {
          await subscriber.SubscribeToRemoteTopicAsync(topicId, remote, HandleRemotePublishAsync);
+         var primaryStateService = remoteServiceProxyContainer.Get<IPrimaryStateService<TState, TSnapshot, TDelta>>(topicId, remote);
+         var update = await primaryStateService.GetOutOfBandSnapshotUpdateOfLatestStateAsync();
+         updateProcessor.Enqueue(update);
       }
 
       private Task HandleRemotePublishAsync(PubSubNotification notification) {
@@ -44,8 +51,11 @@ namespace Dargon.Courier.StateReplicationTier.Replicas {
       private readonly TState state;
       private readonly IStateDeltaOperations<TState, TSnapshot, TDelta> ops;
 
-      private readonly ConcurrentQueue<StateUpdateDto> inboundUpdates = new();
+      private readonly ConcurrentQueue<StateUpdateDto> queuedSnapshotUpdates = new();
+      private readonly ConcurrentQueue<StateUpdateDto> queuedDeltaUpdates = new();
       private readonly SortedList<int, SortedList<int, StateUpdateDto>> unprocessedUpdatesPerEpoch = new();
+      private readonly AsyncLatch initialStateSnapshotQueuedLatch = new AsyncLatch();
+      private readonly AsyncLatch initialStateSnapshotLoadedLatch = new AsyncLatch();
       private int currentEpoch = -1;
       private int lastAppliedSeqInEpoch = -1;
       private int version = -1;
@@ -57,24 +67,48 @@ namespace Dargon.Courier.StateReplicationTier.Replicas {
 
       public int Version => version;
 
-      public void Enqueue(StateUpdateDto stateUpdate) {
-         inboundUpdates.Enqueue(stateUpdate);
+      public bool HasInboundUpdates => queuedSnapshotUpdates.Count > 0;
+      
+      public async Task WaitForAndProcessInitialStateUpdateAsync() {
+         await initialStateSnapshotQueuedLatch.WaitAsync();
+         ProcessQueuedUpdates();
+         initialStateSnapshotLoadedLatch.IsSignalled.AssertIsTrue();
       }
 
-      public bool HasInboundUpdates => inboundUpdates.Count > 0;
+      public void Enqueue(StateUpdateDto stateUpdate) {
+         if (stateUpdate.IsSnapshot) {
+            queuedSnapshotUpdates.Enqueue(stateUpdate);
+            initialStateSnapshotQueuedLatch.TrySet();
+         } else {
+            queuedDeltaUpdates.Enqueue(stateUpdate);
+         }
+      }
 
-      public void IngestInboundUpdates() {
-         while (inboundUpdates.Count > 0) {
-            var update = inboundUpdates.DequeueOrThrow();
-            if (update.SnapshotEpoch < currentEpoch) continue; // throw away
+      public void ProcessQueuedUpdates() {
+         while (queuedSnapshotUpdates.Count > 0) {
+            var update = queuedSnapshotUpdates.DequeueOrThrow();
+            update.IsSnapshot.AssertIsTrue();
+
+            if (update.SnapshotEpoch > currentEpoch || (update.SnapshotEpoch == currentEpoch && update.DeltaSeq > lastAppliedSeqInEpoch)) {
+               ops.LoadSnapshot(state, (TSnapshot)update.Payload);
+               currentEpoch = update.SnapshotEpoch;
+               lastAppliedSeqInEpoch = update.DeltaSeq;
+               version++;
+               unprocessedUpdatesPerEpoch.TryAdd(currentEpoch, new());
+            }
+         }
+
+         while (queuedDeltaUpdates.Count > 0) {
+            var update = queuedDeltaUpdates.DequeueOrThrow();
+            update.IsSnapshot.AssertIsFalse();
+            update.IsOutOfBand.AssertIsFalse();
+
+            if (update.SnapshotEpoch < currentEpoch || (update.SnapshotEpoch == currentEpoch && update.DeltaSeq <= lastAppliedSeqInEpoch)) continue; // throw away
             if (!unprocessedUpdatesPerEpoch.TryGetValue(update.SnapshotEpoch, out var seqToUpdate)) {
                seqToUpdate = unprocessedUpdatesPerEpoch[update.SnapshotEpoch] = new();
             }
-
             seqToUpdate.Add(update.DeltaSeq, update);
          }
-
-         AdvanceToNextEpochIfPossible();
 
          if (currentEpoch == -1) {
             // no epoch started yet
@@ -91,24 +125,36 @@ namespace Dargon.Courier.StateReplicationTier.Replicas {
 
             version++;
          }
+
+         CullStaleUnprocessedUpdates();
+
+         if (currentEpoch >= 0 && !initialStateSnapshotLoadedLatch.IsSignalled) {
+            initialStateSnapshotLoadedLatch.SetOrThrow();
+         }
       }
 
-      private void AdvanceToNextEpochIfPossible() {
-         foreach (var epochId in unprocessedUpdatesPerEpoch.Keys) {
-            var unprocessedUpdatesOfEpoch = unprocessedUpdatesPerEpoch[epochId];
-            if (unprocessedUpdatesOfEpoch.ContainsKey(StateUpdateDto.kSnapshotDeltaSeq)) {
-               currentEpoch = epochId;
-               lastAppliedSeqInEpoch = -1;
+      private void CullStaleUnprocessedUpdates() {
+         var unprocessedUpdatesPerEpochKeys = unprocessedUpdatesPerEpoch.Keys.ToArray();
 
-               while (true) {
-                  var otherEpochId = unprocessedUpdatesPerEpoch.Keys[0];
-                  if (otherEpochId < currentEpoch) {
-                     unprocessedUpdatesPerEpoch.Remove(otherEpochId);
+         foreach (var epochId in unprocessedUpdatesPerEpochKeys) {
+            if (epochId < currentEpoch) {
+               unprocessedUpdatesPerEpoch.Remove(epochId);
+               continue;
+            }
+
+            if (epochId == currentEpoch) {
+               var unprocessedUpdatesOfEpoch = unprocessedUpdatesPerEpoch[epochId];
+               while (unprocessedUpdatesOfEpoch.Count > 0) {
+                  var lowestDeltaSeqId = unprocessedUpdatesOfEpoch.Keys[0];
+                  if (lowestDeltaSeqId <= lastAppliedSeqInEpoch) {
+                     unprocessedUpdatesOfEpoch.Remove(lowestDeltaSeqId);
                   } else {
-                     return;
+                     break;
                   }
                }
             }
+
+            return;
          }
       }
    }

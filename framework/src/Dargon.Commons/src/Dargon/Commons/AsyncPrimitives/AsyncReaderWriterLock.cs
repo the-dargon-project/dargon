@@ -10,14 +10,14 @@ namespace Dargon.Commons.AsyncPrimitives {
       private int pendingReadersCount = 0;
       private int readerCount = 0;
 
-      public async Task<DecrementOnDisposeAndReleaseOnCallbackZeroResult> WriterLockAsync() {
+      public async Task<Guard> WriterLockAsync() {
          await semaphore.WaitAsync().ConfigureAwait(false);
-         return new DecrementOnDisposeAndReleaseOnCallbackZeroResult(
+         return new Guard(
             () => 0,
             semaphore);
       }
 
-      public Task<DecrementOnDisposeAndReleaseOnCallbackZeroResult> ReaderLockAsync() {
+      public Task<Guard> ReaderLockAsync() {
          var spinner = new SpinWait();
          while (true) {
             var originalReaderCount = Interlocked.CompareExchange(ref readerCount, 0, 0);
@@ -33,7 +33,7 @@ namespace Dargon.Commons.AsyncPrimitives {
          }
       }
 
-      private async Task<DecrementOnDisposeAndReleaseOnCallbackZeroResult> ReaderLockCoordinatorRoleAsync() {
+      private async Task<Guard> ReaderLockCoordinatorRoleAsync() {
          await semaphore.WaitAsync().ConfigureAwait(false);
 
          int allReadersCount;
@@ -56,25 +56,25 @@ namespace Dargon.Commons.AsyncPrimitives {
             }
             followerLatch.SetOrThrow();
          }
-         return new DecrementOnDisposeAndReleaseOnCallbackZeroResult(
+         return new Guard(
             () => Interlocked.Decrement(ref pendingReadersCount),
             semaphore);
       }
 
-      private async Task<DecrementOnDisposeAndReleaseOnCallbackZeroResult> ReaderLockFollowerRoleAsync() {
+      private async Task<Guard> ReaderLockFollowerRoleAsync() {
          var latch = new AsyncLatch();
          readerQueue.Enqueue(latch);
          await latch.WaitAsync(CancellationToken.None).ConfigureAwait(false);
-         return new DecrementOnDisposeAndReleaseOnCallbackZeroResult(
+         return new Guard(
             () => Interlocked.Decrement(ref pendingReadersCount),
             semaphore);
       }
 
-      public struct DecrementOnDisposeAndReleaseOnCallbackZeroResult : IDisposable {
+      public struct Guard : IDisposable {
          private readonly Func<int> callback;
          private readonly AsyncSemaphore semaphore;
 
-         public DecrementOnDisposeAndReleaseOnCallbackZeroResult(Func<int> callback, AsyncSemaphore semaphore) {
+         public Guard(Func<int> callback, AsyncSemaphore semaphore) {
             this.callback = callback;
             this.semaphore = semaphore;
          }

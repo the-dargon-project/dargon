@@ -10,7 +10,7 @@ using System.Reflection;
 namespace Dargon.Ryu {
    public class RyuContainer : IRyuContainer {
       private readonly ConcurrentDictionary<Type, object> storage = new ConcurrentDictionary<Type, object>();
-      private readonly RyuContainer parent;
+      private readonly IRyuContainer parent;
       private readonly IActivator activator;
       private readonly ConcurrentDictionary<Type, RyuType> ryuTypesByType;
       private readonly ConcurrentDictionary<Type, HashSet<RyuType>> implementorsByType = new ConcurrentDictionary<Type, HashSet<RyuType>>();
@@ -19,12 +19,12 @@ namespace Dargon.Ryu {
       public event Action<object> ObjectActivated;
 
       public RyuContainer(
-         RyuContainer parent, 
+         IRyuContainer parent, 
          IActivator activator
       ) : this(parent, activator, new ConcurrentDictionary<Type, RyuType>()) {
       }
 
-      public RyuContainer(RyuContainer parent, IActivator activator, ConcurrentDictionary<Type, RyuType> ryuTypesByType) {
+      public RyuContainer(IRyuContainer parent, IActivator activator, ConcurrentDictionary<Type, RyuType> ryuTypesByType) {
          this.parent = parent;
          this.activator = activator;
          this.ryuTypesByType = ryuTypesByType;
@@ -94,7 +94,9 @@ namespace Dargon.Ryu {
       }
 
       public IRyuContainer CreateChildContainer() {
-         return new RyuContainer(this, activator, ryuTypesByType);
+         var c = new RyuContainer(this, activator, ryuTypesByType);
+         c.Initialize();
+         return c;
       }
 
       public void Import(Dictionary<Type, RyuType> importedRyuTypesByType, ConcurrentDictionary<Type, HashSet<RyuType>> importedTypeToImplementors) {

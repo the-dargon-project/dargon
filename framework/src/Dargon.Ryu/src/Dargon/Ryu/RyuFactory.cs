@@ -23,7 +23,7 @@ namespace Dargon.Ryu {
          IModuleImporter moduleImporter = new ModuleImporter(moduleSorter);
          var bootstrapper = new Bootstrapper(assemblyLoader, moduleLoader, activator, moduleImporter);
          var container = bootstrapper.Bootstrap(configuration);
-         var facade = new RyuFacade(container, activator);
+         var facade = new RyuFacade(container, activator, moduleImporter);
          facade.Initialize();
          return facade;
       }

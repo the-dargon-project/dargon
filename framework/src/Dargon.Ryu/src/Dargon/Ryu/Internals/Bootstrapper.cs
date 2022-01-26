@@ -1,4 +1,7 @@
-﻿namespace Dargon.Ryu.Internals {
+﻿using System.Collections.Generic;
+using System.Reflection;
+
+namespace Dargon.Ryu.Internals {
    public interface IBootstrapper {
       /// <summary>
       /// Initializes the container with the provided Ryu Configuration
@@ -20,9 +23,9 @@
       }
 
       public IRyuContainer Bootstrap(RyuConfiguration configuration) {
-         var assemblies = assemblyLoader.LoadAssembliesFromNeighboringDirectories();
+         var assemblies = configuration.EnableAlwaysLoadModuleSearch ? assemblyLoader.LoadAssembliesFromNeighboringDirectories() : new HashSet<Assembly>();
          var modules = moduleLoader.LoadModules(configuration, assemblies);
-         var container = new RyuContainer(null, activator);
+         var container = new RyuContainer(configuration.ParentContainerOpt, activator);
          moduleImporter.ImportModules(container, modules);
          return container;
       }
