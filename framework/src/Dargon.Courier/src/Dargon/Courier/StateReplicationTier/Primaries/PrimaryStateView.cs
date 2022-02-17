@@ -24,6 +24,8 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
 
       public int Version => version;
       public TState State => state;
+      public bool IsReady => true;
+      public event StateViewUpdatedEvent Updated;
 
       public void ApplyDeltaOrThrow(TDelta delta) => TryApplyDelta(delta).AssertIsTrue();
 
@@ -34,6 +36,8 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
             // immediately queues but doesn't await network sends
             // out-of-order arrivals will be handled by the seq number.
             publisher.QueueDeltaPublishAsync(delta).Forget();
+
+            Updated?.Invoke();
          }
 
          return success;

@@ -18,11 +18,14 @@ namespace Dargon.Courier.StateReplicationTier.States {
 
       public TState State => state;
       public int Version => Interlocked2.Read(ref version);
+      public bool IsReady => true;
+      public event StateViewUpdatedEvent Updated;
 
       public void LoadSnapshot(TSnapshot snapshot) {
          lock (sync) {
             ops.LoadSnapshot(state, snapshot);
             version++;
+            Updated?.Invoke();
          }
       }
 
@@ -32,6 +35,11 @@ namespace Dargon.Courier.StateReplicationTier.States {
 
       public bool TryApplyDelta(TDelta delta) {
          var success = ops.TryApplyDelta(state, delta);
+         
+         if (success) {
+            Updated?.Invoke();
+         }
+
          return success;
       }
    }

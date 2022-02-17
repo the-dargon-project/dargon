@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Dargon.Commons;
 using Dargon.Commons.Utilities;
 using Dargon.Courier.StateReplicationTier.States;
 
@@ -27,10 +28,18 @@ namespace Dargon.Courier.StateReplicationTier.Replicas {
       public void ProcessUpdates() {
          if (stateUpdateProcessor.HasInboundUpdates) {
             stateUpdateProcessor.ProcessQueuedUpdates();
+            Updated?.Invoke();
          }
       }
 
       public int Version => stateUpdateProcessor.Version;
-      public TState State => state;
+      public TState State => GetState();
+      public bool IsReady => stateUpdateProcessor.HasLoadedInitialState;
+      public event StateViewUpdatedEvent Updated;
+
+      private TState GetState() {
+         stateUpdateProcessor.HasLoadedInitialState.AssertIsTrue();
+         return state;
+      }
    }
 }

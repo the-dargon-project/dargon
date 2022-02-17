@@ -2,6 +2,8 @@
 using Dargon.Commons.Utilities;
 
 namespace Dargon.Courier.StateReplicationTier.States {
+   public delegate void StateViewUpdatedEvent();
+
    /// <summary>
    /// Externally-synchronized state view.
    /// </summary>
@@ -12,6 +14,9 @@ namespace Dargon.Courier.StateReplicationTier.States {
       /// </summary>
       int Version { get; }
       TState State { get; }
+
+      bool IsReady { get; }
+      event StateViewUpdatedEvent Updated;
    }
 }
 

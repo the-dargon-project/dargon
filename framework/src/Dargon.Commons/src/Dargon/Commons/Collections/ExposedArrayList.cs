@@ -117,6 +117,15 @@ namespace Dargon.Commons.Collections {
          throw new NotSupportedException();
       }
 
+      public void RemoveLast() {
+         if (size == 0) throw new InvalidOperationException();
+
+         size--;
+         if (ShouldZeroOnRemove) {
+            store[size] = default;
+         }
+      }
+
       public ref T this[int index] {
          get {
 #if ENABLE_INDEXER_RANGE_CHECK

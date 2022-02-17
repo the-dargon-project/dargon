@@ -6,7 +6,7 @@ using Dargon.Courier.StateReplicationTier.Primaries;
 using Dargon.Courier.StateReplicationTier.States;
 
 namespace Dargon.Courier.StateReplicationTier.Predictions {
-   public abstract class PredictedStateView<TState, TSnapshot, TDelta, TOperations> : IStateView<TState>
+   public abstract class PredictionStateView<TState, TSnapshot, TDelta, TOperations> : IStateView<TState>
       where TState : class, IState
       where TSnapshot : IStateSnapshot
       where TDelta : class, IStateDelta
@@ -21,12 +21,14 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
       private int lastBaseStateViewVersion = kInvalidatedBaseStateViewVersion;
       private TState predictedState;
 
-      public PredictedStateView(IStateView<TState> baseStateView, TOperations ops) {
+      public PredictionStateView(IStateView<TState> baseStateView, TOperations ops) {
          this.baseStateView = baseStateView;
          this.ops = ops;
       }
 
+      public bool IsReady => baseStateView.IsReady;
       public int Version => baseStateView.Version + versionOffset;
+      public event StateViewUpdatedEvent Updated;
 
       public TState State {
          get {
@@ -77,6 +79,7 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
          }
 
          predictedState = newPredictedState;
+         Updated?.Invoke();
          return predictedState;
       }
 
@@ -91,13 +94,13 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
          ops.TryApplyDelta(predictedState, delta).AssertIsTrue();
          predictions.Add(prediction);
          versionOffset++;
+         Updated?.Invoke();
          return true;
       }
 
       public bool RemovePrediction(IPredictionDeltaSource<TState, TDelta> prediction) {
          var success = predictions.Remove(prediction);
          if (success) {
-            versionOffset++;
             Invalidate();
          }
 
@@ -111,6 +114,7 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
       public void Invalidate() {
          lastBaseStateViewVersion = kInvalidatedBaseStateViewVersion;
          versionOffset++;
+         Updated?.Invoke();
       }
    }
 }

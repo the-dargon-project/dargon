@@ -73,8 +73,8 @@ namespace Dargon.Courier.StateReplicationTier {
          }
 
 
-         public PredictedStateView CreatePredictedStateView(IStateView<TState> baseStateView) {
-            return new PredictedStateView(baseStateView, ops);
+         public PredictionStateView CreatePredictionStateView(IStateView<TState> baseStateView) {
+            return new PredictionStateView(baseStateView, ops);
          }
       }
 
@@ -90,8 +90,8 @@ namespace Dargon.Courier.StateReplicationTier {
          public ReplicaStateView(TState state, RemoteStateSubscriber<TState, TSnapshot, TDelta> remoteStateSubscriber, StateUpdateProcessor<TState, TSnapshot, TDelta> stateUpdateProcessor) : base(state, remoteStateSubscriber, stateUpdateProcessor) { }
       }
 
-      public class PredictedStateView : PredictedStateView<TState, TSnapshot, TDelta, TOperations> {
-         public PredictedStateView(IStateView<TState> baseStateView, TOperations ops) : base(baseStateView, ops) { }
+      public class PredictionStateView : PredictionStateView<TState, TSnapshot, TDelta, TOperations> {
+         public PredictionStateView(IStateView<TState> baseStateView, TOperations ops) : base(baseStateView, ops) { }
       }
    }
 }

@@ -67,8 +67,10 @@ namespace Dargon.Courier.StateReplicationTier.Replicas {
 
       public int Version => version;
 
+      public bool HasLoadedInitialState => initialStateSnapshotLoadedLatch.IsSignalled;
+
       public bool HasInboundUpdates => queuedSnapshotUpdates.Count > 0;
-      
+
       public async Task WaitForAndProcessInitialStateUpdateAsync() {
          await initialStateSnapshotQueuedLatch.WaitAsync();
          ProcessQueuedUpdates();
