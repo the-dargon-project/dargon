@@ -5,9 +5,7 @@ namespace Dargon.Commons {
    public static class Arrays {
       public static T[] Create<T>(int count, T elementInitializer) {
          var result = new T[count];
-         for (var i = 0; i < result.Length; i++) {
-            result[i] = elementInitializer;
-         }
+         result.AsSpan().Fill(elementInitializer);
          return result;
       }
 
