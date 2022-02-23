@@ -10,6 +10,26 @@ using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons {
    public static class CollectionStatics {
+      public static ExposedArrayList<T> AddIfNotNull<T>(this ExposedArrayList<T> eal, T x) where T : class {
+         if (x != null) {
+            eal.Add(x);
+         }
+
+         return eal;
+      }
+
+      public static void Add<T>(this List<T> l, (bool cond, T item) x) {
+         if (x.cond) {
+            l.Add(x.item);
+         }
+      }
+
+      public static void Add<T>(this ExposedArrayList<T> eal, (bool cond, T item) x) {
+         if (x.cond) {
+            eal.Add(x.item);
+         }
+      }
+
       public static void AddRange<T>(this ICollection<T> c, IEnumerable<T> items) {
          foreach (T x in items) {
             c.Add(x);
