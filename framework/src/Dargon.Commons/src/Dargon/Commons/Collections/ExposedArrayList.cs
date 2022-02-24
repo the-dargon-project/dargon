@@ -89,7 +89,13 @@ namespace Dargon.Commons.Collections {
          }
       }
 
-      public void Clear() => size = 0;
+      public void Clear() {
+         if (ShouldZeroOnRemove) {
+            Array.Clear(store, 0, size);
+         }
+
+         size = 0;
+      }
 
       public bool Contains(T item) => throw new NotSupportedException();
       public void CopyTo(T[] array, int arrayIndex) {
