@@ -1,16 +1,12 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Dargon.Commons.Utilities;
+using Dargon.Commons.VersionCounters;
 
 namespace Dargon.Courier.StateReplicationTier.States {
    public delegate void StateViewUpdatedEvent();
 
-   public interface IStateView {
-      /// <summary>
-      /// Must increase (or change) whenever state changes, avoiding duplicating previous values.
-      /// Used to trivially detect when state changes.
-      /// </summary>
-      int Version { get; }
-
+   public interface IStateView : IVersionSource {
       bool IsReady { get; }
       event StateViewUpdatedEvent Updated;
    }
@@ -20,6 +16,13 @@ namespace Dargon.Courier.StateReplicationTier.States {
    /// </summary>
    public interface IStateView<TState> : IStateView where TState : class, IState {
       TState State { get; }
+   }
+
+   public static class StateViewExtensions {
+      public static MappedStateView<T2> Map<T1, T2>(this IStateView<T1> s, Func<T1, T2> getterFunc)
+         where T1 : class, IState
+         where T2 : class, IState
+         => new(s, () => getterFunc(s.State));
    }
 }
 
