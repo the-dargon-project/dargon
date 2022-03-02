@@ -36,5 +36,11 @@ namespace Dargon.Commons {
 
          return arr;
       }
+
+      public static T[] Clone<T>(this T[] arr) {
+         var res = new T[arr.Length];
+         Array.Copy(arr, res, arr.Length);
+         return res;
+      }
    }
 }
