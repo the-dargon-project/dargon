@@ -278,6 +278,7 @@ namespace Dargon.Commons.Collections {
       public int Count => inner.Count;
       public U this[int idx] => mapper(inner[idx]);
       public void Add(U item) => adderOpt(item);
+      public void Clear() => inner.Clear();
 
       public StructLinqMap<T, ExposedArrayList<T>.Enumerator, U> GetEnumerator() => StructLinq<T>.Map(inner.GetEnumerator(), mapper);
       IEnumerator<U> IEnumerable<U>.GetEnumerator() => GetEnumerator();
