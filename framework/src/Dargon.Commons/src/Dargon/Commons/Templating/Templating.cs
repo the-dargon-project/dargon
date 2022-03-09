@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -57,5 +58,32 @@ namespace Dargon.Commons.Templating {
 
    public interface ITemplateString {
       public string Value { get; }
+   }
+
+   public interface IIntegerOperations<TInt> {
+      [Pure] public TInt Increment(TInt v);
+      [Pure] public TInt Decrement(TInt v);
+      [Pure] public TInt Min(TInt a, TInt b);
+      [Pure] public TInt Max(TInt a, TInt b);
+      [Pure] public int Compare(TInt a, TInt b);
+
+      [Pure] public TInt MinValue { get; }
+      [Pure] public TInt MaxValue { get; }
+   }
+
+   public struct Int32Operations : IIntegerOperations<int> {
+      public int Increment(int v) => v + 1;
+
+      public int Decrement(int v) => v - 1;
+
+      public int Min(int a, int b) => Math.Min(a, b);
+
+      public int Max(int a, int b) => Math.Max(a, b);
+
+      public int Compare(int a, int b) => a.CompareTo(b);
+
+      public int MinValue => int.MinValue;
+      
+      public int MaxValue => int.MaxValue;
    }
 }

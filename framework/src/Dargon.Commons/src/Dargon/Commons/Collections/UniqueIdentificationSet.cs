@@ -1,9 +1,126 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Text;
+using Dargon.Commons.Collections.RedBlackTrees;
+using Dargon.Commons.Templating;
 
-namespace Dargon.Commons.Collections
-{
+namespace Dargon.Commons.Collections {
+   public sealed class Int32RangeSet : IntegerRangeSet<int, Int32Operations> {
+      public Int32RangeSet(bool filledElseEmpty) : base(filledElseEmpty) { }
+   }
+
+   public class IntegerRangeSet<TInt, TIntOps> where TIntOps : struct, IIntegerOperations<TInt> {
+      private static readonly RedBlackNodeCollectionOperations<Data, DataComparer> ops = new(new DataComparer());
+      private static readonly TIntOps intOps = new TIntOps();
+      private RedBlackNode<Data> root = ops.CreateEmptyTree();
+      private RedBlackNode<Data> firstNode;
+
+      public IntegerRangeSet(bool filledElseEmpty) {
+         if (filledElseEmpty) {
+            AddRange(intOps.MinValue, intOps.MaxValue);
+         }
+      }
+
+      public TInt Take() {
+         if (firstNode == null) throw new InvalidOperationException();
+         
+         var res = firstNode.Data.lowInclusive;
+         
+         if (intOps.Compare(firstNode.Data.lowInclusive, firstNode.Data.highInclusive) == 0) {
+            ops.RemoveNode(ref root, firstNode);
+         } else {
+            firstNode.Data.lowInclusive = intOps.Increment(firstNode.Data.lowInclusive);
+         }
+
+         return res;
+      }
+
+      public void Add(TInt val) => AddRange(val, val);
+
+      public void AddRange(TInt lowInclusive, TInt highInclusive) {
+         if (root == null) {
+            ops.AddOrThrow(ref root, new() {
+               lowInclusive = lowInclusive,
+               highInclusive = highInclusive,
+            });
+            firstNode = root;
+            return;
+         }
+
+         var (left, loMatch, mid1) = ops.TrySplit(
+            root,
+            new Data { lowInclusive = lowInclusive, highInclusive = lowInclusive });
+
+         var (mid2, hiMatch, right) = ops.TrySplit(
+            mid1,
+            new Data { lowInclusive = highInclusive, highInclusive = highInclusive });
+
+         var mid = RedBlackNode.CreateForInsertion(new Data {
+            lowInclusive = lowInclusive,
+            highInclusive = highInclusive,
+         });
+
+         if (loMatch != null) {
+            mid.Value.lowInclusive = intOps.Min(lowInclusive, loMatch.Value.lowInclusive);
+            mid.Value.highInclusive = intOps.Max(highInclusive, loMatch.Value.highInclusive);
+         }
+
+         if (hiMatch != null) {
+            mid.Value.highInclusive = intOps.Max(highInclusive, hiMatch.Value.highInclusive);
+         }
+
+         root = ops.JoinRB(
+            left,
+            mid,
+            right);
+      }
+
+      private struct RangeStabComparer : IBstSearchComparer<Data> {
+         private readonly TInt lowInclusive;
+         private readonly TInt highInclusive;
+
+         public RangeStabComparer(TInt lowInclusive, TInt highInclusive) {
+            this.lowInclusive = lowInclusive;
+            this.highInclusive = highInclusive;
+         }
+
+         public int CompareQueryVsValue(Data value) {
+            var intOps = new TIntOps();
+            var overlap =
+               !(intOps.Compare(value.highInclusive, lowInclusive) < 0 ||
+                 intOps.Compare(highInclusive, value.lowInclusive) < 0);
+            if (overlap) {
+               return 0;
+            } else {
+               return intOps.Compare(lowInclusive, value.lowInclusive);
+            }
+         }
+      }
+
+      private struct Data {
+         public TInt lowInclusive;
+         public TInt highInclusive;
+
+         public RedBlackNode<Data> Pred;
+         public RedBlackNode<Data> Succ;
+      }
+
+      private struct DataComparer : IComparer<Data> {
+         public int Compare(Data x, Data y) {
+            var intOps = new TIntOps();
+            var overlap =
+               !(intOps.Compare(x.highInclusive, y.lowInclusive) < 0 ||
+                 intOps.Compare(y.highInclusive, x.lowInclusive) < 0);
+            if (overlap) {
+               return 0;
+            } else {
+               return intOps.Compare(x.lowInclusive, y.lowInclusive);
+            }
+         }
+      }
+   }
+
    /// <summary>
    /// Represents a set of all unique UInt32 values.
    /// Values can be taken out and returned to the set in a thread-safe manner.
@@ -130,14 +247,18 @@ namespace Dargon.Commons.Collections
       {
          lock (m_lock)
          {
-            var it = m_segments.First;
-            while (it != null)
-            {
-               if (it.Value.low != it.Value.high)
-                  return it.Value.low++;
-               it = it.Next;
+            var node = m_segments.First;
+            if (node == null) {
+               throw new Exception("The Unique ID Set was unable to supply a new Unique ID.  Check for UID Leaks");
             }
-            throw new Exception("The Unique ID Set was unable to supply a new Unique ID.  Check for UID Leaks");
+
+            if (node.Value.low == node.Value.high) {
+               var res = node.Value.low;
+               m_segments.RemoveFirst();
+               return res;
+            }
+
+            return node.Value.low++;
          }
       }
 
