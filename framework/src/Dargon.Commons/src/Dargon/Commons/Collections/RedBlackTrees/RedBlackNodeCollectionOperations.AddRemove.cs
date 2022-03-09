@@ -10,6 +10,7 @@ using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons.Collections.RedBlackTrees {
    public interface IBstSearchComparer<T> {
+      // Returns the result of compare(query, value);
       [Pure]
       int CompareQueryVsValue(T value);
    }

@@ -201,5 +201,11 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
          var newRoot = ops.ReplaceNode(root, inTreeReplacee, outOfTreeReplacement);
          root = newRoot;
       }
+
+      public static RedBlackNode<T> GetPredecessorOrThrow<T>(this RedBlackNodeCollectionOperations<T> ops, RedBlackNode<T> node)
+         => ops.GetPredecessorOrNull(node).AssertIsNotNull();
+
+      public static RedBlackNode<T> GetSuccessorOrThrow<T>(this RedBlackNodeCollectionOperations<T> ops, RedBlackNode<T> node)
+         => ops.GetSuccessorOrNull(node).AssertIsNotNull();
    }
 }

@@ -17,6 +17,32 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
       }
 
       [Fact]
+      public void RedBlackTree_GetPredecessorSuccessorFT() {
+         foreach (var treeSize in new[] { 0, 1, 2, 3, 7, 100 }) {
+            var ops = new RedBlackNodeCollectionOperations<int, IntComparer>(new IntComparer());
+            var root = ops.Treeify(Arrays.Create(treeSize, i => i));
+            var nodesInOrder = ops.ToNodeArray(root);
+            for (var i = 0; i < nodesInOrder.Length; i++) {
+               var node = nodesInOrder[i];
+               var pred = ops.GetPredecessorOrNull(node);
+               var succ = ops.GetSuccessorOrNull(node);
+
+               if (i == 0) {
+                  pred.AssertEquals(null);
+               } else {
+                  pred.AssertEquals(nodesInOrder[i - 1]);
+               }
+
+               if (i + 1 == nodesInOrder.Length) {
+                  succ.AssertEquals(null);
+               } else {
+                  succ.AssertEquals(nodesInOrder[i + 1]);
+               }
+            }
+         }
+      }
+
+      [Fact]
       public void RedBlackTree_AddSuccessorPredecessorFT() {
          var configs = new List<(int niters, int numInitialNodesMax, int cubeRootNumAdds)> {
             (1000, 10, 10),
