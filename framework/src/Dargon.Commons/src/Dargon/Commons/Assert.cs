@@ -22,13 +22,13 @@ namespace Dargon.Commons {
          }
       }
 
-      public static void IsNull(object val, string message = null) {
+      public static void IsNull<T>(T val, string message = null) {
          if (val != null) {
             Fail(message ?? "(Value not null)");
          }
       }
 
-      public static void IsNotNull(object val, string message = null) {
+      public static void IsNotNull<T>(T val, string message = null) {
          if (val == null) {
             Fail(message ?? "(Value was null)");
          }
@@ -127,6 +127,45 @@ namespace Dargon.Commons {
       public static void IsGreaterThanOrEqualTo(int left, int right) {
          if (left < right) {
             Fail($"{nameof(IsGreaterThanOrEqualTo)} failed. {left} < {right}");
+         }
+      }
+
+      public static void IsWithinEpsilon(int a, int b, int epsilon) {
+         var delta = Math.Abs(a - b);
+         if (delta > epsilon) {
+            Fail($"{nameof(IsWithinEpsilon)} failed. abs({a} - {b}) = {delta}, which is > {epsilon}");
+         }
+      }
+
+      public static void IsWithinEpsilon(float a, float b, float epsilon) {
+         var delta = Math.Abs(a - b);
+         if (delta > epsilon) {
+            Fail($"{nameof(IsWithinEpsilon)} failed. abs({a} - {b}) = {delta}, which is > {epsilon}");
+         }
+      }
+
+      public static void IsWithinEpsilon(double a, double b, double epsilon) {
+         var delta = Math.Abs(a - b);
+         if (delta > epsilon) {
+            Fail($"{nameof(IsWithinEpsilon)} failed. abs({a} - {b}) = {delta}, which is > {epsilon}");
+         }
+      }
+
+      public static void IsWithinEpsilon(int v, int epsilon) {
+         if (Math.Abs(v) > epsilon) {
+            Fail($"{nameof(IsWithinEpsilon)} failed. abs({v}) > {epsilon}");
+         }
+      }
+
+      public static void IsWithinEpsilon(float v, float epsilon) {
+         if (Math.Abs(v) > epsilon) {
+            Fail($"{nameof(IsWithinEpsilon)} failed. abs({v}) > {epsilon}");
+         }
+      }
+
+      public static void IsWithinEpsilon(double v, double epsilon) {
+         if (Math.Abs(v) > epsilon) {
+            Fail($"{nameof(IsWithinEpsilon)} failed. abs({v}) > {epsilon}");
          }
       }
 

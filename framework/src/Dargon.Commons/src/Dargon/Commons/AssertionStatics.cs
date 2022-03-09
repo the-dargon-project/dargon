@@ -103,6 +103,36 @@ namespace Dargon.Commons {
          return left;
       }
 
+      public static int AssertIsWithinEpsilon(this int val, int epsilon) {
+         Assert.IsWithinEpsilon(val, epsilon);
+         return val;
+      }
+
+      public static float AssertIsWithinEpsilon(this float val, float epsilon) {
+         Assert.IsWithinEpsilon(val, epsilon);
+         return val;
+      }
+
+      public static double AssertIsWithinEpsilon(this double val, double epsilon) {
+         Assert.IsWithinEpsilon(val, epsilon);
+         return val;
+      }
+
+      public static int AssertIsWithinEpsilon(this int left, int right, int epsilon) {
+         Assert.IsWithinEpsilon(left, right, epsilon);
+         return left;
+      }
+
+      public static float AssertIsWithinEpsilon(this float left, float right, float epsilon) {
+         Assert.IsWithinEpsilon(left, right, epsilon);
+         return left;
+      }
+
+      public static double AssertIsWithinEpsilon(this double left, double right, double epsilon) {
+         Assert.IsWithinEpsilon(left, right, epsilon);
+         return left;
+      }
+
       public static float AssertIsNumber(this float val, string message = null) {
          Assert.IsTrue(!float.IsNaN(val), "Value was NaN");
          Assert.IsTrue(!float.IsPositiveInfinity(val), "Value was +Infinity");
