@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons.Collections {
-   
    public class ExposedListDictionary<TKey, TValue> : ExposedListDictionary<TKey, TValue, ExposedListDictionary<TKey, TValue>.EqualityComparerWrapper> {
       public ExposedListDictionary() : base(new EqualityComparerWrapper(EqualityComparer<TKey>.Default)) { }
       public ExposedListDictionary(int capacity) : base(capacity, new EqualityComparerWrapper(EqualityComparer<TKey>.Default)) { }

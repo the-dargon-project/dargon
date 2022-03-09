@@ -256,5 +256,31 @@ namespace Dargon.Commons.Collections {
          store = ToArray();
          return store;
       }
+
+      public MappedExposedArrayListView<T, U> CreateMappedView<U>(Func<T, U> mapper, Action<U> adderOpt = null)
+         => new(this, mapper, adderOpt);
+
+      public MappedExposedArrayListView<T, U> CreateMappedView<U>(Func<T, U> mapper, Action<ExposedArrayList<T>, U> adderOpt = null)
+         => new(this, mapper, adderOpt == null ? null : u => adderOpt.Invoke(this, u));
+   }
+
+   public class MappedExposedArrayListView<T, U> : IEnumerable<U> {
+      private readonly ExposedArrayList<T> inner;
+      private readonly Func<T, U> mapper;
+      private readonly Action<U> adderOpt;
+
+      internal MappedExposedArrayListView(ExposedArrayList<T> inner, Func<T, U> mapper, Action<U> adderOpt) {
+         this.inner = inner;
+         this.mapper = mapper;
+         this.adderOpt = adderOpt;
+      }
+
+      public int Count => inner.Count;
+      public U this[int idx] => mapper(inner[idx]);
+      public void Add(U item) => adderOpt(item);
+
+      public StructLinqMap<T, ExposedArrayList<T>.Enumerator, U> GetEnumerator() => StructLinq<T>.Map(inner.GetEnumerator(), mapper);
+      IEnumerator<U> IEnumerable<U>.GetEnumerator() => GetEnumerator();
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
    }
 }
