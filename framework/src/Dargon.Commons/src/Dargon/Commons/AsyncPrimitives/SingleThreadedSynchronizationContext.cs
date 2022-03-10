@@ -22,6 +22,10 @@ namespace Dargon.Commons.AsyncPrimitives {
          pendingContinuationsSignal.Release();
       }
 
+      /// <summary>
+      /// This method must be reentrant; the game loop runs on this sync context and
+      /// will drain the task queue per frame.
+      /// </summary>
       public void ProcessTaskQueueTilEmpty() {
 #if DEBUG
          IsCurrentThreadMainThread.AssertIsTrue();
