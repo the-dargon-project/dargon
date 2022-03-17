@@ -10,7 +10,7 @@ namespace Dargon.Commons.Pooling {
    public class CapacityTrackingPow2CollectionPoolBase<TElement> : Pow2CollectionPoolBase<TElement> {
       private readonly Dictionary<TElement, int> capacityMap;
 
-      public CapacityTrackingPow2CollectionPoolBase(string name, Func<int, IObjectPool<TElement>> poolFactory) : this(name, poolFactory, null) { }
+      public CapacityTrackingPow2CollectionPoolBase(string name, Func<int, IObjectPool<TElement>> poolFactory) : this(name, poolFactory, new()) { }
 
       private CapacityTrackingPow2CollectionPoolBase(string name, Func<int, IObjectPool<TElement>> poolFactory, Dictionary<TElement, int> capacityMap) : base(name, CreateCapacityTrackingPoolFactory(poolFactory, capacityMap)) {
          this.capacityMap = capacityMap;
