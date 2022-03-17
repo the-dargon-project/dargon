@@ -733,6 +733,20 @@ namespace Dargon.Commons {
       public static Range RangeWithLength(this int startInclusive, int length) => RangeToExclusive(startInclusive, startInclusive + length);
       public static Range RangeToInclusive(this int startInclusive, int endInclusive) => new Range(startInclusive, endInclusive + 1);
       public static Range RangeToExclusive(this int startInclusive, int endExclusive) => new Range(startInclusive, endExclusive);
+
+      public static void ApplySubtract<T>(this HashSet<T> self, HashSet<T> other) {
+         foreach (var x in other) self.Remove(x);
+      }
+
+      public static HashSet<T> ComputeSubtract<T>(this HashSet<T> self, HashSet<T> other) {
+         var res = new HashSet<T>(self);
+         
+         foreach (var x in other) {
+            res.Remove(x);
+         }
+
+         return res;
+      }
    }
 
    public class Chunk<T> {

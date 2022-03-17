@@ -44,19 +44,23 @@ namespace Dargon.Commons.Collections {
 #endif
       }
 
+      // e.g. [0, 1, 2, 3] becomes [1, 2, 3, 0]
       public void RotateLeft(int n) {
+         n.AssertIsGreaterThanOrEqualTo(0);
          size.AssertEquals(store.Length);
-         headIndex -= n;
-         while (headIndex < 0) headIndex += store.Length;
+         headIndex += n;
+         while (headIndex >= store.Length) headIndex -= store.Length;
 #if ENABLE_VERSION_CHECK
          version++;
 #endif
       }
 
+      // e.g. [0, 1, 2, 3] becomes [3, 0, 1, 2]
       public void RotateRight(int n) {
+         n.AssertIsGreaterThanOrEqualTo(0);
          size.AssertEquals(store.Length);
-         headIndex += n;
-         while (headIndex >= store.Length) headIndex -= store.Length;
+         headIndex -= n;
+         while (headIndex < 0) headIndex += store.Length;
 #if ENABLE_VERSION_CHECK
          version++;
 #endif
@@ -102,7 +106,6 @@ namespace Dargon.Commons.Collections {
          } else {
             var i = NormalizeSuccessorIndex(headIndex + size);
             store[i] = item;
-            headIndex = i;
             size++;
 #if ENABLE_VERSION_CHECK
             version++;
@@ -135,6 +138,13 @@ namespace Dargon.Commons.Collections {
 #if ENABLE_VERSION_CHECK
          version++;
 #endif
+      }
+
+      public ref T this[int i] {
+         get {
+            i.AssertIsGreaterThanOrEqualTo(0).AssertIsLessThan(size);
+            return ref store[NormalizeSuccessorIndex(headIndex + i)];
+         }
       }
 
       private int NormalizePredecessorIndex(int i) => i < 0 ? (i + store.Length) : i;
