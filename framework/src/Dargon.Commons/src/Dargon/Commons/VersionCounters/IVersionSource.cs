@@ -1,4 +1,6 @@
-﻿namespace Dargon.Commons.VersionCounters {
+﻿using System.Runtime.CompilerServices;
+
+namespace Dargon.Commons.VersionCounters {
    public interface IVersionSource {
       /// <summary>
       /// Must increase (or change) whenever state changes, avoiding duplicating previous values.
@@ -9,5 +11,13 @@
 
    public class SimpleVersionSource : IVersionSource {
       public int Version { get; set; }
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      protected void IncrementVersion() => IncrementVersion<object>(null);
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      protected void IncrementVersion<T>(T throwaway) {
+         Version++;
+      }
    }
 }
