@@ -25,6 +25,8 @@ namespace Dargon.Commons.Collections {
          store = new T[capacity];
       }
 
+      public int Capacity => store.Length;
+
       public bool LoopsPastEnd => headIndex > 0 && headIndex + size > store.Length;
 
       public void EnsureCapacity(int n) {
@@ -45,7 +47,7 @@ namespace Dargon.Commons.Collections {
       }
 
       // e.g. [0, 1, 2, 3] becomes [1, 2, 3, 0]
-      public void RotateLeft(int n) {
+      public void RotateLeft(int n = 1) {
          n.AssertIsGreaterThanOrEqualTo(0);
          size.AssertEquals(store.Length);
          headIndex += n;
@@ -56,7 +58,7 @@ namespace Dargon.Commons.Collections {
       }
 
       // e.g. [0, 1, 2, 3] becomes [3, 0, 1, 2]
-      public void RotateRight(int n) {
+      public void RotateRight(int n = 1) {
          n.AssertIsGreaterThanOrEqualTo(0);
          size.AssertEquals(store.Length);
          headIndex -= n;
