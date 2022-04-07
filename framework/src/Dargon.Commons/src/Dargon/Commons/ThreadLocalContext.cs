@@ -7,12 +7,18 @@ using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons {
    public class ThreadLocalContext<TContext> where TContext : ThreadLocalContext<TContext> {
-      public TContext UseAsImplicitThreadLocalContext() {
+      public TContext UseAsImplicitThreadLocalContext(bool reinitialize = false) {
+         if (reinitialize) {
+            UninitializeState();
+         }
          UseImplicitThreadLocalContext((TContext)this);
          return (TContext)this;
       }
 
-      public TContext UseAsImplicitAsyncLocalContext() {
+      public TContext UseAsImplicitAsyncLocalContext(bool reinitialize = false) {
+         if (reinitialize) {
+            UninitializeState();
+         }
          UseImplicitAsyncLocalContext((TContext)this);
          return (TContext)this;
       }
@@ -58,7 +64,12 @@ namespace Dargon.Commons {
 
       private const bool kPreferThreadLocalState = true;
       private const bool kPreferAsyncLocalState = false;
-      
+
+      private static void UninitializeState() {
+         Store<StructOf<TContext>>.s_alsState.Value = null;
+         Store<StructOf<TContext>>.s_tlsState = default;
+      }
+
       private static ref Store<StructOf<TContext>>.State_t GetState(bool? preferTlsElseAls = null) => ref Store<StructOf<TContext>>.GetStateRef(preferTlsElseAls); 
       
       private static ref Store<StructOf<TContext>>.State_t GetAlreadyInitializedState() {
