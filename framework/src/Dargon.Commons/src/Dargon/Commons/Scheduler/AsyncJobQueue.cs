@@ -8,6 +8,7 @@ namespace Dargon.Commons.Scheduler {
    public interface IThreadInternal {
       void Start();
       int ManagedThreadId { get; }
+      public Thread NativeThread { get; }
    }
 
    public interface IThreadFactory {
@@ -28,6 +29,7 @@ namespace Dargon.Commons.Scheduler {
          }
 
          public int ManagedThreadId => Thread.ManagedThreadId;
+         public Thread NativeThread => Thread;
       }
    }
 

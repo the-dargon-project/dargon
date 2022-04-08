@@ -42,5 +42,13 @@ namespace Dargon.Commons {
          Array.Copy(arr, res, arr.Length);
          return res;
       }
+
+      public static T[] ReuseOrAllocateArrayOfCapacity<T>(ref T[] arr, int capacity) {
+         if (arr == null || arr.Length <= capacity) {
+            arr = new T[capacity];
+         }
+
+         return arr;
+      }
    }
 }
