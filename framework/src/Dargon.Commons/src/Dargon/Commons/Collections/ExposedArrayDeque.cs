@@ -29,6 +29,8 @@ namespace Dargon.Commons.Collections {
 
       public bool LoopsPastEnd => headIndex > 0 && headIndex + size > store.Length;
 
+      public int Size => size;
+
       public void EnsureCapacity(int n) {
          if (store.Length >= n) return;
 
