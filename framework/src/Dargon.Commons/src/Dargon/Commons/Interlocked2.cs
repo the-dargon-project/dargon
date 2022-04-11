@@ -37,5 +37,13 @@ namespace Dargon.Commons {
          var xCapture = x;
          return Interlocked.CompareExchange(ref x, val, xCapture).AssertReferenceEquals(xCapture);
       }
+
+      public static void Write(ref uint x, uint val) {
+         while (true) {
+            var read = Read(ref x);
+            if (read == val) return;
+            if (Interlocked.CompareExchange(ref x, val, read) == read) return;
+         }
+      }
    }
 }
