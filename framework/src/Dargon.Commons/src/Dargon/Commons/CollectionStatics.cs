@@ -451,11 +451,6 @@ namespace Dargon.Commons {
          }
       }
 
-      public static IEnumerable<T> DistinctBy<T, U>(this IEnumerable<T> self, Func<T, U> projector) {
-         var seen = new HashSet<U>();
-         return self.Where(x => seen.Add(projector(x)));
-      }
-
       //http://stackoverflow.com/questions/4681949/use-linq-to-group-a-sequence-of-numbers-with-no-gaps
       public static IEnumerable<IEnumerable<T>> GroupAdjacentBy<T>(
          this IEnumerable<T> source, Func<T, T, bool> predicate) {

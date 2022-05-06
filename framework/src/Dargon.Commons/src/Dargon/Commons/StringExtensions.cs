@@ -23,6 +23,8 @@ namespace Dargon.Commons {
       /// </summary>
       public static string ToDashedSnakeCase(this string s) => ToCase(s, false, false, "-");
 
+      public static string ToLowerSnakeCase(this string s) => ToCase(s, false, false, "_");
+
       private static string ToCase(string s, bool upperElseLowerFirst, bool upperElseLowerFollowing, string snakeDash) {
          var sb = new StringBuilder();
          var firstWord = true;
