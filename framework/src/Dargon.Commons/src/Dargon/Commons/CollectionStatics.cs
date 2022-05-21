@@ -249,6 +249,11 @@ namespace Dargon.Commons {
             new TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, Dictionary<K, V>.Enumerator>(
                items.GetEnumerator()));
 
+      public static EnumeratorToEnumerableAdapter<(int, KeyValuePair<K, V>), TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, SortedDictionary<K, V>.Enumerator>> Enumerate<K, V>(this SortedDictionary<K, V> items) =>
+         EnumeratorToEnumerableAdapter<(int, KeyValuePair<K, V>)>.Create(
+            new TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, SortedDictionary<K, V>.Enumerator>(
+               items.GetEnumerator()));
+
       public static EnumeratorToEnumerableAdapter<(int, T), TEnumerateWithIndexEnumerator<T, ExposedArrayList<T>.Enumerator>> Enumerate<T>(this ExposedArrayList<T> items) =>
          EnumeratorToEnumerableAdapter<(int, T)>.Create(
             new TEnumerateWithIndexEnumerator<T, ExposedArrayList<T>.Enumerator>(

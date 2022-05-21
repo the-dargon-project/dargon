@@ -4,6 +4,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dargon.Commons.Templating {
@@ -43,6 +44,20 @@ namespace Dargon.Commons.Templating {
    public class TDummy : TArg<TDummy> { }
    public class TTrue : TArg<TTrue> {}
    public class TFalse : TArg<TFalse> { }
+
+   public record struct TypeId(int Value);
+
+   public static class TypeIds<TNamespace> {
+      // ReSharper disable once StaticMemberInGenericType
+      private static int next;
+
+      public static TypeId Get<T>() => Inner<T>.Value;
+
+      private static class Inner<T> {
+         // ReSharper disable once StaticMemberInGenericType
+         public static TypeId Value { get; } = new(Interlocked.Increment(ref next));
+      }
+   }
 
    public interface ITemplateInt64 {
       public long Value { get; }
