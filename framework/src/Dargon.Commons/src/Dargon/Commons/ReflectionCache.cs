@@ -10,6 +10,7 @@ namespace Dargon.Commons {
       public static readonly Type Type = typeof(T);
       public static readonly string Name = Type.Name;
       public static readonly FieldInfo[] PublicFields = Type.GetFields(BindingFlags.Public | BindingFlags.Instance);
-      public static readonly Dictionary<string, FieldInfo> PublicFieldsByName = PublicFields.ToDictionary(f => f.Name);
+      public static readonly KeyValuePair<string, FieldInfo>[] PublicFieldNameAndInfos = PublicFields.Map(f => f.PairKey(f.Name));
+      public static readonly Dictionary<string, FieldInfo> PublicFieldsByName = PublicFieldNameAndInfos.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
    }
 }
