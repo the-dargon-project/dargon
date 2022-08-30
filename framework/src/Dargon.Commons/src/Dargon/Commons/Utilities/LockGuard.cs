@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Dargon.Commons.Collections;
 
 namespace Dargon.Commons.Utilities {
    /// <summary>
@@ -81,7 +82,12 @@ namespace Dargon.Commons.Utilities {
          rwl.EnterUpgradeableReadLock();
       }
 
+      public bool IsReaderLock => isUpgradableReaderLockElseWriterLock;
+      public bool IsUpgradedSWriterLock => !isUpgradableReaderLockElseWriterLock;
+
       public void UpgradeToWriterLock() {
+         isUpgradableReaderLockElseWriterLock.AssertIsTrue();
+
          rwl.EnterWriteLock();
          this.isUpgradableReaderLockElseWriterLock = false;
       }
@@ -128,6 +134,32 @@ namespace Dargon.Commons.Utilities {
          if (lockWasTaken) {
             rwl.ExitWriteLock();
          }
+      }
+   }
+
+   public static class RWLSExtensions {
+      public static RWLSReaderGuard CreateReaderGuard(this ReaderWriterLockSlim rwls) => new(rwls);
+      public static RWLSUpgradableReaderGuard CreateUpgradableReaderGuard(this ReaderWriterLockSlim rwls) => new(rwls);
+      public static RWLSWriterGuard CreateWriterGuard(this ReaderWriterLockSlim rwls) => new(rwls);
+
+      public static bool TryGetValueWithDoubleCheckedLock<TKey, TValue>(this Dictionary<TKey, TValue> d, TKey key, out TValue value, RWLSUpgradableReaderGuard guard) {
+         if (d.TryGetValue(key, out value)) {
+            return true;
+         }
+
+         guard.UpgradeToWriterLock();
+
+         return d.TryGetValue(key, out value);
+      }
+
+      public static bool TryGetValueWithDoubleCheckedLock<TKey, TValue>(this ExposedListDictionary<TKey, TValue> d, TKey key, out TValue value, RWLSUpgradableReaderGuard guard) {
+         if (d.TryGetValue(key, out value)) {
+            return true;
+         }
+
+         guard.UpgradeToWriterLock();
+
+         return d.TryGetValue(key, out value);
       }
    }
 }
