@@ -14,7 +14,7 @@ namespace Dargon.Commons.Pooling {
 
       public string Name { get; }
 
-      private (int bin, int actualSize) FindBinAndActualSize(int minimumSize) {
+      private (int bin, int actualSize) FindBinIndexAndCapacity(int minimumSize) {
          if (minimumSize < 0) throw new ArgumentOutOfRangeException();
          if (minimumSize == 0) {
             return (0, 0);
@@ -31,14 +31,15 @@ namespace Dargon.Commons.Pooling {
       }
 
       public TCollection Take(int minimumSize) {
-         var (bin, actualSize) = FindBinAndActualSize(minimumSize);
+         var (bin, actualSize) = FindBinIndexAndCapacity(minimumSize);
          return pools[bin].TakeObject();
       }
 
       public void Return(TCollection collection) {
-         var (bin, actualSize) = FindBinAndActualSize(Capacity(collection));
-         if (actualSize != Capacity(collection)) throw new InvalidOperationException($"Collection length mismatch. Actual {Capacity(collection)} vs expected {actualSize}.");
-         pools[bin].ReturnObject(collection);
+         var collectionCapacity = Capacity(collection);
+         var (binIndex, binCapacity) = FindBinIndexAndCapacity(collectionCapacity);
+         if (binCapacity != collectionCapacity) throw new InvalidOperationException($"Collection length mismatch. Actual {collectionCapacity} vs expected {binCapacity}.");
+         pools[binIndex].ReturnObject(collection);
       }
 
       protected abstract int Capacity(TCollection collection);
