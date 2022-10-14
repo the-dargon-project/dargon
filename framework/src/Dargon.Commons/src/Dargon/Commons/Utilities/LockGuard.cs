@@ -66,44 +66,119 @@ namespace Dargon.Commons.Utilities {
       }
    }
 
+   public enum GuardState {
+      UpgradeableReader,
+      UpgradedWriter,
+      SimpleReader,
+      Disposed,
+      Intermediate_ReaderToUpgradable,
+      Intermediate_ReaderToWriter,
+   }
+
    /// <summary>
    /// All synchronization methods, including disposal, contain a full memory barrier.
    /// This object gracefully handles double disposal.
    /// </summary>
    public struct RWLSUpgradableReaderGuard : IDisposable {
       private readonly ReaderWriterLockSlim rwl;
-      private bool isDisposed;
-      private bool isUpgradableReaderLockElseWriterLock;
+      private GuardState state;
 
-      public RWLSUpgradableReaderGuard(ReaderWriterLockSlim rwl) {
+      public RWLSUpgradableReaderGuard(ReaderWriterLockSlim rwl, GuardState state = GuardState.UpgradeableReader) {
          this.rwl = rwl;
-         this.isDisposed = false;
-         this.isUpgradableReaderLockElseWriterLock = true;
-         rwl.EnterUpgradeableReadLock();
+         this.state = state;
+
+         switch (state) {
+            case GuardState.UpgradeableReader:
+               rwl.EnterUpgradeableReadLock();
+               break;
+            case GuardState.UpgradedWriter:
+               rwl.EnterWriteLock();
+               break;
+            case GuardState.SimpleReader:
+               rwl.EnterReadLock();
+               break;
+            default:
+               throw new ArgumentException($"Unexpected {nameof(state)} = ({nameof(GuardState)}){state}");
+         }
       }
 
-      public bool IsReaderLock => isUpgradableReaderLockElseWriterLock;
-      public bool IsUpgradedSWriterLock => !isUpgradableReaderLockElseWriterLock;
+      public bool IsUpgradeableReader => state == GuardState.UpgradeableReader;
+      public bool IsUpgradedWriter => state == GuardState.UpgradedWriter;
+      public bool IsSimpleReader => state == GuardState.SimpleReader;
+      public bool IsDisposed => state == GuardState.Disposed;
+
+      // public bool IsReaderLock => isUpgradableReaderLockElseWriterLock;
+      // public bool IsUpgradedWriterLock => !isUpgradableReaderLockElseWriterLock;
+
+      public void UpgradeToOrStayAsWriterLock() {
+         if (state == GuardState.UpgradedWriter) return;
+         UpgradeToWriterLock();
+      }
 
       public void UpgradeToWriterLock() {
-         isUpgradableReaderLockElseWriterLock.AssertIsTrue();
+         state.AssertEquals(GuardState.UpgradeableReader);
 
          rwl.EnterWriteLock();
-         this.isUpgradableReaderLockElseWriterLock = false;
+         rwl.ExitUpgradeableReadLock();
+         state = GuardState.UpgradedWriter;
+      }
+
+      public void DowngradeToUpgradeableReaderLock() {
+         state.AssertEquals(GuardState.UpgradedWriter);
+
+         rwl.EnterUpgradeableReadLock();
+         rwl.ExitWriteLock();
+
+         state = GuardState.UpgradeableReader;
+      }
+
+      public void DowngradeToReaderLock() {
+         state.AssertNotEquals(GuardState.SimpleReader);
+         state.AssertNotEquals(GuardState.Disposed);
+
+         if (state == GuardState.UpgradedWriter) {
+            rwl.EnterReadLock();
+            rwl.ExitWriteLock();
+         } else if (state == GuardState.UpgradeableReader) {
+            rwl.EnterReadLock();
+            rwl.ExitUpgradeableReadLock();
+         }
+
+         state = GuardState.SimpleReader;
       }
 
       public void Dispose() {
-         if (isDisposed) {
-            return;
+         switch (state) {
+            case GuardState.UpgradeableReader:
+               rwl.ExitUpgradeableReadLock();
+               break;
+            case GuardState.UpgradedWriter:
+               rwl.ExitWriteLock();
+               break;
+            case GuardState.SimpleReader:
+               rwl.ExitReadLock();
+               break;
+            case GuardState.Disposed:
+               break;
          }
 
-         isDisposed = true;
+         state = GuardState.Disposed;
+      }
 
-         if (isUpgradableReaderLockElseWriterLock) {
-            rwl.ExitUpgradeableReadLock();
-         } else {
-            rwl.ExitWriteLock();
-         }
+      public void ReleaseReaderAndReacquireAsUpgradableReader() {
+         state.AssertEquals(GuardState.SimpleReader);
+         rwl.ExitReadLock();
+         state = GuardState.Intermediate_ReaderToUpgradable;
+         rwl.EnterUpgradeableReadLock();
+         state = GuardState.UpgradeableReader;
+      }
+
+      public void ReleaseReaderAndReacquireAsUpgradedWriter() {
+         state.AssertEquals(GuardState.SimpleReader);
+         rwl.ExitReadLock();
+         state = GuardState.Intermediate_ReaderToWriter;
+         rwl.EnterWriteLock();
+         state = GuardState.UpgradedWriter;
       }
    }
 
@@ -140,6 +215,7 @@ namespace Dargon.Commons.Utilities {
    public static class RWLSExtensions {
       public static RWLSReaderGuard CreateReaderGuard(this ReaderWriterLockSlim rwls) => new(rwls);
       public static RWLSUpgradableReaderGuard CreateUpgradableReaderGuard(this ReaderWriterLockSlim rwls) => new(rwls);
+      public static RWLSUpgradableReaderGuard CreateUpgradableReaderGuard(this ReaderWriterLockSlim rwls, GuardState guardState) => new(rwls, guardState);
       public static RWLSWriterGuard CreateWriterGuard(this ReaderWriterLockSlim rwls) => new(rwls);
 
       public static bool TryGetValueWithDoubleCheckedLock<TKey, TValue>(this Dictionary<TKey, TValue> d, TKey key, out TValue value, RWLSUpgradableReaderGuard guard) {
