@@ -747,6 +747,35 @@ namespace Dargon.Commons {
 
          return res;
       }
+
+      public static V GetOrAdd<K, V>(this Dictionary<K, V> dict, K key, V value) {
+         if (dict.TryGetValue(key, out var existing)) {
+            return existing;
+         } else {
+            dict.Add(key, value);
+            return value;
+         }
+      }
+
+      public static V GetOrAdd<K, V>(this Dictionary<K, V> dict, K key, Func<V> valueFunc) {
+         if (dict.TryGetValue(key, out var existing)) {
+            return existing;
+         } else {
+            var value = valueFunc();
+            dict.Add(key, value);
+            return value;
+         }
+      }
+
+      public static V GetOrAdd<K, V>(this Dictionary<K, V> dict, K key, Func<K, V> valueFunc) {
+         if (dict.TryGetValue(key, out var existing)) {
+            return existing;
+         } else {
+            var value = valueFunc(key);
+            dict.Add(key, value);
+            return value;
+         }
+      }
    }
 
    public class Chunk<T> {

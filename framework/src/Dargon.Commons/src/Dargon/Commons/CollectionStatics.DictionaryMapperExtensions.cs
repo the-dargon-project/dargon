@@ -14,14 +14,6 @@ namespace Dargon.Commons {
          return DictionaryMapperInternals<K, V1, V2>.dictionaryMapper(dict, mapper);
       }
 
-      public static Dictionary<VIn, VOut> MapByValue<KIn, VIn, VOut>(this Dictionary<KIn, VIn> dict, Func<VIn, VOut> mapper) {
-         var result = new Dictionary<VIn, VOut>(dict.Count);
-         foreach (var (k, v) in dict) {
-            result[v] = mapper(v);
-         }
-         return result;
-      }
-
       public static Dictionary<T, V> UniqueMap<T, V>(this IReadOnlyList<T> list, Func<T, V> mapper) {
          var result = new Dictionary<T, V>();
          for (var i = 0 ; i < list.Count; i++) {
@@ -37,7 +29,15 @@ namespace Dargon.Commons {
          public static readonly DictionaryMapFunc dictionaryMapper;
 
          static DictionaryMapperInternals() {
-            FieldInfo FindField(Type t, string name) => t.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            FieldInfo FindField(Type t, string name) {
+               var res = t.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+               if (res != null) return res;
+
+               // legacy framework code doesn't have the _ prefix.
+               // Sometime circa .net5 they updated this.
+               return t.GetField("_" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
             PropertyInfo FindProperty(Type t, string name) => t.GetProperty(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
             var tInputDict = typeof(Dictionary<K, V1>);
@@ -45,6 +45,9 @@ namespace Dargon.Commons {
             var tOutputDict = typeof(Dictionary<K, V2>);
             var tOutputEntry = tOutputDict.GetNestedType("Entry", BindingFlags.NonPublic).MakeGenericType(typeof(K), typeof(V2));
             var tMapper = typeof(Func<K, V1, V2>);
+
+            // in the new .net dictionary, fields were preprended with _, e.g. _buckets.
+            var isNewDotnetDictionary = tInputDict.GetField("buckets", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) == null;
 
             var method = new DynamicMethod("", tOutputDict, new[] { tInputDict, tMapper }, true);
             var emitter = method.GetILGenerator();
@@ -144,9 +147,8 @@ namespace Dargon.Commons {
             emitter.Emit(OpCodes.Ldfld, FindField(tInputEntry, "key"));
             emitter.Emit(OpCodes.Stfld, FindField(tOutputEntry, "key"));
 
-
             //-------------------------------------------------------------------------------------
-            // map (key, value) => new value if i < dict.count && entries[i].hashCode >= 0
+            // map (key, value) => new value if i < dict.count
             //-------------------------------------------------------------------------------------
             var cleanupAndJumpToIncrementor = emitter.DefineLabel();
 
@@ -157,12 +159,12 @@ namespace Dargon.Commons {
             emitter.Emit(OpCodes.Clt);
             emitter.Emit(OpCodes.Brfalse, cleanupAndJumpToIncrementor);
 
-            // dup TOutputDict.Entry*, then get ith element hashCode field
-            emitter.Emit(OpCodes.Dup);
-            emitter.Emit(OpCodes.Ldfld, FindField(tOutputEntry, "hashCode"));
-            emitter.Emit(OpCodes.Ldc_I4_0);
-            emitter.Emit(OpCodes.Clt);
-            emitter.Emit(OpCodes.Brtrue, cleanupAndJumpToIncrementor);
+            // // dup TOutputDict.Entry*, then get ith element hashCode field
+            // emitter.Emit(OpCodes.Dup);
+            // emitter.Emit(OpCodes.Ldfld, FindField(tOutputEntry, "hashCode"));
+            // emitter.Emit(OpCodes.Ldc_I4_0);
+            // emitter.Emit(OpCodes.Clt);
+            // emitter.Emit(OpCodes.Brtrue, cleanupAndJumpToIncrementor);
 
             // the actual mapping code
             emitter.Emit(OpCodes.Ldarg_1);
@@ -206,11 +208,32 @@ namespace Dargon.Commons {
             //-------------------------------------------------------------------------------------
             // clone count, version, freeList, freeCount
             //-------------------------------------------------------------------------------------
-            foreach (var fieldName in new[] { "count", "version", "freeList", "freeCount", "comparer" }) {
+            var fieldNames = new[] {
+               // existed since old .NET Framework
+               (true, "count"),
+               (true, "version"),
+               (true, "freeList"),
+               (true, "freeCount"),
+               (true, "comparer"),
+
+               // Added ~.NET 5
+               (false, "fastModMultiplier"),
+            };
+            foreach (var (required, fieldName) in fieldNames) {
+               var inputField = FindField(tInputDict, fieldName);
+               var outputField = FindField(tOutputDict, fieldName);
+
+               (inputField == null).AssertEquals(outputField == null);
+
+               if (inputField == null) {
+                  required.AssertIsFalse();
+                  continue;
+               }
+
                emitter.Emit(OpCodes.Ldloc, outputDictLocal);
                emitter.Emit(OpCodes.Ldarg_0);
-               emitter.Emit(OpCodes.Ldfld, FindField(tInputDict, fieldName));
-               emitter.Emit(OpCodes.Stfld, FindField(tOutputDict, fieldName));
+               emitter.Emit(OpCodes.Ldfld, inputField);
+               emitter.Emit(OpCodes.Stfld, outputField);
             }
 
             emitter.MarkLabel(exitLabel);
