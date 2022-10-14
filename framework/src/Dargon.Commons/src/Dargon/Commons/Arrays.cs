@@ -50,5 +50,7 @@ namespace Dargon.Commons {
 
          return arr;
       }
+
+      public static bool IsNullOrEmpty<T>(T[] arr) => arr == null || arr.Length == 0;
    }
 }
