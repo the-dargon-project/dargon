@@ -55,8 +55,16 @@ namespace Dargon.Commons.Templating {
 
       private static class Inner<T> {
          // ReSharper disable once StaticMemberInGenericType
-         public static TypeId Value { get; } = new(Interlocked.Increment(ref next));
+         public static TypeId Value { get; } = new(Interlocked2.PostIncrement(ref next));
       }
+   }
+
+
+   public class TypeCounter<TType> {
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static int GetIndex<TKey>() => TypeIds<DummyNamespace>.Get<TKey>().Value;
+
+      private struct DummyNamespace {}
    }
 
    public interface ITemplateInt64 {
