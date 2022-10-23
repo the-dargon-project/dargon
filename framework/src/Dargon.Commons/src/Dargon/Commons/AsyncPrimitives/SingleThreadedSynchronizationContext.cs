@@ -48,15 +48,15 @@ namespace Dargon.Commons.AsyncPrimitives {
          }
       }
 
-      public override void Send(SendOrPostCallback cb, object? state) => InvokeImmediately(cb, state);
+      public override void Send(SendOrPostCallback cb, object stateOpt) => InvokeImmediately(cb, stateOpt);
 
-      public override void Post(SendOrPostCallback cb, object? state) => InvokeEventually(cb, state);
+      public override void Post(SendOrPostCallback cb, object stateOpt) => InvokeEventually(cb, stateOpt);
 
-      private void InvokeImmediately(SendOrPostCallback cb, object? state) {
+      private void InvokeImmediately(SendOrPostCallback cb, object stateOpt) {
          if (IsCurrentThreadMainThread) {
-            ExecuteContinuationImmediatelyOnCurrentThread(cb, state);
+            ExecuteContinuationImmediatelyOnCurrentThread(cb, stateOpt);
          } else {
-            var continuationContext = AllocContinuationContext(cb, state, true);
+            var continuationContext = AllocContinuationContext(cb, stateOpt, true);
             InvokeEventually(x => {
                var cc = (ContinuationContext)x;
                cc.Callback(cc.State);
@@ -71,27 +71,27 @@ namespace Dargon.Commons.AsyncPrimitives {
       /// </summary>
       private int invokeEventuallyDepth = 0;
 
-      private void InvokeEventually(SendOrPostCallback cb, object? state) {
+      private void InvokeEventually(SendOrPostCallback cb, object stateOpt) {
          if (IsCurrentThreadMainThread && invokeEventuallyDepth < 50) {
             invokeEventuallyDepth++;
-            ExecuteContinuationImmediatelyOnCurrentThread(cb, state);
+            ExecuteContinuationImmediatelyOnCurrentThread(cb, stateOpt);
             invokeEventuallyDepth--;
          } else {
-            var continuationContext = AllocContinuationContext(cb, state, false);
+            var continuationContext = AllocContinuationContext(cb, stateOpt, false);
             pendingContinuations.Enqueue(continuationContext);
             pendingContinuationsSignal.Release();
          }
       }
 
-      private void ExecuteContinuationImmediatelyOnCurrentThread(SendOrPostCallback callback, object? state) {
-         callback(state);
+      private void ExecuteContinuationImmediatelyOnCurrentThread(SendOrPostCallback callback, object stateOpt) {
+         callback(stateOpt);
       }
 
-      private ContinuationContext AllocContinuationContext(SendOrPostCallback callback, object? state, bool isForBlockingInvoke)
+      private ContinuationContext AllocContinuationContext(SendOrPostCallback callback, object stateOpt, bool isForBlockingInvoke)
          => new() {
             SyncLock = new(),
             Callback = callback,
-            State = state,
+            State = stateOpt,
             WaitEvent = isForBlockingInvoke ? new AutoResetEvent(false) : null,
          };
 
