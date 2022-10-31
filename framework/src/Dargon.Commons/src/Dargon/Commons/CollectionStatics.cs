@@ -229,37 +229,37 @@ namespace Dargon.Commons {
          }
       }
 
-      public static EnumeratorToEnumerableAdapter<(int, T), TEnumerateWithIndexEnumerator<T, ArrayEnumerator<T>>> Enumerate<T>(this T[] items) =>
+      public static EnumeratorToEnumerableAdapter<(int Index, T Item), TEnumerateWithIndexEnumerator<T, ArrayEnumerator<T>>> Enumerate<T>(this T[] items) =>
          EnumeratorToEnumerableAdapter<(int, T)>.Create(
             new TEnumerateWithIndexEnumerator<T, ArrayEnumerator<T>>(
                new ArrayEnumerator<T>(items)));
 
-      public static EnumeratorToEnumerableAdapter<(int, T), TEnumerateWithIndexEnumerator<T, List<T>.Enumerator>> Enumerate<T>(this List<T> items) =>
+      public static EnumeratorToEnumerableAdapter<(int Index, T Item), TEnumerateWithIndexEnumerator<T, List<T>.Enumerator>> Enumerate<T>(this List<T> items) =>
          EnumeratorToEnumerableAdapter<(int, T)>.Create(
             new TEnumerateWithIndexEnumerator<T, List<T>.Enumerator>(
                items.GetEnumerator()));
 
-      public static EnumeratorToEnumerableAdapter<(int, T), TEnumerateWithIndexEnumerator<T, HashSet<T>.Enumerator>> Enumerate<T>(this HashSet<T> items) =>
+      public static EnumeratorToEnumerableAdapter<(int Index, T Item), TEnumerateWithIndexEnumerator<T, HashSet<T>.Enumerator>> Enumerate<T>(this HashSet<T> items) =>
          EnumeratorToEnumerableAdapter<(int, T)>.Create(
             new TEnumerateWithIndexEnumerator<T, HashSet<T>.Enumerator>(
                items.GetEnumerator()));
 
-      public static EnumeratorToEnumerableAdapter<(int, KeyValuePair<K, V>), TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, Dictionary<K, V>.Enumerator>> Enumerate<K, V>(this Dictionary<K, V> items) =>
+      public static EnumeratorToEnumerableAdapter<(int Index, KeyValuePair<K, V> Item), TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, Dictionary<K, V>.Enumerator>> Enumerate<K, V>(this Dictionary<K, V> items) =>
          EnumeratorToEnumerableAdapter<(int, KeyValuePair<K, V>)>.Create(
             new TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, Dictionary<K, V>.Enumerator>(
                items.GetEnumerator()));
 
-      public static EnumeratorToEnumerableAdapter<(int, KeyValuePair<K, V>), TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, SortedDictionary<K, V>.Enumerator>> Enumerate<K, V>(this SortedDictionary<K, V> items) =>
+      public static EnumeratorToEnumerableAdapter<(int Index, KeyValuePair<K, V> Item), TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, SortedDictionary<K, V>.Enumerator>> Enumerate<K, V>(this SortedDictionary<K, V> items) =>
          EnumeratorToEnumerableAdapter<(int, KeyValuePair<K, V>)>.Create(
             new TEnumerateWithIndexEnumerator<KeyValuePair<K, V>, SortedDictionary<K, V>.Enumerator>(
                items.GetEnumerator()));
 
-      public static EnumeratorToEnumerableAdapter<(int, T), TEnumerateWithIndexEnumerator<T, ExposedArrayList<T>.Enumerator>> Enumerate<T>(this ExposedArrayList<T> items) =>
+      public static EnumeratorToEnumerableAdapter<(int Index, T Item), TEnumerateWithIndexEnumerator<T, ExposedArrayList<T>.Enumerator>> Enumerate<T>(this ExposedArrayList<T> items) =>
          EnumeratorToEnumerableAdapter<(int, T)>.Create(
             new TEnumerateWithIndexEnumerator<T, ExposedArrayList<T>.Enumerator>(
                items.GetEnumerator()));
-
-      public static EnumeratorToEnumerableAdapter<(int, ExposedKeyValuePair<K, V>), TEnumerateWithIndexEnumerator<ExposedKeyValuePair<K, V>, ExposedArrayList<ExposedKeyValuePair<K, V>>.Enumerator>> Enumerate<K, V>(this ExposedListDictionary<K, V> items)
+         
+      public static EnumeratorToEnumerableAdapter<(int Index, ExposedKeyValuePair<K, V> Item), TEnumerateWithIndexEnumerator<ExposedKeyValuePair<K, V>, ExposedArrayList<ExposedKeyValuePair<K, V>>.Enumerator>> Enumerate<K, V>(this ExposedListDictionary<K, V> items)
          => Enumerate(items.list);
 
       public static T[] ToReversedArray<T>(this T[] items) {
@@ -423,11 +423,12 @@ namespace Dargon.Commons {
             return min;
          }
       }
-
-      public static TSource MaxBy<TSource, TKey>(this IEnumerable<TSource> source,
-         Func<TSource, TKey> selector) {
-         return source.MaxBy(selector, Comparer<TKey>.Default);
-      }
+      
+      // Implemented in Enumerable circa .NET 6?
+      // public static TSource MaxBy<TSource, TKey>(this IEnumerable<TSource> source,
+      //    Func<TSource, TKey> selector) {
+      //    return source.MaxBy(selector, Comparer<TKey>.Default);
+      // }
 
       /// <summary>
       /// From morelinq 

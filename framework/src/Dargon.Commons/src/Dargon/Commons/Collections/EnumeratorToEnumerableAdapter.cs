@@ -18,6 +18,9 @@ namespace Dargon.Commons.Collections {
    }
 
    public static class StructLinq {
+      public static StructLinqRangeGenerator Enumerate(int count) => new(0, count - 1, 1);
+      public static StructLinqRangeGenerator Range(int initialValue, int finalValue, int increment) => new(initialValue, finalValue, increment);
+
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static T AsTypeHint<T>(this T x) => default;
       public static T HintElementType<T>(this IEnumerable<T> x) => default;
@@ -62,6 +65,19 @@ namespace Dargon.Commons.Collections {
 
       public static StructLinqEnumerate<T, TInnerEnumerator> Enumerate<T, TInnerEnumerator>(this TInnerEnumerator inner, T typeHint) where TInnerEnumerator : struct, IEnumerator<T>
          => StructLinq<T>.Enumerate(inner);
+
+      public static T[] FastToArray<T, TEnumerator>(this TEnumerator enumerator, int length, T typeHint) where TEnumerator : IEnumerator<T> {
+         var res = new T[length];
+         
+         var nextIndex = 0;
+         while (enumerator.MoveNext()) {
+            res[nextIndex] = enumerator.Current;
+            nextIndex++;
+         }
+
+         nextIndex.AssertEquals(res.Length);
+         return res;
+      }
 
       public struct StructLinq2<T, TInnerEnumerator> where TInnerEnumerator : struct, IEnumerator<T> {
          public TInnerEnumerator inner;
@@ -231,6 +247,40 @@ namespace Dargon.Commons.Collections {
       public void Dispose() => inner.Dispose();
 
       public IEnumerator<(int, T)> GetEnumerator() => this;
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+   }
+
+   public struct StructLinqRangeGenerator : IEnumerator<int>, IEnumerable<int> {
+      private readonly int initialValue;
+      private readonly int finalValue;
+      private readonly int increment;
+      private int currentValue;
+
+      public StructLinqRangeGenerator(int initial, int final, int increment) {
+         this.initialValue = initial;
+         this.finalValue = final;
+         this.increment = increment;
+         this.currentValue = initial;
+      }
+
+      public bool MoveNext() {
+         if (currentValue == finalValue) return false;
+         
+         currentValue += increment;
+         return true;
+      }
+
+      public void Reset() {
+         this.currentValue = initialValue;
+      }
+
+      public int Current => currentValue;
+      object IEnumerator.Current => Current;
+
+      public void Dispose() { }
+
+      public StructLinqRangeGenerator GetEnumerator() => this;
+      IEnumerator<int> IEnumerable<int>.GetEnumerator() => GetEnumerator();
       IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
    }
 
