@@ -35,6 +35,21 @@ namespace Dargon.Commons {
          CeilingPow2(7U).AssertEquals(8U);
          CeilingPow2(8U).AssertEquals(8U);
          CeilingPow2(9U).AssertEquals(16U);
+
+         GetLSBIndex(0).AssertEquals(-1);
+         GetLSBIndex(1u).AssertEquals(0);
+         GetLSBIndex(2u).AssertEquals(1);
+         GetLSBIndex(3u).AssertEquals(0);
+         GetLSBIndex(4u).AssertEquals(2);
+         GetLSBIndex(5u).AssertEquals(0);
+         GetLSBIndex(6u).AssertEquals(1);
+         GetLSBIndex(7u).AssertEquals(0);
+         GetLSBIndex(0xFFFF_FFFFu).AssertEquals(0);
+
+         GetLSB(0u).AssertEquals(0u);
+         GetLSB(1u).AssertEquals(1u);
+         GetLSB(2u).AssertEquals(2u);
+         GetLSB(3u).AssertEquals(1u);
       }
 
       public static uint GetMSB(uint n) {
@@ -52,6 +67,13 @@ namespace Dargon.Commons {
       public static uint CeilingPow2(uint n) {
          var msb = GetMSB(n);
          return n == msb ? msb : msb << 1;
+      }
+
+      public static int GetLSBIndex(uint n) => n == 0 ? -1 : BitOperations.TrailingZeroCount(n);
+
+      public static uint GetLSB(uint n) {
+         if (n == 0) return 0;
+         return 1u << GetLSBIndex(n);
       }
    }
 }
