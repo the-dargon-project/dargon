@@ -132,45 +132,26 @@ namespace Dargon.Commons.Collections {
          }
       }
 
-      public ref T this[int index] {
+      public ref T this[Index index] {
          get {
+            var i = index.IsFromEnd
+               ? size - index.Value
+               : index.Value;
+
 #if ENABLE_INDEXER_RANGE_CHECK
-            if ((uint)index >= (uint)size) {
+            if ((uint)i >= (uint)size) {
                throw new ArgumentOutOfRangeException();
             }
 #endif
-            return ref store[index];
+            return ref store[i];
          }
       }
 
-      T IReadOnlyList<T>.this[int index] {
-         get {
-#if ENABLE_INDEXER_RANGE_CHECK
-            if ((uint)index >= (uint)size) {
-               throw new ArgumentOutOfRangeException();
-            }
-#endif
-            return store[index];
-         }
-      }
+      T IReadOnlyList<T>.this[int index] => this[index];
 
       T IList<T>.this[int index] {
-         get {
-#if ENABLE_INDEXER_RANGE_CHECK
-            if ((uint)index >= (uint)size) {
-               throw new ArgumentOutOfRangeException();
-            }
-#endif
-            return store[index];
-         }
-         set {
-#if ENABLE_INDEXER_RANGE_CHECK
-            if ((uint)index >= (uint)size) {
-               throw new ArgumentOutOfRangeException();
-            }
-#endif
-            store[index] = value;
-         }
+         get => this[index];
+         set => this[index] = value;
       }
 
       public T[] ToArray() {

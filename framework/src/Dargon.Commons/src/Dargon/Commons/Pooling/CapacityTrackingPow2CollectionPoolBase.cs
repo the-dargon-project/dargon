@@ -87,7 +87,9 @@ namespace Dargon.Commons.Pooling {
 
       internal CapacityTrackingPow2CollectionPoolBase(string name, Func<int, IObjectPool<TElement>> poolFactory) : this(name, poolFactory, new()) { }
 
-      private CapacityTrackingPow2CollectionPoolBase(string name, Func<int, IObjectPool<TElement>> poolFactory, CapacityTrackerWrapper capacityTrackerWrapper) : base(name, CreateCapacityTrackingPoolFactory(poolFactory, capacityTrackerWrapper)) { }
+      private CapacityTrackingPow2CollectionPoolBase(string name, Func<int, IObjectPool<TElement>> poolFactory, CapacityTrackerWrapper capacityTrackerWrapper) : base(name, CreateCapacityTrackingPoolFactory(poolFactory, capacityTrackerWrapper)) {
+         this.capacityTrackerWrapper = capacityTrackerWrapper;
+      }
 
       private static Func<int, IObjectPool<TElement>> CreateCapacityTrackingPoolFactory(Func<int, IObjectPool<TElement>> poolFactory, CapacityTrackerWrapper capacityTrackerWrapper)
          => capacity => new CapacityTrackingPoolWrapper(

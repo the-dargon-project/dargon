@@ -25,6 +25,12 @@ namespace Dargon.Commons.Collections {
          store = new T[capacity];
       }
 
+      public ExposedArrayDeque(IEnumerable<T> initialStore) {
+         store = initialStore.ToArray();
+         headIndex = 0;
+         size = store.Length.AssertIsGreaterThanOrEqualTo(0);
+      }
+
       public int Capacity => store.Length;
 
       public bool LoopsPastEnd => headIndex > 0 && headIndex + size > store.Length;
@@ -144,8 +150,9 @@ namespace Dargon.Commons.Collections {
 #endif
       }
 
-      public ref T this[int i] {
+      public ref T this[Index idx] {
          get {
+            var i = idx.IsFromEnd ? size - idx.Value : idx.Value;
             i.AssertIsGreaterThanOrEqualTo(0).AssertIsLessThan(size);
             return ref store[NormalizeSuccessorIndex(headIndex + i)];
          }
