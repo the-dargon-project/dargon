@@ -7,24 +7,44 @@ namespace Dargon.Commons {
    public static partial class ReflectionUtils {
       public static int GetStructSize<T>() where T : unmanaged => Unsafe.SizeOf<T>();
 
-      public static T CreateDelegateFromStaticMethodInfo<T>(Type staticType, MethodInfo methodInfo) {
-         var invokeMethod = typeof(T).GetMethod(nameof(Func<object>.Invoke));
-         var parameterTypes = invokeMethod.GetParameters().Map(p => p.ParameterType);
+      /// <summary>
+      /// Creates a delegate from a given MethodInfo, with automatic type-casting.
+      /// For example, given a method void(TClass), we can create a delegate void(Object),
+      /// for a generated method which loads the stack with Object, then invokes the TClass-taking method.
+      /// </summary>
+      public static TDelegate CreateAutocastingMethodInvoker<TDelegate>(object instanceOpt, Type type, MethodInfo methodInfo) where TDelegate : Delegate {
+         var delegateInvokeMethod = typeof(TDelegate).GetMethod(nameof(Func<object>.Invoke)).AssertIsNotNull();
+         var delegateParameterTypes = delegateInvokeMethod.GetParameters().Map(p => p.ParameterType);
 
-         var result = new DynamicMethod("", invokeMethod.ReturnType, parameterTypes, staticType, true);
+         var result = new DynamicMethod($"AutocastInvoker_{methodInfo.Name}", delegateInvokeMethod.ReturnType, delegateParameterTypes, type, true);
          var emitter = result.GetILGenerator();
-         if (parameterTypes.Length >= 1) emitter.Emit(OpCodes.Ldarg_0);
-         if (parameterTypes.Length >= 2) emitter.Emit(OpCodes.Ldarg_1);
-         if (parameterTypes.Length >= 3) emitter.Emit(OpCodes.Ldarg_2);
-         if (parameterTypes.Length >= 4) emitter.Emit(OpCodes.Ldarg_3);
-         if (parameterTypes.Length >= 5) throw new NotImplementedException();
+         if (instanceOpt == null) {
+            if (delegateParameterTypes.Length >= 1) emitter.Emit(OpCodes.Ldarg_0);
+            if (delegateParameterTypes.Length >= 2) emitter.Emit(OpCodes.Ldarg_1);
+            if (delegateParameterTypes.Length >= 3) emitter.Emit(OpCodes.Ldarg_2);
+            if (delegateParameterTypes.Length >= 4) emitter.Emit(OpCodes.Ldarg_3);
+            if (delegateParameterTypes.Length >= 5) throw new NotImplementedException();
+         } else {
+            emitter.Emit(OpCodes.Ldarg_0);
+            if (delegateParameterTypes.Length >= 1) emitter.Emit(OpCodes.Ldarg_1);
+            if (delegateParameterTypes.Length >= 2) emitter.Emit(OpCodes.Ldarg_2);
+            if (delegateParameterTypes.Length >= 3) emitter.Emit(OpCodes.Ldarg_3);
+            if (delegateParameterTypes.Length >= 4) throw new NotImplementedException();
+         }
+
          emitter.Emit(OpCodes.Call, methodInfo);
-         if (methodInfo.ReturnType.IsValueType && !invokeMethod.ReturnType.IsValueType) {
+         if (methodInfo.ReturnType.IsValueType && !delegateInvokeMethod.ReturnType.IsValueType) {
             emitter.Emit(OpCodes.Box, methodInfo.ReturnType);
+         } else if (!methodInfo.ReturnType.IsValueType && delegateInvokeMethod.ReturnType.IsValueType) {
+            throw new NotImplementedException(); // haven't written a test case for this yet.
          }
          emitter.Emit(OpCodes.Ret);
 
-         return (T)(object)result.CreateDelegate(typeof(T));
+         if (instanceOpt == null) {
+            return result.CreateDelegate<TDelegate>();
+         } else {
+            return result.CreateDelegate<TDelegate>(instanceOpt);
+         }
       }
    }
 }

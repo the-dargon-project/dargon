@@ -14,7 +14,7 @@ namespace Dargon.Vox {
       private delegate IEnumerable CastFunc(IEnumerable x);
 
       private static IGenericFlyweightFactory<CastFunc> castFuncs
-         = GenericFlyweightFactory.ForMethod<CastFunc>(
+         = GenericFlyweightFactory.ForStaticMethod<CastFunc>(
             typeof(Enumerable),
             nameof(Enumerable.Cast));
 

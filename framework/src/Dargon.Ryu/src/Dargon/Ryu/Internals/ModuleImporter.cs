@@ -25,7 +25,7 @@ namespace Dargon.Ryu.Internals {
          // Order extensions by invocation order
          var extensions = modules.OfType<IRyuExtensionModule>().ToList();
          var orderedExtensions = moduleSorter.SortModulesByInitializationOrder(extensions).Cast<IRyuExtensionModule>().ToArray();
-         InvokeInitialize(orderedExtensions);
+         InvokeInitializeDeprecated(orderedExtensions);
 
          // Initialiaze container
          var ryuTypesByType = GetTypeToRyuTypeMap(modules);
@@ -38,9 +38,12 @@ namespace Dargon.Ryu.Internals {
          var objectsByConstructionOrder = ConstructRequiredTypes(container, ryuTypesByType);
          orderedExtensions.ForEach(e => e.PostConstruction(extensionArguments));
 
-         // Initialize container contents
+         // Initialize container contents - I have no clue why this would be a useful second pass after construction,
+         // it seems like a code smell.
+         // Edit: This is probably only useful if we want to run initialization logic after fields are loaded after ctor
+         // executes, or if we're doing unit testing and want constructors to be side-effect-free. Leaving in for now.
          orderedExtensions.ForEach(e => e.PreInitialization(extensionArguments));
-         InvokeInitialize(objectsByConstructionOrder);
+         InvokeInitializeDeprecated(objectsByConstructionOrder);
          orderedExtensions.ForEach(e => e.PostInitialization(extensionArguments));
       }
 
@@ -87,7 +90,7 @@ namespace Dargon.Ryu.Internals {
          return objectsByConstructionOrder;
       }
 
-      public void InvokeInitialize<T>(params T[] objs) {
+      public void InvokeInitializeDeprecated<T>(params T[] objs) {
          foreach (var obj in objs) {
             var type = obj.GetType();
             var initialize = type.GetTypeInfo().GetMethod("Initialize", BindingFlags.Public);

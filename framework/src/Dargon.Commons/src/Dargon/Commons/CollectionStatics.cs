@@ -157,6 +157,25 @@ namespace Dargon.Commons {
          return res;
       }
 
+      public static U[] IndexMap<T, U>(this T[] arr, int[] indices, Func<T, U> map) {
+         var res = new U[indices.Length];
+         for (var i = 0; i < indices.Length; i++) {
+            res[i] = map(arr[indices[i]]);
+         }
+         return res;
+      }
+
+      public static int[] IndicesWhere<T>(this T[] arr, Func<T, bool> pred) {
+         var indices = new List<int>();
+         for (var i = 0; i < arr.Length; i++) {
+            if (pred(arr[i])) {
+               indices.Add(i);
+            }
+         }
+
+         return indices.ToArray();
+      }
+
       public static T[] LogicalIndex<T>(this IReadOnlyList<T> input, IReadOnlyList<bool> indexConditions, bool negateConditions = false) {
          if (input.Count != indexConditions.Count)
             throw new ArgumentException("Size mismatch between inputs.");
@@ -320,10 +339,40 @@ namespace Dargon.Commons {
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static U[] Map<T, U>(this IReadOnlyList<T> arr, int offset, int length, Func<T, int, U> projector) {
          var result = new U[length];
-         for (int i = 0; i < arr.Count; i++) {
+         for (int i = 0; i < result.Length; i++) {
             result[i] = projector(arr[offset + i], offset + i);
          }
          return result;
+      }
+
+      public static U[] MapFilterToNotNull<T, U>(this IReadOnlyList<T> arr, Func<T, U> projector) where U : class {
+         var result = new List<U>();
+         foreach (var x in arr) {
+            if (projector(x) is {} nonnull) {
+               result.Add(nonnull);
+            }
+         }
+         return result.ToArray();
+      }
+
+      public static U[] MapFilterToNotNull<T, U>(this IReadOnlyList<T> arr, int offset, int length, Func<T, U> projector) where U : class {
+         var result = new List<U>();
+         for (int i = offset; i < offset + length; i++) {
+            if (projector(arr[i]) is {} nonnull) {
+               result.Add(nonnull);
+            }
+         }
+         return result.ToArray();
+      }
+
+      public static U[] MapFilterToNotNull<T, U>(this IReadOnlyList<T> arr, int offset, int length, Func<T, int, U> projector) where U : class {
+         var result = new List<U>();
+         for (int i = offset; i < offset + length; i++) {
+            if (projector(arr[i], i) is {} nonnull) {
+               result.Add(nonnull);
+            }
+         }
+         return result.ToArray();
       }
 
       public static List<U> MapList<T, U>(this IReadOnlyList<T> arr, Func<T, U> projector) {
@@ -376,6 +425,36 @@ namespace Dargon.Commons {
             }
          }
          return result;
+      }
+
+      public static T[] FilterTo<T>(this T[] arr, Func<T, bool> pred) {
+         var result = new List<T>();
+         for (var i = 0; i < arr.Length; i++) {
+            if (pred(arr[i])) {
+               result.Add(arr[i]);
+            }
+         }
+         return result.ToArray();
+      }
+
+      public static T[] FilterTo<T>(this T[] arr, int offset, int length, Func<T, bool> pred) {
+         var result = new List<T>();
+         for (var i = offset; i < offset + length; i++) {
+            if (pred(arr[i])) {
+               result.Add(arr[i]);
+            }
+         }
+         return result.ToArray();
+      }
+
+      public static T[] FilterTo<T>(this T[] arr, int offset, int length, Func<T, int, bool> pred) {
+         var result = new List<T>();
+         for (var i = offset; i < offset + length; i++) {
+            if (pred(arr[i], i)) {
+               result.Add(arr[i]);
+            }
+         }
+         return result.ToArray();
       }
 
       public static Dictionary<K, V> ToDictionary<K, V>(this Dictionary<K, V> dict) => dict.Map(v => v);

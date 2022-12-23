@@ -47,7 +47,7 @@ namespace Dargon.Courier {
          private delegate Task VisitorFunc(InboundMessageRouter router, MessageDto message, PeerContext peer);
 
          private static readonly IGenericFlyweightFactory<VisitorFunc> visitorFactory
-            = GenericFlyweightFactory.ForMethod<VisitorFunc>(
+            = GenericFlyweightFactory.ForStaticMethod<VisitorFunc>(
                typeof(Inner<>),
                nameof(Inner<object>.Visit));
 

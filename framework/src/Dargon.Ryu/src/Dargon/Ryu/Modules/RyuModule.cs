@@ -20,6 +20,10 @@ namespace Dargon.Ryu.Modules {
       public Type Type { get; set; }
       public RyuTypeFlags Flags { get; set; }
       public RyuTypeActivator Activator { get; set; }
+
+      public event Action<object> OnActivated;
+
+      internal void HandleOnActivated(object inst) => OnActivated?.Invoke(inst);
    }
 
    public abstract class RyuModule : IRyuModule {
@@ -28,12 +32,16 @@ namespace Dargon.Ryu.Modules {
       public IReadOnlyDictionary<Type, RyuType> TypeInfoByType => typeInfoByType;
       public abstract RyuModuleFlags Flags { get; }
 
-      internal RyuRegisterOptions Register => new RyuRegisterOptions { Module = this };
       public RyuFluentOptions Optional => new RyuFluentOptions { Module = this, Flags = RyuTypeFlags.None };
       public RyuFluentOptions Required => new RyuFluentOptions { Module = this, Flags = RyuTypeFlags.Required };
 
       public void AddRyuType<T>(RyuType ryuType) => AddRyuType(typeof(T), ryuType);
-      public void AddRyuType(Type type, RyuType ryuType) => typeInfoByType.Add(type, ryuType);
+      public void AddRyuType(Type type, RyuType ryuType) {
+         typeInfoByType.Add(type, ryuType);
+         OnTypeAdded(ryuType);
+      }
+
+      protected virtual void OnTypeAdded(RyuType ryuType) {}
    }
 
    public class LambdaRyuModule : RyuModule {

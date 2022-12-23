@@ -9,6 +9,10 @@ namespace Dargon.Ryu {
          return (T)container.GetOrActivate(typeof(T));
       }
 
+      public static T Create<T>(this IRyuContainer container) {
+         return (T)container.ActivateUntracked(typeof(T));
+      }
+
       public static T GetOrDefault<T>(this IRyuContainer container) {
          T result;
          container.TryGet<T>(out result);

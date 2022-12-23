@@ -19,14 +19,12 @@ namespace Dargon.Ryu.Internals {
       }
 
       public object ActivateRyuType(IRyuContainer ryu, RyuType type) {
-         if (type.Activator != null) {
-            return type.Activator(ryu);
-         } else {
-            return ActivateActivatorlessType(ryu, type.Type);
-         }
+         var inst = type.Activator?.Invoke(ryu) ?? ActivateDefaultType(ryu, type.Type);
+         type.HandleOnActivated(inst);
+         return inst;
       }
 
-      public object ActivateActivatorlessType(IRyuContainer ryu, Type type) {
+      public object ActivateDefaultType(IRyuContainer ryu, Type type) {
          try {
             // create an uninitialized, empty object
             var instance = FormatterServices.GetUninitializedObject(type);

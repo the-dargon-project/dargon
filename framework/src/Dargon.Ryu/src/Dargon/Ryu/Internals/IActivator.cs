@@ -7,6 +7,6 @@ using Dargon.Ryu.Modules;
 namespace Dargon.Ryu.Internals {
    public interface IActivator {
       object ActivateRyuType(IRyuContainer ryu, RyuType type);
-      object ActivateActivatorlessType(IRyuContainer ryu, Type type);
+      object ActivateDefaultType(IRyuContainer ryu, Type type);
    }
 }

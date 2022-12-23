@@ -23,7 +23,7 @@ namespace Dargon.Courier.Management.Repl {
       private delegate void EvalHelperFunc(SomeNode dataSetNode, DataSetDescriptionDto dataSetDto, bool plotDerivative, Func<DateTime, bool> windowFilter);
 
       private static readonly IGenericFlyweightFactory<EvalHelperFunc> evalHelperFactory
-         = GenericFlyweightFactory.ForMethod<EvalHelperFunc>(
+         = GenericFlyweightFactory.ForStaticMethod<EvalHelperFunc>(
             typeof(GraphCommand),
             nameof(EvalHelper));
 

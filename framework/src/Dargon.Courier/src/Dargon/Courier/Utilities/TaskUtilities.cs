@@ -10,7 +10,7 @@ namespace Dargon.Courier.Utilities {
       private delegate Task CastTaskReturnTypeHelperFunc(Task t);
 
       private static readonly IGenericFlyweightFactory<CastTaskReturnTypeHelperFunc> castTaskReturnTypeFuncs
-         = GenericFlyweightFactory.ForMethod<CastTaskReturnTypeHelperFunc>(
+         = GenericFlyweightFactory.ForStaticMethod<CastTaskReturnTypeHelperFunc>(
             typeof(TaskUtilities),
             nameof(CastTaskReturnTypeHelper));
 

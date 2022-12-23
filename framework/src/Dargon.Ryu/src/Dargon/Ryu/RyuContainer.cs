@@ -48,14 +48,14 @@ namespace Dargon.Ryu {
             } else {
                return storage.GetOrAdd(
                   type,
-                  x => ActivateOrThrow(type));
+                  x => ActivateUntracked(type));
             }
          } catch (Exception e) {
             throw new RyuGetException(type, e);
          }
       }
 
-      private object ActivateOrThrow(Type type) {
+      public object ActivateUntracked(Type type) {
          object result;
          RyuType ryuType;
          if (ryuTypesByType.TryGetValue(type, out ryuType)) {
@@ -63,7 +63,7 @@ namespace Dargon.Ryu {
          } else if (type.GetTypeInfo().IsAbstract || type.GetTypeInfo().IsInterface) {
             throw new ImplementationNotFoundException(type);
          } else {
-            result = activator.ActivateActivatorlessType(this, type);
+            result = activator.ActivateDefaultType(this, type);
          }
          ObjectActivated?.Invoke(result);
          return result;

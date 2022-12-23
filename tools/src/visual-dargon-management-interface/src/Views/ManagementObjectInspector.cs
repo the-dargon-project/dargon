@@ -20,7 +20,7 @@ using static Dargon.Courier.ServiceTier.Client.CourierClientRmiStatics;
 
 namespace Views {
    public class ManagementObjectInspector : UserControl {
-      private static readonly IGenericFlyweightFactory<Func<ManagementObjectInspector, DataSetDescriptionDto, IChartSeries[]>> createChartSeriesesFuncs = GenericFlyweightFactory.ForMethod<Func<ManagementObjectInspector, DataSetDescriptionDto, IChartSeries[]>>(
+      private static readonly IGenericFlyweightFactory<Func<ManagementObjectInspector, DataSetDescriptionDto, IChartSeries[]>> createChartSeriesesFuncs = GenericFlyweightFactory.ForStaticMethod<Func<ManagementObjectInspector, DataSetDescriptionDto, IChartSeries[]>>(
          typeof(ManagementObjectInspector),
          nameof(CreateChartSerieses));
 
@@ -44,7 +44,7 @@ namespace Views {
          return new IChartSeries[] { series };
       }
 
-      private static readonly IGenericFlyweightFactory<Func<ManagementObjectInspector, DataSetDescriptionDto, IChartSeries[]>> createAggregateSeriesesFuncs = GenericFlyweightFactory.ForMethod<Func<ManagementObjectInspector, DataSetDescriptionDto, IChartSeries[]>>(
+      private static readonly IGenericFlyweightFactory<Func<ManagementObjectInspector, DataSetDescriptionDto, IChartSeries[]>> createAggregateSeriesesFuncs = GenericFlyweightFactory.ForStaticMethod<Func<ManagementObjectInspector, DataSetDescriptionDto, IChartSeries[]>>(
          typeof(ManagementObjectInspector),
          nameof(CreateAggregateSerieses));
 

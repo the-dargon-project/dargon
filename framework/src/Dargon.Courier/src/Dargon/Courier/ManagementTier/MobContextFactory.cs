@@ -19,14 +19,14 @@ namespace Dargon.Courier.ManagementTier {
       private delegate object VisitorFunc(AuditService auditService, string name);
 
       private readonly IGenericFlyweightFactory<VisitorFunc> getAggregatorVisitors
-         = GenericFlyweightFactory.ForMethod<VisitorFunc>(
+         = GenericFlyweightFactory.ForStaticMethod<VisitorFunc>(
             typeof(MobContextFactory),
             nameof(VisitGetAggregator));
 
       private delegate IDataPointCircularBuffer HandleCreatePeriodicSetFunc(object mobInstance, PropertyInfo property, string dataSetName, AuditService auditService);
 
       private readonly IGenericFlyweightFactory<HandleCreatePeriodicSetFunc> handleCreatePeriodicSetVisitors
-         = GenericFlyweightFactory.ForMethod<HandleCreatePeriodicSetFunc>(
+         = GenericFlyweightFactory.ForStaticMethod<HandleCreatePeriodicSetFunc>(
             typeof(MobContextFactory),
             nameof(HandleCreatePeriodicSet));
 

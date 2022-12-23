@@ -1,16 +1,65 @@
-﻿using System;
+﻿using Dargon.Commons.Templating;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Dargon.Commons.Utilities;
+using FieldInfo = System.Reflection.FieldInfo;
 
 namespace Dargon.Commons {
+   public class ReflectionCache {
+      private static ReaderWriterLockSlim sync = new(LockRecursionPolicy.NoRecursion);
+      private static Dictionary<Type, ReflectionCache> cacheByType = new();
+
+      public static ReflectionCache OfType(Type t) {
+         using var guard = sync.CreateUpgradableReaderGuard(GuardState.SimpleReader);
+         if (cacheByType.TryGetValueWithDoubleCheckedLock(t, out var cache, guard.Scoped)) {
+            return cache;
+         }
+
+         guard.UpgradeToWriterLock();
+         return cacheByType[t] = new(t);
+      }
+
+      private ReflectionCache(Type type) {
+         Type = type;
+         Name = Type.Name;
+         Members = type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+         Fields = Members.MapFilterToNotNull(m => m as FieldInfo);
+         InstanceFields = Fields.FilterTo(f => !f.IsStatic);
+         PublicInstanceFields = InstanceFields.FilterTo(f => f.IsPublic);
+         PublicInstanceFieldNameAndInfos = PublicInstanceFields.Map(f => f.PairKey(f.Name));
+         PublicInstanceFieldsByName = PublicInstanceFieldNameAndInfos.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+      }
+
+      public readonly Type Type;
+      public readonly string Name;
+      public readonly MemberInfo[] Members;
+
+      public readonly FieldInfo[] Fields;
+      public readonly FieldInfo[] InstanceFields;
+      public readonly FieldInfo[] PublicInstanceFields;
+      public readonly KeyValuePair<string, FieldInfo>[] PublicInstanceFieldNameAndInfos;
+      public readonly Dictionary<string, FieldInfo> PublicInstanceFieldsByName;
+   }
+
    public static class ReflectionCache<T> {
-      public static readonly Type Type = typeof(T);
-      public static readonly string Name = Type.Name;
-      public static readonly FieldInfo[] PublicFields = Type.GetFields(BindingFlags.Public | BindingFlags.Instance);
-      public static readonly KeyValuePair<string, FieldInfo>[] PublicFieldNameAndInfos = PublicFields.Map(f => f.PairKey(f.Name));
-      public static readonly Dictionary<string, FieldInfo> PublicFieldsByName = PublicFieldNameAndInfos.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+      public static readonly ReflectionCache Cache = ReflectionCache.OfType(typeof(T));
+      public static Type Type => Cache.Type;
+      public static string Name => Cache.Name;
+      public static FieldInfo[] Fields => Cache.Fields;
+      public static FieldInfo[] InstanceFields => Cache.InstanceFields;
+      public static FieldInfo[] PublicInstanceFields => Cache.PublicInstanceFields;
+      public static KeyValuePair<string, FieldInfo>[] PublicInstanceFieldNameAndInfos => Cache.PublicInstanceFieldNameAndInfos;
+      public static Dictionary<string, FieldInfo> PublicInstanceFieldsByName => Cache.PublicInstanceFieldsByName;
+
+      public static class MethodLookup<TName, TBindingFlags>
+         where TName : struct, ITemplateString
+         where TBindingFlags : struct, ITemplateBindingFlags {
+         public static MethodInfo MethodInfo = Type.GetMethod(default(TName).Value, default(TBindingFlags).Value);
+      }
    }
 }

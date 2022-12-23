@@ -11,12 +11,12 @@ namespace Dargon.Vox {
       private delegate void EmitterFunc(ILGenerator ilGenerator);
 
       private static readonly IGenericFlyweightFactory<EmitterFunc> emitWriteCallFuncs
-         = GenericFlyweightFactory.ForMethod<EmitterFunc>(
+         = GenericFlyweightFactory.ForStaticMethod<EmitterFunc>(
             typeof(ReaderWriterCallHelper<>), nameof(ReaderWriterCallHelper<object>.EmitWrite));
 
 
       private static readonly IGenericFlyweightFactory<EmitterFunc> emitReadCallFuncs
-         = GenericFlyweightFactory.ForMethod<EmitterFunc>(
+         = GenericFlyweightFactory.ForStaticMethod<EmitterFunc>(
             typeof(ReaderWriterCallHelper<>), nameof(ReaderWriterCallHelper<object>.EmitRead));
 
       public static IReadOnlyDictionary<Type, ITypeSerializer> CreateMany(IReadOnlyList<Type> types) {

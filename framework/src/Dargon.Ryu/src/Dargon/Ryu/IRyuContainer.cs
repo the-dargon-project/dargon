@@ -9,10 +9,16 @@ namespace Dargon.Ryu {
       bool TryGet(Type type, out object value);
 
       /// <summary>
-      /// Gets or instantiates an object of the given type associated
-      /// within the container.
+      /// Gets or activates an object of the given type associated
+      /// within the container, tracked by the container.
       /// </summary>
       object GetOrActivate(Type type);
+
+      /// <summary>
+      /// Instantiates an object of the given type. This object will NOT be
+      /// associated with the container!
+      /// </summary>
+      object ActivateUntracked(Type type);
 
       /// <summary>
       /// Finds all objects in the container of type extending, or equating

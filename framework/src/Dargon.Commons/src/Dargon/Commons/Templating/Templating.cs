@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -81,6 +82,14 @@ namespace Dargon.Commons.Templating {
 
    public interface ITemplateString {
       public string Value { get; }
+   }
+
+   public interface ITemplateBindingFlags {
+      public BindingFlags Value { get; }
+   }
+
+   public struct TBindingFlags_NonPublicInstance : ITemplateBindingFlags {
+      public BindingFlags Value => BindingFlags.NonPublic | BindingFlags.Instance;
    }
 
    public interface IIntegerOperations<TInt> {
