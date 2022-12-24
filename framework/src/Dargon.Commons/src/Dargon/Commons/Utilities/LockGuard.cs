@@ -308,6 +308,10 @@ namespace Dargon.Commons.Utilities {
       }
    }
 
+   public static class LockGuardExtensions {
+      public static LockGuard CreateLockGuard(this object o) => new(o);
+   }
+
    public static class RWLSExtensions {
       public static RWLSReaderGuard CreateReaderGuard(this ReaderWriterLockSlim rwls) => new(rwls);
       public static RWLSUpgradableReaderGuard CreateUpgradableReaderGuard(this ReaderWriterLockSlim rwls) => new(rwls);
