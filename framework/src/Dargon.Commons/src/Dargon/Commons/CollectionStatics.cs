@@ -101,6 +101,14 @@ namespace Dargon.Commons {
          Value = source;
       }
 
+      public static void Deconstruct(this Range range, out int offset, out int length) {
+         range.Start.IsFromEnd.AssertIsFalse();
+         range.End.IsFromEnd.AssertIsFalse();
+
+         offset = range.Start.Value;
+         length = range.End.Value - range.Start.Value;
+      }
+
       #region Indexing
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static T Get<T>(this T[] collection, int index) {
@@ -813,6 +821,67 @@ namespace Dargon.Commons {
       public static Range RangeWithLength(this int startInclusive, int length) => RangeToExclusive(startInclusive, startInclusive + length);
       public static Range RangeToInclusive(this int startInclusive, int endInclusive) => new Range(startInclusive, endInclusive + 1);
       public static Range RangeToExclusive(this int startInclusive, int endExclusive) => new Range(startInclusive, endExclusive);
+
+      public class EnumerateAdjacentGroupingRangesEnumerator<T, K> : IEnumerable<Range>, IEnumerator<Range> where K : IEquatable<K> {
+         private readonly T[] arr;
+         private readonly int startIndexInclusive;
+         private readonly int endIndexExclusive;
+         private readonly Func<T, K> itemToGroupKeyFunc;
+         private int currentIndex;
+         private Range current;
+
+         public EnumerateAdjacentGroupingRangesEnumerator(T[] arr, int startIndexInclusive, int endIndexExclusive, Func<T, K> itemToGroupKeyFunc) {
+            this.arr = arr;
+            this.startIndexInclusive = startIndexInclusive;
+            this.endIndexExclusive = endIndexExclusive;
+            this.itemToGroupKeyFunc = itemToGroupKeyFunc;
+            this.currentIndex = startIndexInclusive - 1;
+            this.current = default;
+         }
+
+         public bool MoveNext() {
+            // Precondition: CurrentIndex points to the inclusive end of the prior group
+            // Postcondition: CurrentIndex points to the inclusive end of the current group
+            if (currentIndex + 1 == endIndexExclusive) {
+               current = new(int.MinValue, int.MinValue + 1);
+               return false;
+            }
+            currentIndex++; // move from inclusive end of prior group to inclusive start of current group
+            var groupStartIndexInclusive = currentIndex;
+            var key = itemToGroupKeyFunc(arr[currentIndex]);
+            while (currentIndex + 1 != endIndexExclusive && key.Equals(itemToGroupKeyFunc(arr[currentIndex + 1]))) {
+               currentIndex++;
+            }
+            var groupEndIndexInclusive = currentIndex;
+            current = new(groupStartIndexInclusive, groupEndIndexInclusive + 1);
+            return true;
+         }
+
+         public void Reset() {
+            currentIndex = startIndexInclusive - 1;
+            this.current = default;
+         }
+
+         public Range Current => current;
+         object IEnumerator.Current => Current;
+
+         public void Dispose() { }
+
+         public IEnumerator<Range> GetEnumerator() => this;
+         IEnumerator IEnumerable.GetEnumerator() => this;
+      }
+
+      public static EnumerateAdjacentGroupingRangesEnumerator<T, K> EnumerateAdjacentGroupingIndexRanges<T, K>(this T[] arr, Func<T, K> itemToGroupKeyFunc) where K : IEquatable<K>
+         => new(arr, 0, arr.Length, itemToGroupKeyFunc);
+
+      public static EnumerateAdjacentGroupingRangesEnumerator<T, K> EnumerateAdjacentGroupingIndexRanges<T, K>(this T[] arr, int offset, int length, Func<T, K> itemToGroupKeyFunc) where K : IEquatable<K>
+         => new(arr, offset, offset + length, itemToGroupKeyFunc);
+
+      public static EnumerateAdjacentGroupingRangesEnumerator<T, K> EnumerateAdjacentGroupingIndexRanges<T, K>(this ExposedArrayList<T> eal, Func<T, K> itemToGroupKeyFunc) where K : IEquatable<K>
+         => new(eal.store, 0, eal.size, itemToGroupKeyFunc);
+
+      public static EnumerateAdjacentGroupingRangesEnumerator<T, K> EnumerateAdjacentGroupingIndexRanges<T, K>(this ExposedArrayList<T> eal, int offset, int length, Func<T, K> itemToGroupKeyFunc) where K : IEquatable<K>
+         => new(eal.store, offset.AssertIsLessThanOrEqualTo(eal.size), (offset + length).AssertIsLessThanOrEqualTo(eal.size), itemToGroupKeyFunc);
 
       public static void ApplySubtract<T>(this HashSet<T> self, HashSet<T> other) {
          foreach (var x in other) self.Remove(x);

@@ -8,11 +8,49 @@ namespace Dargon.Commons.Collections.Sorting {
    /// Based on MIT-Licensed .NET Core System.Array.SorterObjectArray
    /// https://github.com/dotnet/runtime/blob/f58fde50376479ad3ba1339d37df816f90bff287/src/libraries/System.Private.CoreLib/src/System/Array.cs
    /// </summary>
-   public class IntrospectiveSort {
+   public static class IntrospectiveSort {
+      /// <summary>
+      /// Sorts an array of <paramref name="indices"/> referring to the contents of <paramref name="items"/>, which itself
+      /// is not mutated.
+      /// </summary>
+      public static void IndirectSort<TItem, TComparer>(this int[] indices, TItem[] items, TComparer comparer) where TComparer : struct, IComparer<TItem> {
+         IndirectSort(indices, 0, indices.Length, items, comparer);
+      }
+
+      /// <inheritdoc cref="IndirectSort{TItem,TComparer}(int[],TItem[],TComparer)"/>
+      public static void IndirectSort<TItem, TComparer>(this int[] indices, ExposedArrayList<TItem> items, TComparer comparer) where TComparer : struct, IComparer<TItem> {
+         items.size.AssertIsGreaterThanOrEqualTo(indices.Length);
+         IndirectSort(indices, 0, indices.Length, items.store, comparer);
+      }
+
+      /// <summary>
+      /// Sorts an array of <paramref name="indices"/> referring to the contents of <paramref name="items"/>, which itself
+      /// is not mutated. The offset and length determine the block within <paramref name="indices"/> to sort.
+      /// </summary>
+      public static void IndirectSort<TItem, TComparer>(this int[] indices, int offset, int length, TItem[] items, TComparer comparer) where TComparer : struct, IComparer<TItem> {
+         var indexingComparer = new IndexingComparerProxy<TItem, TComparer>(items, comparer);
+         var sorter = new Sorter<int, object, IndexingComparerProxy<TItem, TComparer>>(indices, null, indexingComparer);
+         sorter.Sort(offset, length);
+      }
+
+      private struct IndexingComparerProxy<TItem, TComparer> : IComparer<int> where TComparer : struct, IComparer<TItem> {
+         private readonly TItem[] items;
+         private TComparer inner;
+
+         public IndexingComparerProxy(TItem[] items, TComparer inner) {
+            this.items = items;
+            this.inner = inner;
+         }
+
+         public int Compare(int x, int y) {
+            return inner.Compare(items[x], items[y]);
+         }
+      }
+
       // Private value used by the Sort methods for instances of Array.
       // This is slower than the one for Object[], since we can't use the JIT helpers
       // to access the elements.  We must use GetValue & SetValue.
-      public struct Sorter<TKey, TItem, TKeyComparer> where TKeyComparer : IComparer<TKey> {
+      public struct Sorter<TKey, TItem, TKeyComparer> where TKeyComparer : struct, IComparer<TKey> {
          // This is the threshold where Introspective sort switches to Insertion sort.
          // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
          // Large value types may benefit from a smaller number.
