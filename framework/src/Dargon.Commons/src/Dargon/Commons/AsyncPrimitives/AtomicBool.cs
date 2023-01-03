@@ -17,6 +17,7 @@ namespace Dargon.Commons.AsyncPrimitives {
    public struct AtomicLatch {
       private AtomicBool inner;
 
+      public bool IsSet => inner.Value;
       public bool TrySetOnce() => inner.TrySetToTrueFromFalse();
    }
 }

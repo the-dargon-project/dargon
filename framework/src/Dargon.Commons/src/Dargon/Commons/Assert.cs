@@ -76,6 +76,24 @@ namespace Dargon.Commons {
          }
       }
 
+      public static void IsLessThan(uint left, uint right) {
+         if (left >= right) {
+            Fail($"{nameof(IsLessThan)} failed. {left} >= {right}");
+         }
+      }
+
+      public static void IsLessThan(long left, long right) {
+         if (left >= right) {
+            Fail($"{nameof(IsLessThan)} failed. {left} >= {right}");
+         }
+      }
+
+      public static void IsLessThan(ulong left, ulong right) {
+         if (left >= right) {
+            Fail($"{nameof(IsLessThan)} failed. {left} >= {right}");
+         }
+      }
+
       public static void IsLessThanOrEqualTo(float left, float right) {
          if (left > right) {
             Fail($"{nameof(IsLessThanOrEqualTo)} failed. {left} > {right}");
@@ -89,6 +107,24 @@ namespace Dargon.Commons {
       }
 
       public static void IsLessThanOrEqualTo(int left, int right) {
+         if (left > right) {
+            Fail($"{nameof(IsLessThanOrEqualTo)} failed. {left} > {right}");
+         }
+      }
+
+      public static void IsLessThanOrEqualTo(uint left, uint right) {
+         if (left > right) {
+            Fail($"{nameof(IsLessThanOrEqualTo)} failed. {left} > {right}");
+         }
+      }
+
+      public static void IsLessThanOrEqualTo(long left, long right) {
+         if (left > right) {
+            Fail($"{nameof(IsLessThanOrEqualTo)} failed. {left} > {right}");
+         }
+      }
+
+      public static void IsLessThanOrEqualTo(ulong left, ulong right) {
          if (left > right) {
             Fail($"{nameof(IsLessThanOrEqualTo)} failed. {left} > {right}");
          }
@@ -112,6 +148,24 @@ namespace Dargon.Commons {
          }
       }
 
+      public static void IsGreaterThan(uint left, uint right) {
+         if (left <= right) {
+            Fail($"{nameof(IsGreaterThan)} failed. {left} <= {right}");
+         }
+      }
+
+      public static void IsGreaterThan(long left, long right) {
+         if (left <= right) {
+            Fail($"{nameof(IsGreaterThan)} failed. {left} <= {right}");
+         }
+      }
+
+      public static void IsGreaterThan(ulong left, ulong right) {
+         if (left <= right) {
+            Fail($"{nameof(IsGreaterThan)} failed. {left} <= {right}");
+         }
+      }
+
       public static void IsGreaterThanOrEqualTo(float left, float right) {
          if (left < right) {
             Fail($"{nameof(IsGreaterThanOrEqualTo)} failed. {left} < {right}");
@@ -125,6 +179,24 @@ namespace Dargon.Commons {
       }
 
       public static void IsGreaterThanOrEqualTo(int left, int right) {
+         if (left < right) {
+            Fail($"{nameof(IsGreaterThanOrEqualTo)} failed. {left} < {right}");
+         }
+      }
+
+      public static void IsGreaterThanOrEqualTo(uint left, uint right) {
+         if (left < right) {
+            Fail($"{nameof(IsGreaterThanOrEqualTo)} failed. {left} < {right}");
+         }
+      }
+
+      public static void IsGreaterThanOrEqualTo(long left, long right) {
+         if (left < right) {
+            Fail($"{nameof(IsGreaterThanOrEqualTo)} failed. {left} < {right}");
+         }
+      }
+
+      public static void IsGreaterThanOrEqualTo(ulong left, ulong right) {
          if (left < right) {
             Fail($"{nameof(IsGreaterThanOrEqualTo)} failed. {left} < {right}");
          }

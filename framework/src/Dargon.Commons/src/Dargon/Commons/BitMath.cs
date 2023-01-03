@@ -69,6 +69,10 @@ namespace Dargon.Commons {
          return n == msb ? msb : msb << 1;
       }
 
+      public static uint TwoToThePowerOf(uint n) {
+         return 1u << (int)n;
+      }
+
       public static int GetLSBIndex(uint n) => n == 0 ? -1 : BitOperations.TrailingZeroCount(n);
 
       public static uint GetLSB(uint n) {

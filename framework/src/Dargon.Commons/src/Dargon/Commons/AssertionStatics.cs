@@ -73,6 +73,21 @@ namespace Dargon.Commons {
          return left;
       }
 
+      public static uint AssertIsLessThanOrEqualTo(this uint left, uint right) {
+         Assert.IsLessThanOrEqualTo(left, right);
+         return left;
+      }
+
+      public static long AssertIsLessThanOrEqualTo(this long left, long right) {
+         Assert.IsLessThanOrEqualTo(left, right);
+         return left;
+      }
+
+      public static ulong AssertIsLessThanOrEqualTo(this ulong left, ulong right) {
+         Assert.IsLessThanOrEqualTo(left, right);
+         return left;
+      }
+
       public static float AssertIsGreaterThan(this float left, float right) {
          Assert.IsGreaterThan(left, right);
          return left;
@@ -88,6 +103,21 @@ namespace Dargon.Commons {
          return left;
       }
 
+      public static uint AssertIsGreaterThan(this uint left, uint right) {
+         Assert.IsGreaterThan(left, right);
+         return left;
+      }
+
+      public static long AssertIsGreaterThan(this long left, long right) {
+         Assert.IsGreaterThan(left, right);
+         return left;
+      }
+
+      public static ulong AssertIsGreaterThan(this ulong left, ulong right) {
+         Assert.IsGreaterThan(left, right);
+         return left;
+      }
+
       public static float AssertIsGreaterThanOrEqualTo(this float left, float right) {
          Assert.IsGreaterThanOrEqualTo(left, right);
          return left;
@@ -99,6 +129,21 @@ namespace Dargon.Commons {
       }
 
       public static int AssertIsGreaterThanOrEqualTo(this int left, int right) {
+         Assert.IsGreaterThanOrEqualTo(left, right);
+         return left;
+      }
+
+      public static uint AssertIsGreaterThanOrEqualTo(this uint left, uint right) {
+         Assert.IsGreaterThanOrEqualTo(left, right);
+         return left;
+      }
+
+      public static long AssertIsGreaterThanOrEqualTo(this long left, long right) {
+         Assert.IsGreaterThanOrEqualTo(left, right);
+         return left;
+      }
+
+      public static ulong AssertIsGreaterThanOrEqualTo(this ulong left, ulong right) {
          Assert.IsGreaterThanOrEqualTo(left, right);
          return left;
       }
