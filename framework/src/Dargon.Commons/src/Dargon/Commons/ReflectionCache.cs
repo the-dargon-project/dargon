@@ -11,7 +11,7 @@ using FieldInfo = System.Reflection.FieldInfo;
 
 namespace Dargon.Commons {
    public class ReflectionCache {
-      private static ReaderWriterLockSlim sync = new(LockRecursionPolicy.NoRecursion);
+      private static ReaderWriterLockSlim sync = new(LockRecursionPolicy.SupportsRecursion);
       private static Dictionary<Type, ReflectionCache> cacheByType = new();
 
       public static ReflectionCache OfType(Type t) {
@@ -33,6 +33,9 @@ namespace Dargon.Commons {
          PublicInstanceFields = InstanceFields.FilterTo(f => f.IsPublic);
          PublicInstanceFieldNameAndInfos = PublicInstanceFields.Map(f => f.PairKey(f.Name));
          PublicInstanceFieldsByName = PublicInstanceFieldNameAndInfos.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+         IsUnmanaged = type.IsPrimitive || type.IsPointer || type.IsEnum ||
+                       (type.IsValueType && InstanceFields.All(f => OfType(f.FieldType).IsUnmanaged));
       }
 
       public readonly Type Type;
@@ -44,17 +47,23 @@ namespace Dargon.Commons {
       public readonly FieldInfo[] PublicInstanceFields;
       public readonly KeyValuePair<string, FieldInfo>[] PublicInstanceFieldNameAndInfos;
       public readonly Dictionary<string, FieldInfo> PublicInstanceFieldsByName;
+      
+      public readonly bool IsUnmanaged;
    }
 
    public static class ReflectionCache<T> {
       public static readonly ReflectionCache Cache = ReflectionCache.OfType(typeof(T));
       public static Type Type => Cache.Type;
       public static string Name => Cache.Name;
+      public static MemberInfo[] Members => Cache.Members;
+
       public static FieldInfo[] Fields => Cache.Fields;
       public static FieldInfo[] InstanceFields => Cache.InstanceFields;
       public static FieldInfo[] PublicInstanceFields => Cache.PublicInstanceFields;
       public static KeyValuePair<string, FieldInfo>[] PublicInstanceFieldNameAndInfos => Cache.PublicInstanceFieldNameAndInfos;
       public static Dictionary<string, FieldInfo> PublicInstanceFieldsByName => Cache.PublicInstanceFieldsByName;
+      
+      public static bool IsUnmanaged => Cache.IsUnmanaged;
 
       public static class MethodLookup<TName, TBindingFlags>
          where TName : struct, ITemplateString

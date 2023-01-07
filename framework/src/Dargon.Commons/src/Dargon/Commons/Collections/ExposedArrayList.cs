@@ -98,9 +98,7 @@ namespace Dargon.Commons.Collections {
       }
 
       public bool Contains(T item) => throw new NotSupportedException();
-      public void CopyTo(T[] array, int arrayIndex) {
-         Buffer.BlockCopy(store, 0, array, arrayIndex, array.Length - arrayIndex);
-      }
+      public void CopyTo(T[] array, int arrayIndex) => store.AsSpan(0, size).CopyTo(array.AsSpan(arrayIndex, size));
 
       public bool Remove(T item) => throw new NotSupportedException();
 
