@@ -34,34 +34,14 @@ namespace Dargon.Commons {
          return enumValue.GetAttributeOrNull<TAttribute>(inherit) != null;
       }
 
-      public static bool HasAttribute<TAttribute>(this object instance, bool inherit = true)
-         where TAttribute : Attribute {
-         return instance.GetAttributeOrNull<TAttribute>(inherit) != null;
-      }
-
       public static bool HasAttribute<TAttribute>(this Type type, bool inherit = true)
          where TAttribute : Attribute {
          return type.GetAttributeOrNull<TAttribute>(inherit) != null;
       }
 
-      public static bool HasAttribute<TAttribute>(this TypeInfo typeInfo, bool inherit = true)
+      public static bool HasAttribute<TAttribute>(this MemberInfo memberInfo, bool inherit = true)
          where TAttribute : Attribute {
-         return typeInfo.GetCustomAttribute<TAttribute>(inherit) != null;
-      }
-
-      public static bool HasAttribute<TAttribute>(this MethodInfo methodInfo, bool inherit = true)
-         where TAttribute : Attribute {
-         return methodInfo.GetCustomAttribute<TAttribute>(inherit) != null;
-      }
-
-      public static bool HasAttribute<TAttribute>(this FieldInfo fieldInfo, bool inherit = true)
-         where TAttribute : Attribute {
-         return fieldInfo.GetCustomAttribute<TAttribute>(inherit) != null;
-      }
-
-      public static bool HasAttribute<TAttribute>(this PropertyInfo propertyInfo, bool inherit = true)
-         where TAttribute : Attribute {
-         return propertyInfo.GetCustomAttribute<TAttribute>(inherit) != null;
+         return memberInfo.GetCustomAttribute<TAttribute>(inherit) != null;
       }
 
       /// <summary>
@@ -76,23 +56,21 @@ namespace Dargon.Commons {
          return (TAttribute)attributes.FirstOrDefault();
       }
 
-      public static TAttribute GetAttributeOrNull<TAttribute>(this object instance, bool inherit = true)
-         where TAttribute : Attribute {
-         var instanceType = instance as Type ?? instance.GetType();
-         return GetAttributeOrNull<TAttribute>(instanceType, inherit);
-      }
-
       public static TAttribute GetAttributeOrNull<TAttribute>(this Type type, bool inherit = true)
          where TAttribute : Attribute {
          var typeInfo = type.GetTypeInfo();
          return GetAttributeOrNull<TAttribute>(typeInfo, inherit);
       }
 
-
       public static TAttribute GetAttributeOrNull<TAttribute>(this TypeInfo typeInfo, bool inherit = true)
          where TAttribute : Attribute {
          var attributes = typeInfo.GetCustomAttributes(typeof(TAttribute), inherit);
          return (TAttribute)attributes.FirstOrDefault();
+      }
+
+      public static TAttribute GetAttributeOrNull<TAttribute>(this MemberInfo memberInfo, bool inherit = true)
+         where TAttribute : Attribute {
+         return memberInfo.GetCustomAttribute<TAttribute>(inherit);
       }
 
       public static KeyValuePair<TKey, TValue> PairValue<TKey, TValue>(this TKey key, TValue value) {
