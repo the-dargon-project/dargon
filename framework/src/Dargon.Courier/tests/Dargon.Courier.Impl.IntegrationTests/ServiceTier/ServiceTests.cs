@@ -11,6 +11,8 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Dargon.Courier.Vox;
+using Dargon.Vox;
 using NMockito.Expectations;
 using Xunit;
 
@@ -18,6 +20,10 @@ namespace Dargon.Courier.ServiceTier {
    public abstract class ServiceTestsBase : NMockitoInstance {
       private CourierFacade clientFacade;
       private CourierFacade serverFacade;
+
+      public ServiceTestsBase() {
+         Globals.Serializer.ImportTypes(new CourierVoxTypes());
+      }
 
       public void Setup(CourierFacade clientFacade, CourierFacade serverfacade) {
          this.clientFacade = clientFacade;

@@ -17,14 +17,14 @@ namespace Dargon.Commons {
 
       [Fact]
       public void GetMSBIndex() {
-         AssertEquals(0, BitMath.GetMSBIndex(0b000));
-         AssertEquals(1, BitMath.GetMSBIndex(0b001));
-         AssertEquals(2, BitMath.GetMSBIndex(0b010));
-         AssertEquals(2, BitMath.GetMSBIndex(0b011));
-         AssertEquals(3, BitMath.GetMSBIndex(0b100));
-         AssertEquals(3, BitMath.GetMSBIndex(0b101));
-         AssertEquals(3, BitMath.GetMSBIndex(0b110));
-         AssertEquals(3, BitMath.GetMSBIndex(0b111));
+         AssertEquals(-1, BitMath.GetMSBIndex(0b000));
+         AssertEquals(0, BitMath.GetMSBIndex(0b001));
+         AssertEquals(1, BitMath.GetMSBIndex(0b010));
+         AssertEquals(1, BitMath.GetMSBIndex(0b011));
+         AssertEquals(2, BitMath.GetMSBIndex(0b100));
+         AssertEquals(2, BitMath.GetMSBIndex(0b101));
+         AssertEquals(2, BitMath.GetMSBIndex(0b110));
+         AssertEquals(2, BitMath.GetMSBIndex(0b111));
       }
 
       [Fact]

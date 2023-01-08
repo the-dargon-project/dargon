@@ -8,7 +8,7 @@ namespace Dargon.Commons.AsyncPrimitives {
    /// of an awaitable once-latch that supports wait cancellation.
    /// </summary>
    public class AsyncLatch {
-      private readonly TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+      private readonly TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
       private const int kStateUnsignalled = 0;
       private const int kStateSignalled = 1;
       private int state = kStateUnsignalled;

@@ -39,7 +39,7 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
          
          await publisher.CreateLocalTopicAsync(topicId);
 
-         using (await stateLock.CreateReaderGuardAsync()) {
+         await using (await stateLock.CreateReaderGuardAsync()) {
             var captureSnapshot = ops.CaptureSnapshot(stateView.State);
             outboundChannel.WriteAsync(captureSnapshot).Forget(); // immediately queues (await would be for dequeue)
          }
@@ -138,7 +138,7 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
 
    public class StateLock {
       public readonly AsyncReaderWriterLock Lock = new AsyncReaderWriterLock();
-      public Task<AsyncReaderWriterLock.Guard> CreateReaderGuardAsync() => Lock.ReaderLockAsync();
-      public Task<AsyncReaderWriterLock.Guard> CreateWriterGuardAsync() => Lock.WriterLockAsync();
+      public Task<AsyncReaderWriterLock.Guard> CreateReaderGuardAsync() => Lock.CreateReaderGuardAsync();
+      public Task<AsyncReaderWriterLock.Guard> CreateWriterGuardAsync() => Lock.CreateWriterGuardAsync();
    }
 }

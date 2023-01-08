@@ -16,30 +16,30 @@ namespace Dargon.Courier.PubSubTier.Publishers {
       private readonly AsyncReaderWriterLock sync = new AsyncReaderWriterLock();
 
       public async Task AddTopicAsync(Guid topicId) {
-         using var mut = await sync.WriterLockAsync();
+         await using var mut = await sync.CreateWriterGuardAsync();
          topicIdToSubscriptions.AddOrThrow(topicId, new LocalTopicContext());
       }
 
       public async Task RemoveTopicAsync(Guid topicId) {
-         using var mut = await sync.WriterLockAsync();
+         await using var mut = await sync.CreateWriterGuardAsync();
          var success = topicIdToSubscriptions.TryRemove(topicId, out var context);
          if (!success) throw new KeyNotFoundException();
       }
 
       public async Task AddSubscriptionAsync(Guid topicId, PeerContext peer) {
-         using var mut = await sync.WriterLockAsync();
+         await using var mut = await sync.CreateWriterGuardAsync();
          var topicContext = topicIdToSubscriptions[topicId];
          await topicContext.AddSubscriptionAsync(peer);
       }
 
       public async Task RemoveSubscriptionAsync(Guid topicId, PeerContext peer) {
-         using var mut = await sync.WriterLockAsync();
+         await using var mut = await sync.CreateWriterGuardAsync();
          var topicContext = topicIdToSubscriptions[topicId];
          await topicContext.RemoveSubscriptionAsync(peer);
       }
 
       public async Task<LocalTopicContext> QueryLocalTopicContextAsync(Guid topicId) {
-         using var mut = await sync.ReaderLockAsync();
+         await using var mut = await sync.CreateReaderGuardAsync();
          return topicIdToSubscriptions[topicId];
       }
    }
@@ -55,21 +55,21 @@ namespace Dargon.Courier.PubSubTier.Publishers {
       public bool IsReliable => true;
 
       public async Task AddSubscriptionAsync(PeerContext peer) {
-         using var mut = await sync.WriterLockAsync();
+         await using var mut = await sync.CreateWriterGuardAsync();
          var newSet = new HashSet<PeerContext>(subs);
          newSet.Add(peer).AssertIsTrue();
          subs = newSet;
       }
 
       public async Task RemoveSubscriptionAsync(PeerContext peer) {
-         using var mut = await sync.WriterLockAsync();
+         await using var mut = await sync.CreateWriterGuardAsync();
          var newSet = new HashSet<PeerContext>(subs);
          newSet.Remove(peer).AssertIsTrue();
          subs = newSet;
       }
 
       public async Task<HashSet<PeerContext>> QuerySubscriptionsAsync() {
-         using var mut = await sync.ReaderLockAsync();
+         await using var mut = await sync.CreateReaderGuardAsync();
          return subs;
       }
 

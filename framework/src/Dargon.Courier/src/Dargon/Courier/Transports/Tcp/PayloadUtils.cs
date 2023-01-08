@@ -23,7 +23,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
          var ms = memoryStreamPool.TakeObject();
          // TODO: suspicious use of global serializer?
          Serialize.To(ms, payload);
-         using (await writerLock.LockAsync(cancellationToken).ConfigureAwait(false)) {
+         using (await writerLock.LockAsyncUnsafe_WithImportantCaveats(cancellationToken).ConfigureAwait(false)) {
             await WriteMemoryStreamAsync(ns, ms, 0, (int)ms.Position, cancellationToken).ConfigureAwait(false);
          }
          ms.SetLength(0);

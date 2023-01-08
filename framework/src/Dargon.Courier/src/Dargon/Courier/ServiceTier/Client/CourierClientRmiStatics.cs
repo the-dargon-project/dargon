@@ -146,7 +146,7 @@ namespace Dargon.Courier.ServiceTier.Client {
          public static bool TryGetRemoteServiceProxyInvocationInterceptor(object instance, out RemoteServiceProxyInvocationInterceptor remoteServiceProxyInvocationInterceptor) {
             var instanceTypeInfo = instance.GetType().GetTypeInfo();
             if (instanceTypeInfo.FullName.Contains("Castle.Proxies")) {
-               var interceptors = (IInterceptor[])instanceTypeInfo.GetField("__interceptors").GetValue(instance);
+               var interceptors = (IInterceptor[])instanceTypeInfo.GetField("__interceptors", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(instance);
                if (interceptors.Length != 1) {
                   throw new InvalidOperationException("Encountered multiple interceptors for type " + instanceTypeInfo.FullName + ": " + interceptors.Join(", "));
                }

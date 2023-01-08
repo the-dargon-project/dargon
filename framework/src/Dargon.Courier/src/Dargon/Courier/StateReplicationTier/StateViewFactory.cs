@@ -49,7 +49,7 @@ namespace Dargon.Courier.StateReplicationTier {
          public PrimaryStateView CreatePrimaryStateView(TState state, Guid topicId, StateLock stateLock) {
             using (courierSynchronizationContexts.CourierDefault.ActivateTemporarily()) {
                var statePublisher = new StatePublisher(publisher, ops, topicId, stateLock);
-               var primaryStateView = new PrimaryStateView(state, ops, statePublisher);
+               var primaryStateView = new PrimaryStateView(state, ops, statePublisher, stateLock);
                statePublisher.InitializeAsync(primaryStateView, stateLock).Forget();
                localServiceRegistry.RegisterService<IPrimaryStateService<TState, TSnapshot, TDelta>>(
                   topicId,
@@ -89,7 +89,7 @@ namespace Dargon.Courier.StateReplicationTier {
       }
 
       public class PrimaryStateView : PrimaryStateView<TState, TSnapshot, TDelta, TOperations> {
-         public PrimaryStateView(TState state, TOperations ops, StatePublisher<TState, TSnapshot, TDelta, TOperations> publisher) : base(state, ops, publisher) { }
+         public PrimaryStateView(TState state, TOperations ops, StatePublisher<TState, TSnapshot, TDelta, TOperations> publisher, StateLock stateLock) : base(state, ops, publisher, stateLock) { }
       }
 
       private class StatePublisher : StatePublisher<TState, TSnapshot, TDelta, TOperations> {

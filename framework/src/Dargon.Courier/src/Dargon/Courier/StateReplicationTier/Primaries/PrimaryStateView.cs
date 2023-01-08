@@ -14,12 +14,14 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       private readonly TState state;
       private readonly TOperations ops;
       private readonly StatePublisher<TState, TSnapshot, TDelta, TOperations> publisher;
+      private readonly StateLock stateLock;
       private int version = 0;
 
-      public PrimaryStateView(TState state, TOperations ops, StatePublisher<TState, TSnapshot, TDelta, TOperations> publisher) {
+      public PrimaryStateView(TState state, TOperations ops, StatePublisher<TState, TSnapshot, TDelta, TOperations> publisher, StateLock stateLock) {
          this.state = state;
          this.ops = ops;
          this.publisher = publisher;
+         this.stateLock = stateLock;
       }
 
       public int Version => version;
@@ -69,7 +71,7 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       }
 
       public async Task<StateUpdateDto> GetOutOfBandSnapshotUpdateOfLatestStateAsync() {
-         using var mut = await stateLock.CreateReaderGuardAsync();
+         await using var mut = await stateLock.CreateReaderGuardAsync();
          var snapshot = ops.CaptureSnapshot(primaryStateView.State);
          var update = await statePublisher.CreateOutOfBandCatchupSnapshotUpdateAsync(snapshot);
          return update;

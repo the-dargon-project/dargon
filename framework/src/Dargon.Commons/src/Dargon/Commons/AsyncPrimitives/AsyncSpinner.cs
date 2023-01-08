@@ -20,7 +20,7 @@ namespace Dargon.Commons.AsyncPrimitives {
             await Task.Yield();
             numSpins++;
          } else {
-            var sleepMillis = Math.Min(maxSleepMillis, Math.Pow(2, numSpins - 4));
+            var sleepMillis = Math.Min(maxSleepMillis, (int)BitMath.TwoToThePowerOf((uint)numSpins - 4u));
             await Task.Delay((int)sleepMillis);
 
             if (numSpins < 20) {

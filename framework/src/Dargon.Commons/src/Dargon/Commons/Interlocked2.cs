@@ -24,6 +24,26 @@ namespace Dargon.Commons {
       [MethodImpl(MethodImplOptions.AggressiveInlining)] public static long PostIncrement(ref long x) => Interlocked.Increment(ref x) - 1;
       [MethodImpl(MethodImplOptions.AggressiveInlining)] public static ulong PostIncrement(ref ulong x) => Interlocked.Increment(ref x) - 1;
 
+      [MethodImpl(MethodImplOptions.AggressiveInlining)] public static int PreDecrement(ref int x) => Interlocked.Decrement(ref x);
+      [MethodImpl(MethodImplOptions.AggressiveInlining)] public static uint PreDecrement(ref uint x) => Interlocked.Decrement(ref x);
+      [MethodImpl(MethodImplOptions.AggressiveInlining)] public static long PreDecrement(ref long x) => Interlocked.Decrement(ref x);
+      [MethodImpl(MethodImplOptions.AggressiveInlining)] public static ulong PreDecrement(ref ulong x) => Interlocked.Decrement(ref x);
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)] public static int PostDecrement(ref int x) => Interlocked.Decrement(ref x) + 1;
+      [MethodImpl(MethodImplOptions.AggressiveInlining)] public static uint PostDecrement(ref uint x) => Interlocked.Decrement(ref x) + 1;
+      [MethodImpl(MethodImplOptions.AggressiveInlining)] public static long PostDecrement(ref long x) => Interlocked.Decrement(ref x) + 1;
+      [MethodImpl(MethodImplOptions.AggressiveInlining)] public static ulong PostDecrement(ref ulong x) => Interlocked.Decrement(ref x) + 1;
+
+      public static int PreIncrementWithMod(ref int x, int mod) {
+         while (true) {
+            var current = Interlocked2.Read(ref x);
+            var next = current + 1 == mod ? 0 : current + 1;
+            if (Interlocked.CompareExchange(ref x, next, current) == current) {
+               return next;
+            }
+         }
+      }
+
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       public static int WriteOrThrow(ref int x, int val) {
          var xCapture = Read(ref x);
@@ -69,6 +89,16 @@ namespace Dargon.Commons {
             var read = Read(ref x);
             if (read == val) return;
             if (Interlocked.CompareExchange(ref x, val, read) == read) return;
+         }
+      }
+
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static void Write<T>(ref T o, T val) where T : class {
+         while (true) {
+            var read = Read(ref o);
+            if (read == val) return;
+            if (Interlocked.CompareExchange(ref o, val, read) == read) return;
          }
       }
    }

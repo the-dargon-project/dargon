@@ -13,45 +13,35 @@ namespace Dargon.Commons.AsyncPrimitives {
    /// in the codebase except for test so it's not a big deal.
    /// </summary>
    public class AsyncBarrier {
-      private readonly AsyncLock synchronization = new AsyncLock();
-      private readonly ConcurrentSet<AsyncLatch> waitLatches = new ConcurrentSet<AsyncLatch>();
-      private readonly int totalSignallers;
+      private readonly ConcurrentQueue<AsyncLatch> latchQueue = new();
+      private readonly int signalsPerBarrier;
+      private int counter;
 
-      public AsyncBarrier(int totalSignallers) {
-         if (totalSignallers < 0) {
-            throw new ArgumentException(nameof(totalSignallers));
-         }
-         this.totalSignallers = totalSignallers;
+      public AsyncBarrier(int signalsPerBarrier) {
+         this.signalsPerBarrier = signalsPerBarrier.AssertIsGreaterThan(0);
       }
 
-      public async Task SignalAndWaitAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-         AsyncLatch waitLatch = null;
+      public Task SignalAndWaitAsync() {
+         var next = Interlocked2.PreIncrementWithMod(ref counter, signalsPerBarrier);
 
-         using (await synchronization.LockAsync(cancellationToken)) {
-            if (waitLatches.Count == totalSignallers - 1) {
-               foreach (var signalee in waitLatches) {
-                  if (!signalee.TrySet()) {
-                     throw new ImpossibleStateException();
-                  }
+         if (next == 0) {
+            // we are the nth increment, signal the prior ones
+            var spinner = new SpinWait();
+            for (var i = 1; i < signalsPerBarrier; i++) {
+               AsyncLatch latch;
+               while (!latchQueue.TryDequeue(out latch)) {
+                  spinner.SpinOnce();
                }
-               waitLatches.Clear();
-            } else {
-               waitLatch = new AsyncLatch();
-               waitLatches.AddOrThrow(waitLatch);
-            }
-         }
 
-         if (waitLatch != null) {
-            try {
-               await waitLatch.WaitAsync(cancellationToken);
-            } catch (OperationCanceledException) {
-               using (await synchronization.LockAsync(cancellationToken)) {
-                  if (waitLatches.TryRemove(waitLatch)) {
-                     // If removal succeeds, signalling hasn't happened yet so we can cancel.
-                     throw;
-                  }
-               }
+               latch.SetOrThrow();
             }
+
+            return Task.CompletedTask;
+         } else {
+            // we are not the nth increment, so we will be signalled.
+            var latch = new AsyncLatch();
+            latchQueue.Enqueue(latch);
+            return latch.WaitAsync();
          }
       }
    }

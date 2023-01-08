@@ -7,7 +7,7 @@ namespace Dargon.Commons.AsyncPrimitives {
    }
 
    public interface IAsyncSubscriber<T> {
-      Task<IDisposable> SubscribeAsync(SubscriberCallbackFunc<T> handler);
+      Task<IAsyncDisposable> SubscribeAsync(SubscriberCallbackFunc<T> handler);
    }
 
    public interface IAsyncBus<T> : IAsyncPoster<T>, IAsyncSubscriber<T> { }

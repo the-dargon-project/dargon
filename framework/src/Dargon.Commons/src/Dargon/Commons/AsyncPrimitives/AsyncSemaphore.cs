@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace Dargon.Commons.AsyncPrimitives {
    public class AsyncSemaphore {
-      private readonly ConcurrentQueue<WaitContext> waitContexts = new ConcurrentQueue<WaitContext>();
+      private readonly ConcurrentQueue<AsyncLatch> awaiterLatches = new();
       private readonly object undoLock = new object();
-      private int counter; // positive = signals waiting, negative = queued waiting
+      private int counter; // positive = availability (signals awaiters), negative = queued waiting
 
       public AsyncSemaphore(int count = 0) {
          if (count < 0) {
@@ -35,72 +35,69 @@ namespace Dargon.Commons.AsyncPrimitives {
       }
 
       public async Task WaitAsync(CancellationToken cancellationToken = default(CancellationToken)) {
-         var spinner = new SpinWait();
-         while (true) {
-            var capturedCounter = Interlocked.CompareExchange(ref counter, 0, 0);
-            var nextCounter = capturedCounter - 1;
-            if (Interlocked.CompareExchange(ref counter, nextCounter, capturedCounter) == capturedCounter) {
-               if (capturedCounter > 0) {
-                  return;
-               } else {
-                  var latch = new AsyncLatch();
-                  var waitContext = new WaitContext { Latch = latch };
-                  try {
-                     waitContexts.Enqueue(waitContext);
-                     await latch.WaitAsync(cancellationToken).ConfigureAwait(false);
-                     return;
-                  } catch (OperationCanceledException) {
-                     if (ResolveWaitContextUndoAsync(waitContext)) {
-                        throw;
-                     } else {
-                        await waitContext.Latch.WaitAsync(CancellationToken.None).ConfigureAwait(false);
-                        return;
-                     }
-                     //                     return ResolveWaitContextUndoAsync(waitContext, e);
-                  }
-               }
+         var capturedCounter = Interlocked2.PostDecrement(ref counter);
+         if (capturedCounter > 0) {
+            // decremented an availability, so done!
+            return;
+         }
+
+         // no availabilities; we added an awaiting count.
+         // if anyone increments the count, they have to remove an AsyncLatch and signal.
+         // So our job now is to add that AsyncLatch for a Release to signal.
+         var latch = new AsyncLatch();
+         awaiterLatches.Enqueue(latch);
+
+         try {
+            await latch.WaitAsync(cancellationToken).ConfigureAwait(false);
+         } catch (OperationCanceledException) {
+            if (ResolveWaitContextUndoAsync(latch)) {
+               // successfully removed
+               throw;
             }
-            spinner.SpinOnce();
+
+            // someone already dequeued the latch, so it's being signaled.
+            await latch.WaitAsync(CancellationToken.None).ConfigureAwait(false);
          }
       }
 
-      private bool ResolveWaitContextUndoAsync(WaitContext waitContext) {
+      private bool ResolveWaitContextUndoAsync(AsyncLatch latch) {
          var spinner = new SpinWait();
          bool dequeuedSelf = false;
          lock (undoLock) {
-            WaitContext takenWaitContext;
-            var maxIterations = waitContexts.Count;
-            for (var i = 0; i < maxIterations && waitContexts.TryDequeue(out takenWaitContext); i++) {
-               if (takenWaitContext == waitContext) {
+            var maxIterations = awaiterLatches.Count;
+            for (var i = 0; i < maxIterations && awaiterLatches.TryDequeue(out var item); i++) {
+               if (item == latch) {
                   dequeuedSelf = true;
                   break;
                } else {
-                  waitContexts.Enqueue(takenWaitContext);
+                  awaiterLatches.Enqueue(item);
                }
             }
          }
-         if (dequeuedSelf) {
-            while (true) {
-               var capturedCounter = Interlocked.CompareExchange(ref counter, 0, 0);
-               if (capturedCounter >= 0) {
-                  waitContexts.Enqueue(waitContext);
-                  break;
-               } else {
-                  var nextCounter = capturedCounter + 1;
-                  if (Interlocked.CompareExchange(ref counter, nextCounter, capturedCounter) == capturedCounter) {
-                     return true;
-                     //                     var tcs = new TaskCompletionSource<bool>();
-                     //                     tcs.SetException(e);
-                     //                     return tcs.Task;
-                     //                     ExceptionDispatchInfo.Capture(e).Throw();
-                  }
-                  spinner.SpinOnce();
+
+         if (!dequeuedSelf) {
+            // we failed to dequeue ourselves, meaning someone else already dequeued us. In that case,
+            // we have been signaled so rather than cancelling the wait, we complete.
+            return false;
+         }
+
+         // below, we have successfully dequeued ourselves.
+         while (true) {
+            var capturedCounter = Interlocked2.Read(ref counter);
+            if (capturedCounter >= 0) {
+               // the counter indicates no pending awaiters, meaning a Release is waiting to take our latch.
+               awaiterLatches.Enqueue(latch);
+               return false;
+            } else {
+               // the counter indicates queued awaiters. If we can removed a queued awaiter count via increment,
+               // then we have undone the latch add
+               var nextCounter = capturedCounter + 1;
+               if (Interlocked.CompareExchange(ref counter, nextCounter, capturedCounter) == capturedCounter) {
+                  return true;
                }
+               spinner.SpinOnce();
             }
          }
-//         t = waitContext.Latch.WaitAsync();
-         return false;
-         //         return waitContext.Latch.WaitAsync();
       }
 
       public void Release(int c) {
@@ -110,35 +107,24 @@ namespace Dargon.Commons.AsyncPrimitives {
       }
 
       public void Release() {
+         var capturedCounter = Interlocked2.PostIncrement(ref counter);
+         if (capturedCounter >= 0) {
+            // transition from neutral to availability or from availability to availability.
+            // no need to signal awaiters.
+            return;
+         }
+
+         // transition from pending to pending or pending to neutral... signal an awaiter.
          var spinner = new SpinWait();
          while (true) {
-            var capturedCounter = Interlocked.CompareExchange(ref counter, 0, 0);
-            var nextCounter = capturedCounter + 1;
-            if (Interlocked.CompareExchange(ref counter, nextCounter, capturedCounter) == capturedCounter) {
-               if (capturedCounter >= 0) {
-                  return;
-               } else {
-                  while (true) {
-                     WaitContext waitContext;
-                     while (!waitContexts.TryDequeue(out waitContext)) {
-                        spinner.SpinOnce();
-                     }
-                     waitContext.Latch.SetOrThrow();
-                     return;
-                  }
-               }
+            AsyncLatch latch;
+            while (!awaiterLatches.TryDequeue(out latch)) {
+               spinner.SpinOnce();
             }
-            spinner.SpinOnce();
+
+            latch.SetOrThrow();
+            return;
          }
-      }
-
-      public class WaitContext {
-         public const int kStatePending = 0;
-         public const int kStateReleased = 1;
-         public const int kStateCancelled = 2;
-
-         public AsyncLatch Latch { get; set; }
-         public int state = kStatePending;
       }
    }
 }

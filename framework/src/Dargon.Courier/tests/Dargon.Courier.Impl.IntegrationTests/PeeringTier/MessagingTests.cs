@@ -24,6 +24,10 @@ namespace Dargon.Courier.PeeringTier {
       private CourierFacade senderFacade;
       private CourierFacade receiverFacade;
 
+      public MessagingTestsBase() {
+         Globals.Serializer.ImportTypes(new CourierVoxTypes());
+      }
+
       public void Setup(CourierFacade senderFacade, CourierFacade receiverFacade) {
          this.senderFacade = senderFacade;
          this.receiverFacade = receiverFacade;
