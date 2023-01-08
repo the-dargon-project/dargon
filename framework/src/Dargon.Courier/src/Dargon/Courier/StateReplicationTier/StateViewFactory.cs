@@ -11,8 +11,13 @@ using Dargon.Courier.StateReplicationTier.Predictions;
 using Dargon.Courier.StateReplicationTier.Primaries;
 using Dargon.Courier.StateReplicationTier.Replicas;
 using Dargon.Courier.StateReplicationTier.States;
+using Dargon.Ryu;
 
 namespace Dargon.Courier.StateReplicationTier {
+   public class ViewFactoryIocDependencies {
+      public CourierFacade Courier { get; set; }
+   }
+
    public class StateBase<TState, TSnapshot, TDelta, TOperations> : IState
       where TState : class, IState
       where TSnapshot : IStateSnapshot
@@ -26,6 +31,11 @@ namespace Dargon.Courier.StateReplicationTier {
          private readonly RemoteServiceProxyContainer remoteServiceProxyContainer;
          private readonly Publisher publisher;
          private readonly Subscriber subscriber;
+
+         [RyuConstructor]
+         public ViewFactory(ViewFactoryIocDependencies deps, TOperations ops) : this(deps.Courier, ops) { }
+         
+         public ViewFactory(CourierFacade courier, TOperations ops) : this(courier.SynchronizationContexts, ops, courier.LocalServiceRegistry, courier.RemoteServiceProxyContainer, courier.Publisher, courier.Subscriber) { }
 
          public ViewFactory(CourierSynchronizationContexts courierSynchronizationContexts, TOperations ops, LocalServiceRegistry localServiceRegistry, RemoteServiceProxyContainer remoteServiceProxyContainer, Publisher publisher, Subscriber subscriber) {
             this.courierSynchronizationContexts = courierSynchronizationContexts;

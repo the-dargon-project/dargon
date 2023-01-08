@@ -19,7 +19,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.configuration = configuration ?? UdpTransportConfiguration.Default;
       }
 
-      public Task<ITransport> CreateAsync(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
+      public ITransport Create(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
          // setup identity
          identity.Properties[UdpConstants.kUnicastPortIdentityPropertyKey] = configuration.UnicastReceiveEndpoint.Port.ToString();
 
@@ -59,7 +59,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          var transport = new UdpTransport(udpBroadcaster, udpFacade);
          client.StartReceiving(udpDispatcher);
 
-         return Task.FromResult<ITransport>(transport);
+         return transport;
       }
    }
 }

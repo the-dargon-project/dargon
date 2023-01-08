@@ -58,7 +58,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
          this.configuration = configuration;
       }
 
-      public Task<ITransport> CreateAsync(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
+      public ITransport Create(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
          var inboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kInboundBytes);
          var outboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kOutboundBytes);
 
@@ -67,7 +67,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
          var transport = new TcpTransport(configuration, identity, routingTable, peerTable, inboundMessageDispatcher, tcpRoutingContextContainer, payloadUtils);
          transport.Initialize();
          mobOperations.RegisterMob(Guid.NewGuid(), new TcpDebugMob(tcpRoutingContextContainer));
-         return Task.FromResult<ITransport>(transport);
+         return transport;
       }
 
       public static TcpTransportFactory CreateServer(int port) {

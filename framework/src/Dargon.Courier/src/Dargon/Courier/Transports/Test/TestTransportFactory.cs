@@ -14,7 +14,7 @@ namespace Dargon.Courier.TransportTier.Test {
       private readonly object synchronization = new object();
       private readonly List<TestTransport> transports = new List<TestTransport>();
 
-      public async Task<ITransport> CreateAsync(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
+      public ITransport Create(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
          var transport = new TestTransport(this, identity, routingTable, peerTable, inboundMessageDispatcher);
          transports.Add(transport);
 

@@ -26,7 +26,7 @@ namespace Dargon.Courier {
             ReceiverId = Guid.Empty,
             SenderId = identity.Id
          };
-         return Task.WhenAll(transports.Select(t => t.SendMessageBroadcastAsync(message)));
+         return Task.WhenAll(transports.Select(t => t.SendMessageBroadcastAsync(message)).ToArray());
       }
 
       /// <summary>

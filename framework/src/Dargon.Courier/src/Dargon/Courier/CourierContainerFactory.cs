@@ -113,12 +113,8 @@ namespace Dargon.Courier {
          var routingTable = new RoutingTable();
          container.Set(routingTable);
 
-         // transports
+         // transports - initially null, added to later.
          var transports = new ConcurrentSet<ITransport>();
-         foreach (var transportFactory in transportFactories) {
-            var transport = await transportFactory.CreateAsync(mobOperations, identity, routingTable, peerTable, inboundMessageDispatcher, auditService).ConfigureAwait(false);
-            transports.TryAdd(transport);
-         }
 
          // messenger
          var messenger = new Messenger(identity, transports, routingTable);
@@ -160,20 +156,26 @@ namespace Dargon.Courier {
          // Courier Facade
          var facade = new CourierFacade(transports, container) {
             SynchronizationContexts = synchronizationContexts,
+            AuditService = auditService,
+            MobOperations = mobOperations,
             Identity = identity,
             InboundMessageRouter = inboundMessageRouter,
+            InboundMessageDispatcher = inboundMessageDispatcher,
             PeerTable = peerTable,
             RoutingTable = routingTable,
             Messenger = messenger,
             LocalServiceRegistry = localServiceRegistry,
             RemoteServiceProxyContainer = remoteServiceProxyContainer,
-            MobOperations = mobOperations,
             ManagementObjectService = managementObjectService,
             Publisher = publisher,
             Subscriber = subscriber,
             PubSubClient = pubSubClient,
          };
          container.Set(facade);
+
+         foreach (var transportFactory in transportFactories) {
+            await facade.AddTransportAsync(transportFactory);
+         }
 
          return container;
       }
