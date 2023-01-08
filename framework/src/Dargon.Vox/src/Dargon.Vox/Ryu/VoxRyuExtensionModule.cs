@@ -38,11 +38,14 @@ namespace Dargon.Vox.Ryu {
             if (a.FullName.Contains("PublicKeyToken=8d05b1bb7a6fdb6c")) continue; // xunit
             if (a.FullName.Contains("PublicKeyToken=5120e14c03d0593c")) continue; // NLog
             if (a.FullName.Contains("PublicKeyToken=407dd0808d44fbdc")) continue; // Castle
+
             try {
                allLoadedTypes.AddRange(a.ExportedTypes);
             } catch (FileNotFoundException e) when (e.FileName.Contains("xunit")) {
                // throws on xunit test dependencies. Not sure why, though they do
                // strange stuff we don't care about.
+            } catch (TypeLoadException e) when (e.TypeName.Contains("Vortice")) {
+               // not sure why this happens with vortice.mathematics.SizeI
             }
          }
 

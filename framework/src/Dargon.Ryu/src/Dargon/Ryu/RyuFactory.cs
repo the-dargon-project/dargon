@@ -11,11 +11,11 @@ namespace Dargon.Ryu {
          this.logger = logger;
       }
 
-      public IRyuFacade Create() {
+      public IRyuContainer Create() {
          return Create(new RyuConfiguration());
       }
 
-      public IRyuFacade Create(RyuConfiguration configuration) {
+      public IRyuContainer Create(RyuConfiguration configuration) {
          IAssemblyLoader assemblyLoader = new AssemblyLoader(logger);
          IModuleLoader moduleLoader = new ModuleLoader();
          IActivator activator = new Activator(logger);
@@ -25,7 +25,7 @@ namespace Dargon.Ryu {
          var container = bootstrapper.Bootstrap(configuration);
          var facade = new RyuFacade(container, activator, moduleImporter);
          facade.Initialize();
-         return facade;
+         return container;
       }
    }
 }
