@@ -20,6 +20,7 @@ namespace Dargon.Ryu.Modules {
       public Type Type { get; set; }
       public RyuTypeFlags Flags { get; set; }
       public RyuTypeActivator Activator { get; set; }
+      public required object DeclaredBy { get; init; }
 
       public event Action<object> OnActivated;
 
@@ -74,7 +75,8 @@ namespace Dargon.Ryu.Modules {
          var ryuType = new RyuType {
             Type = typeof(T),
             Flags = Flags | additionalFlags,
-            Activator = activator
+            Activator = activator,
+            DeclaredBy = Module, 
          };
          Module.AddRyuType<T>(ryuType);
          return new RyuFluentAdditions<T> { Module = Module, Flags = Flags, RyuType = ryuType };
@@ -127,7 +129,8 @@ namespace Dargon.Ryu.Modules {
                   new RyuType {
                      Type = type,
                      Flags = (additions.Flags & ~removedFlags) | addedFlags,
-                     Activator = (ryu) => ryu.GetOrActivate(additions.RyuType.Type)
+                     Activator = (ryu) => ryu.GetOrActivate(additions.RyuType.Type),
+                     DeclaredBy = FluentAdditions.Module,
                   });
             }
             return FluentAdditions;

@@ -36,7 +36,8 @@ namespace Dargon.Ryu {
       }
 
       public bool TryGet(Type type, out object value) {
-         return storage.TryGetValue(type, out value);
+         return storage.TryGetValue(type, out value) ||
+                (parent != null && parent.TryGet(type, out value));
       }
 
       public object GetOrActivate(Type type) {
@@ -96,6 +97,11 @@ namespace Dargon.Ryu {
       public IRyuContainer CreateChildContainer() {
          var c = new RyuContainer(this, activator, ryuTypesByType);
          c.Initialize();
+         if (this.TryGet(out IRyuFacade facade)) {
+            var childFacade = new RyuFacade(c, activator, facade.ModuleImporter);
+            c.Set<RyuFacade>(childFacade);
+            c.Set<IRyuFacade>(childFacade);
+         }
          return c;
       }
 
