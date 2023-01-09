@@ -12,6 +12,10 @@ namespace Dargon.Commons.AsyncAwait {
          return x;
       }
 
+      public static void Activate(this SynchronizationContext synchronizationContext) {
+         SynchronizationContext.SetSynchronizationContext(synchronizationContext);
+      }
+
       public static SwitchToSynchronizationContextAwaitable YieldToAsync(this SynchronizationContext synchronizationContext) 
          => new(synchronizationContext);
 

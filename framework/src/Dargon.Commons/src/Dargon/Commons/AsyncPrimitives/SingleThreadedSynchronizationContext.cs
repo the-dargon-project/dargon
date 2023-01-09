@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Dargon.Commons.AsyncPrimitives {
    public class SingleThreadedSynchronizationContext : SynchronizationContext {
@@ -20,6 +21,15 @@ namespace Dargon.Commons.AsyncPrimitives {
 #endif        
          pendingContinuationsSignal.Wait();
          pendingContinuationsSignal.Release();
+      }
+
+      public void ProcessTaskQueueTilEmptyAndMainTaskComplete(Task mainTask) {
+         while (!mainTask.IsCompleted) {
+            ProcessTaskQueueTilEmpty();
+            if (!mainTask.IsCompleted) {
+               WaitForAvailableWork();
+            }
+         }
       }
 
       /// <summary>
