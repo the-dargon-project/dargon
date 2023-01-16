@@ -17,8 +17,15 @@ namespace Dargon.Courier {
       }
 
       public Guid Id { get; private set; }
-      public string Name { get; set; }
-      public ConcurrentDictionary<string, object> Properties { get; set; } = new ConcurrentDictionary<string, object>();
+      public string VanityName { get; set; }
+      /// <summary>
+      /// Remotely-owned & declared properties; can change in response to heartbeats.
+      /// Can be used to declare information (e.g. UDP port for fast communication).
+      ///
+      /// Validated by gatekeeper when submitted, currently only submitted when we
+      /// start a connection session, so validated with client handshake.
+      /// </summary>
+      public ConcurrentDictionary<string, object> DeclaredProperties { get; set; } = new();
 
       public bool Matches(Guid id, IdentityMatchingScope matchingScope) {
          bool result = false;
@@ -38,19 +45,20 @@ namespace Dargon.Courier {
             throw new InvalidStateException($"Identity Update Id Mismatch: {identity} vs {Id}");
          }
 
-         Name = identity.Name;
+         VanityName = identity.VanityName;
+         DeclaredProperties = identity.DeclaredProperties;
       }
 
       public static Identity Create(Guid? forceId = null) {
          var id = forceId ?? Guid.NewGuid();
          var hostName = Dns.GetHostName();
          return new Identity(id) {
-            Name = $"{hostName}:{id.ToString("N").Substring(8)}"
+            VanityName = $"{hostName}:{id.ToString("N").Substring(8)}"
          };
       }
 
       public override string ToString() {
-         return $"[Identity Id = {Id}, Name = {Name}]";
+         return $"[Identity Id = {Id}, Name = {VanityName}]";
       }
    }
 }

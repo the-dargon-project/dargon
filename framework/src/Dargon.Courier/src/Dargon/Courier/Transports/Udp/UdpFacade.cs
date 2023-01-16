@@ -6,18 +6,18 @@ using System.Threading.Tasks;
 
 namespace Dargon.Courier.TransportTier.Udp {
    public class UdpFacade {
-      private readonly UdpClient client;
-      private readonly UdpDispatcherImpl udpDispatcher;
+      private readonly CoreUdp coreUdp;
+      private readonly UdpDispatcher udpDispatcher;
       private readonly CancellationTokenSource shutdownCts;
 
-      public UdpFacade(UdpClient client, UdpDispatcherImpl udpDispatcher, CancellationTokenSource shutdownCts) {
-         this.client = client;
+      public UdpFacade(CoreUdp coreUdp, UdpDispatcher udpDispatcher, CancellationTokenSource shutdownCts) {
+         this.coreUdp = coreUdp;
          this.udpDispatcher = udpDispatcher;
          this.shutdownCts = shutdownCts;
       }
 
       public async Task ShutdownAsync() {
-         client.Shutdown();
+         coreUdp.Shutdown();
          udpDispatcher.Shutdown();
          shutdownCts.Cancel();
       }

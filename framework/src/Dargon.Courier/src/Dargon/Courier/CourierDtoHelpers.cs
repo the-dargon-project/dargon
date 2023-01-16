@@ -11,7 +11,7 @@ namespace Dargon.Courier {
       }
 
       public static TDto GetFromIdentity(Identity identity) {
-         return (TDto)identity.Properties[default(TString_Key).Value];
+         return (TDto)identity.DeclaredProperties[default(TString_Key).Value];
       }
    }
 }

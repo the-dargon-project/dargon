@@ -36,6 +36,12 @@ namespace Dargon.Courier.TransportTier.Tcp {
          clientRoutingContextsByClientId.AddOrThrow(remoteId, routingContext);
       }
 
+      public void TryUnassociateRemoteIdentity(Guid remoteId, TcpRoutingContext routingContext) {
+         if (clientRoutingContextsByClientId.TryRemove(remoteId, out var existing)) {
+            existing.AssertEquals(routingContext);
+         }
+      }
+
       public void UnassociateRemoteIdentityOrThrow(Guid remoteId, TcpRoutingContext routingContext) {
          clientRoutingContextsByClientId.RemoveOrThrow(remoteId, routingContext);
       }

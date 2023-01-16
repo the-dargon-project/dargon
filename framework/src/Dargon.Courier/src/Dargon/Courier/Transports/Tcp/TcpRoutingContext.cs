@@ -5,12 +5,13 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Castle.Core.Logging;
 using Dargon.Commons;
 using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Exceptions;
+using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
+using Dargon.Courier.SessionTier;
 using Dargon.Courier.TransportTier.Tcp.Vox;
 using Dargon.Courier.Vox;
 using NLog;
@@ -34,13 +35,16 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       private readonly NetworkStream ns;
       private readonly PeerTable peerTable;
       private readonly PayloadUtils payloadUtils;
+      private readonly IGatekeeper gatekeeper;
       private readonly RoutingTable routingTable;
+
+      private readonly AsyncReaderWriterLock stateLock = new();
       private Identity remoteIdentity;
-      private bool isHandshakeComplete = false;
+      private PeerContext peerContext;
       private Task runAsyncInnerTask;
       private volatile bool isShutdown = false;
 
-      public TcpRoutingContext(TcpTransportConfiguration configuration, TcpRoutingContextContainer tcpRoutingContextContainer, Socket client, InboundMessageDispatcher inboundMessageDispatcher, Identity localIdentity, RoutingTable routingTable, PeerTable peerTable, PayloadUtils payloadUtils) {
+      public TcpRoutingContext(TcpTransportConfiguration configuration, TcpRoutingContextContainer tcpRoutingContextContainer, Socket client, InboundMessageDispatcher inboundMessageDispatcher, Identity localIdentity, RoutingTable routingTable, PeerTable peerTable, PayloadUtils payloadUtils, IGatekeeper gatekeeper) {
          logger.Debug($"Constructing TcpRoutingContext for client {client.RemoteEndPoint}, localId: {localIdentity}");
 
          this.configuration = configuration;
@@ -51,75 +55,68 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          this.routingTable = routingTable;
          this.peerTable = peerTable;
          this.payloadUtils = payloadUtils;
+         this.gatekeeper = gatekeeper;
          this.ns = new NetworkStream(client);
       }
 
       public async Task RunAsync() {
          Log($"Entered RunAsync.");
          runAsyncInnerTask = RunAsyncHelper();
-         await runAsyncInnerTask.ConfigureAwait(false);
+         await runAsyncInnerTask;
          Log($"Left RunAsync.");
       }
 
       private async Task RunAsyncHelper() {
-         bool isRemoteIdentityAssociated = false;
-         bool isRoutingTableRouteRegistered = false;
          try {
-            var shutdownCtsTask = shutdownCancellationTokenSource.Token.AsTask();
-            var sendAndRecvHandshakesTask = Task.WhenAll(
-               Go(async () => {
-                  var remoteToLocalHandshake = (HandshakeDto)await payloadUtils.ReadPayloadAsync(ns, shutdownCancellationTokenSource.Token).ConfigureAwait(false);
-                  remoteIdentity = remoteToLocalHandshake.Identity;
-               }),
-               Go(async () => {
-                  var localToRemoteHandshake = new HandshakeDto { Identity = localIdentity };
-                  await payloadUtils.WritePayloadAsync(ns, localToRemoteHandshake, writerLock, shutdownCancellationTokenSource.Token).ConfigureAwait(false);
-               })
-            );
-            await Task.WhenAny(shutdownCtsTask, sendAndRecvHandshakesTask).ConfigureAwait(false);
+            var shutdownToken = shutdownCancellationTokenSource.Token;
+            var readRemoteHandshakeTask = payloadUtils.ReadPayloadAsync(ns, shutdownToken);
+            var sendLocalHandshakeTask = payloadUtils.WritePayloadAsync(ns, new HandshakeDto {
+               Identity = localIdentity, 
+               AdditionalParameters = configuration.AdditionalHandshakeParameters
+            }, writerLock, shutdownToken);
+            await Task.WhenAny( // WhenAny yields the first complete task. Await that task via Unwrap to validate timeout didn't happen.
+               new CancellationTokenSource(TimeSpan.FromSeconds(3)).Token.AsTask(),
+               Task.WhenAll(readRemoteHandshakeTask, sendLocalHandshakeTask)).Unwrap();
 
-            if (shutdownCancellationTokenSource.IsCancellationRequested) {
-               return;
-            }
+            var remoteHandshake = (HandshakeDto)await readRemoteHandshakeTask;
+            remoteIdentity = remoteHandshake.Identity.AssertIsNotNull();
 
-            if (sendAndRecvHandshakesTask.IsFaulted) {
-               await sendAndRecvHandshakesTask;
-            }
-
-            isHandshakeComplete = true;
-
-            var readerTask = RunReaderAsync(shutdownCancellationTokenSource.Token).Forgettable();
-            var writerTask = RunWriterAsync(shutdownCancellationTokenSource.Token).Forgettable();
+            // Prior to the gatekeeper line, the remote identity can be forged.
+            // Past the gatekeeper line, the remote identity is validated.
+            gatekeeper.ValidateClientHandshake(remoteHandshake);
 
             tcpRoutingContextContainer.AssociateRemoteIdentityOrThrow(remoteIdentity.Id, this);
-            isRemoteIdentityAssociated = true;
             routingTable.Register(remoteIdentity.Id, this);
-            isRoutingTableRouteRegistered = true;
 
-            peerTable.GetOrAdd(remoteIdentity.Id).HandleInboundPeerIdentityUpdate(remoteIdentity);
+            peerContext = peerTable.GetOrAdd(remoteIdentity.Id);
+            CourierAmbientPeerContext.CurrentContext.AssertIsNull();
+            var session = peerContext.GetSession().UseAsImplicitAsyncLocalContext();
+            gatekeeper.LoadSessionState(remoteHandshake, session);
+
+            peerContext.HandleInboundPeerIdentityUpdate(remoteIdentity);
 
             configuration.HandleRemoteHandshakeCompletion(remoteIdentity);
 
             try {
+               CourierAmbientPeerContext.CurrentContext.AssertEquals(session);
+
+               var readerTask = RunReaderAsync(shutdownToken).Forgettable();
+               var writerTask = RunWriterAsync(shutdownToken).Forgettable();
+
                await Task.WhenAny(
                   readerTask,
                   writerTask,
-                  shutdownCtsTask
-
+                  shutdownToken.AsTask()
                ).ConfigureAwait(false);
                shutdownCancellationTokenSource.Cancel();
             } catch (OperationCanceledException) when (isShutdown) { }
          } catch (Exception e) {
             Log($"RunAsync threw {e}", LogLevel.Error);
          } finally {
-            if (isRoutingTableRouteRegistered) {
+            if (remoteIdentity != null) {
                routingTable.Unregister(remoteIdentity.Id, this);
+               tcpRoutingContextContainer.TryUnassociateRemoteIdentity(remoteIdentity.Id, this);
             }
-
-            if (isRemoteIdentityAssociated) {
-               tcpRoutingContextContainer.UnassociateRemoteIdentityOrThrow(remoteIdentity.Id, this);
-            }
-
             tcpRoutingContextContainer.RemoveOrThrow(this);
          }
       }
@@ -128,7 +125,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          Log($"Entered RunReaderAsync.");
          try {
             while (!isShutdown) {
-               var payload = await payloadUtils.ReadPayloadAsync(ns, token).ConfigureAwait(false);
+               var payload = await payloadUtils.ReadPayloadAsync(ns, token);
                if (payload is MessageDto) {
                   inboundMessageDispatcher.DispatchAsync((MessageDto)payload).Forget();
                }
@@ -151,7 +148,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          Log($"Entered runWriterAsync.");
          try {
             while (!isShutdown) {
-               await outboundMessageSignal.WaitAsync(token).ConfigureAwait(false);
+               await outboundMessageSignal.WaitAsync(token);
                Go(async () => {
                   Log($"Entered message writer task.");
                   MessageDto message;
@@ -160,7 +157,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                   }
 
                   Log($"Writing message {message} destination {message.ReceiverId.ToString("n").Substring(0, 6)}.");
-                  await payloadUtils.WritePayloadAsync(ns, message, writerLock, token).ConfigureAwait(false);
+                  await payloadUtils.WritePayloadAsync(ns, message, writerLock, token);
                   Log($"Wrote message {message} destination {message.ReceiverId.ToString("n").Substring(0, 6)}.");
                   sendCompletionLatchByMessage[message].SetOrThrow();;
                   Log($"Exiting message writer task.");
@@ -198,7 +195,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          Log(
             $"Sending to {destination.ToString("n").Substring(0, 6)} message {message}. " + Environment.NewLine +
             $"clientIdentity matches destination: {remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)}");
-         if (!isHandshakeComplete || !remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)) {
+         if (remoteIdentity == null || !remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)) {
             return Task.CompletedTask;
          }
 
@@ -231,7 +228,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             }
 
             // Console.BackgroundColor = guids.IndexOf(localIdentity.Id) == 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkCyan;
-            logger.Log(levelElseTraceOpt ?? LogLevel.Trace, $"[{localIdentity.Id.ToString("n").Substring(0, 6)} / {isHandshakeComplete}] {message}");
+            logger.Log(levelElseTraceOpt ?? LogLevel.Trace, $"[{localIdentity.Id.ToString("n")[..6]} / {(remoteIdentity?.Id.ToString("n"))[..6]}] {message}");
             logger.Factory.Flush();
             // Console.BackgroundColor = ConsoleColor.Black;
          }

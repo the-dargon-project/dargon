@@ -11,6 +11,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.Vox;
 using Dargon.Vox;
 using NMockito.Expectations;
@@ -22,7 +23,7 @@ namespace Dargon.Courier.ServiceTier {
       private CourierFacade serverFacade;
 
       public ServiceTestsBase() {
-         Globals.Serializer.ImportTypes(new CourierVoxTypes());
+         VoxGlobals.Serializer.ImportTypes(new CourierVoxTypes());
       }
 
       public void Setup(CourierFacade clientFacade, CourierFacade serverfacade) {
@@ -95,10 +96,12 @@ namespace Dargon.Courier.ServiceTier {
 
          var clientFacade = CourierBuilder.Create()
                                           .UseTransport(testTransportFactory)
+                                          .UseGatekeeper(new PermitAllGatekeeper())
                                           .BuildAsync().Result;
 
          var serverFacade = CourierBuilder.Create()
                                           .UseTransport(testTransportFactory)
+                                          .UseGatekeeper(new PermitAllGatekeeper())
                                           .BuildAsync().Result;
 
          Setup(clientFacade, serverFacade);
@@ -112,6 +115,7 @@ namespace Dargon.Courier.ServiceTier {
                                              UdpTransportConfigurationBuilder.Create()
                                                                              .WithUnicastReceivePort(21338)
                                                                              .Build())
+                                          .UseGatekeeper(new PermitAllGatekeeper())
                                           .BuildAsync().Result;
 
          var serverFacade = CourierBuilder.Create()
@@ -119,6 +123,7 @@ namespace Dargon.Courier.ServiceTier {
                                              UdpTransportConfigurationBuilder.Create()
                                                                              .WithUnicastReceivePort(21339)
                                                                              .Build())
+                                          .UseGatekeeper(new PermitAllGatekeeper())
                                           .BuildAsync().Result;
 
          Setup(clientFacade, serverFacade);
@@ -129,10 +134,12 @@ namespace Dargon.Courier.ServiceTier {
       public TcpServiceTests() {
          var clientFacade = CourierBuilder.Create()
                                           .UseTcpClientTransport(IPAddress.Loopback, 21337)
+                                          .UseGatekeeper(new PermitAllGatekeeper())
                                           .BuildAsync().Result;
 
          var serverFacade = CourierBuilder.Create()
                                           .UseTcpServerTransport(21337)
+                                          .UseGatekeeper(new PermitAllGatekeeper())
                                           .BuildAsync().Result;
 
          Setup(clientFacade, serverFacade);

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.Pooling;
 using Dargon.Commons.Utilities;
+using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.Vox;
@@ -24,8 +25,6 @@ namespace Dargon.Courier {
       }
 
       public async Task DispatchAsync(MessageDto message) {
-         //await TaskEx.YieldToThreadPool();
-
          bool a = identity.Matches(message.SenderId, IdentityMatchingScope.LocalIdentity);
          bool b = !identity.Matches(message.ReceiverId, IdentityMatchingScope.Broadcast);
          if (a || b) {

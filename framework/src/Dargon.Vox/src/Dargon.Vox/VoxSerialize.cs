@@ -138,26 +138,26 @@ namespace Dargon.Vox {
       }
    }
 
-   public static class Globals {
-      static Globals() {
+   public static class VoxGlobals {
+      static VoxGlobals() {
          Serializer = new VoxFactory().Create();
       }
 
       public static VoxSerializer Serializer { get; }
    }
 
-   public static class Serialize {
+   public static class VoxSerialize {
       private static readonly ThreadLocal<MemoryStream> tlsMemoryStream = new ThreadLocal<MemoryStream>(() => new MemoryStream());
 
       public static void To(Stream dest, object subject) {
-         Globals.Serializer.Serialize(dest, subject);
+         VoxGlobals.Serializer.Serialize(dest, subject);
       }
 
       public static byte[] ToBytes(object subject) {
          var ms = tlsMemoryStream.Value;
          ms.SetLength(0);
 
-         Globals.Serializer.Serialize(ms, subject);
+         VoxGlobals.Serializer.Serialize(ms, subject);
 
          var res = ms.ToArray();
          ms.SetLength(0);
@@ -165,14 +165,18 @@ namespace Dargon.Vox {
       }
    }
 
-   public static class Deserialize {
+   public static class VoxDeserialize {
       public static T From<T>(Stream dest) {
          return (T)From(dest, typeof(T));
       }
 
       public static object From(Stream dest, Type hintType = null) {
-         return Globals.Serializer.Deserialize(dest, hintType);
+         return VoxGlobals.Serializer.Deserialize(dest, hintType);
       }
+   }
+
+   public static class Vox {
+      public static void Serialize<T>(T inst) => VoxSerialize.ToBytes(inst);
    }
 
    public static class CloneStatics {
@@ -184,9 +188,9 @@ namespace Dargon.Vox {
 
       public static T DeepCloneSerializable<T>(this T subject) {
          var ms = GetMemoryStream();
-         Serialize.To(ms, subject);
+         VoxSerialize.To(ms, subject);
          ms.Position = 0;
-         var result = Deserialize.From<T>(ms);
+         var result = VoxDeserialize.From<T>(ms);
          ms.SetLength(0);
          return result;
       }

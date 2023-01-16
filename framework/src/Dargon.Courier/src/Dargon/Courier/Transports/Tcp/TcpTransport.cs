@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.Collections;
 using Dargon.Commons.Exceptions;
+using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.AuditingTier;
 using Dargon.Courier.PeeringTier;
 using Dargon.Courier.RoutingTier;
@@ -27,10 +28,11 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       private readonly InboundMessageDispatcher inboundMessageDispatcher;
       private readonly TcpRoutingContextContainer tcpRoutingContextContainer;
       private readonly PayloadUtils payloadUtils;
+      private readonly IGatekeeper gatekeeper;
       private Task runAsyncTask;
       private Socket __listenerSocket;
 
-      public TcpTransport(TcpTransportConfiguration configuration, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, TcpRoutingContextContainer tcpRoutingContextContainer, PayloadUtils payloadUtils) {
+      public TcpTransport(TcpTransportConfiguration configuration, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, TcpRoutingContextContainer tcpRoutingContextContainer, PayloadUtils payloadUtils, IGatekeeper gatekeeper) {
          this.Description = $"TCP Transport on {configuration.RemoteEndpoint}; {configuration.Role} ({this.GetObjectIdHash():X8})";
          this.configuration = configuration;
          this.identity = identity;
@@ -39,6 +41,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          this.inboundMessageDispatcher = inboundMessageDispatcher;
          this.tcpRoutingContextContainer = tcpRoutingContextContainer;
          this.payloadUtils = payloadUtils;
+         this.gatekeeper = gatekeeper;
       }
 
       public string Description { get; init; }
@@ -48,11 +51,13 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       }
 
       private async Task RunAsync() {
+         await Task.Yield();
+
          try {
             if (configuration.Role == TcpRole.Server) {
-               await RunServerAsync().ConfigureAwait(false);
+               await RunServerAsync();
             } else if (configuration.Role == TcpRole.Client) {
-               await RunClientAsync().ConfigureAwait(false);
+               await RunClientAsync();
             } else {
                throw new InvalidStateException();
             }
@@ -78,7 +83,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                   var client = await Task.Factory.FromAsync(listener.BeginAccept, listener.EndAccept, null).ConfigureAwait(false);
                   logger.Debug($"Got client socket from {client.RemoteEndPoint}.");
 
-                  var routingContext = new TcpRoutingContext(configuration, tcpRoutingContextContainer, client, inboundMessageDispatcher, identity, routingTable, peerTable, payloadUtils);
+                  var routingContext = new TcpRoutingContext(configuration, tcpRoutingContextContainer, client, inboundMessageDispatcher, identity, routingTable, peerTable, payloadUtils, gatekeeper);
                   tcpRoutingContextContainer.AddOrThrow(routingContext);
                   routingContext.RunAsync().Forget();
                }
@@ -106,9 +111,9 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                client.Connect(configuration.RemoteEndpoint);
                logger.Debug($"Connected to endpoint {configuration.RemoteEndpoint}.");
 
-               var routingContext = new TcpRoutingContext(configuration, tcpRoutingContextContainer, client, inboundMessageDispatcher, identity, routingTable, peerTable, payloadUtils);
+               var routingContext = new TcpRoutingContext(configuration, tcpRoutingContextContainer, client, inboundMessageDispatcher, identity, routingTable, peerTable, payloadUtils, gatekeeper);
                tcpRoutingContextContainer.AddOrThrow(routingContext);
-               await routingContext.RunAsync().ConfigureAwait(false);
+               await routingContext.RunAsync();
                Console.WriteLine("Exit");
             } catch (SocketException e) {
                if (firstError) {
@@ -116,7 +121,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                   firstError = false;
                }
 
-               await Task.Delay(kConnectionRetryIntervalMillis).ConfigureAwait(false);
+               await Task.Delay(kConnectionRetryIntervalMillis);
                configuration.HandleConnectionFailure(e);
             }
          }

@@ -621,6 +621,12 @@ namespace Dargon.Commons {
          throw new InvalidStateException();
       }
 
+      public static IEnumerable<KeyValuePair<TProj, T>> SelectPairKey<T, TProj>(this IEnumerable<T> e, Func<T, TProj> proj)
+         => e.Select(x => x.PairKey(proj(x)));
+
+      public static IEnumerable<KeyValuePair<T, TProj>> SelectPairValue<T, TProj>(this IEnumerable<T> e, Func<T, TProj> proj)
+         => e.Select(x => x.PairValue(proj(x)));
+
       // via http://stackoverflow.com/questions/1651619/optimal-linq-query-to-get-a-random-sub-collection-shuffle
       public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source, Random rng = null) {
          if (source == null) throw new ArgumentNullException("source");

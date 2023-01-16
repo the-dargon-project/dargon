@@ -19,18 +19,27 @@ using NLog;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.TransportTier.Udp {
+   public static class GlobalCourierBufferPools {
+      public static readonly LeasedBufferViewPool Chunk = new LeasedBufferViewPool(UdpConstants.kMultiPartChunkSize);
+      public static readonly LeasedBufferViewPool TinyFrame = new LeasedBufferViewPool(UdpConstants.kSmallFrameSize);
+   }
+
+   public class UdpSerializer {
+      public void SerializeFullPacketFrame(Guid senderId, Guid receiverId, Guid packetId, PacketFlags packetFlags, byte[] data) {
+         var lbv = GlobalCourierBufferPools.TinyFrame.Acquire();
+      }
+   }
+
    public class UdpBroadcaster {
       // todo: figure out better pooling
       private readonly IObjectPool<MemoryStream> broadcastOutboundMemoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
       private readonly Identity identity;
-      private readonly UdpClient udpClient;
+      private readonly CoreUdp coreUdp;
 
-      public UdpBroadcaster(Identity identity, UdpClient udpClient) {
+      public UdpBroadcaster(Identity identity, CoreUdp coreUdp) {
          this.identity = identity;
-         this.udpClient = udpClient;
+         this.coreUdp = coreUdp;
       }
-
-      public UdpTransportConfiguration Configuration => udpClient.Configuration;
 
       public async Task SendBroadcastAsync(MessageDto message) {
          var packet = PacketDto.Create(
@@ -47,7 +56,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             throw new InvalidOperationException("Broadcast message would surpass Courier Maximum UDP Transport Size");
          } 
 
-         udpClient.Broadcast(
+         coreUdp.Broadcast(
             ms, 0, (int)ms.Position,
             () => {
                ms.SetLength(0);
@@ -83,7 +92,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             }
             try {
                // TODO: suspicious use of global serializer?
-               Serialize.To(r.Item1, r.Item2);
+               VoxSerialize.To(r.Item1, r.Item2);
                r.Item3.SetResult(0);
             } catch (Exception e) {
                r.Item3.SetException(e);
@@ -144,12 +153,11 @@ namespace Dargon.Courier.TransportTier.Udp {
 
       private readonly AsyncAutoResetLatch workSignal = new AsyncAutoResetLatch();
       private readonly IObjectPool<MemoryStream> outboundAcknowledgementMemoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream(new byte[UdpConstants.kAckSerializationBufferSize], 0, UdpConstants.kAckSerializationBufferSize, true, true)); // todo: figure out better pooling
-      private readonly IObjectPool<MemoryStream> outboundPacketMemoryStreamPool; // todo: figure out better pooling
       private readonly Identity identity;
-      private readonly UdpClient udpClient;
-      private readonly AcknowledgementCoordinator acknowledgementCoordinator;
-      private readonly UdpClientRemoteInfo remoteInfo;
-      private readonly ConcurrentQueue<SendRequest> unhandledSendRequestQueue = new ConcurrentQueue<SendRequest>();
+      private readonly CoreUdp coreUdp;
+      private readonly AcknowledgementCompletionLatchContainer acknowledgementCompletionLatchContainer;
+      private readonly UdpRemoteInfo remoteInfo;
+      private readonly ConcurrentQueue<SendRequest> unprocessedSendRequestQueue = new ConcurrentQueue<SendRequest>();
       private readonly IAuditCounter resendsCounter;
       private readonly IAuditAggregator<int> resendsAggregator;
       private readonly IAuditAggregator<double> outboundMessageRateLimitAggregator;
@@ -174,11 +182,10 @@ namespace Dargon.Courier.TransportTier.Udp {
          }
       }
 
-      public UdpUnicaster(Identity identity, UdpClient udpClient, AcknowledgementCoordinator acknowledgementCoordinator, IObjectPool<byte[]> sendReceiveBufferPool, UdpClientRemoteInfo remoteInfo, IAuditCounter resendsCounter, IAuditAggregator<int> resendsAggregator, IAuditAggregator<double> outboundMessageRateLimitAggregator, IAuditAggregator<double> sendQueueDepthAggregator) {
-         this.outboundPacketMemoryStreamPool = new ByteArrayPoolBackedMemoryStreamPool(sendReceiveBufferPool);
+      public UdpUnicaster(Identity identity, CoreUdp coreUdp, AcknowledgementCompletionLatchContainer acknowledgementCompletionLatchContainer, UdpRemoteInfo remoteInfo, IAuditCounter resendsCounter, IAuditAggregator<int> resendsAggregator, IAuditAggregator<double> outboundMessageRateLimitAggregator, IAuditAggregator<double> sendQueueDepthAggregator) {
          this.identity = identity;
-         this.udpClient = udpClient;
-         this.acknowledgementCoordinator = acknowledgementCoordinator;
+         this.coreUdp = coreUdp;
+         this.acknowledgementCompletionLatchContainer = acknowledgementCompletionLatchContainer;
          this.remoteInfo = remoteInfo;
          this.resendsCounter = resendsCounter;
          this.resendsAggregator = resendsAggregator;
@@ -187,7 +194,7 @@ namespace Dargon.Courier.TransportTier.Udp {
       }
 
       public void Initialize() {
-         RunMessageQueueProcessorAsync().Forget();
+         ProcessMessageQueueAsync().Forget();
 
          // Periodically signal work is available as resends don't signal.
          Go(async () => {
@@ -198,7 +205,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          }).Forget();
       }
 
-      private async Task RunMessageQueueProcessorAsync() {
+      private async Task ProcessMessageQueueAsync() {
          const int rateLimiterBaseRate = 10000;
          const int rateLimiterRateVelocity = 2000;
          const int rateLimiterInitialRate = 100000;
@@ -213,7 +220,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          while (true) {
             // Block until work available is signalled, then compute sends remaining from rate limiter
             await workSignal.WaitAsync().ConfigureAwait(false);
-            sendQueueDepthAggregator.Put(unhandledSendRequestQueue.Count);
+            sendQueueDepthAggregator.Put(unprocessedSendRequestQueue.Count);
             var sendsRemaining = rateLimiter.TakeAndResetOutboundMessagesAvailableCounter();
 
             // TODO: Analytics on these two things. Pool miss/hit/depth would be useful in general.
@@ -243,12 +250,12 @@ namespace Dargon.Courier.TransportTier.Udp {
             SendRequest sendRequest;
             while (sendsRemaining > 0 &&
                    (inTransportSendRequestQueue.TryDequeue(out sendRequest) ||
-                    unhandledSendRequestQueue.TryDequeue(out sendRequest))) {
+                    unprocessedSendRequestQueue.TryDequeue(out sendRequest))) {
                if (!sendRequest.IsReliable) {
                   sendsRemaining--;
                   outboundSendRequests.Add(sendRequest);
                } else {
-                  if (sendRequest.AcknowledgementSignal.IsSet()) {
+                  if (sendRequest.AcknowledgementSignal.IsSignalled) {
                      resendsAggregator.Put(sendRequest.SendCount - 1);
                      sendRequest.Data.SetLength(0);
                      sendRequest.DataBufferPool.ReturnObject(sendRequest.Data);
@@ -276,7 +283,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             }
 
             if (outboundSendRequests.Any()) {
-               udpClient.Unicast(
+               coreUdp.Unicast(
                   remoteInfo,
                   outboundSendRequests.Map(sr => sr.Data),
                   () => {
@@ -311,7 +318,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          var ms = outboundAcknowledgementMemoryStreamPool.TakeObject();
          ms.SetLength(0);
          await AsyncSerialize.ToAsync(ms, acknowledgement).ConfigureAwait(false);
-         unhandledSendRequestQueue.Enqueue(
+         unprocessedSendRequestQueue.Enqueue(
             new SendRequest {
                Data = ms,
                DataOffset = 0,
@@ -322,26 +329,20 @@ namespace Dargon.Courier.TransportTier.Udp {
          workSignal.Set();
       }
 
-      public Task SendReliableAsync(Guid destination, MessageDto message) {
-#if DEBUG
-         Interlocked.Increment(ref DebugRuntimeStats.out_rs);
-#endif
-         return SendHelperAsync(destination, message, true);
-         //         Interlocked.Increment(ref DebugRuntimeStats.out_rs_done);
+      public async Task SendReliableAsync(Guid destination, MessageDto message) {
+         DebugCounters.Increment(ref DebugRuntimeStats.out_rs);
+         await SendHelperAsync(destination, message, true);
+         DebugCounters.Increment(ref DebugRuntimeStats.out_rs_done);
       }
 
       public async Task SendUnreliableAsync(Guid destination, MessageDto message) {
-#if DEBUG
-         Interlocked.Increment(ref DebugRuntimeStats.out_nrs);
-#endif
+         DebugCounters.Increment(ref DebugRuntimeStats.out_nrs);
          await SendHelperAsync(destination, message, false).ConfigureAwait(false);
-#if DEBUG
-         Interlocked.Increment(ref DebugRuntimeStats.out_nrs_done);
-#endif
+         DebugCounters.Increment(ref DebugRuntimeStats.out_nrs_done);
       }
 
       private async Task SendHelperAsync(Guid destination, MessageDto message, bool reliable) {
-         var packetDto = PacketDto.Create(identity.Id, destination, message, reliable);
+         // var packetDto = PacketDto.Create(identity.Id, destination, message, reliable);
          var ms = outboundPacketMemoryStreamPool.TakeObject();
          ms.SetLength(0);
          try {
@@ -363,8 +364,8 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          if (reliable) {
             var completionSignal = new AsyncLatch();
-            var acknowlewdgementSignal = acknowledgementCoordinator.Expect(packetDto.Id);
-            unhandledSendRequestQueue.Enqueue(
+            var acknowlewdgementSignal = acknowledgementCompletionLatchContainer.Expect(packetDto.Id);
+            unprocessedSendRequestQueue.Enqueue(
                new SendRequest {
                   DataBufferPool = outboundPacketMemoryStreamPool,
                   Data = ms,
@@ -378,7 +379,7 @@ namespace Dargon.Courier.TransportTier.Udp {
             workSignal.Set();
             await completionSignal.WaitAsync().ConfigureAwait(false);
          } else {
-            unhandledSendRequestQueue.Enqueue(
+            unprocessedSendRequestQueue.Enqueue(
                new SendRequest {
                   DataBufferPool = outboundPacketMemoryStreamPool,
                   Data = ms,
@@ -441,7 +442,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          public int DataOffset { get; set; }
          public int DataLength { get; set; }
          public bool IsReliable { get; set; }
-         public AcknowledgementCoordinator.Signal AcknowledgementSignal { get; set; }
+         public AsyncLatch AcknowledgementSignal { get; set; }
          public Guid AcknowledgementGuid { get; set; }
          public DateTime NextSendTime { get; set; } = DateTime.Now;
          public int SendCount { get; set; }
@@ -450,21 +451,22 @@ namespace Dargon.Courier.TransportTier.Udp {
    }
 
    public class UdpTransport : ITransport {
+      private readonly UdpTransportConfiguration udpTransportConfiguration;
       private readonly UdpBroadcaster udpBroadcaster;
       private readonly UdpFacade udpFacade;
 
-      public UdpTransport(UdpBroadcaster udpBroadcaster, UdpFacade udpFacade) {
-         // var configuration = udpBroadcaster.Configuration;
-         this.Description = BuildDescription(udpBroadcaster.Configuration);
+      public UdpTransport(UdpTransportConfiguration udpTransportConfiguration, UdpBroadcaster udpBroadcaster, UdpFacade udpFacade) {
+         this.udpTransportConfiguration = udpTransportConfiguration;
          this.udpBroadcaster = udpBroadcaster;
          this.udpFacade = udpFacade;
-      }
 
-      private string BuildDescription(UdpTransportConfiguration configuration) {
-         return $"UDP Transport RECV_UNICAST {configuration.UnicastReceiveEndpoint}; ADDR_MULTICAST {configuration.MulticastAddress}; RECV_MULTICAST {configuration.MulticastReceiveEndpoint}; SEND_MULTICAST {configuration.MulticastSendEndpoint}; ({this.GetObjectIdHash():X8})";
+         this.Description = BuildDescription(udpTransportConfiguration);
       }
 
       public string Description { get; init; }
+
+      private string BuildDescription(UdpTransportConfiguration configuration)
+         => $"UDP Transport RECV_UNICAST {configuration.UnicastReceiveEndpoint}; ADDR_MULTICAST {configuration.MulticastAddress}; RECV_MULTICAST {configuration.MulticastReceiveEndpoint}; SEND_MULTICAST {configuration.MulticastSendEndpoint}; ({this.GetObjectIdHash():X8})";
 
       public Task SendMessageBroadcastAsync(MessageDto message) {
          return udpBroadcaster.SendBroadcastAsync(message);

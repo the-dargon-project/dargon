@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Dargon.Commons.Collections;
+using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.Utilities;
 
 namespace Dargon.Courier.ServiceTier.Server {
@@ -19,10 +20,12 @@ namespace Dargon.Courier.ServiceTier.Server {
       private readonly CopyOnAddDictionary<Guid, object> services = new CopyOnAddDictionary<Guid, object>();
       private readonly Identity identity;
       private readonly Messenger messenger;
+      private readonly IGatekeeper gatekeeper;
 
-      public LocalServiceRegistry(Identity identity, Messenger messenger) {
+      public LocalServiceRegistry(Identity identity, Messenger messenger, IGatekeeper gatekeeper) {
          this.identity = identity;
          this.messenger = messenger;
+         this.gatekeeper = gatekeeper;
       }
 
       public void RegisterService(object service) {
@@ -72,6 +75,8 @@ namespace Dargon.Courier.ServiceTier.Server {
          for (var i = 0; i < args.Length; i++) {
             args[i] = VoxSerializationQuirks.CastToDesiredTypeIfIntegerLike(args[i], parameters[i].ParameterType);
          }
+
+         gatekeeper.ValidateServiceRequest(e, service, method, args);
 
          object result;
          try {

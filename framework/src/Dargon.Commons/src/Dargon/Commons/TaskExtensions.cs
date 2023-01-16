@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Dargon.Commons {
    public static class TaskExtensions {
       public static void Forget(this Task task) {
-         task.Catch<Exception>(ex => {
+         task.Catch<Exception>(static ex => {
             Console.WriteLine("Forgotten task threw: " + ex);
          }).Noop();
       }

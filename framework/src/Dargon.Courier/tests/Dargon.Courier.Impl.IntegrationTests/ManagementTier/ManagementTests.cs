@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Dargon.Commons;
+using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Courier.TransportTier.Tcp.Management;
 using Dargon.Courier.TransportTier.Test;
@@ -62,6 +63,7 @@ namespace Dargon.Courier.ManagementTier {
          var testTransportFactory = new TestTransportFactory();
          var courierContainer = CourierBuilder.Create()
                                               .UseTransport(testTransportFactory)
+                                              .UseGatekeeper(new PermitAllGatekeeper())
                                               .BuildAsync().Result;
          Setup(courierContainer);
       }
@@ -71,6 +73,7 @@ namespace Dargon.Courier.ManagementTier {
       public UdpManagementTests() {
          var courierContainer = CourierBuilder.Create()
                                               .UseUdpTransport()
+                                              .UseGatekeeper(new PermitAllGatekeeper())
                                               .BuildAsync().Result;
 
          Setup(courierContainer);
@@ -81,6 +84,7 @@ namespace Dargon.Courier.ManagementTier {
       public TcpManagementTests() {
          var courierContainer = CourierBuilder.Create()
                                               .UseTcpServerTransport(21337)
+                                              .UseGatekeeper(new PermitAllGatekeeper())
                                               .BuildAsync().Result;
 
          Setup(courierContainer);

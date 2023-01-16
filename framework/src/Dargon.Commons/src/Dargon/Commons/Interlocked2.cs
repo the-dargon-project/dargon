@@ -7,6 +7,20 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dargon.Commons {
+   public static class DebugCounters {
+      public static void Increment(ref int i) {
+#if DEBUG
+         Interlocked.Increment(ref i);
+#endif
+      }
+
+      public static void Add(ref int i, int count) {
+#if DEBUG
+         Interlocked.Add(ref i, count);
+#endif
+      }
+   }
+
    public static class Interlocked2 {
       [MethodImpl(MethodImplOptions.AggressiveInlining)] public static int Read(ref int x) => Interlocked.CompareExchange(ref x, 0, 0);
       [MethodImpl(MethodImplOptions.AggressiveInlining)] public static uint Read(ref uint x) => Interlocked.CompareExchange(ref x, 0U, 0U);

@@ -1,8 +1,9 @@
-﻿using Dargon.Vox;
+﻿using Dargon.Courier.PeeringTier;
+using Dargon.Vox;
 
 namespace Dargon.Courier.TransportTier.Tcp.Vox {
    [AutoSerializable]
-   public class HandshakeDto { 
-      public Identity Identity { get; set;  }
+   public class HandshakeDto {
+      public WhoamiDto WhoAmI { get; set; }
    }
 }

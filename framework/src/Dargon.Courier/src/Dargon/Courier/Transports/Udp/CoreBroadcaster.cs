@@ -10,13 +10,13 @@ using Dargon.Commons;
 using Dargon.Courier.TransportTier.Udp.Vox;
 
 namespace Dargon.Courier.TransportTier.Udp {
-   public class PayloadSender {
+   public class CoreBroadcaster {
       // TODO: Figure out better pooling
       private readonly IObjectPool<MemoryStream> outboundMemoryStreamPool = ObjectPool.CreateConcurrentQueueBacked(() => new MemoryStream(new byte[UdpConstants.kMaximumTransportSize], 0, UdpConstants.kMaximumTransportSize, true, true));
-      private readonly UdpClient udpClient;
+      private readonly CoreUdp coreUdp;
 
-      public PayloadSender(UdpClient udpClient) {
-         this.udpClient = udpClient;
+      public CoreBroadcaster(CoreUdp coreUdp) {
+         this.coreUdp = coreUdp;
       }
 
       public async Task BroadcastAsync<T>(T payload) {
@@ -28,7 +28,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          Trace.Assert(ms.Position == 0);
          await AsyncSerialize.ToAsync(ms, payload).ConfigureAwait(false);
 
-         udpClient.Broadcast(
+         coreUdp.Broadcast(
             ms, 0, (int)ms.Position,
             () => {
                ms.SetLength(0);

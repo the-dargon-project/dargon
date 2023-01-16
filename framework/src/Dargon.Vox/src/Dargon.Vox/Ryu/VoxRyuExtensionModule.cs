@@ -61,7 +61,7 @@ namespace Dargon.Vox.Ryu {
                logger.Trace("-> ... Not loading as it lacks default ctor.");
             } else {
                var instance = (VoxTypes)Activator.CreateInstance(voxTypeToLoad);
-               Globals.Serializer.ImportTypes(instance);
+               VoxGlobals.Serializer.ImportTypes(instance);
             }
          }
 

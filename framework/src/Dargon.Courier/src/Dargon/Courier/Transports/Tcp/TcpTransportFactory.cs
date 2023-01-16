@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Dargon.Courier.AuditingTier;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
@@ -7,6 +8,7 @@ using Dargon.Courier.TransportTier.Tcp.Management;
 using Dargon.Courier.TransportTier.Tcp.Server;
 using System.Net;
 using System.Threading.Tasks;
+using Dargon.Courier.AccessControlTier;
 
 namespace Dargon.Courier.TransportTier.Tcp {
    public class TcpTransportConnectionFailureEventArgs {
@@ -37,6 +39,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
 
       public IPEndPoint RemoteEndpoint { get; }
       public TcpRole Role { get; }
+      public Dictionary<string, object> AdditionalHandshakeParameters { get; }
 
       public event TcpTransportConnectionFailureHandler ConnectionFailure;
       public event TcpTransportHandshakeCompletionHandler HandshakeCompleted;
@@ -58,13 +61,13 @@ namespace Dargon.Courier.TransportTier.Tcp {
          this.configuration = configuration;
       }
 
-      public ITransport Create(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
+      public ITransport Create(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService, IGatekeeper gatekeeper) {
          var inboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kInboundBytes);
          var outboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kOutboundBytes);
 
          var tcpRoutingContextContainer = new TcpRoutingContextContainer();
          var payloadUtils = new PayloadUtils(inboundBytesAggregator, outboundBytesAggregator);
-         var transport = new TcpTransport(configuration, identity, routingTable, peerTable, inboundMessageDispatcher, tcpRoutingContextContainer, payloadUtils);
+         var transport = new TcpTransport(configuration, identity, routingTable, peerTable, inboundMessageDispatcher, tcpRoutingContextContainer, payloadUtils, gatekeeper);
          transport.Initialize();
          mobOperations.RegisterMob(Guid.NewGuid(), new TcpDebugMob(tcpRoutingContextContainer));
          return transport;

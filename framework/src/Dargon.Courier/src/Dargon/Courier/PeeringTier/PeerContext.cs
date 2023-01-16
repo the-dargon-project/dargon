@@ -2,8 +2,10 @@ using Dargon.Commons;
 using Dargon.Commons.AsyncPrimitives;
 using NLog;
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using Dargon.Commons.Collections;
 using static Dargon.Commons.Channels.ChannelsExtensions;
 
 namespace Dargon.Courier.PeeringTier {
@@ -28,6 +30,7 @@ namespace Dargon.Courier.PeeringTier {
       public bool Discovered { get; private set; }
       public Identity Identity { get; }
       public DateTime LastIdentityUpdateTimeUtc { get; private set; }
+      public CopyOnAddDictionary<object, object> LocalState { get; set; } = new();
 
       public Task WaitForDiscoveryAsync(CancellationToken cancellationToken = default(CancellationToken)) {
          return discoveryLatch.WaitAsync(cancellationToken);

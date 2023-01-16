@@ -1,6 +1,7 @@
 ﻿using Dargon.Courier.AuditingTier;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.ManagementTier.Vox;
+using Dargon.Courier.PeeringTier;
 using Dargon.Courier.PubSubTier.Vox;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Vox;
@@ -18,6 +19,9 @@ namespace Dargon.Courier.Vox {
       public CourierVoxTypes() : base(kVoxIdBase, 100) {
          // Courier Core (starts at 1 - note can't use 0 as that's TNull in Vox).
          Register<MessageDto>(1);
+
+         // Peering
+         Register<WhoamiDto>(5);
 
          // Udp
          var udpBaseId = 10;

@@ -17,7 +17,13 @@ namespace Dargon.Commons.AsyncPrimitives {
             await using var mut = await sync.CreateReaderGuardAsync();
             subsCapture = subscriptions.ToArray();
          }
-         await Task.WhenAll(subsCapture.Map(s => s.Notify(thing)));
+
+         var tasks = new Task[subsCapture.Length];
+         for (var i = 0; i < subsCapture.Length; i++) {
+            tasks[i] = subsCapture[i].Notify(thing);
+         }
+
+         await Task.WhenAll(tasks);
       }
 
       public async Task<IAsyncDisposable> SubscribeAsync(SubscriberCallbackFunc<T> callbackFunc) {

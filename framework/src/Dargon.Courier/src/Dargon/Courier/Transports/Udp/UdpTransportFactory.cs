@@ -6,6 +6,7 @@ using Dargon.Commons;
 using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Pooling;
 using Dargon.Commons.Scheduler;
+using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.AuditingTier;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.TransportTier.Udp.Management;
@@ -19,13 +20,15 @@ namespace Dargon.Courier.TransportTier.Udp {
          this.configuration = configuration ?? UdpTransportConfiguration.Default;
       }
 
-      public ITransport Create(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService) {
-         // setup identity
-         identity.Properties[UdpConstants.kUnicastPortIdentityPropertyKey] = configuration.UnicastReceiveEndpoint.Port.ToString();
+      public ITransport Create(CourierFacade courier) {
+         var auditService = courier.AuditService;
+         var identity = courier.Identity;
+         var synchronizationContexts = courier.SynchronizationContexts;
 
-         var duplicateFilter = new DuplicateFilter();
-         duplicateFilter.Initialize();
+         // Setup identity
+         courier.Identity.DeclaredProperties[UdpConstants.kUnicastPortIdentityPropertyKey] = configuration.UnicastReceiveEndpoint.Port.ToString();
 
+         // Analytics
          var inboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kInboundBytes);
          var outboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kOutboundBytes);
          var inboundReceiveProcessDispatchLatencyAggregator = auditService.GetAggregator<double>(DataSetNames.kInboundProcessDispatchLatency);
@@ -38,24 +41,39 @@ namespace Dargon.Courier.TransportTier.Udp {
          var multiPartChunksReceivedAggregator = auditService.GetAggregator<int>(DataSetNames.kMultiPartChunksBytesReceived);
          var outboundMessageRateLimitAggregator = auditService.GetAggregator<double>(DataSetNames.kOutboundMessageRateLimit);
          var sendQueueDepthAggregator = auditService.GetAggregator<double>(DataSetNames.kSendQueueDepth);
-
+         
+         // Management Objects
+         var mobOperations = courier.MobOperations;
          mobOperations.RegisterMob(new UdpDebugMob());
 
+         var acknowledgementCoordinator = new AcknowledgementCompletionLatchContainer(identity);
+         // var udpUnicastScheduler = schedulerFactory.CreateWithCustomThreadPool($"Courier.Udp({identity.Id.ToString()})");
+         // var sendReceiveBufferPool = ObjectPool.CreateConcurrentQueueBacked(() => new byte[UdpConstants.kMaximumTransportSize]);
+         // var client = UdpClient.Create(configuration, udpUnicastScheduler, sendReceiveBufferPool, inboundBytesAggregator, outboundBytesAggregator, inboundReceiveProcessDispatchLatencyAggregator);
+
+         // Low-level UDP send/receive, NIC detection
          var shutdownCts = new CancellationTokenSource();
-         var acknowledgementCoordinator = new AcknowledgementCoordinator(identity);
          var schedulerFactory = new SchedulerFactory(new ThreadFactory());
-         var udpUnicastScheduler = schedulerFactory.CreateWithCustomThreadPool($"Courier.Udp({identity.Id.ToString()})");
-         var sendReceiveBufferPool = ObjectPool.CreateConcurrentQueueBacked(() => new byte[UdpConstants.kMaximumTransportSize]);
-         var client = UdpClient.Create(configuration, udpUnicastScheduler, sendReceiveBufferPool, inboundBytesAggregator, outboundBytesAggregator, inboundReceiveProcessDispatchLatencyAggregator);
-         var payloadSender = new PayloadSender(client);
-         var multiPartPacketReassembler = new MultiPartPacketReassembler();
-         var udpUnicasterFactory = new UdpUnicasterFactory(identity, client, acknowledgementCoordinator, sendReceiveBufferPool, resendsCounter, resendsAggregator, outboundMessageRateLimitAggregator, sendQueueDepthAggregator);
-         var udpDispatcher = new UdpDispatcherImpl(identity, client, duplicateFilter, payloadSender, acknowledgementCoordinator, routingTable, peerTable, inboundMessageDispatcher, multiPartPacketReassembler, udpUnicasterFactory, announcementsReceivedCounter, tossedCounter, duplicatesReceivedCounter, multiPartChunksReceivedAggregator);
-         multiPartPacketReassembler.SetUdpDispatcher(udpDispatcher);
+         var coreUdp = new CoreUdp(configuration, synchronizationContexts);
+
+         // Sends
+         var payloadSender = new CoreBroadcaster(coreUdp);
          var announcer = new Announcer(identity, payloadSender, shutdownCts.Token);
+
+         // Receives
+         var multiPartPacketReassembler = new MultiPartPacketReassembler();
+         var duplicateFilter = new DuplicateFilter();
+         var udpDispatcher = new UdpDispatcher(identity, duplicateFilter, payloadSender, acknowledgementCoordinator, courier.RoutingTable, courier.PeerTable, courier.InboundMessageDispatcher, multiPartPacketReassembler, announcementsReceivedCounter, tossedCounter, duplicatesReceivedCounter, multiPartChunksReceivedAggregator, courier.Gatekeeper, courier.SynchronizationContexts);
+         udpDispatcher.SetCreateUdpUnicasterFunc(remoteInfo => new(identity, coreUdp, acknowledgementCoordinator, remoteInfo, resendsCounter, resendsAggregator, outboundMessageRateLimitAggregator, sendQueueDepthAggregator));
+         multiPartPacketReassembler.SetUdpDispatcher(udpDispatcher);
+         coreUdp.AddReceiveListener(udpDispatcher);
+         
+         // Boot
          announcer.Initialize();
-         var udpFacade = new UdpFacade(client, udpDispatcher, shutdownCts);
-         var udpBroadcaster = new UdpBroadcaster(identity, client);
+         
+         // 
+         var udpFacade = new UdpFacade(coreUdp, udpDispatcher, shutdownCts);
+         var udpBroadcaster = new UdpBroadcaster(identity, coreUdp);
          var transport = new UdpTransport(udpBroadcaster, udpFacade);
          client.StartReceiving(udpDispatcher);
 

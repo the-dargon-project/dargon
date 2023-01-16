@@ -22,7 +22,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
       public async Task WritePayloadAsync(NetworkStream ns, object payload, AsyncLock writerLock, CancellationToken cancellationToken = default(CancellationToken)) {
          var ms = memoryStreamPool.TakeObject();
          // TODO: suspicious use of global serializer?
-         Serialize.To(ms, payload);
+         VoxSerialize.To(ms, payload);
          using (await writerLock.LockAsyncUnsafe_WithImportantCaveats(cancellationToken).ConfigureAwait(false)) {
             await WriteMemoryStreamAsync(ns, ms, 0, (int)ms.Position, cancellationToken).ConfigureAwait(false);
          }
@@ -44,7 +44,7 @@ namespace Dargon.Courier.TransportTier.Tcp {
          var frameBytes = await ReadBytesAsync(ns, frameLength, null, cancellationToken).ConfigureAwait(false);
          inboundBytesAggregator.Put(sizeof(int) + frameLength);
 
-         return Deserialize.From(new MemoryStream(frameBytes, 0, frameBytes.Length, false, true));
+         return VoxDeserialize.From(new MemoryStream(frameBytes, 0, frameBytes.Length, false, true));
       }
 
       private async Task<byte[]> ReadBytesAsync(Stream stream, int count, byte[] buffer = null, CancellationToken cancellationToken = default(CancellationToken)) {

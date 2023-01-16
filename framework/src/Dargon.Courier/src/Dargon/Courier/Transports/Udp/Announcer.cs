@@ -8,12 +8,12 @@ namespace Dargon.Courier.TransportTier.Udp {
    public class Announcer {
       private const int kAnnounceIntervalMillis = 5000;
       private readonly Identity identity;
-      private readonly PayloadSender payloadSender;
+      private readonly CoreBroadcaster coreBroadcaster;
       private readonly CancellationToken shutdownCancellationToken;
 
-      public Announcer(Identity identity, PayloadSender payloadSender, CancellationToken shutdownCancellationToken) {
+      public Announcer(Identity identity, CoreBroadcaster coreBroadcaster, CancellationToken shutdownCancellationToken) {
          this.identity = identity;
-         this.payloadSender = payloadSender;
+         this.coreBroadcaster = coreBroadcaster;
          this.shutdownCancellationToken = shutdownCancellationToken;
       }
 
@@ -28,7 +28,7 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          while (!shutdownCancellationToken.IsCancellationRequested) {
             try {
-               await payloadSender.BroadcastAsync(announce).ConfigureAwait(false);
+               await coreBroadcaster.BroadcastAsync(announce).ConfigureAwait(false);
                await Task.Delay(kAnnounceIntervalMillis, shutdownCancellationToken).ConfigureAwait(false);
             } catch (OperationCanceledException) {
                // shutdown cancellation token cancelled

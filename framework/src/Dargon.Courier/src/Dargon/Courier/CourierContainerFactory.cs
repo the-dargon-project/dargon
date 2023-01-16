@@ -6,6 +6,7 @@ using Castle.DynamicProxy;
 using Dargon.Commons;
 using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Collections;
+using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.AuditingTier;
 using Dargon.Courier.ManagementTier;
 using Dargon.Courier.PeeringTier;
@@ -26,7 +27,9 @@ namespace Dargon.Courier {
    public class CourierBuilder {
       private readonly ConcurrentSet<ITransportFactory> transportFactories = new ConcurrentSet<ITransportFactory>();
       private readonly IRyuContainer parentContainer;
-      private SynchronizationContext synchronizationContext;
+      private SynchronizationContext earlyIoSynchronizationContext;
+      private SynchronizationContext lateIoSynchronizationContext;
+      private IGatekeeper gatekeeper;
       private Guid? forceId;
 
       private CourierBuilder(IRyuContainer parentContainer) {
@@ -38,8 +41,13 @@ namespace Dargon.Courier {
          return this;
       }
 
-      public CourierBuilder UseSynchronizationContext(SynchronizationContext synchronizationContext) {
-         this.synchronizationContext = synchronizationContext;
+      public CourierBuilder UseEarlyIOSynchronizationContext(SynchronizationContext value) {
+         this.earlyIoSynchronizationContext = value;
+         return this;
+      }
+
+      public CourierBuilder UseGatekeeper(IGatekeeper gatekeeper) {
+         this.gatekeeper = gatekeeper;
          return this;
       }
 
@@ -51,9 +59,12 @@ namespace Dargon.Courier {
       public async Task<CourierFacade> BuildAsync() {
          var courierContainerFactory = new CourierContainerFactory(parentContainer);
          var courierSynchronizationContexts = new CourierSynchronizationContexts {
-            CourierDefault = synchronizationContext ?? DefaultThreadPoolSynchronizationContext.Instance,
+            CourierDefault__ = DefaultThreadPoolSynchronizationContext.Instance,
+            EarlyNetworkIO = earlyIoSynchronizationContext ?? DefaultThreadPoolSynchronizationContext.Instance,
+            LateNetworkIO = lateIoSynchronizationContext ?? DefaultThreadPoolSynchronizationContext.Instance,
          };
-         var courierContainer = await courierContainerFactory.CreateAsync(transportFactories, courierSynchronizationContexts, forceId).ConfigureAwait(false);
+         var courierContainer = await courierContainerFactory.CreateAsync(
+            transportFactories, courierSynchronizationContexts, gatekeeper, forceId);
          return courierContainer.GetOrThrow<CourierFacade>();
       }
 
@@ -67,7 +78,22 @@ namespace Dargon.Courier {
    }
 
    public class CourierSynchronizationContexts {
-      public SynchronizationContext CourierDefault;
+      /// <summary>
+      /// Synchronization Context used for ??
+      /// </summary>
+      public required SynchronizationContext CourierDefault__;
+
+      /// <summary>
+      /// Synchronization Context used for early processing of network I/O (in tandem with IOCP)
+      /// It's generally important this isn't blocked by I/O, as this sync context handles acks.
+      /// </summary>
+      public required SynchronizationContext EarlyNetworkIO;
+
+      /// <summary>
+      /// Synchronization Context used for processing the heavy portions of network I/O, namely
+      /// deserialization.
+      /// </summary>
+      public required SynchronizationContext LateNetworkIO;
    }
 
    public class CourierContainerFactory {
@@ -79,7 +105,11 @@ namespace Dargon.Courier {
          this.root = root;
       }
 
-      public async Task<IRyuContainer> CreateAsync(IReadOnlySet<ITransportFactory> transportFactories, CourierSynchronizationContexts synchronizationContexts, Guid? forceId = null) {
+      public async Task<IRyuContainer> CreateAsync(IReadOnlySet<ITransportFactory> transportFactories, CourierSynchronizationContexts synchronizationContexts, IGatekeeper gatekeeper, Guid? forceId = null) {
+         transportFactories.AssertIsNotNull();
+         synchronizationContexts.AssertIsNotNull();
+         gatekeeper.AssertIsNotNull();
+
          var container = root.CreateChildContainer();
          container.Set(synchronizationContexts);
 
@@ -95,7 +125,6 @@ namespace Dargon.Courier {
          var mobContextFactory = new MobContextFactory(auditService);
          var mobOperations = new MobOperations(mobContextFactory, mobContextContainer);
          container.Set(mobOperations);
-         // var courierContainerMobNamespace = "Dargon.Courier.Instances." + this.GetObjectIdHash().ToString("X8");
 
          // Core layers
          var identity = Identity.Create(forceId);
@@ -104,7 +133,7 @@ namespace Dargon.Courier {
          // inbound
          var peerDiscoveryEventBus = new AsyncBus<PeerDiscoveryEvent>();
          var peerTable = new PeerTable(container, (table, peerId) => new PeerContext(table, peerId, peerDiscoveryEventBus));
-         var inboundMessageRouter = new InboundMessageRouter();
+         var inboundMessageRouter = new InboundMessageRouter(gatekeeper);
          var inboundMessageDispatcher = new InboundMessageDispatcher(identity, peerTable, inboundMessageRouter);
          container.Set(peerTable);
          container.Set(inboundMessageRouter);
@@ -123,7 +152,7 @@ namespace Dargon.Courier {
          //----------------------------------------------------------------------------------------
          // Service Tier - Service Discovery, Remote Method Invocation
          //----------------------------------------------------------------------------------------
-         var localServiceRegistry = new LocalServiceRegistry(identity, messenger);
+         var localServiceRegistry = new LocalServiceRegistry(identity, messenger, gatekeeper);
          var remoteServiceInvoker = new RemoteServiceInvoker(identity, messenger);
          var remoteServiceProxyContainer = new RemoteServiceProxyContainer(proxyGenerator, remoteServiceInvoker);
          inboundMessageRouter.RegisterHandler<RmiRequestDto>(localServiceRegistry.HandleInvocationRequestAsync);
@@ -156,23 +185,31 @@ namespace Dargon.Courier {
          // Courier Facade
          var facade = new CourierFacade(transports, container) {
             SynchronizationContexts = synchronizationContexts,
+            Gatekeeper = gatekeeper,
             AuditService = auditService,
-            MobOperations = mobOperations,
+            
             Identity = identity,
-            InboundMessageRouter = inboundMessageRouter,
-            InboundMessageDispatcher = inboundMessageDispatcher,
             PeerTable = peerTable,
             RoutingTable = routingTable,
+            
+            InboundMessageRouter = inboundMessageRouter,
+            InboundMessageDispatcher = inboundMessageDispatcher,
+            
             Messenger = messenger,
+            
             LocalServiceRegistry = localServiceRegistry,
             RemoteServiceProxyContainer = remoteServiceProxyContainer,
+            
+            MobOperations = mobOperations,
             ManagementObjectService = managementObjectService,
+            
             Publisher = publisher,
             Subscriber = subscriber,
             PubSubClient = pubSubClient,
          };
          container.Set(facade);
 
+         // Transports are initialized last, after all other courier objects are initialized
          foreach (var transportFactory in transportFactories) {
             await facade.AddTransportAsync(transportFactory);
          }

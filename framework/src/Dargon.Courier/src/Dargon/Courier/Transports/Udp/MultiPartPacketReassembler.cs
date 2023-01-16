@@ -5,7 +5,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Commons;
+using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Pooling;
+using Dargon.Commons.Utilities;
 using Dargon.Courier.TransportTier.Udp.Vox;
 using NLog;
 using static Dargon.Commons.Channels.ChannelsExtensions;
@@ -14,98 +16,59 @@ namespace Dargon.Courier.TransportTier.Udp {
    public class MultiPartPacketReassembler {
       private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-      private static readonly TimeSpan kSomethingExpiration = TimeSpan.FromMinutes(5);
+      private static readonly TimeSpan ChunkAssemblyTimeoutInterval = TimeSpan.FromMinutes(5);
 
-      private readonly ConcurrentDictionary<Guid, ChunkReassemblyContext> chunkReassemblerContextsByMessageId = new ConcurrentDictionary<Guid, ChunkReassemblyContext>();
-      private readonly IObjectPool<InboundDataEvent> inboundDataEventPool = ObjectPool.CreateTlsBacked(() => new InboundDataEvent());
+      private readonly ConcurrentDictionary<Guid, ChunkReassemblyContext> reassemblyContextsByMessageId = new();
+
       private IUdpDispatcher dispatcher;
 
       public void SetUdpDispatcher(IUdpDispatcher dispatcher) {
          this.dispatcher = dispatcher;
       }
 
-      public void HandleInboundMultiPartChunk(MultiPartChunkDto chunk) {
-         bool isAdded = false;
-         ChunkReassemblyContext addedChunkReassemblyContext = null;
-         var chunkReassemblyContext = chunkReassemblerContextsByMessageId.GetOrAdd(
-            chunk.MultiPartMessageId,
-            add => {
-//               logger.Info(Thread.CurrentThread.ManagedThreadId + ": " + "NEW " + chunk.MultiPartMessageId + " " + this.GetHashCode());
-
-               isAdded = true;
-               return addedChunkReassemblyContext = new ChunkReassemblyContext(chunk.ChunkCount);
-            });
-
-//         if (isAdded) {
-//            logger.Info(Thread.CurrentThread.ManagedThreadId + ": " + chunkReassemblyContext.GetHashCode() + " " + new ChunkReassemblyContext(0).GetHashCode() + "");
-//         }
-
-         if (chunkReassemblyContext == addedChunkReassemblyContext) {
+      public async Task HandleInboundMultiPartChunkAsync(IOpaqueUdpNetworkAdapter adapter, MultiPartChunkDto chunk, UdpRemoteInfo remoteInfo) {
+         var newReassemblyContext = new ChunkReassemblyContext {
+            Chunks = new MultiPartChunkDto[chunk.ChunkCount],
+            ChunksRemaining = chunk.ChunkCount,
+         };
+         
+         var reassemblyContext = reassemblyContextsByMessageId.GetOrAdd(chunk.MultiPartMessageId, newReassemblyContext);
+         if (reassemblyContext == newReassemblyContext) {
             Go(async () => {
-               await Task.Delay(kSomethingExpiration).ConfigureAwait(false);
-
-               RemoveAssemblerFromCache(chunk.MultiPartMessageId);
+               await Task.Delay(ChunkAssemblyTimeoutInterval);
+               reassemblyContextsByMessageId.TryRemove(chunk.MultiPartMessageId, out _);
             });
          }
 
-         var completedChunks = chunkReassemblyContext.AddChunk(chunk);
-         if (completedChunks != null) {
-            ReassembleChunksAndDispatch(completedChunks);
+         Interlocked2.Write(ref reassemblyContext.Chunks[chunk.ChunkIndex], chunk);
+         var chunksRemaining = Interlocked2.PostDecrement(ref reassemblyContext.ChunksRemaining);
+         if (chunksRemaining == 0) {
+            reassemblyContextsByMessageId.TryRemove(chunk.MultiPartMessageId, out _);
+            ReassembleChunksAndDispatch(adapter, reassemblyContext.Chunks, remoteInfo);
          }
       }
 
-      private void ReassembleChunksAndDispatch(IReadOnlyList<MultiPartChunkDto> chunks) {
-//         Console.WriteLine(chunks.First().MultiPartMessageId.ToString("n").Substring(0, 6) + " Got to reassemble!");
-         RemoveAssemblerFromCache(chunks.First().MultiPartMessageId);
-
-         var payloadLength = chunks.Sum(c => c.BodyLength);
-         var payloadBytes = new byte[payloadLength];
-         for (int i = 0, offset = 0; i < chunks.Count; i++) {
+      private void ReassembleChunksAndDispatch(IOpaqueUdpNetworkAdapter adapter, MultiPartChunkDto[] chunks, UdpRemoteInfo remoteInfo) {
+         var payloadLength = 0;
+         foreach (var c in chunks) payloadLength += c.BodyLength;
+         
+         var lbv = CoreUdp.AcquireLeasedBufferView();
+         lbv.SetDataRange(0, payloadLength);
+         
+         for (int i = 0, offset = 0; i < chunks.Length; i++) {
             var chunk = chunks[i];
-            Buffer.BlockCopy(chunk.Body, 0, payloadBytes, offset, chunk.BodyLength);
+            var src = chunk.Body.AsSpan(chunk.BodyOffset, chunk.BodyLength);
+            var dst = lbv.Span.Slice(offset, chunk.BodyLength);
+            src.CopyTo(dst);
             offset += chunk.BodyLength;
          }
 
-         var e = inboundDataEventPool.TakeObject();
-         e.Data = payloadBytes;
-         e.DataOffset = 0;
-         e.DataLength = payloadLength;
-
-//         Console.WriteLine(chunks.First().MultiPartMessageId.ToString("n").Substring(0, 6) + " Dispatching to HIDE!");
-         dispatcher.HandleInboundDataEvent(
-            e,
-            _ => {
-               e.Data = null;
-               inboundDataEventPool.ReturnObject(e);
-            });
-      }
-
-      private void RemoveAssemblerFromCache(Guid multiPartMessageId) {
-         ChunkReassemblyContext throwaway;
-         chunkReassemblerContextsByMessageId.TryRemove(multiPartMessageId, out throwaway);
+         dispatcher.HandleInboundUdpPacket(adapter, lbv.Transfer, remoteInfo);
       }
    }
 
    public class ChunkReassemblyContext {
-      private readonly MultiPartChunkDto[] x;
-      private int chunksRemaining;
-
-      public ChunkReassemblyContext(int chunkCount) {
-         x = new MultiPartChunkDto[chunkCount];
-         chunksRemaining = chunkCount;
-      }
-
-      public MultiPartChunkDto[] AddChunk(MultiPartChunkDto chunk) {
-         if (Interlocked.CompareExchange(ref x[chunk.ChunkIndex], chunk, null) == null) {
-            var newChunksRemaining = Interlocked.Decrement(ref chunksRemaining);
-            if (newChunksRemaining < 100) {
-//               Console.WriteLine(chunk.MultiPartMessageId.ToString("n").Substring(0, 6) + " MPP REMAINING " + newChunksRemaining);
-            }
-            if (newChunksRemaining == 0) {
-               return x;
-            }
-         }
-         return null;
-      }
+      public MultiPartChunkDto[] Chunks;
+      public int ChunksRemaining;
    }
 }

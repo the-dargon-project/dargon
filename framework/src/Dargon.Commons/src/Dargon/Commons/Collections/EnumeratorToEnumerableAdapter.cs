@@ -18,6 +18,19 @@ namespace Dargon.Commons.Collections {
       IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
    }
 
+   public struct BoolEnumerator : IEnumerator<bool>, IEnumerable<bool> {
+      private byte state;
+      public bool MoveNext() => ++state is 1 or 2;
+      public void Reset() => state = 0;
+      public bool Current => state == 2;
+      object IEnumerator.Current => Current;
+      public void Dispose() { }
+
+      public BoolEnumerator GetEnumerator() => this;
+      IEnumerator<bool> IEnumerable<bool>.GetEnumerator() => this;
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+   }
+
    public static class StructLinq {
       public static StructLinqRangeGenerator Enumerate(int count) => new(0, count - 1, 1);
       public static StructLinqRangeGenerator Range(int initialValue, int finalValue, int increment) => new(initialValue, finalValue, increment);

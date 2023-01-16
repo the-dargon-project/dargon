@@ -42,7 +42,20 @@ namespace Dargon.Commons.Collections {
          }
       }
 
-      public V GetOrAdd(K key, Func<K, V> valueFactory) {
+      public V GetOrAdd(K key, Func<K, V> valueFactory)
+         => GetOrAdd(key, static k => k, valueFactory);
+
+      public V GetOrAdd(K key, Func<K, K> keyFactory, Func<K, V> valueFactory)
+         => GetOrAdd(
+            key,
+            (keyFactory, valueFactory),
+            static (k, x) => x.keyFactory(k),
+            static (k, x) => x.valueFactory(k));
+
+      public V GetOrAdd<T>(K key, T state, Func<K, T, V> valueFactory)
+         => GetOrAdd(key, state, static (k, _) => k, valueFactory);
+
+      public V GetOrAdd<T>(K key, T state, Func<K, T, K> keyFactory, Func<K, T, V> valueFactory) {
          V result;
          if (_innerDict.TryGetValue(key, out result)) {
             return result;
@@ -51,7 +64,8 @@ namespace Dargon.Commons.Collections {
                if (_innerDict.TryGetValue(key, out result)) {
                   return result;
                } else {
-                  result = valueFactory(key);
+                  key = keyFactory(key, state);
+                  result = valueFactory(key, state);
                   var clone = new Dictionary<K, V>(_innerDict, _comparer);
                   clone.Add(key, result);
                   _innerDict = clone;
@@ -61,21 +75,26 @@ namespace Dargon.Commons.Collections {
          }
       }
 
-      public V GetOrAdd(K key, Func<K, K> keyFactory, Func<K, V> valueFactory) {
-         V result;
+      public bool TryGetElseAdd(K key, Func<K, V> valueFactory, out V result)
+         => TryGetElseAdd(key, valueFactory, static (k, _) => k, (k, vf) => vf(k), out result);
+
+      public bool TryGetElseAdd<T>(K key, T state, Func<K, T, V> valueFactory, out V result)
+         => TryGetElseAdd(key, state, static (k, _) => k, valueFactory, out result);
+
+      public bool TryGetElseAdd<T>(K key, T state, Func<K, T, K> keyFactory, Func<K, T, V> valueFactory, out V result) {
          if (_innerDict.TryGetValue(key, out result)) {
-            return result;
+            return true;
          } else {
             lock (_updateLock) {
                if (_innerDict.TryGetValue(key, out result)) {
-                  return result;
+                  return true;
                } else {
-                  key = keyFactory(key);
-                  result = valueFactory(key);
+                  key = keyFactory(key, state);
+                  result = valueFactory(key, state);
                   var clone = new Dictionary<K, V>(_innerDict, _comparer);
                   clone.Add(key, result);
                   _innerDict = clone;
-                  return result;
+                  return false;
                }
             }
          }

@@ -1,4 +1,7 @@
-﻿namespace Dargon.Commons.Pooling {
+﻿using System.ComponentModel;
+using System.Security.Cryptography.X509Certificates;
+
+namespace Dargon.Commons.Pooling {
    public interface IObjectPool<T> {
       string Name { get; }
       int Count { get; }
