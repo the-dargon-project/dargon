@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -24,6 +25,7 @@ namespace Dargon.Vox.SourceGenerators {
          var voxInternalBaseAttribute = allNamedTypes.First(t => t.Name == "VoxInternalBaseAttribute");
          var allVoxTypeAttributes = FilterTypeDescendentsAndSelf(allNamedTypes, voxInternalBaseAttribute);
          var allVoxDummyTypes = FilterTypeDescendentsAndSelf(allNamedTypes, voxInternalBaseDummyType);
+         var allVoxAnnotationTypes = allVoxTypeAttributes.Concat(allVoxDummyTypes).ToList();
          var voxTypeAttributeType = allNamedTypes.First(t => t.Name == "VoxTypeAttribute");
 
          var syntaxTreeToTypeAndVoxTypeAttribute =
@@ -78,11 +80,11 @@ namespace Dargon.Vox.SourceGenerators {
 
                if (stubFull) {
                   writeFullSb.AppendLine($"{typeFullName}.Stub_WriteFull_{targetType.Name}(writer, {refIfTargetIsUpdatable}self);");
-                  stubDefs.AppendLine($"public static partial void Stub_WriteFull_{targetType.Name}(VoxWriter writer, {refIfTargetIsUpdatableStruct}{targetType.Name} self);");
+                  stubDefs.AppendLine($"public static partial void Stub_WriteFull_{targetType.Name}(VoxWriter writer, {refIfTargetIsUpdatableStruct}{targetType.Name} value);");
 
                   if (targetIsUpdatable) {
                      readFullSb.AppendLine($"{typeFullName}.Stub_ReadFullIntoRef_{targetType.Name}(reader, {refIfTargetIsUpdatable}self);");
-                     stubDefs.AppendLine($"public static partial void Stub_ReadFullIntoRef_{targetType.Name}(VoxReader reader, {refIfTargetIsUpdatableStruct}{targetType.Name} self);");
+                     stubDefs.AppendLine($"public static partial void Stub_ReadFullIntoRef_{targetType.Name}(VoxReader reader, {refIfTargetIsUpdatableStruct}{targetType.Name} value);");
                   } else {
                      readFullSb.AppendLine($"{typeFullName}.Stub_ReadFull_{targetType.Name}(reader);");
                      stubDefs.AppendLine($"public static partial {targetType.Name} Stub_ReadFull_{targetType.Name}(VoxReader reader);");
@@ -100,11 +102,11 @@ namespace Dargon.Vox.SourceGenerators {
                   // public void WriteRaw(VoxWriter writer, int val) => writer.InnerWriter.Write(val);
                   // public int ReadRaw(VoxReader reader) => reader.InnerReader.ReadInt32();
                   writeRawSb.AppendLine($"{typeFullName}.Stub_WriteRaw_{targetType.Name}(writer, {refIfTargetIsUpdatable}self);");
-                  stubDefs.AppendLine($"public static partial void Stub_WriteRaw_{targetType.Name}(VoxWriter writer, {refIfTargetIsUpdatableStruct}{targetType.Name} self);");
+                  stubDefs.AppendLine($"public static partial void Stub_WriteRaw_{targetType.Name}(VoxWriter writer, {refIfTargetIsUpdatableStruct}{targetType.Name} value);");
                   
                   if (targetIsUpdatable) {
                      readRawSb.AppendLine($"{typeFullName}.Stub_ReadRawIntoRef_{targetType.Name}(reader, {refIfTargetIsUpdatable}self);");
-                     stubDefs.AppendLine($"public static partial void Stub_ReadRawIntoRef_{targetType.Name}(VoxReader reader, {refIfTargetIsUpdatableStruct}{targetType.Name} self);");
+                     stubDefs.AppendLine($"public static partial void Stub_ReadRawIntoRef_{targetType.Name}(VoxReader reader, {refIfTargetIsUpdatableStruct}{targetType.Name} value);");
                   } else {
                      readRawSb.AppendLine($"return {typeFullName}.Stub_ReadRaw_{targetType.Name}(reader);");
                      stubDefs.AppendLine($"public static partial {targetType.Name} Stub_ReadRaw_{targetType.Name}(VoxReader reader);");
@@ -124,25 +126,16 @@ namespace Dargon.Vox.SourceGenerators {
                   foreach (var field in fields) {
                      var member = field.AssociatedSymbol ?? field;
                      var memberType = member is IFieldSymbol fs ? fs.Type : ((IPropertySymbol)member).Type;
-                     var memberAttr = FindAnyAttributeOrDefault(member, allVoxDummyTypes);
-                     // if (memberAttr != null && memberAttr.AttributeClass.Name == nameof(DoNotSerializeAttribute)) {
-                     //    continue;
-                     // }
+                     var memberAttr = FindAnyAttributeOrDefault(member, allVoxAnnotationTypes);
 
-                     var isPolymorphic = false;
-
-                     if (memberAttr != null && memberAttr.AttributeClass.Name.StartsWith("PAttribute")) {
-                        isPolymorphic = true;
-                     }
-
-                     if (memberAttr != null && memberAttr.AttributeClass.Name.StartsWith("NAttribute")) {
-                        isPolymorphic = false;
-                     }
-
-                     readRawSb.Append($@"
-                                                                                                                                 self.{member.Name} = reader.{(isPolymorphic ? $"ReadPolymorphic<{type.Name}>" : $"ReadRaw{memberType.Name}")}();");
-                     writeRawSb.Append($@"
-                                                                                                                                 writer.{(isPolymorphic ? "WritePolymorphic" : $"WriteRaw{memberType.Name}")}(self.{member.Name});");
+                     readRawSb.AppendLine($@"
+                                                                                                                                  {{");
+                     var r = EmitRead(readRawSb, "", "", memberType, memberAttr?.AttributeClass);
+                     readRawSb.AppendLine($@"
+                                                                                                                                     self.{member.Name} = {r};
+                                                                                                                                  }}");
+                     // writeRawSb.Append($@"
+                     //                                                                                                             writer.{(isPolymorphic ? "WritePolymorphic" : $"WriteRaw{memberType.Name}")}(self.{member.Name});");
                   }
 
                   if (!targetIsUpdatable) {
@@ -169,10 +162,14 @@ namespace Dargon.Vox.SourceGenerators {
                                                                                                                            /// <summary>Autogenerated</summary>
                                                                                                                            public sealed partial class {targetType.Name}Serializer : IVoxSerializer<{targetType.Name}> {{
                                                                                                                               public static readonly {targetType.Name}Serializer Instance = new();
+
+                                                                                                                              public int[] FullTypeId {{ get; }} = new[] {{ {typeId} }};
+                                                                                                                              public byte[] FullTypeIdBytes {{ get; }} = ({typeId}).ToVariableIntBytes();
+
                                                                                                                               public bool IsUpdatable => {(targetIsUpdatable ? "true" : "false")};
 
                                                                                                                               public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes({targetType.Name}VoxConstants.TypeIdBytes);
-                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.ReadTypeId().AssertEquals({targetType.Name}VoxConstants.TypeId);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes({targetType.Name}VoxConstants.TypeIdBytes);
                                                                                                                               public void WriteFull(VoxWriter writer, ref {targetType.Name} self) {{ {writeFullSb} }}
                                                                                                                               public void WriteRaw(VoxWriter writer, ref {targetType.Name} self) {{ {writeRawSb} }}
                ");
@@ -252,6 +249,94 @@ namespace Dargon.Vox.SourceGenerators {
          }
       }
 
+      /*
+       * var _arr_count = reader.ReadRawInt32();
+       * var _arr = new T[_arr_count];
+       * for (var _arr_i = 0; _arr_i < _arr_count; _arr_i++) {
+       *   var _arr_el_dict_count = reader.ReadRawInt32();
+       *   var _arr_el_dict = new Dictionary<int, int[]>();
+       *   for (var _arr_el_dict_i = 0; i < _arr_el_dict_count; _arr_el_dict_i++) {
+       *     var _arr_el_dict_key = reader.ReadRawInt32();
+       *     var _arr_el_dict_value_arr_count = reader.ReadRawInt32();
+       *     var _arr_el_dict_value_arr = new int[_arr_el_dict_value_arr_count];
+       *     for (var _arr_el_dict_value_arr_i = 0; _arr_el_dict_value_arr_i < _arr_el_dict_value_arr_count; _arr_el_dict_value_arr_i++) {
+       *       _arr_el_dict_value_arr[_arr_el_dict_value_arr_i] = reader.ReadRawInt32();
+       *     }
+       *     _arr_el_dict.add(_arr_el_dict_key, _arr_el_dict_value_arr);
+       *   }
+       *   _arr[_arr_i] = _arr_el_dict;
+       * }
+       * field = _arr;
+       *
+       * --
+       *
+       * writer.WriteRawInt32(x.Length);
+       * foreach (var _arr_el in 
+       */
+      string EmitRead(StringBuilder sb, string ind, string baseName, ITypeSymbol t, ITypeSymbol polymorphismAttribute) {
+         var isPolymorphic = polymorphismAttribute?.Name.StartsWith("P") ?? false;
+         ITypeSymbol subpolyattr0 = (polymorphismAttribute as INamedTypeSymbol)?.TypeArguments.FirstOrDefault() ?? null;
+         ITypeSymbol subpolyattr1 = (polymorphismAttribute as INamedTypeSymbol)?.TypeArguments.Skip(1).FirstOrDefault() ?? null;
+
+         var classification = ClassifyType(t, out var targ0, out var targ1);
+         if (classification == TypeClassification.Regular) {
+            if (isPolymorphic) {
+               return $"reader.ReadPolymorphic<{t.Name}>()";
+            } else {
+               if (t.Name == "Object") Debugger.Break();
+               return $"reader.ReadRaw{t.Name}()";
+            }
+         } else if (classification == TypeClassification.Array) {
+            // a field of type Animal can be assigned Dog (polymorphic)
+            // whereas a field of type int[] cannot be assigned anything but an int[] or null.
+            // to vox, this is considered nonpolymorphic (we don't need to explicitly serialize the array's type)
+            isPolymorphic.AssertEquals(false);
+
+            baseName += "_arr";
+            sb.AppendLine($"{ind}var {baseName}_count = reader.ReadRawInt32();");
+            sb.AppendLine($"{ind}var {baseName} = {baseName}_count == -1 ? null : {BuildArrayNewString(targ0, $"{baseName}_count")};");
+            sb.AppendLine($"{ind}for (var {baseName}_i = 0; {baseName}_i < {baseName}_count; {baseName}_i++) {{");
+            {
+               var elres = EmitRead(sb, ind + "   ", $"{baseName}_el", targ0, subpolyattr0);
+               sb.AppendLine($"{ind}   {baseName}[{baseName}_i] = {elres};");
+            }
+            sb.AppendLine($"{ind}}}");
+            return baseName;
+         } else if (classification == TypeClassification.Enumerable) {
+            // We don't attempt to transmit the type of serialized collections; rather, we transmit the contained
+            // data and on deserialize create a collection instance that matches the field type (which might be concrete).
+            isPolymorphic.AssertEquals(false);
+
+            baseName += "_arr";
+            sb.AppendLine($"{ind}var {baseName}_count = reader.ReadRawInt32();");
+            sb.AppendLine($"{ind}var {baseName} = {baseName}_count == -1 ? null : new List<{targ0.ToDisplayString()}>({baseName}_count);");
+            sb.AppendLine($"{ind}for (var {baseName}_i = 0; {baseName}_i < {baseName}_count; {baseName}_i++) {{");
+            {
+               var elres = EmitRead(sb, ind + "   ", $"{baseName}_el", targ0, subpolyattr0);
+               sb.AppendLine($"{ind}   {baseName}.Add({elres});");
+            }
+            sb.AppendLine($"{ind}}}");
+            return baseName;
+         } else if (classification == TypeClassification.DictLike) {
+            baseName += "_dict";
+            sb.AppendLine($"{ind}var {baseName}_count = reader.ReadRawInt32();");
+            sb.AppendLine($"{ind}var {baseName} = new {t.ToDisplayString()}({baseName}_count);");
+            sb.AppendLine($"{ind}for (var {baseName}_i = 0; {baseName}_i < {baseName}_count; {baseName}_i++) {{");
+            {
+               var keyres = EmitRead(sb, ind + "   ", $"{baseName}_key", targ0, subpolyattr0);
+               sb.AppendLine($"{ind}   var {baseName}_key = {keyres};");
+
+               var valres = EmitRead(sb, ind + "   ", $"{baseName}_val", targ1, subpolyattr1);
+               sb.AppendLine($"{ind}   var {baseName}_val = {valres};");
+               sb.AppendLine($"{ind}   {baseName}.Add({baseName}_key, {baseName}_val);");
+            }
+            sb.AppendLine($"{ind}}}");
+            return baseName;
+         }
+
+         throw new NotImplementedException();
+      }
+
       private List<INamedTypeSymbol> EnumerateNamedTypeSymbols(INamespaceOrTypeSymbol searchStart) {
          var res = new List<INamedTypeSymbol>();
          void Inner(INamespaceOrTypeSymbol cur) {
@@ -294,14 +379,71 @@ namespace Dargon.Vox.SourceGenerators {
 
       private AttributeData FindAnyAttributeOrDefault(ISymbol t, List<INamedTypeSymbol> searchCandidates) {
          foreach (var attr in t.GetAttributes()) {
+            var attrc = attr.AttributeClass;
+            if (attrc.IsGenericType) {
+               attrc = attrc.OriginalDefinition;
+            }
             foreach (var candidate in searchCandidates) {
-               if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, candidate)) {
+               if (SymbolEqualityComparer.Default.Equals(attrc, candidate)) {
                   return attr;
                }
             }
          }
 
          return null;
+      }
+
+      public enum TypeClassification {
+         Regular,
+         Array,
+         Enumerable,
+         DictLike,
+      }
+
+      private TypeClassification ClassifyType(ITypeSymbol t, out ITypeSymbol targ0, out ITypeSymbol targ1) {
+         if (t is IArrayTypeSymbol ats) {
+            targ0 = ats.ElementType;
+            targ1 = null;
+            return TypeClassification.Array;
+         }
+
+         if (t.Name == "String") {
+            targ0 = targ1 = null;
+            return TypeClassification.Regular;
+         }
+
+         targ0 = targ1 = null;
+
+         foreach (var iface in t.AllInterfaces) {
+            if (iface.Name.IndexOf("Dictionary", StringComparison.OrdinalIgnoreCase) >= 0 && iface.IsGenericType) {
+               targ0 = iface.TypeArguments[0];
+               targ1 = iface.TypeArguments[1];
+               return TypeClassification.DictLike;
+            }
+
+            if (iface.Name.IndexOf("IEnumerable", StringComparison.OrdinalIgnoreCase) >= 0 && iface.IsGenericType) {
+               targ0 = iface.TypeArguments[0];
+            }
+         }
+
+         return targ0 != null ? TypeClassification.Enumerable : TypeClassification.Regular;
+      }
+
+      private string BuildArrayNewString(ITypeSymbol elType, string indexExpr) {
+         var nestedArrayDepth = 0;
+         while (elType is IArrayTypeSymbol arts) {
+            nestedArrayDepth++;
+            elType = arts.ElementType;
+         }
+
+         var sb = new StringBuilder();
+         sb.Append("new ");
+         sb.Append(elType.ToDisplayString());
+         sb.Append($"[{indexExpr}]");
+         for (var i = 0; i < nestedArrayDepth; i++) {
+            sb.Append($"[]");
+         }
+         return sb.ToString();
       }
    }
 

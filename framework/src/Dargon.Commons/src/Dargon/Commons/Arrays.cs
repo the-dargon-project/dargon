@@ -53,6 +53,30 @@ namespace Dargon.Commons {
          return arr;
       }
 
+      public static T[] Concat<T>(T[] arr1, T[] arr2) {
+         var res = new T[arr1.Length + arr2.Length];
+         Array.Copy(arr1, res, arr1.Length);
+         Array.Copy(arr2, 0, res, arr1.Length, arr2.Length);
+         return res;
+      }
+
+      public static T[] Concat<T>(T[] arr1, T[] arr2, T[] arr3) {
+         var res = new T[arr1.Length + arr2.Length];
+         Array.Copy(arr1, res, arr1.Length);
+         Array.Copy(arr2, 0, res, arr1.Length, arr2.Length);
+         Array.Copy(arr3, 0, res, arr1.Length + arr2.Length, arr3.Length);
+         return res;
+      }
+
+      public static T[] Concat<T>(T[] arr1, T[] arr2, T[] arr3, T[] arr4) {
+         var res = new T[arr1.Length + arr2.Length];
+         Array.Copy(arr1, res, arr1.Length);
+         Array.Copy(arr2, 0, res, arr1.Length, arr2.Length);
+         Array.Copy(arr3, 0, res, arr1.Length + arr2.Length, arr3.Length);
+         Array.Copy(arr4, 0, res, arr1.Length + arr2.Length + arr3.Length, arr4.Length);
+         return res;
+      }
+
       public static bool IsNullOrEmpty<T>(T[] arr) => arr == null || arr.Length == 0;
    }
 }

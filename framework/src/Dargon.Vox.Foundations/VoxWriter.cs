@@ -21,6 +21,8 @@ namespace Dargon.Vox2 {
 
       public void WriteTypeIdBytes(byte[] data) => InnerWriter.Write(data);
 
+      public void WriteRawBytes(byte[] data) => InnerWriter.Write(data);
+
       public void Dispose() {
          bw?.Dispose();
          bw = null;
@@ -49,6 +51,11 @@ namespace Dargon.Vox2 {
    public class NAttribute : VoxInternalBaseAttribute { }
 
    public interface IVoxSerializer<T> {
+      int[] FullTypeId { get; }
+      byte[] FullTypeIdBytes { get; }
+
+      bool IsUpdatable { get; }
+
       void WriteFull(VoxWriter writer, ref T val);
       void WriteRaw(VoxWriter writer, ref T val);
 
@@ -75,7 +82,19 @@ namespace Dargon.Vox2 {
          }
       }
 
-      public int ReadTypeId() => InnerReader.ReadVariableInt();
+      public int ReadSimpleTypeId() => InnerReader.ReadVariableInt();
+
+      public void AssertReadTypeIdBytes(byte[] bs) => AssertReadRawBytes(bs);
+
+      public void AssertReadRawBytes(byte[] bs) {
+         foreach (var b in bs) {
+            if (InnerReader.ReadByte() != b) {
+               throw new Exception("Byte sequence mismatch!");
+            }
+         }
+      }
+
+      public T ReadPolymorphic<T>() => throw new NotImplementedException();
 
       public void Dispose() {
          br?.Dispose();
