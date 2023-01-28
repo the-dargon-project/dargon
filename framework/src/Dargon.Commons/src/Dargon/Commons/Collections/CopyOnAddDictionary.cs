@@ -8,13 +8,15 @@ namespace Dargon.Commons.Collections {
       private readonly IEqualityComparer<K> _comparer;
       private Dictionary<K, V> _innerDict;
 
-      public CopyOnAddDictionary() {
-         _innerDict = new Dictionary<K, V>();
-      }
+      public CopyOnAddDictionary() : this(new(), EqualityComparer<K>.Default) { }
 
-      public CopyOnAddDictionary(IEqualityComparer<K> comparer) {
+      public CopyOnAddDictionary(Dictionary<K, V> items) : this(items, EqualityComparer<K>.Default) { }
+
+      public CopyOnAddDictionary(IEqualityComparer<K> comparer) : this(new(comparer), comparer) { }
+
+      public CopyOnAddDictionary(Dictionary<K, V> items, IEqualityComparer<K> comparer) {
          _comparer = comparer;
-         _innerDict = new Dictionary<K, V>(comparer);
+         _innerDict = items;
       }
 
       public V this[K key] => _innerDict[key];
@@ -41,6 +43,9 @@ namespace Dargon.Commons.Collections {
             throw new DuplicateKeyException(key, value, existing);
          }
       }
+
+      public V GetOrAdd(K key, V value)
+         => GetOrAdd(key, value, static (k, v) => v);
 
       public V GetOrAdd(K key, Func<K, V> valueFactory)
          => GetOrAdd(key, static k => k, valueFactory);

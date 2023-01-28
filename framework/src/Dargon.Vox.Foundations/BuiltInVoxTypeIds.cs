@@ -41,7 +41,7 @@
 
       /// <summary>
       /// An invalid TypeID. Used to represent a bad typeId;
-      /// do not use!
+      /// do not use! Used internally.
       /// </summary>
       Invalid = int.MinValue,
 

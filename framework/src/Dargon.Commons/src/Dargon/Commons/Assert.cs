@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using Dargon.Commons.Comparers;
 using Dargon.Commons.Exceptions;
 
@@ -238,6 +239,24 @@ namespace Dargon.Commons {
       public static void IsWithinEpsilon(double v, double epsilon) {
          if (Math.Abs(v) > epsilon) {
             Fail($"{nameof(IsWithinEpsilon)} failed. abs({v}) > {epsilon}");
+         }
+      }
+
+      public static void HasFlags<T>(T value, T flags) where T : struct, Enum {
+         var v = value.ToInt64();
+         var f = flags.ToInt64();
+         var vAndF = v & f;
+         if (vAndF != f) {
+            Fail($"{nameof(HasFlags)} failed. {value} ({v.ToBinaryString()}) & {flags} {f.ToBinaryString()} = {vAndF.ToEnum<T>()} ({vAndF.ToBinaryString()}");
+         }
+      }
+
+      public static void HasUnsetFlags<T>(T value, T flags) where T : struct, Enum {
+         var v = value.ToInt64();
+         var f = flags.ToInt64();
+         var vAndF = v & f;
+         if (vAndF != 0) {
+            Fail($"{nameof(HasUnsetFlags)} failed. {value} ({v.ToBinaryString()}) & {flags} {f.ToBinaryString()} = {vAndF.ToEnum<T>()} ({vAndF.ToBinaryString()}");
          }
       }
 

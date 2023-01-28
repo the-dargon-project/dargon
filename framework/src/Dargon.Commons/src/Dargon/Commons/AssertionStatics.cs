@@ -1,5 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Numerics;
 
 namespace Dargon.Commons {
    public static class AssertionStatics {
@@ -18,10 +18,19 @@ namespace Dargon.Commons {
          return val;
       }
 
-      public static T AssertIsNotNull<T>(this T? val, string message = null) {
+#nullable enable
+
+      public static T AssertIsNotNull<T>(this T? val, string? message = null) where T : class {
          Assert.IsNotNull(val, message);
-         return val;
+         return val!;
       }
+
+      public static T AssertIsNotNull<T>(this T? val, string? message = null) where T : struct {
+         Assert.IsNotNull(val, message);
+         return val!.Value;
+      }
+
+#nullable disable
 
       public static T AssertEquals<T>(this T actual, T expected) {
          Assert.Equals(expected, actual);
@@ -200,6 +209,16 @@ namespace Dargon.Commons {
       public static List<T> AssertLengthEquals<T>(this List<T> actual, int expected) {
          Assert.Equals(actual.Count, expected);
          return actual;
+      }
+
+      public static T AssertHasFlags<T>(this T value, T flag) where T : struct, System.Enum {
+         Assert.HasFlags(value, flag);
+         return value;
+      }
+
+      public static T AssertHasUnsetFlags<T>(this T value, T flag) where T : struct, System.Enum {
+         Assert.HasUnsetFlags(value, flag);
+         return value;
       }
    }
 }
