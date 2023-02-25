@@ -52,9 +52,11 @@ namespace Dargon.Commons.Collections {
             Right = replacement;
          }
       }
+
+      public static RedBlackNode<T> CreateForInsertion(T val) => new(val, RedBlackColor.Black);
    }
 
    public static class RedBlackNode {
-      public static RedBlackNode<T> CreateForInsertion<T>(T val) => new(val, default);
+      public static RedBlackNode<T> CreateForInsertion<T>(T val) => new(val, RedBlackColor.Black);
    }
 }

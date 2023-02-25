@@ -1,6 +1,6 @@
 ﻿namespace Dargon.Commons.Collections.RedBlackTrees {
    public enum RedBlackColor {
-      Black,
+      Black, // 0 - do not change as code uses `default`
       Red,
    }
 }

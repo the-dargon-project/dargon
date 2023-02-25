@@ -52,7 +52,7 @@ namespace Dargon.Commons.Collections.RedBlackTrees {
       /// </summary>
       /// <param name="root"></param>
       /// <param name="value"></param>
-      /// <param name="split4Nodes"></param>
+      /// <param name="split4Nodes">Set to true to optimize for insertion, false otherwise</param>
       /// <param name="cmp">Search invokes Compare(value, node.Value)</param>
       public RedBlackNodeSearchResult<T> Search<TSearchComparer>(RedBlackNode<T> root, in TSearchComparer cmp, bool split4Nodes)
          where TSearchComparer : struct, IBstSearchComparer<T> {

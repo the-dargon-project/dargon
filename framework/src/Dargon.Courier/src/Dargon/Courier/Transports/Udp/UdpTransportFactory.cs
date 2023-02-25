@@ -79,5 +79,9 @@ namespace Dargon.Courier.TransportTier.Udp {
 
          return transport;
       }
+
+      public ITransport Create(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService, IGatekeeper gatekeeper) {
+            throw new System.NotImplementedException();
+      }
    }
 }

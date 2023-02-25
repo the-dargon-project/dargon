@@ -228,9 +228,10 @@ namespace Dargon.Commons {
       public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Queue<T>>> BfsWithoutDedupe<T>(this T root, Action<Action<T>, T> pushSuccsUser) {
          return BfsInternals<T, TFalse>.Bfs(root, pushSuccsUser);
       }
-
-      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dive<T>(this T root, Func<T, T> next) {
+#nullable enable
+      public static EnumeratorToEnumerableAdapter<T, TraversalEnumeratorBase<T, Stack<T>>> Dive<T>(this T root, Func<T, T?> next) {
          return DfsInternals<T, TFalse>.Dive(root, next);
       }
+#nullable disable
    }
 }

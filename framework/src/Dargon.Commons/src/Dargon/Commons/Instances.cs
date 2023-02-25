@@ -128,6 +128,10 @@ namespace Dargon.Commons {
 
       public static U Pipe<T, U>(this T self, Func<T, U> cb) => cb(self);
 
+      public static T If<T>(this T self, bool cond) => self.IfElse(cond, default);
+
+      public static T IfElse<T>(this T self, bool cond, T fallback) => cond ? self : fallback;
+
       /// <summary>
       /// Returns what is conceptually equivalent to some hashcode of the object's underlying ID
       /// in runtime. Realistically I'm just providing this extension so I can avoid namespace

@@ -133,11 +133,20 @@ namespace Dargon.Commons.Collections {
       }
 
       public PriorityQueue<TItem> Copy() {
-         var copy = new PriorityQueue<TItem>();
+         var copy = new PriorityQueue<TItem>(comparer);
          copy.storage = new TItem[storage.Length];
          Array.Copy(storage, copy.storage, size);
          copy.size = size;
          return copy;
+      }
+
+      public TItem[] DequeueAllToArray() {
+         var res = new TItem[Count];
+         for (var i = 0; i < res.Length; i++) {
+            res[i] = Dequeue();
+         }
+
+         return res;
       }
 
       public void Clear(bool zeroStore = true) {

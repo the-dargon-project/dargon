@@ -26,6 +26,11 @@ namespace Dargon.Commons.Collections {
          store = new T[capacity];
       }
 
+      public ExposedArrayList(T[] source) {
+         size = source.Length;
+         store = source.ToArray();
+      }
+
       public ExposedArrayList(ExposedArrayList<T> source) {
          size = source.size;
          store = source.store.ToArray();
