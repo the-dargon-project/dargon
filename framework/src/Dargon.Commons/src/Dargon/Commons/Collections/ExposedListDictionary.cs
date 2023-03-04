@@ -185,11 +185,81 @@ namespace Dargon.Commons.Collections {
          set => AddOrUpdate(key, value);
       }
 
-      public ICollection<TKey> Keys { get { return Arrays.Create(list.Count, i => list[i].Key); } }
+      public ELDKeyCollection<TKey, TValue, TKeyEqualityComparer> Keys => new(this);
+      ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;
       IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
-      public ICollection<TValue> Values { get { return Arrays.Create(list.Count, i => list[i].Value); } }
+
+      public ELDValueCollection<TKey, TValue, TKeyEqualityComparer> Values => new(this);
+      ICollection<TValue> IDictionary<TKey, TValue>.Values => Values;
       IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
 
+      public ELDAtIndexer<TKey, TValue> Entries => new() { Store = list };
       public ExposedListDictionary<TKey, TValue, TKeyEqualityComparer> Clone() => new(this);
+   }
+
+   public struct ELDAtIndexer<TKey, TValue> {
+      public ExposedArrayList<ExposedKeyValuePair<TKey, TValue>> Store;
+
+      public ref ExposedKeyValuePair<TKey, TValue> this[int i] => ref Store[i];
+   }
+
+   public struct ELDKeyCollection<TKey, TValue, TKeyEqualityComparer> : IReadOnlyList<TKey>, ICollection<TKey> where TKeyEqualityComparer : struct, IEqualityComparer<TKey> {
+      private readonly ExposedListDictionary<TKey, TValue, TKeyEqualityComparer> dict;
+
+      public ELDKeyCollection(ExposedListDictionary<TKey, TValue, TKeyEqualityComparer> dict) {
+         this.dict = dict;
+      }
+
+      public int Count => dict.Count;
+      public bool IsReadOnly => true;
+
+      public bool Contains(TKey item) => dict.ContainsKey(item);
+
+      public void CopyTo(TKey[] array, int arrayIndex) {
+         for (var i = 0; i < dict.list.Count; i++) {
+            array[arrayIndex++] = dict.list[i].Key;
+         }
+      }
+
+      public ref TKey this[int index] => ref dict.list[index].Key;
+      TKey IReadOnlyList<TKey>.this[int index] => dict.list[index].Key;
+
+      public StructLinqMap<ExposedKeyValuePair<TKey, TValue>, ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>.Enumerator, TKey> GetEnumerator() => dict.GetEnumerator().SL(default(ExposedKeyValuePair<TKey, TValue>)).Map(x => x.Key);
+      IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => GetEnumerator();
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+      public void Add(TKey item) => throw new NotSupportedException();
+      public void Clear() => throw new NotSupportedException();
+      public bool Remove(TKey item) => throw new NotSupportedException();
+   }
+
+   public struct ELDValueCollection<TKey, TValue, TKeyEqualityComparer> : IReadOnlyList<TValue>, ICollection<TValue> where TKeyEqualityComparer : struct, IEqualityComparer<TKey> {
+      private readonly ExposedListDictionary<TKey, TValue, TKeyEqualityComparer> dict;
+
+      public ELDValueCollection(ExposedListDictionary<TKey, TValue, TKeyEqualityComparer> dict) {
+         this.dict = dict;
+      }
+
+      public int Count => dict.Count;
+      public bool IsReadOnly => true;
+
+      public bool Contains(TValue item) => throw new NotSupportedException();
+
+      public void CopyTo(TValue[] array, int arrayIndex) {
+         for (var i = 0; i < dict.list.Count; i++) {
+            array[arrayIndex++] = dict.list[i].Value;
+         }
+      }
+      
+      public ref TValue this[int index] => ref dict.list[index].Value;
+      TValue IReadOnlyList<TValue>.this[int index] => dict.list[index].Value;
+
+      public StructLinqMap<ExposedKeyValuePair<TKey, TValue>, ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>.Enumerator, TValue> GetEnumerator() => dict.GetEnumerator().SL(default(ExposedKeyValuePair<TKey, TValue>)).Map(x => x.Value);
+      IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => GetEnumerator();
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+      public void Add(TValue item) => throw new NotSupportedException();
+      public void Clear() => throw new NotSupportedException();
+      public bool Remove(TValue item) => throw new NotSupportedException();
    }
 }
