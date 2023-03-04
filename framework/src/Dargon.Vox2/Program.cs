@@ -23,21 +23,30 @@ namespace Dargon.Vox2 {
       }
    }
 
-   public class VoxSerializerContainer {
-      private readonly Dictionary<Type, IVoxSerializer> typeToSerializer = new();
-      private readonly object sync = new();
-
+   public class VoxSerializerActivator {
       private readonly VoxContext context;
 
-      public VoxSerializerContainer(VoxContext context) {
+      public VoxSerializerActivator(VoxContext context) {
          this.context = context;
       }
 
-      public IVoxSerializer GetOrCreate(Type type) {
-         lock (sync) {
-            context.GetTrieNodeOfTypeOrThrow(type);
-            Activator.CreateInstance(type);
+      public IVoxSerializer InstantiateSerializer(Type tType, Type serializerType) {
+         var ctors = serializerType.GetConstructors();
+         foreach (var ctor in ctors) {
+            var parameters = ctor.GetParameters();
+            var args = new object[parameters.Length];
+            for (var i = 0; i < args.Length; i++) {
+               if (parameters[i].ParameterType == typeof(VoxContext)) {
+                  args[i] = context;
+               } else {
+                  throw new NotImplementedException($"Unsure how to inject {parameters[i]}");
+               }
+            }
+
+            return (IVoxSerializer)ctor.Invoke(args);
          }
+
+         throw new InvalidOperationException($"Failed to construct {serializerType.FullName} for {tType.FullName}; no found ctor?");
       }
    }
 
@@ -51,6 +60,8 @@ namespace Dargon.Vox2 {
    }
 
    public class VoxTypeTrieContainer {
+      private readonly VoxContext voxContext;
+
       // these fields are written to by a single thread at init-time
       private readonly Dictionary<Type, VoxTypeContext> simpleTypeToTrieRootContext = new();
       private readonly Dictionary<int, VoxTypeContext> simpleTypeIdToTrieRootContext = new();
@@ -58,19 +69,27 @@ namespace Dargon.Vox2 {
       // dynamically populated at runtime. Ultimately the tries are the source of truth.
       private readonly CopyOnAddDictionary<Type, VoxTypeTrieNode> completeTypeToNodeCache = new();
 
+      public VoxTypeTrieContainer(VoxContext voxContext) {
+         this.voxContext = voxContext;
+      }
+
       public void ImportTypeContext(VoxTypeContext c) {
          simpleTypeToTrieRootContext.Add(c.SimpleType, c);
          simpleTypeIdToTrieRootContext.Add(c.SimpleTypeId, c);
          if (c.CompleteTypeOrNull is { } ct) {
-            completeTypeToNodeCache.Add(ct, c);
+            completeTypeToNodeCache.AddOrThrow(ct, c);
          }
       }
 
-      public VoxTypeContext GetTrieRootContextOfSimpleTypeId(int simpleTypeId) => simpleTypeIdToTrieRootContext[type];
+      public VoxTypeContext GetTrieRootContextOfSimpleTypeId(int simpleTypeId) => simpleTypeIdToTrieRootContext[simpleTypeId];
       public VoxTypeContext GetTrieRootContextOfSimpleType(Type type) => simpleTypeToTrieRootContext[type];
 
       public VoxTypeTrieNode GetOrCreateTrieNodeOfCompleteType(Type type) {
-         if (completeTypeToNodeCache.TryGetValue(type, out var existing)) return existing; // look ma, no locks!
+         if (completeTypeToNodeCache.TryGetValue(type, out var existing)) {
+            existing.WaitForLateInitialize();
+            return existing; // look ma, no locks!
+         }
+
          var res = GetOrCreateTrieNodeOfCompleteType_SlowPath(type);
          return completeTypeToNodeCache.GetOrAdd(type, res);
       }
@@ -79,10 +98,14 @@ namespace Dargon.Vox2 {
          type.VoxInternal_IsCompleteType().AssertIsTrue();
          type.IsGenericType.AssertIsTrue();
 
-         VoxTypeTrieNode current = simpleTypeToTrieRootContext[type.GetGenericTypeDefinition()];
+         var rootContext = simpleTypeToTrieRootContext[type.GetGenericTypeDefinition()];
+         var current = rootContext.RootNode;
          foreach (var gta in type.GenericTypeArguments) {
             current = GetOrCreateTrieNodeOfCompleteType_RecurseToTrieLeaf(gta, current);
          }
+
+         var serializer = voxContext.Activator.InstantiateSerializer(type, rootContext.SerializerType);
+         current.LateInitializeTerminalNode(type, serializer);
          return current;
       }
 
@@ -100,12 +123,17 @@ namespace Dargon.Vox2 {
          foreach (var gta in t.GenericTypeArguments) {
             current = GetOrCreateTrieNodeOfCompleteType_RecurseToTrieLeaf(gta, current);
          }
+         return current;
       }
    }
 
    public static class VoxContextFactory {
       public static VoxContext Create(VoxTypes voxTypes) {
-         var trieContainer = new VoxTypeTrieContainer();
+         var context = new VoxContext();
+         context.VoxTypes = voxTypes;
+         var trieContainer = context.TrieContainer = new VoxTypeTrieContainer(context);
+         context.PolymorphicSerializer = new PolymorphicSerializerImpl(context, trieContainer);
+         var serializerActivator = context.Activator = new VoxSerializerActivator(context);
 
          void Visit(VoxTypes vt) {
             var typeToSerializer = new Dictionary<Type, Type>(vt.TypeToCustomSerializers);
@@ -147,7 +175,11 @@ namespace Dargon.Vox2 {
                   Internal_Type_GenericArguments_Cache = type.IsGenericType ? type.GenericTypeArguments : Type.EmptyTypes,
                   SerializerInstanceOrNull = null,
                };
-               typeContext.LateInitialize(type.If(type.VoxInternal_IsCompleteType()));
+               if (type.VoxInternal_IsCompleteType()) {
+                  var serializer = serializerActivator.InstantiateSerializer(type, typeContext.SerializerType);
+                  typeContext.LateInitializeTerminalNode(type, serializer);
+               }
+
                trieContainer.ImportTypeContext(typeContext);
             }
 
@@ -158,112 +190,115 @@ namespace Dargon.Vox2 {
          }
 
          Visit(voxTypes);
+         return context;
+      }
+   }
 
-         return new VoxContext(voxTypes, simpleTypeIdToContext, typeToContext);
+   public sealed class PolymorphicSerializerImpl : IPolymorphicSerializer {
+      private readonly VoxContext container;
+      private readonly VoxTypeTrieContainer trieContainer;
+      private VoxContext voxContext;
+
+      public PolymorphicSerializerImpl(VoxContext container, VoxTypeTrieContainer trieContainer) {
+         this.container = container;
+         this.trieContainer = trieContainer;
+      }
+
+      public Type ReadFullType(VoxReader reader) => ReadFullTypeInternal(reader).CompleteTypeOrNull.AssertIsNotNull();
+
+      private VoxTypeTrieNode ReadFullTypeInternal(VoxReader reader) {
+         var rootTid = reader.ReadSimpleTypeId();
+         var typeContext = trieContainer.GetTrieRootContextOfSimpleTypeId(rootTid);
+
+         // traverse the trie as far as possible, terminating if we hit a terminal node (one which has a complete type)
+         // or can no longer go deeper.
+         var currentNode = typeContext.RootNode;
+         while (true) {
+            if (currentNode.CompleteTypeOrNull != null) {
+               return currentNode;
+            }
+
+            var tid = reader.ReadSimpleTypeId();
+            if (currentNode.TypeIdToChildNode.TryGetElseAdd(tid, (currentNode, trieContainer),
+                   static (tid, x) => new VoxTypeTrieNode(tid, x.trieContainer.GetTrieRootContextOfSimpleTypeId(tid).SimpleType, x.currentNode),
+                   out var child)) {
+               currentNode = child;
+            } else {
+               // type is not yet imported into the trie. backtrack, then do a full type read.
+               var s = new Stack<VoxTypeTrieNode>(child.Dive(x => x.ParentOrNull));
+               s.Peek().AssertNotEquals(child);
+
+               // Complete the type-read, then import into the trie.
+               var (type, finalNode) = CompleteTypeReadWithoutTrie(reader, s);
+               var serializer = voxContext.Activator.InstantiateSerializer(type, typeContext.SerializerType);
+               finalNode.LateInitializeTerminalNode(type, serializer);
+            }
+         }
+      }
+
+      private (Type, VoxTypeTrieNode currentNode) CompleteTypeReadWithoutTrie(VoxReader reader, Stack<VoxTypeTrieNode> s) {
+         var additionalTypeIdReads = new List<int>();
+         var currentNode = s.Peek();
+         Type RecurseToReadType() {
+            VoxTypeContext typeContext;
+            if (s.Count > 0) {
+               currentNode = s.Pop();
+               typeContext = trieContainer.GetTrieRootContextOfSimpleTypeId(currentNode.SimpleTypeId);
+            } else {
+               var typeId = reader.ReadSimpleTypeId();
+               typeContext = trieContainer.GetTrieRootContextOfSimpleTypeId(typeId);
+               additionalTypeIdReads.Add(typeId);
+
+               currentNode = currentNode.TypeIdToChildNode.GetOrAdd(
+                  typeId,
+                  (typeContext, currentNode),
+                  static (stid, x) => new VoxTypeTrieNode(stid, x.typeContext.SimpleType, x.currentNode));
+            }
+
+            var type = typeContext.SimpleType;
+            if (typeContext.Internal_Type_GenericArguments_Cache.Length == 0) {
+               return type;
+            }
+
+            var numTypeArguments = typeContext.Internal_Type_GenericArguments_Cache.Length;
+            var typeArguments = new Type[numTypeArguments];
+            for (var i = 0; i < numTypeArguments; i++) {
+               typeArguments[i] = RecurseToReadType();
+            }
+
+            return type.MakeGenericType(typeArguments);
+         }
+
+         return (RecurseToReadType(), currentNode);
+      }
+
+      public T ReadPolymorphicFull<T>(VoxReader reader) {
+         var tn = ReadFullTypeInternal(reader);
+         var seri = tn.SerializerInstanceOrNull.AssertIsNotNull();
+         return (T)seri.ReadRawAsObject(reader);
+      }
+
+      public void WriteFullType(VoxWriter writer, Type type) {
+         var tn = trieContainer.GetOrCreateTrieNodeOfCompleteType(type);
+         writer.WriteTypeIdBytes(tn.SerializerInstanceOrNull!.FullTypeIdBytes);
+      }
+
+      public void WritePolymorphicFull<T>(VoxWriter writer, ref T x) {
+         var tn = trieContainer.GetOrCreateTrieNodeOfCompleteType(typeof(T));
+         tn.SerializerInstanceOrNull!.WriteFullObject(writer, x);
       }
    }
 
    public class VoxContext {
-      private readonly VoxTypes voxTypes;
-      private readonly VoxTypeTrieContainer trieContainer;
+      public VoxTypes VoxTypes { get; set; }
+      public VoxTypeTrieContainer TrieContainer { get; set; }
+      public IPolymorphicSerializer PolymorphicSerializer { get; set; }
+      public VoxSerializerActivator Activator { get; set; }
 
-      internal VoxContext(VoxTypes voxTypes, VoxTypeTrieContainer trieContainer) {
-         this.voxTypes = voxTypes;
-         this.trieContainer = trieContainer;
-      }
-
-      public VoxTypes VoxTypes => voxTypes;
-      public VoxTypeContext GetContextOfTypeIdOrThrow(int typeId) => typeIdToContext[typeId];
-      public VoxWriter CreateWriter(Stream s, bool leaveOpen = true) => new(s, leaveOpen, polymorphicSerializationOperationsAdapter);
-      public VoxReader CreateReader(Stream s, bool leaveOpen = true) => new(s, leaveOpen, polymorphicSerializationOperationsAdapter);
+      public VoxWriter CreateWriter(Stream s, bool leaveOpen = true) => new(s, PolymorphicSerializer, leaveOpen);
+      public VoxReader CreateReader(Stream s, bool leaveOpen = true) => new(s, PolymorphicSerializer, leaveOpen);
 
       public static VoxContext Create(VoxTypes voxTypes) => VoxContextFactory.Create(voxTypes);
-
-      private class PolymorphicSerializationOperationsAdapter : IPolymorphicSerializationOperations {
-         private readonly VoxTypeTrieContainer trieContainer;
-
-         public PolymorphicSerializationOperationsAdapter(VoxTypeTrieContainer trieContainer) {
-            this.trieContainer = trieContainer;
-         }
-
-         public Type ReadFullType(VoxReader reader) => ReadFullTypeInternal(reader).CompleteTypeOrNull.AssertIsNotNull();
-
-
-         private VoxTypeTrieNode ReadFullTypeInternal(VoxReader reader) {
-            var rootTid = reader.ReadSimpleTypeId();
-            var typeContext = trieContainer.GetTrieRootContextOfSimpleTypeId(rootTid);
-
-            // traverse the trie as far as possible, terminating if we hit a terminal node (one which has a complete type)
-            // or can no longer go deeper.
-            var currentNode = typeContext.RootNode;
-            while (true) {
-               if (currentNode.CompleteTypeOrNull != null) {
-                  return currentNode;
-               }
-
-               var tid = reader.ReadSimpleTypeId();
-               if (currentNode.TypeIdToChildNode.TryGetElseAdd(tid, (currentNode, context), 
-                      static (tid, x) => new VoxTypeTrieNode(tid, x.context.GetContextOfTypeIdOrThrow(tid).Type, x.currentNode), 
-                      out var child)) {
-                  currentNode = child;
-               } else {
-                  // type is not yet imported into the trie. backtrack, then do a full type read.
-                  var s = new Stack<VoxTypeTrieNode>(child.Dive(x => x.ParentOrNull));
-                  s.Peek().AssertNotEquals(child);
-
-                  // Complete the type-read, then import into the trie.
-                  var (type, readTids) = CompleteTypeReadWithoutTrie(reader, s);
-
-               }
-            }
-         }
-
-         private (Type, List<int> additionalTypeIdReads) CompleteTypeReadWithoutTrie(VoxReader reader, Stack<VoxTypeTrieNode> s) {
-            var additionalTypeIdReads = new List<int>();
-            var root = s.Peek();
-            Type RecurseToReadType() {
-               VoxTypeContext typeContext;
-               if (s.Count > 0) {
-                  typeContext = context.GetContextOfTypeIdOrThrow(s.Pop().SimpleTypeId);
-               } else {
-                  var typeId = reader.ReadSimpleTypeId();
-                  typeContext = context.GetContextOfTypeIdOrThrow(typeId);
-                  additionalTypeIdReads.Add(typeId);
-               }
-
-               var type = typeContext.Type;
-               if (typeContext.Internal_Type_GenericArguments_Cache.Length == 0) {
-                  return type;
-               }
-
-               var numTypeArguments = typeContext.Internal_Type_GenericArguments_Cache.Length;
-               var typeArguments = new Type[numTypeArguments];
-               for (var i = 0; i < numTypeArguments; i++) {
-                  typeArguments[i] = RecurseToReadType();
-               }
-
-               return type.MakeGenericType(typeArguments);
-            }
-
-            return (RecurseToReadType(), additionalTypeIdReads);
-         }
-
-         public T ReadPolymorphicFull<T>(VoxReader reader) {
-            var tn = ReadFullTypeInternal(reader);
-            var seri = tn.SerializerInstanceOrNull.AssertIsNotNull();
-            return (T)seri.ReadRawAsObject(reader);
-         }
-
-         public void WriteFullType(VoxWriter writer, Type type) {
-            var tn = context.GetTrieNodeOfTypeOrThrow(type);
-            writer.WriteTypeIdBytes(tn.SerializerInstanceOrNull!.FullTypeIdBytes);
-         }
-
-         public void WritePolymorphicFull<T>(VoxWriter writer, ref T x) {
-            var tn = context.GetTrieNodeOfTypeOrThrow(typeof(T));
-            tn.SerializerInstanceOrNull!.WriteFullObject(writer, x);
-         }
-      }
    }
 
    /// <summary>
@@ -288,14 +323,26 @@ namespace Dargon.Vox2 {
       public int SimpleTypeId { get; }
       public Type SimpleType { get; }
       public VoxTypeTrieNode? ParentOrNull { get; }
+
+      // case 1: intermediate node
+      public CopyOnAddDictionary<int, VoxTypeTrieNode> TypeIdToChildNode { get; } = new();
+
+      // case 2: terminal node - late initialized
+      public ManualResetEvent LateInitializeLatch { get; } = new(false);
+      public IVoxSerializer? SerializerInstanceOrNull { get; set; }
       public Type? CompleteTypeOrNull { get; private set; } // Late-initialized immediately after construction
 
-      internal void LateInitialize(Type? completeTypeOrNull) {
-         CompleteTypeOrNull = completeTypeOrNull;
+      internal void LateInitializeTerminalNode(Type completeType, IVoxSerializer serializer) {
+         CompleteTypeOrNull = completeType.AssertIsNotNull();
+         SerializerInstanceOrNull = serializer.AssertIsNotNull();
+         LateInitializeLatch.Set();
       }
 
-      public CopyOnAddDictionary<int, VoxTypeTrieNode> TypeIdToChildNode { get; } = new();
-      public IVoxSerializer? SerializerInstanceOrNull { get; set; }
+      public void WaitForLateInitialize() {
+         LateInitializeLatch.WaitOne();
+         CompleteTypeOrNull.AssertIsNotNull();
+         SerializerInstanceOrNull.AssertIsNotNull();
+      }
    }
 
    /// <summary>

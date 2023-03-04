@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 
 namespace Dargon.Vox2 {
-   public interface IPolymorphicSerializationOperations {
+   public interface IPolymorphicSerializer {
       Type ReadFullType(VoxReader reader);
       T ReadPolymorphicFull<T>(VoxReader reader);
       
@@ -13,13 +13,13 @@ namespace Dargon.Vox2 {
 
    public class VoxWriter : IDisposable {
       private BinaryWriter bw;
-      private IPolymorphicSerializationOperations polymorphicOpsOrNull;
+      private IPolymorphicSerializer polymorphicOps;
 
-      public VoxWriter(Stream s, bool leaveOpen = true, IPolymorphicSerializationOperations polymorphicOpsOpt = null) : this(new BinaryWriter(s, Encoding.UTF8, leaveOpen), polymorphicOpsOpt) { }
+      public VoxWriter(Stream s, IPolymorphicSerializer polymorphicOps, bool leaveOpen = true) : this(new BinaryWriter(s, Encoding.UTF8, leaveOpen), polymorphicOps) { }
 
-      public VoxWriter(BinaryWriter bw, IPolymorphicSerializationOperations polymorphicOpsOpt = null) {
+      public VoxWriter(BinaryWriter bw, IPolymorphicSerializer polymorphicOps) {
          this.bw = bw;
-         this.polymorphicOpsOrNull = polymorphicOpsOpt;
+         this.polymorphicOps = polymorphicOps;
       }
 
       public BinaryWriter InnerWriter {
@@ -35,17 +35,17 @@ namespace Dargon.Vox2 {
 
       public void WriteFullType(Type type) {
          AssertNonNullPolymorphicSerializer();
-         polymorphicOpsOrNull.WriteFullType(this, type);
+         polymorphicOps.WriteFullType(this, type);
       }
 
       public void WritePolymorphic<T>(T inst) {
          // if (typeof(T).IsValueType) throw new ArgumentException($"{typeof(T).FullName} is a value type.");
          AssertNonNullPolymorphicSerializer();
-         polymorphicOpsOrNull.WritePolymorphicFull(this, ref inst);
+         polymorphicOps.WritePolymorphicFull(this, ref inst);
       }
 
       private void AssertNonNullPolymorphicSerializer() {
-         if (polymorphicOpsOrNull != null) return;
+         if (polymorphicOps != null) return;
          throw new InvalidOperationException($"The {nameof(VoxReader)} was not constructed with a polymorphic serializer. Consider using VoxContext.CreateReader(..)");
       }
 
@@ -53,7 +53,7 @@ namespace Dargon.Vox2 {
          bw?.Dispose();
          bw = null;
 
-         polymorphicOpsOrNull = null;
+         polymorphicOps = null;
       }
    }
 
@@ -107,13 +107,13 @@ namespace Dargon.Vox2 {
 
    public class VoxReader : IDisposable {
       private BinaryReader br;
-      private IPolymorphicSerializationOperations polymorphicSerializationOperationsOpt;
+      private IPolymorphicSerializer polymorphicSerializer;
 
-      public VoxReader(Stream s, bool leaveOpen = true, IPolymorphicSerializationOperations polymorphicSerializationOperationsOpt = null) : this(new BinaryReader(s, Encoding.UTF8, leaveOpen), polymorphicSerializationOperationsOpt) { }
+      public VoxReader(Stream s, IPolymorphicSerializer polymorphicSerializer, bool leaveOpen = true) : this(new BinaryReader(s, Encoding.UTF8, leaveOpen), polymorphicSerializer) { }
 
-      public VoxReader(BinaryReader br, IPolymorphicSerializationOperations polymorphicSerializationOperationsOpt = null) {
+      public VoxReader(BinaryReader br, IPolymorphicSerializer polymorphicSerializer) {
          this.br = br;
-         this.polymorphicSerializationOperationsOpt = polymorphicSerializationOperationsOpt;
+         this.polymorphicSerializer = polymorphicSerializer;
       }
 
       public BinaryReader InnerReader {
@@ -137,7 +137,7 @@ namespace Dargon.Vox2 {
 
       public Type ReadFullType() {
          AssertNonNullPolymorphicSerializer();
-         return polymorphicSerializationOperationsOpt.ReadFullType(this);
+         return polymorphicSerializer.ReadFullType(this);
       }
 
       public object ReadPolymorphic() => ReadPolymorphic<object>();
@@ -145,11 +145,11 @@ namespace Dargon.Vox2 {
       public T ReadPolymorphic<T>() {
          // if (typeof(T).IsValueType) throw new ArgumentException($"{typeof(T).FullName} is a value type.");
          AssertNonNullPolymorphicSerializer();
-         return polymorphicSerializationOperationsOpt.ReadPolymorphicFull<T>(this);
+         return polymorphicSerializer.ReadPolymorphicFull<T>(this);
       }
 
       private void AssertNonNullPolymorphicSerializer() {
-         if (polymorphicSerializationOperationsOpt != null) return;
+         if (polymorphicSerializer != null) return;
          throw new InvalidOperationException($"The {nameof(VoxReader)} was not constructed with a polymorphic serializer. Consider using VoxContext.CreateReader(..)");
       }
 
@@ -157,7 +157,7 @@ namespace Dargon.Vox2 {
          br?.Dispose();
          br = null;
 
-         polymorphicSerializationOperationsOpt = null;
+         polymorphicSerializer = null;
       }
    }
 }
