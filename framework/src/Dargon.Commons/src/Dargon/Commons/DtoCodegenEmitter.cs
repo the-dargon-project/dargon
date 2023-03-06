@@ -47,6 +47,20 @@ namespace Dargon.Commons {
          } else if (t == typeof(bool)) {
             Emit((bool)(object)x ? "true" : "false");
             return;
+         } else if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)) {
+            var keyProp = t.GetProperty("Key", BindingFlags.Public | BindingFlags.Instance);
+            var key = keyProp.GetValue(x);
+            
+            var valueProp = t.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance);
+            var value = valueProp.GetValue(x);
+            Emit("new");
+            EmitTypeName(t);
+            Emit("(");
+            Visit(key);
+            Emit(",");
+            Visit(value);
+            Emit(")");
+            return;
          }
 
          if (t.IsValueType && t.IsPrimitive) {

@@ -125,6 +125,11 @@ writer.WriteRawInt32(self.Int32);
                                                                                                                                   }
 
                                                                                                                                   {
+writer.WriteRawString(self.String);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
 writer.WriteRawGuid(self.Guid);
 
                                                                                                                                   }
@@ -164,6 +169,16 @@ foreach (var _voxvarname_dict_kvp in _voxvarname_dict) {
 }
 
                                                                                                                                   }
+
+                                                                                                                                  {
+writer.WritePolymorphic<Object>(self.PolymorphicString);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WritePolymorphic<Object>(self.PolymorphicIntArray);
+
+                                                                                                                                  }
  }
                
 
@@ -176,6 +191,11 @@ foreach (var _voxvarname_dict_kvp in _voxvarname_dict) {
                                                                                                                                   {
 
                                                                                                                                      self.Int32 = reader.ReadRawInt32();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.String = reader.ReadRawString();
                                                                                                                                   }
 
                                                                                                                                   {
@@ -225,6 +245,16 @@ for (var _voxvarname_dict_i = 0; _voxvarname_dict_i < _voxvarname_dict_count; _v
 }
 
                                                                                                                                      self.DictOfIntToArrayOfArrayOfDictOfStringToIntArray = _voxvarname_dict;
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.PolymorphicString = reader.ReadPolymorphic<Object>();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.PolymorphicIntArray = reader.ReadPolymorphic<Object>();
                                                                                                                                   }
  }
                   

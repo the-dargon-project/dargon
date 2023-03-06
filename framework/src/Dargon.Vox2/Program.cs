@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Dargon.Commons;
 using Dargon.Commons.Collections;
+using Dargon.Commons.Exceptions;
 using Dargon.Commons.Utilities;
 
 namespace Dargon.Vox2 {
@@ -8,16 +9,56 @@ namespace Dargon.Vox2 {
       static void Main(string[] args) {
          Console.WriteLine("Hello, World!");
 
-         var vox = VoxContext.Create(new TestVoxTypes());
+         var hodgepodgeOriginal = new HodgepodgeMin {
+            Int32 = 10,
+            String = "Hello, World!",
+            Guid = new Guid(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+            IntArray = new int[] { 1, 2, 3 },
+            DictOfIntToArrayOfArrayOfDictOfStringToIntArray = new() {
+               [123] = new Dictionary<object, int[]>[][] {
+                  new Dictionary<object, int[]>[] {
+                     new Dictionary<object, int[]> {
+                        ["Key1"] = new int[] { 1, 2, 3, 4, },
+                        ["Key2"] = new int[] { 11, 22, 33, 44, },
+                     },
+                     new Dictionary<object, int[]> {
+                        ["Key3"] = new int[] { 111, 222, 333, 444, },
+                     },
+                  },
+                  new Dictionary<object, int[]>[0],
+               },
+               [234] = new Dictionary<object, int[]>[0][],
+            },
+            PolymorphicString = "abc",
+            PolymorphicIntArray = new int[] { 123, 456, 789 },
+         };
 
+         var voxForWriter = VoxContext.Create(new TestVoxTypes());
          using var ms = new MemoryStream();
-         using var vw = vox.CreateWriter(ms);
-         vw.WritePolymorphic(new SimpleTestType { i = 10, s = "Hello, World!"});
+         using var vw = voxForWriter.CreateWriter(ms);
+         vw.WritePolymorphic(hodgepodgeOriginal);
          ms.Position = 0;
-         using var vr = vox.CreateReader(ms);
-         var rt = (SimpleTestType)vr.ReadPolymorphic();
-         rt.i.AssertEquals(10);
-         rt.s.AssertEquals("Hello, World!");
+
+         var voxForReader = VoxContext.Create(new TestVoxTypes());
+         using var vr = voxForReader.CreateReader(ms);
+         var rt = (HodgepodgeMin)vr.ReadPolymorphic();
+         hodgepodgeOriginal.Int32.AssertEquals(rt.Int32);
+         hodgepodgeOriginal.String.AssertEquals(rt.String);
+         hodgepodgeOriginal.Guid.AssertEquals(rt.Guid);
+         hodgepodgeOriginal.IntArray.Length.AssertEquals(rt.IntArray.Length);
+         foreach (var (i, x) in hodgepodgeOriginal.IntArray.Enumerate()) {
+            rt.IntArray[i].AssertEquals(x);
+         }
+
+         var dictOrig = hodgepodgeOriginal.DictOfIntToArrayOfArrayOfDictOfStringToIntArray;
+         var dictRead = rt.DictOfIntToArrayOfArrayOfDictOfStringToIntArray;
+         var codeOrig = dictOrig.ToCodegenDump();
+         var codeRead = dictRead.ToCodegenDump();
+         codeOrig.AssertEquals(codeRead);
+
+         hodgepodgeOriginal.PolymorphicString.AssertEquals(rt.PolymorphicString);
+         // rt.i.AssertEquals(10);
+         // rt.s.AssertEquals("Hello, World!");
 
          // vw.WriteFull(new HodgepodgeMin());
       }
@@ -284,7 +325,11 @@ namespace Dargon.Vox2 {
       }
 
       public void WritePolymorphicFull<T>(VoxWriter writer, ref T x) {
-         var tn = trieContainer.GetOrCreateTrieNodeOfCompleteType(typeof(T));
+         if (x == null) {
+            throw new NotYetImplementedException();
+         }
+
+         var tn = trieContainer.GetOrCreateTrieNodeOfCompleteType(x.GetType());
          tn.SerializerInstanceOrNull!.WriteFullObject(writer, x);
       }
    }
@@ -371,7 +416,10 @@ namespace Dargon.Vox2 {
    }
 
    public class TestVoxTypes : VoxTypes {
-      public override List<Type> AutoserializedTypes { get; } = new() { typeof(SimpleTestType) };
+      public override List<Type> AutoserializedTypes { get; } = new() {
+         typeof(SimpleTestType),
+         typeof(HodgepodgeMin),
+      };
       public override Dictionary<Type, Type> TypeToCustomSerializers { get; } = new() { };
       public override List<Type> DependencyVoxTypes { get; } = new() { typeof(CoreVoxTypes) };
    }
@@ -399,9 +447,12 @@ namespace Dargon.Vox2 {
    [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest1)]
    public partial class HodgepodgeMin {
       public int Int32 { get; set; }
+      public string String { get; set; }
       public Guid Guid { get; set; }
       public int[] IntArray { get; set; }
       [D<N, D<P, N[]>[][]>] public Dictionary<int, Dictionary<object, int[]>[][]> DictOfIntToArrayOfArrayOfDictOfStringToIntArray { get; set; }
+      [P] public object PolymorphicString { get; set; }
+      [P] public object PolymorphicIntArray { get; set; }
       // public Type Type { get; set; }
       // public (int, string) Tuple { get; set; }
       // public Vector3 Vector3 { get; set; }
