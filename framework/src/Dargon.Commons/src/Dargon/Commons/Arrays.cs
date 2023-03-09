@@ -53,6 +53,20 @@ namespace Dargon.Commons {
          return arr;
       }
 
+      public static T[] Concat<T>(T x1, T[] arr1) {
+         var res = new T[1 + arr1.Length];
+         res[0] = x1;
+         Array.Copy(arr1, 0, res, 1, arr1.Length);
+         return res;
+      }
+
+      public static T[] Concat<T>(T[] arr1, T x1) {
+         var res = new T[arr1.Length + 1];
+         Array.Copy(arr1, 0, res, 0, arr1.Length);
+         res[arr1.Length] = x1;
+         return res;
+      }
+
       public static T[] Concat<T>(T[] arr1, T[] arr2) {
          var res = new T[arr1.Length + arr2.Length];
          Array.Copy(arr1, res, arr1.Length);

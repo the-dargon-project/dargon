@@ -115,5 +115,11 @@ namespace Dargon.Commons {
             if (Interlocked.CompareExchange(ref o, val, read) == read) return;
          }
       }
+
+#nullable enable
+      public static T AssignIfNull<T>(ref T? target, T value) where T : class {
+         return Interlocked.CompareExchange(ref target, value, null) ?? value;
+      }
+#nullable restore
    }
 }

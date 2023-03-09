@@ -68,6 +68,12 @@ namespace Dargon.Vox.SourceGenerators {
                var stubFull = (flags & 1 /* VoxTypeFlags.StubFull */) != 0;
                var stubRaw = (flags & 2 /* VoxTypeFlags.StubRaw */) != 0;
                var targetIsUpdatable = (flags & 4 /* VoxTypeFlags.NonUpdatable */) == 0;
+               var targetIsNoCodeGen = (flags & 16 /* VoxTypeFlags.NoCodeGen */) == 16;
+
+               if (targetIsNoCodeGen) {
+                  sb.AppendLine($"/* NoCodeGen flag specified for {typeFullName} */");
+                  continue;
+               }
 
                var refIfTargetIsUpdatable = targetIsUpdatable ? "ref " : "";
                var refIfTargetIsUpdatableStruct = targetIsStruct && targetIsUpdatable ? "ref " : "";
@@ -197,8 +203,8 @@ namespace Dargon.Vox.SourceGenerators {
                }
 
                sb.AppendLine($@"
-                                                                                                                              void IVoxSerializer.WriteFullObject(VoxWriter writer, object val) {{ {targetType.Name} v = ({targetType.Name})val; WriteFull(writer, ref v); }}
-                                                                                                                              object IVoxSerializer.ReadRawAsObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) {{ {targetType.Name} v = ({targetType.Name})val; WriteRaw(writer, ref v); }}
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
                                                                                                                            }}
                ");
 

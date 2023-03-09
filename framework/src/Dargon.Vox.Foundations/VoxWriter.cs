@@ -78,9 +78,10 @@ namespace Dargon.Vox2 {
    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
    public class NAttribute : VoxInternalBaseAttribute { }
 
-
+   // List
    public class L<T> : VoxInternalBaseDummyType { }
 
+   // Dict
    public class D<T1, T2> : VoxInternalBaseDummyType { }
 
    public interface IVoxSerializer {
@@ -90,8 +91,8 @@ namespace Dargon.Vox2 {
 
       bool IsUpdatable { get; }
 
-      void WriteFullObject(VoxWriter writer, object val);
-      object ReadRawAsObject(VoxReader reader);
+      void WriteRawObject(VoxWriter writer, object val);
+      object ReadRawObject(VoxReader reader);
    }
 
    public interface IVoxSerializer<T> : IVoxSerializer {
@@ -128,8 +129,9 @@ namespace Dargon.Vox2 {
       public void AssertReadTypeIdBytes(byte[] bs) => AssertReadRawBytes(bs);
 
       public void AssertReadRawBytes(byte[] bs) {
-         foreach (var b in bs) {
-            if (InnerReader.ReadByte() != b) {
+         for (var i = 0; i < bs.Length; i++) {
+            var x = InnerReader.ReadByte();
+            if (x != bs[i]) {
                throw new Exception("Byte sequence mismatch!");
             }
          }

@@ -26,6 +26,7 @@ namespace Dargon.Vox2 {
       StubRaw = 2,
       NonUpdatable = 4,
       Specialization = 8,
+      NoCodeGen = 16,
    }
 
    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
