@@ -212,6 +212,13 @@ writer.WritePolymorphic<Object>(self.PolymorphicIntHashSet);
 writer.WritePolymorphic<Object>(self.PolymorphicIntToIntArrayDict);
 
                                                                                                                                   }
+
+                                                                                                                                  {
+var _voxvarname_tuple = self.Tuple;
+   writer.WriteRawInt32(_voxvarname_tuple.Item1);
+   writer.WriteRawString(_voxvarname_tuple.Item2);
+
+                                                                                                                                  }
  }
                
 
@@ -323,6 +330,14 @@ for (var _voxvarname_dict_i = 0; _voxvarname_dict_i < _voxvarname_dict_count; _v
                                                                                                                                   {
 
                                                                                                                                      self.PolymorphicIntToIntArrayDict = reader.ReadPolymorphic<Object>();
+                                                                                                                                  }
+
+                                                                                                                                  {
+var _voxvarname_tuple_item_0_res = reader.ReadRawInt32();
+var _voxvarname_tuple_item_1_res = reader.ReadRawString();
+var _voxvarname_tuple = (Item1: _voxvarname_tuple_item_0_res, Item2: _voxvarname_tuple_item_1_res);
+
+                                                                                                                                     self.Tuple = _voxvarname_tuple;
                                                                                                                                   }
  }
                   

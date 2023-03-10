@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -289,10 +290,12 @@ namespace Dargon.Vox.SourceGenerators {
        */
       string EmitRead(StringBuilder sb, string ind, string baseName, ITypeSymbol t, ITypeSymbol polymorphismAttribute) {
          var isPolymorphic = polymorphismAttribute?.Name.StartsWith("P") ?? false;
-         ITypeSymbol subpolyattr0 = (polymorphismAttribute as INamedTypeSymbol)?.TypeArguments.FirstOrDefault() ?? 
-                                    (polymorphismAttribute as IArrayTypeSymbol)?.ElementType;
-         ITypeSymbol subpolyattr1 = (polymorphismAttribute as INamedTypeSymbol)?.TypeArguments.Skip(1).FirstOrDefault();
 
+         var subpolyAttrs = (polymorphismAttribute as INamedTypeSymbol)?.TypeArguments ?? ImmutableArray<ITypeSymbol>.Empty;
+         ITypeSymbol subpolyattr0 = subpolyAttrs.FirstOrDefault() ?? 
+                                    (polymorphismAttribute as IArrayTypeSymbol)?.ElementType;
+         ITypeSymbol subpolyattr1 = subpolyAttrs.Skip(1).FirstOrDefault();
+         
          var classification = ClassifyType(t, out var targ0, out var targ1);
          if (classification == TypeClassification.Regular) {
             if (isPolymorphic) {
@@ -348,6 +351,24 @@ namespace Dargon.Vox.SourceGenerators {
             }
             sb.AppendLine($"{ind}}}");
             return baseName;
+         } else if (classification == TypeClassification.TupleLike) {
+            var tNts = (INamedTypeSymbol)t;
+            baseName += "_tuple";
+
+            var tupleItems = new List<string>();
+            for (var i = 0; i < tNts.TupleElements.Length; i++) {
+               var tupleElement = tNts.TupleElements[i];
+               var elementPolymorphismAttr = subpolyAttrs.Length == 0 ? null : subpolyAttrs[i];
+               var elres = EmitRead(sb, ind + "   ", $"{baseName}_item_{i}", tupleElement.Type, elementPolymorphismAttr);
+               var elementName = tupleElement.IsExplicitlyNamedTupleElement ? tupleElement.Name : $"Item{i + 1}";
+               var tupleVarName = $"{baseName}_item_{i}_res";
+               sb.AppendLine($"{ind}var {tupleVarName} = {elres};");
+               tupleItems.Add(elementName + ": " + tupleVarName);
+            }
+
+            var tupleBody = string.Join(", ", tupleItems);
+            sb.AppendLine($"{ind}var {baseName} = ({tupleBody});");
+            return baseName;
          }
 
          throw new NotImplementedException();
@@ -355,9 +376,11 @@ namespace Dargon.Vox.SourceGenerators {
 
       void EmitWrite(StringBuilder sb, string ind, string baseName, string sourceExpression, ITypeSymbol t, ITypeSymbol polymorphismAttribute) {
          var isPolymorphic = polymorphismAttribute?.Name.StartsWith("P") ?? false;
-         ITypeSymbol subpolyattr0 = (polymorphismAttribute as INamedTypeSymbol)?.TypeArguments.FirstOrDefault() ??
+
+         var subpolyAttrs = (polymorphismAttribute as INamedTypeSymbol)?.TypeArguments ?? ImmutableArray<ITypeSymbol>.Empty;
+         ITypeSymbol subpolyattr0 = subpolyAttrs.FirstOrDefault() ??
                                     (polymorphismAttribute as IArrayTypeSymbol)?.ElementType;
-         ITypeSymbol subpolyattr1 = (polymorphismAttribute as INamedTypeSymbol)?.TypeArguments.Skip(1).FirstOrDefault();
+         ITypeSymbol subpolyattr1 = subpolyAttrs.Skip(1).FirstOrDefault();
 
          var classification = ClassifyType(t, out var targ0, out var targ1);
          if (classification == TypeClassification.Regular) {
@@ -403,6 +426,18 @@ namespace Dargon.Vox.SourceGenerators {
                EmitWrite(sb, ind + "   ", $"{baseName}_value", $"{baseName}_kvp.Value", targ1, subpolyattr1);
             }
             sb.AppendLine($"{ind}}}");
+         } else if (classification == TypeClassification.TupleLike) {
+            var tNts = (INamedTypeSymbol)t;
+            baseName += "_tuple";
+
+            sb.AppendLine($"{ind}var {baseName} = {sourceExpression};");
+
+            for (var i = 0; i < tNts.TupleElements.Length; i++) {
+               var tupleElement = tNts.TupleElements[i];
+               var elementPolymorphismAttr = subpolyAttrs.Length == 0 ? null : subpolyAttrs[i];
+               var elementName = tupleElement.IsExplicitlyNamedTupleElement ? tupleElement.Name : $"Item{i + 1}";
+               EmitWrite(sb, ind + "   ", $"{baseName}_item_{i}", $"{baseName}.{elementName}", tupleElement.Type, elementPolymorphismAttr);
+            }
          } else {
             throw new NotImplementedException();
          }
@@ -469,6 +504,7 @@ namespace Dargon.Vox.SourceGenerators {
          Array,
          Enumerable,
          DictLike,
+         TupleLike,
       }
 
       private TypeClassification ClassifyType(ITypeSymbol t, out ITypeSymbol targ0, out ITypeSymbol targ1) {
@@ -481,6 +517,11 @@ namespace Dargon.Vox.SourceGenerators {
          if (t.Name == "String") {
             targ0 = targ1 = null;
             return TypeClassification.Regular;
+         }
+
+         if (t.IsTupleType) {
+            targ0 = targ1 = null;
+            return TypeClassification.TupleLike;
          }
 
          targ0 = targ1 = null;

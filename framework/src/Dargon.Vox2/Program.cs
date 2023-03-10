@@ -38,6 +38,7 @@ namespace Dargon.Vox2 {
             PolymorphicIntToIntArrayDict = new Dictionary<int, int[]> {
                [420] = new[] { 81423, 17 },
             },
+            Tuple = (123, "Hello, World!"),
          };
 
          var voxForWriter = VoxContext.Create(new TestVoxTypes());
@@ -107,6 +108,8 @@ namespace Dargon.Vox2 {
                v2[i].AssertEquals(x);
             }
          }
+
+         hodgepodgeOriginal.Tuple.AssertEquals(rt.Tuple);
 
          ms.Position.AssertEquals(writeLen);
          // rt.i.AssertEquals(10);
@@ -595,9 +598,13 @@ namespace Dargon.Vox2 {
       [P] public object PolymorphicIntHashSet { get; set; }
       [P] public object PolymorphicIntToIntArrayDict { get; set; }
       // public Type Type { get; set; }
-      // public (int, string) Tuple { get; set; }
+      public (int, string) Tuple { get; set; }
       // public Vector3 Vector3 { get; set; }
       // public HodgepodgeMin Inner { get; set; }
+
+      public static void XX(HodgepodgeMin x) {
+         // x.Tuple.Item1;
+      }
    }
 
    public class HodgepodgeDto {
