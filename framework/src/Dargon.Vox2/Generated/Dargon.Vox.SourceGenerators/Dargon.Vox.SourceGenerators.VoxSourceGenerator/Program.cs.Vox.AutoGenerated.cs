@@ -125,6 +125,11 @@ writer.WriteRawInt32(self.Int32);
                                                                                                                                   }
 
                                                                                                                                   {
+writer.WriteRawString(self.NullString);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
 writer.WriteRawString(self.String);
 
                                                                                                                                   }
@@ -136,55 +141,178 @@ writer.WriteRawGuid(self.Guid);
 
                                                                                                                                   {
 var _voxvarname_arr = self.IntArray;
-writer.WriteRawInt32(_voxvarname_arr.Length);
-for (var _voxvarname_arr_i = 0; _voxvarname_arr_i < _voxvarname_arr.Length; _voxvarname_arr_i++) {
-   writer.WriteRawInt32(_voxvarname_arr[_voxvarname_arr_i]);
+if (_voxvarname_arr == null) {
+   writer.WriteRawInt32((int)-1);
+} else {
+   writer.WriteRawInt32(_voxvarname_arr.Length);
+   for (var _voxvarname_arr_i = 0; _voxvarname_arr_i < _voxvarname_arr.Length; _voxvarname_arr_i++) {
+      writer.WriteRawInt32(_voxvarname_arr[_voxvarname_arr_i]);
+   }
 }
 
                                                                                                                                   }
 
                                                                                                                                   {
 var _voxvarname_arr = self.IntList;
-writer.WriteRawInt32(_voxvarname_arr.Count);
-foreach (var _voxvarname_arr_el in _voxvarname_arr) {
-   writer.WriteRawInt32(_voxvarname_arr_el);
+if (_voxvarname_arr == null) {
+   writer.WriteRawInt32((int)-1);
+} else {
+   writer.WriteRawInt32(_voxvarname_arr.Count);
+   foreach (var _voxvarname_arr_el in _voxvarname_arr) {
+      writer.WriteRawInt32(_voxvarname_arr_el);
+   }
 }
 
                                                                                                                                   }
 
                                                                                                                                   {
 var _voxvarname_arr = self.IntHashSet;
-writer.WriteRawInt32(_voxvarname_arr.Count);
-foreach (var _voxvarname_arr_el in _voxvarname_arr) {
-   writer.WriteRawInt32(_voxvarname_arr_el);
+if (_voxvarname_arr == null) {
+   writer.WriteRawInt32((int)-1);
+} else {
+   writer.WriteRawInt32(_voxvarname_arr.Count);
+   foreach (var _voxvarname_arr_el in _voxvarname_arr) {
+      writer.WriteRawInt32(_voxvarname_arr_el);
+   }
 }
 
                                                                                                                                   }
 
                                                                                                                                   {
-var _voxvarname_dict = self.DictOfIntToArrayOfArrayOfDictOfStringToIntArray;
-writer.WriteRawInt32(_voxvarname_dict.Count);
-foreach (var _voxvarname_dict_kvp in _voxvarname_dict) {
-   writer.WriteRawInt32(_voxvarname_dict_kvp.Key);
-   var _voxvarname_dict_value_arr = _voxvarname_dict_kvp.Value;
-   writer.WriteRawInt32(_voxvarname_dict_value_arr.Length);
-   for (var _voxvarname_dict_value_arr_i = 0; _voxvarname_dict_value_arr_i < _voxvarname_dict_value_arr.Length; _voxvarname_dict_value_arr_i++) {
-      var _voxvarname_dict_value_arr_el_arr = _voxvarname_dict_value_arr[_voxvarname_dict_value_arr_i];
-      writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr.Length);
-      for (var _voxvarname_dict_value_arr_el_arr_i = 0; _voxvarname_dict_value_arr_el_arr_i < _voxvarname_dict_value_arr_el_arr.Length; _voxvarname_dict_value_arr_el_arr_i++) {
-         var _voxvarname_dict_value_arr_el_arr_el_dict = _voxvarname_dict_value_arr_el_arr[_voxvarname_dict_value_arr_el_arr_i];
-         writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr_el_dict.Count);
-         foreach (var _voxvarname_dict_value_arr_el_arr_el_dict_kvp in _voxvarname_dict_value_arr_el_arr_el_dict) {
-            writer.WritePolymorphic<Object>(_voxvarname_dict_value_arr_el_arr_el_dict_kvp.Key);
-            var _voxvarname_dict_value_arr_el_arr_el_dict_value_arr = _voxvarname_dict_value_arr_el_arr_el_dict_kvp.Value;
-            writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr_el_dict_value_arr.Length);
-            for (var _voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i = 0; _voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i < _voxvarname_dict_value_arr_el_arr_el_dict_value_arr.Length; _voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i++) {
-               writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr_el_dict_value_arr[_voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i]);
+var _voxvarname_dict = self.DictOfIntToArrayOfArrayOfDictOfObjectToIntArray;
+if (_voxvarname_dict == null) {
+   writer.WriteRawInt32((int)-1);
+} else {
+   writer.WriteRawInt32(_voxvarname_dict.Count);
+   foreach (var _voxvarname_dict_kvp in _voxvarname_dict) {
+      writer.WriteRawInt32(_voxvarname_dict_kvp.Key);
+      var _voxvarname_dict_value_arr = _voxvarname_dict_kvp.Value;
+      if (_voxvarname_dict_value_arr == null) {
+         writer.WriteRawInt32((int)-1);
+      } else {
+         writer.WriteRawInt32(_voxvarname_dict_value_arr.Length);
+         for (var _voxvarname_dict_value_arr_i = 0; _voxvarname_dict_value_arr_i < _voxvarname_dict_value_arr.Length; _voxvarname_dict_value_arr_i++) {
+            var _voxvarname_dict_value_arr_el_arr = _voxvarname_dict_value_arr[_voxvarname_dict_value_arr_i];
+            if (_voxvarname_dict_value_arr_el_arr == null) {
+               writer.WriteRawInt32((int)-1);
+            } else {
+               writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr.Length);
+               for (var _voxvarname_dict_value_arr_el_arr_i = 0; _voxvarname_dict_value_arr_el_arr_i < _voxvarname_dict_value_arr_el_arr.Length; _voxvarname_dict_value_arr_el_arr_i++) {
+                  var _voxvarname_dict_value_arr_el_arr_el_dict = _voxvarname_dict_value_arr_el_arr[_voxvarname_dict_value_arr_el_arr_i];
+                  if (_voxvarname_dict_value_arr_el_arr_el_dict == null) {
+                     writer.WriteRawInt32((int)-1);
+                  } else {
+                     writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr_el_dict.Count);
+                     foreach (var _voxvarname_dict_value_arr_el_arr_el_dict_kvp in _voxvarname_dict_value_arr_el_arr_el_dict) {
+                        writer.WritePolymorphic<Object>(_voxvarname_dict_value_arr_el_arr_el_dict_kvp.Key);
+                        var _voxvarname_dict_value_arr_el_arr_el_dict_value_arr = _voxvarname_dict_value_arr_el_arr_el_dict_kvp.Value;
+                        if (_voxvarname_dict_value_arr_el_arr_el_dict_value_arr == null) {
+                           writer.WriteRawInt32((int)-1);
+                        } else {
+                           writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr_el_dict_value_arr.Length);
+                           for (var _voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i = 0; _voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i < _voxvarname_dict_value_arr_el_arr_el_dict_value_arr.Length; _voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i++) {
+                              writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr_el_dict_value_arr[_voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i]);
+                           }
+                        }
+                     }
+                  }
+               }
             }
          }
       }
    }
 }
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+var _voxvarname_arr = self.NullIntArray;
+if (_voxvarname_arr == null) {
+   writer.WriteRawInt32((int)-1);
+} else {
+   writer.WriteRawInt32(_voxvarname_arr.Length);
+   for (var _voxvarname_arr_i = 0; _voxvarname_arr_i < _voxvarname_arr.Length; _voxvarname_arr_i++) {
+      writer.WriteRawInt32(_voxvarname_arr[_voxvarname_arr_i]);
+   }
+}
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+var _voxvarname_arr = self.NullIntList;
+if (_voxvarname_arr == null) {
+   writer.WriteRawInt32((int)-1);
+} else {
+   writer.WriteRawInt32(_voxvarname_arr.Count);
+   foreach (var _voxvarname_arr_el in _voxvarname_arr) {
+      writer.WriteRawInt32(_voxvarname_arr_el);
+   }
+}
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+var _voxvarname_arr = self.NullIntHashSet;
+if (_voxvarname_arr == null) {
+   writer.WriteRawInt32((int)-1);
+} else {
+   writer.WriteRawInt32(_voxvarname_arr.Count);
+   foreach (var _voxvarname_arr_el in _voxvarname_arr) {
+      writer.WriteRawInt32(_voxvarname_arr_el);
+   }
+}
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+var _voxvarname_dict = self.NullDictOfIntToArrayOfArrayOfDictOfObjectToIntArray;
+if (_voxvarname_dict == null) {
+   writer.WriteRawInt32((int)-1);
+} else {
+   writer.WriteRawInt32(_voxvarname_dict.Count);
+   foreach (var _voxvarname_dict_kvp in _voxvarname_dict) {
+      writer.WriteRawInt32(_voxvarname_dict_kvp.Key);
+      var _voxvarname_dict_value_arr = _voxvarname_dict_kvp.Value;
+      if (_voxvarname_dict_value_arr == null) {
+         writer.WriteRawInt32((int)-1);
+      } else {
+         writer.WriteRawInt32(_voxvarname_dict_value_arr.Length);
+         for (var _voxvarname_dict_value_arr_i = 0; _voxvarname_dict_value_arr_i < _voxvarname_dict_value_arr.Length; _voxvarname_dict_value_arr_i++) {
+            var _voxvarname_dict_value_arr_el_arr = _voxvarname_dict_value_arr[_voxvarname_dict_value_arr_i];
+            if (_voxvarname_dict_value_arr_el_arr == null) {
+               writer.WriteRawInt32((int)-1);
+            } else {
+               writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr.Length);
+               for (var _voxvarname_dict_value_arr_el_arr_i = 0; _voxvarname_dict_value_arr_el_arr_i < _voxvarname_dict_value_arr_el_arr.Length; _voxvarname_dict_value_arr_el_arr_i++) {
+                  var _voxvarname_dict_value_arr_el_arr_el_dict = _voxvarname_dict_value_arr_el_arr[_voxvarname_dict_value_arr_el_arr_i];
+                  if (_voxvarname_dict_value_arr_el_arr_el_dict == null) {
+                     writer.WriteRawInt32((int)-1);
+                  } else {
+                     writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr_el_dict.Count);
+                     foreach (var _voxvarname_dict_value_arr_el_arr_el_dict_kvp in _voxvarname_dict_value_arr_el_arr_el_dict) {
+                        writer.WritePolymorphic<Object>(_voxvarname_dict_value_arr_el_arr_el_dict_kvp.Key);
+                        var _voxvarname_dict_value_arr_el_arr_el_dict_value_arr = _voxvarname_dict_value_arr_el_arr_el_dict_kvp.Value;
+                        if (_voxvarname_dict_value_arr_el_arr_el_dict_value_arr == null) {
+                           writer.WriteRawInt32((int)-1);
+                        } else {
+                           writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr_el_dict_value_arr.Length);
+                           for (var _voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i = 0; _voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i < _voxvarname_dict_value_arr_el_arr_el_dict_value_arr.Length; _voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i++) {
+                              writer.WriteRawInt32(_voxvarname_dict_value_arr_el_arr_el_dict_value_arr[_voxvarname_dict_value_arr_el_arr_el_dict_value_arr_i]);
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WritePolymorphic<Object>(self.PolymorphicNull);
 
                                                                                                                                   }
 
@@ -219,6 +347,31 @@ var _voxvarname_tuple = self.Tuple;
    writer.WriteRawString(_voxvarname_tuple.Item2);
 
                                                                                                                                   }
+
+                                                                                                                                  {
+writer.WriteRawType(self.TypeInt);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawType(self.TypeIntArray);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawType(self.TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawType(self.NullType);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WritePolymorphic<Object>(self.PolymorphicType);
+
+                                                                                                                                  }
  }
                
 
@@ -231,6 +384,11 @@ var _voxvarname_tuple = self.Tuple;
                                                                                                                                   {
 
                                                                                                                                      self.Int32 = reader.ReadRawInt32();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.NullString = reader.ReadRawString();
                                                                                                                                   }
 
                                                                                                                                   {
@@ -275,7 +433,7 @@ for (var _voxvarname_arr_i = 0; _voxvarname_arr_i < _voxvarname_arr_count; _voxv
 
                                                                                                                                   {
 var _voxvarname_dict_count = reader.ReadRawInt32();
-var _voxvarname_dict = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.Dictionary<object, int[]>[][]>(_voxvarname_dict_count);
+var _voxvarname_dict = _voxvarname_dict_count == -1 ? null : new System.Collections.Generic.Dictionary<int, System.Collections.Generic.Dictionary<object, int[]>[][]>(_voxvarname_dict_count);
 for (var _voxvarname_dict_i = 0; _voxvarname_dict_i < _voxvarname_dict_count; _voxvarname_dict_i++) {
    var _voxvarname_dict_key = reader.ReadRawInt32();
    var _voxvarname_dict_val_arr_count = reader.ReadRawInt32();
@@ -285,7 +443,7 @@ for (var _voxvarname_dict_i = 0; _voxvarname_dict_i < _voxvarname_dict_count; _v
       var _voxvarname_dict_val_arr_el_arr = _voxvarname_dict_val_arr_el_arr_count == -1 ? null : new System.Collections.Generic.Dictionary<object, int[]>[_voxvarname_dict_val_arr_el_arr_count];
       for (var _voxvarname_dict_val_arr_el_arr_i = 0; _voxvarname_dict_val_arr_el_arr_i < _voxvarname_dict_val_arr_el_arr_count; _voxvarname_dict_val_arr_el_arr_i++) {
          var _voxvarname_dict_val_arr_el_arr_el_dict_count = reader.ReadRawInt32();
-         var _voxvarname_dict_val_arr_el_arr_el_dict = new System.Collections.Generic.Dictionary<object, int[]>(_voxvarname_dict_val_arr_el_arr_el_dict_count);
+         var _voxvarname_dict_val_arr_el_arr_el_dict = _voxvarname_dict_val_arr_el_arr_el_dict_count == -1 ? null : new System.Collections.Generic.Dictionary<object, int[]>(_voxvarname_dict_val_arr_el_arr_el_dict_count);
          for (var _voxvarname_dict_val_arr_el_arr_el_dict_i = 0; _voxvarname_dict_val_arr_el_arr_el_dict_i < _voxvarname_dict_val_arr_el_arr_el_dict_count; _voxvarname_dict_val_arr_el_arr_el_dict_i++) {
             var _voxvarname_dict_val_arr_el_arr_el_dict_key = reader.ReadPolymorphic<Object>();
             var _voxvarname_dict_val_arr_el_arr_el_dict_val_arr_count = reader.ReadRawInt32();
@@ -304,7 +462,76 @@ for (var _voxvarname_dict_i = 0; _voxvarname_dict_i < _voxvarname_dict_count; _v
    _voxvarname_dict.Add(_voxvarname_dict_key, _voxvarname_dict_val);
 }
 
-                                                                                                                                     self.DictOfIntToArrayOfArrayOfDictOfStringToIntArray = _voxvarname_dict;
+                                                                                                                                     self.DictOfIntToArrayOfArrayOfDictOfObjectToIntArray = _voxvarname_dict;
+                                                                                                                                  }
+
+                                                                                                                                  {
+var _voxvarname_arr_count = reader.ReadRawInt32();
+var _voxvarname_arr = _voxvarname_arr_count == -1 ? null : new int[_voxvarname_arr_count];
+for (var _voxvarname_arr_i = 0; _voxvarname_arr_i < _voxvarname_arr_count; _voxvarname_arr_i++) {
+   _voxvarname_arr[_voxvarname_arr_i] = reader.ReadRawInt32();
+}
+
+                                                                                                                                     self.NullIntArray = _voxvarname_arr;
+                                                                                                                                  }
+
+                                                                                                                                  {
+var _voxvarname_arr_count = reader.ReadRawInt32();
+var _voxvarname_arr = _voxvarname_arr_count == -1 ? null : new System.Collections.Generic.List<int>(_voxvarname_arr_count);
+for (var _voxvarname_arr_i = 0; _voxvarname_arr_i < _voxvarname_arr_count; _voxvarname_arr_i++) {
+   _voxvarname_arr.Add(reader.ReadRawInt32());
+}
+
+                                                                                                                                     self.NullIntList = _voxvarname_arr;
+                                                                                                                                  }
+
+                                                                                                                                  {
+var _voxvarname_arr_count = reader.ReadRawInt32();
+var _voxvarname_arr = _voxvarname_arr_count == -1 ? null : new System.Collections.Generic.HashSet<int>(_voxvarname_arr_count);
+for (var _voxvarname_arr_i = 0; _voxvarname_arr_i < _voxvarname_arr_count; _voxvarname_arr_i++) {
+   _voxvarname_arr.Add(reader.ReadRawInt32());
+}
+
+                                                                                                                                     self.NullIntHashSet = _voxvarname_arr;
+                                                                                                                                  }
+
+                                                                                                                                  {
+var _voxvarname_dict_count = reader.ReadRawInt32();
+var _voxvarname_dict = _voxvarname_dict_count == -1 ? null : new System.Collections.Generic.Dictionary<int, System.Collections.Generic.Dictionary<object, int[]>[][]>(_voxvarname_dict_count);
+for (var _voxvarname_dict_i = 0; _voxvarname_dict_i < _voxvarname_dict_count; _voxvarname_dict_i++) {
+   var _voxvarname_dict_key = reader.ReadRawInt32();
+   var _voxvarname_dict_val_arr_count = reader.ReadRawInt32();
+   var _voxvarname_dict_val_arr = _voxvarname_dict_val_arr_count == -1 ? null : new System.Collections.Generic.Dictionary<object, int[]>[_voxvarname_dict_val_arr_count][];
+   for (var _voxvarname_dict_val_arr_i = 0; _voxvarname_dict_val_arr_i < _voxvarname_dict_val_arr_count; _voxvarname_dict_val_arr_i++) {
+      var _voxvarname_dict_val_arr_el_arr_count = reader.ReadRawInt32();
+      var _voxvarname_dict_val_arr_el_arr = _voxvarname_dict_val_arr_el_arr_count == -1 ? null : new System.Collections.Generic.Dictionary<object, int[]>[_voxvarname_dict_val_arr_el_arr_count];
+      for (var _voxvarname_dict_val_arr_el_arr_i = 0; _voxvarname_dict_val_arr_el_arr_i < _voxvarname_dict_val_arr_el_arr_count; _voxvarname_dict_val_arr_el_arr_i++) {
+         var _voxvarname_dict_val_arr_el_arr_el_dict_count = reader.ReadRawInt32();
+         var _voxvarname_dict_val_arr_el_arr_el_dict = _voxvarname_dict_val_arr_el_arr_el_dict_count == -1 ? null : new System.Collections.Generic.Dictionary<object, int[]>(_voxvarname_dict_val_arr_el_arr_el_dict_count);
+         for (var _voxvarname_dict_val_arr_el_arr_el_dict_i = 0; _voxvarname_dict_val_arr_el_arr_el_dict_i < _voxvarname_dict_val_arr_el_arr_el_dict_count; _voxvarname_dict_val_arr_el_arr_el_dict_i++) {
+            var _voxvarname_dict_val_arr_el_arr_el_dict_key = reader.ReadPolymorphic<Object>();
+            var _voxvarname_dict_val_arr_el_arr_el_dict_val_arr_count = reader.ReadRawInt32();
+            var _voxvarname_dict_val_arr_el_arr_el_dict_val_arr = _voxvarname_dict_val_arr_el_arr_el_dict_val_arr_count == -1 ? null : new int[_voxvarname_dict_val_arr_el_arr_el_dict_val_arr_count];
+            for (var _voxvarname_dict_val_arr_el_arr_el_dict_val_arr_i = 0; _voxvarname_dict_val_arr_el_arr_el_dict_val_arr_i < _voxvarname_dict_val_arr_el_arr_el_dict_val_arr_count; _voxvarname_dict_val_arr_el_arr_el_dict_val_arr_i++) {
+               _voxvarname_dict_val_arr_el_arr_el_dict_val_arr[_voxvarname_dict_val_arr_el_arr_el_dict_val_arr_i] = reader.ReadRawInt32();
+            }
+            var _voxvarname_dict_val_arr_el_arr_el_dict_val = _voxvarname_dict_val_arr_el_arr_el_dict_val_arr;
+            _voxvarname_dict_val_arr_el_arr_el_dict.Add(_voxvarname_dict_val_arr_el_arr_el_dict_key, _voxvarname_dict_val_arr_el_arr_el_dict_val);
+         }
+         _voxvarname_dict_val_arr_el_arr[_voxvarname_dict_val_arr_el_arr_i] = _voxvarname_dict_val_arr_el_arr_el_dict;
+      }
+      _voxvarname_dict_val_arr[_voxvarname_dict_val_arr_i] = _voxvarname_dict_val_arr_el_arr;
+   }
+   var _voxvarname_dict_val = _voxvarname_dict_val_arr;
+   _voxvarname_dict.Add(_voxvarname_dict_key, _voxvarname_dict_val);
+}
+
+                                                                                                                                     self.NullDictOfIntToArrayOfArrayOfDictOfObjectToIntArray = _voxvarname_dict;
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.PolymorphicNull = reader.ReadPolymorphic<Object>();
                                                                                                                                   }
 
                                                                                                                                   {
@@ -338,6 +565,31 @@ var _voxvarname_tuple_item_1_res = reader.ReadRawString();
 var _voxvarname_tuple = (Item1: _voxvarname_tuple_item_0_res, Item2: _voxvarname_tuple_item_1_res);
 
                                                                                                                                      self.Tuple = _voxvarname_tuple;
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.TypeInt = reader.ReadRawType();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.TypeIntArray = reader.ReadRawType();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray = reader.ReadRawType();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.NullType = reader.ReadRawType();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.PolymorphicType = reader.ReadPolymorphic<Object>();
                                                                                                                                   }
  }
                   
@@ -563,6 +815,70 @@ public static partial Guid Stub_ReadRaw_Guid(VoxReader reader);
                                                                                                                            }
 
                                                                                                                         }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class TypeVoxConstants {
+                                                                                                                              public const int SimpleTypeId = -2;
+                                                                                                                              public static TypeSerializer Serializer => TypeSerializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(TypeVoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_Type))]
+                                                                                                                           public sealed partial class TypeSerializer : IVoxSerializer<Type> {
+                                                                                                                              public static readonly TypeSerializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => TypeVoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { TypeVoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = TypeVoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref Type self) { TypeSerializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref Type self) { global::Dargon.Vox2.VoxGeneration_Type.Stub_WriteRaw_Type(writer, self);
+ }
+               
+
+                                                                                                                              public Type ReadFull(VoxReader reader) { TypeSerializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public Type ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_Type.Stub_ReadRaw_Type(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref Type self) => throw new InvalidOperationException("Reading into Type ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref Type self) => throw new InvalidOperationException("Reading into Type ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { Type v = (Type)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_TypeStatics {
+                                                                                                                              public static void WriteFullType(this VoxWriter writer, Type value) { var copy = value; TypeSerializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawType(this VoxWriter writer, Type value) { var copy = value; TypeSerializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static Type ReadFullType(this VoxReader reader) => TypeSerializer.Instance.ReadFull(reader);
+                                                                                                                              public static Type ReadRawType(this VoxReader reader) => TypeSerializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_Type {
+                                                                                                                              public static partial void Stub_WriteRaw_Type(VoxWriter writer, Type value);
+public static partial Type Stub_ReadRaw_Type(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
+/* NoCodeGen flag specified for global::Dargon.Vox2.ObjectThrowAlwaysSerializer */
+/* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicNullSerializer */
 /* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicArray1Serializer<T> */
 /* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicListSerializer<T> */
 /* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicHashSetSerializer<T> */

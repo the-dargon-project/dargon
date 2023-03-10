@@ -328,7 +328,7 @@ namespace Dargon.Vox.SourceGenerators {
 
             baseName += "_arr";
             sb.AppendLine($"{ind}var {baseName}_count = reader.ReadRawInt32();");
-            sb.AppendLine($"{ind}var {baseName} = {baseName}_count == -1 ? null : new {t.ToDisplayString()}({baseName}_count);");
+            sb.AppendLine($"{ind}var {baseName} = {baseName}_count == -1 ? null : new {t.ToDisplayString(NullableFlowState.NotNull)}({baseName}_count);");
             sb.AppendLine($"{ind}for (var {baseName}_i = 0; {baseName}_i < {baseName}_count; {baseName}_i++) {{");
             {
                var elres = EmitRead(sb, ind + "   ", $"{baseName}_el", targ0, subpolyattr0);
@@ -339,7 +339,7 @@ namespace Dargon.Vox.SourceGenerators {
          } else if (classification == TypeClassification.DictLike) {
             baseName += "_dict";
             sb.AppendLine($"{ind}var {baseName}_count = reader.ReadRawInt32();");
-            sb.AppendLine($"{ind}var {baseName} = new {t.ToDisplayString()}({baseName}_count);");
+            sb.AppendLine($"{ind}var {baseName} = {baseName}_count == -1 ? null : new {t.ToDisplayString(NullableFlowState.NotNull)}({baseName}_count);");
             sb.AppendLine($"{ind}for (var {baseName}_i = 0; {baseName}_i < {baseName}_count; {baseName}_i++) {{");
             {
                var keyres = EmitRead(sb, ind + "   ", $"{baseName}_key", targ0, subpolyattr0);
@@ -397,11 +397,15 @@ namespace Dargon.Vox.SourceGenerators {
 
             baseName += "_arr";
             sb.AppendLine($"{ind}var {baseName} = {sourceExpression};");
-            sb.AppendLine($"{ind}writer.WriteRawInt32({baseName}.Length);");
-            sb.AppendLine($"{ind}for (var {baseName}_i = 0; {baseName}_i < {baseName}.Length; {baseName}_i++) {{");
+            sb.AppendLine($"{ind}if ({baseName} == null) {{");
+            sb.AppendLine($"{ind}   writer.WriteRawInt32((int)-1);");
+            sb.AppendLine($"{ind}}} else {{");
+            sb.AppendLine($"{ind}   writer.WriteRawInt32({baseName}.Length);");
+            sb.AppendLine($"{ind}   for (var {baseName}_i = 0; {baseName}_i < {baseName}.Length; {baseName}_i++) {{");
             {
-               EmitWrite(sb, ind + "   ", $"{baseName}_el", $"{baseName}[{baseName}_i]", targ0, subpolyattr0);
+               EmitWrite(sb, ind + "      ", $"{baseName}_el", $"{baseName}[{baseName}_i]", targ0, subpolyattr0);
             }
+            sb.AppendLine($"{ind}   }}");
             sb.AppendLine($"{ind}}}");
          } else if (classification == TypeClassification.Enumerable) {
             // We don't attempt to transmit the type of serialized collections; rather, we transmit the contained
@@ -410,21 +414,29 @@ namespace Dargon.Vox.SourceGenerators {
 
             baseName += "_arr";
             sb.AppendLine($"{ind}var {baseName} = {sourceExpression};");
-            sb.AppendLine($"{ind}writer.WriteRawInt32({baseName}.Count);");
-            sb.AppendLine($"{ind}foreach (var {baseName}_el in {baseName}) {{");
+            sb.AppendLine($"{ind}if ({baseName} == null) {{");
+            sb.AppendLine($"{ind}   writer.WriteRawInt32((int)-1);");
+            sb.AppendLine($"{ind}}} else {{");
+            sb.AppendLine($"{ind}   writer.WriteRawInt32({baseName}.Count);");
+            sb.AppendLine($"{ind}   foreach (var {baseName}_el in {baseName}) {{");
             {
-               EmitWrite(sb, ind + "   ", $"{baseName}_el", $"{baseName}_el", targ0, subpolyattr0);
+               EmitWrite(sb, ind + "      ", $"{baseName}_el", $"{baseName}_el", targ0, subpolyattr0);
             }
+            sb.AppendLine($"{ind}   }}");
             sb.AppendLine($"{ind}}}");
          } else if (classification == TypeClassification.DictLike) {
             baseName += "_dict";
             sb.AppendLine($"{ind}var {baseName} = {sourceExpression};");
-            sb.AppendLine($"{ind}writer.WriteRawInt32({baseName}.Count);");
-            sb.AppendLine($"{ind}foreach (var {baseName}_kvp in {baseName}) {{");
+            sb.AppendLine($"{ind}if ({baseName} == null) {{");
+            sb.AppendLine($"{ind}   writer.WriteRawInt32((int)-1);");
+            sb.AppendLine($"{ind}}} else {{");
+            sb.AppendLine($"{ind}   writer.WriteRawInt32({baseName}.Count);");
+            sb.AppendLine($"{ind}   foreach (var {baseName}_kvp in {baseName}) {{");
             {
-               EmitWrite(sb, ind + "   ", $"{baseName}_key", $"{baseName}_kvp.Key", targ0, subpolyattr0);
-               EmitWrite(sb, ind + "   ", $"{baseName}_value", $"{baseName}_kvp.Value", targ1, subpolyattr1);
+               EmitWrite(sb, ind + "      ", $"{baseName}_key", $"{baseName}_kvp.Key", targ0, subpolyattr0);
+               EmitWrite(sb, ind + "      ", $"{baseName}_value", $"{baseName}_kvp.Value", targ1, subpolyattr1);
             }
+            sb.AppendLine($"{ind}   }}");
             sb.AppendLine($"{ind}}}");
          } else if (classification == TypeClassification.TupleLike) {
             var tNts = (INamedTypeSymbol)t;
@@ -550,7 +562,7 @@ namespace Dargon.Vox.SourceGenerators {
 
          var sb = new StringBuilder();
          sb.Append("new ");
-         sb.Append(elType.ToDisplayString());
+         sb.Append(elType.ToDisplayString(NullableFlowState.NotNull));
          sb.Append($"[{indexExpr}]");
          for (var i = 0; i < nestedArrayDepth; i++) {
             sb.Append($"[]");
