@@ -14,6 +14,7 @@ namespace Dargon.Vox2 {
             String = "Hello, World!",
             Guid = new Guid(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
             IntArray = new int[] { 1, 2, 3 },
+            IntList = new() { 21, 22, 23 },
             DictOfIntToArrayOfArrayOfDictOfStringToIntArray = new() {
                [123] = new Dictionary<object, int[]>[][] {
                   new Dictionary<object, int[]>[] {
@@ -31,6 +32,10 @@ namespace Dargon.Vox2 {
             },
             PolymorphicString = "abc",
             PolymorphicIntArray = new int[] { 123, 456, 789 },
+            PolymorphicIntList = new List<int> { 31, 32, 32 },
+            PolymorphicIntToIntArrayDict = new Dictionary<int, int[]> {
+               [420] = new[] { 81423, 17 },
+            },
          };
 
          var voxForWriter = VoxContext.Create(new TestVoxTypes());
@@ -51,6 +56,11 @@ namespace Dargon.Vox2 {
             rt.IntArray[i].AssertEquals(x);
          }
 
+         hodgepodgeOriginal.IntList.Count.AssertEquals(rt.IntList.Count);
+         foreach (var (i, x) in hodgepodgeOriginal.IntList.Enumerate()) {
+            rt.IntList[i].AssertEquals(x);
+         }
+
          var dictOrig = hodgepodgeOriginal.DictOfIntToArrayOfArrayOfDictOfStringToIntArray;
          var dictRead = rt.DictOfIntToArrayOfArrayOfDictOfStringToIntArray;
          var codeOrig = dictOrig.ToCodegenDump();
@@ -58,10 +68,32 @@ namespace Dargon.Vox2 {
          codeOrig.AssertEquals(codeRead);
 
          hodgepodgeOriginal.PolymorphicString.AssertEquals(rt.PolymorphicString);
-         ((int[])hodgepodgeOriginal.PolymorphicIntArray).Length.AssertEquals(((int[])rt.PolymorphicIntArray).Length);
-         foreach (var (i, x) in ((int[])hodgepodgeOriginal.PolymorphicIntArray).Enumerate()) {
-            ((int[])rt.PolymorphicIntArray)[i].AssertEquals(x);
+         
+         var hoPIA = (int[])hodgepodgeOriginal.PolymorphicIntArray;
+         var rtPIA = (int[])rt.PolymorphicIntArray;
+         hoPIA.Length.AssertEquals(rtPIA.Length);
+         foreach (var (i, x) in hoPIA.Enumerate()) {
+            rtPIA[i].AssertEquals(x);
          }
+
+         var hoPIL = (List<int>)hodgepodgeOriginal.PolymorphicIntList;
+         var rtPIL = (List<int>)rt.PolymorphicIntList;
+         hoPIA.Length.AssertEquals(rtPIL.Count);
+         foreach (var (i, x) in hoPIL.Enumerate()) {
+            rtPIL[i].AssertEquals(x);
+         }
+
+         var hoPIIAD = (Dictionary<int, int[]>)hodgepodgeOriginal.PolymorphicIntToIntArrayDict;
+         var rtPIIAD = (Dictionary<int, int[]>)rt.PolymorphicIntToIntArrayDict;
+         hoPIIAD.Count.AssertEquals(rtPIIAD.Count);
+         foreach (var (k, v1) in hoPIIAD) {
+            var v2 = rtPIIAD[k];
+            v1.Length.AssertEquals(v2.Length);
+            foreach (var (i, x) in v1.Enumerate()) {
+               v2[i].AssertEquals(x);
+            }
+         }
+
          ms.Position.AssertEquals(writeLen);
          // rt.i.AssertEquals(10);
          // rt.s.AssertEquals("Hello, World!");
@@ -497,6 +529,8 @@ namespace Dargon.Vox2 {
          [typeof(Guid)] = typeof(GuidSerializer),
          [typeof(String)] = typeof(StringSerializer),
          [typeof(VoxTypePlaceholders.RuntimePolymorphicArray1<>)] = typeof(RuntimePolymorphicArray1Serializer<>),
+         [typeof(List<>)] = typeof(RuntimePolymorphicListSerializer<>),
+         [typeof(Dictionary<,>)] = typeof(RuntimePolymorphicDictionarySerializer<,>),
       };
 
       public override List<Type> DependencyVoxTypes { get; } = new();
@@ -537,9 +571,12 @@ namespace Dargon.Vox2 {
       public string String { get; set; }
       public Guid Guid { get; set; }
       public int[] IntArray { get; set; }
+      public List<int> IntList { get; set; }
       [D<N, D<P, N[]>[][]>] public Dictionary<int, Dictionary<object, int[]>[][]> DictOfIntToArrayOfArrayOfDictOfStringToIntArray { get; set; }
       [P] public object PolymorphicString { get; set; }
       [P] public object PolymorphicIntArray { get; set; }
+      [P] public object PolymorphicIntList { get; set; }
+      [P] public object PolymorphicIntToIntArrayDict { get; set; }
       // public Type Type { get; set; }
       // public (int, string) Tuple { get; set; }
       // public Vector3 Vector3 { get; set; }
@@ -704,10 +741,138 @@ namespace Dargon.Vox2 {
          return res;
       }
 
-      public void ReadFullIntoRef(VoxReader reader, ref T[] val) 
+      public void ReadFullIntoRef(VoxReader reader, ref T[] val)
          => throw new NotSupportedException();
 
       public void ReadRawIntoRef(VoxReader reader, ref T[] val)
+         => throw new NotSupportedException();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.List, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen, VanityRedirectFromType = typeof(List<>))]
+   public class RuntimePolymorphicListSerializer<T> : IVoxSerializer<List<T>> {
+      private static class Constants {
+         public const int SimpleTypeId = (int)BuiltInVoxTypeIds.List;
+         public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+      }
+
+      private readonly IVoxSerializer<T> elementSerializer;
+
+      public RuntimePolymorphicListSerializer(VoxContext vc) {
+         elementSerializer = vc.SerializerContainer.GetSerializerForType<T>();
+         FullTypeId = Arrays.Concat(Constants.SimpleTypeId, elementSerializer.FullTypeId);
+         FullTypeIdBytes = Arrays.Concat(Constants.SimpleTypeIdBytes, elementSerializer.FullTypeIdBytes);
+      }
+
+      public int SimpleTypeId => Constants.SimpleTypeId;
+      public int[] FullTypeId { get; }
+      public byte[] FullTypeIdBytes { get; }
+      public bool IsUpdatable => false;
+
+      public void WriteRawObject(VoxWriter writer, object val) {
+         var x = (List<T>)val;
+         WriteRaw(writer, ref x);
+      }
+
+      public object ReadRawObject(VoxReader reader) => ReadRaw(reader);
+
+      public void WriteFull(VoxWriter writer, ref List<T> val) {
+         writer.WriteTypeIdBytes(FullTypeIdBytes);
+         WriteRaw(writer, ref val);
+      }
+
+      public void WriteRaw(VoxWriter writer, ref List<T> val) {
+         writer.InnerWriter.Write((int)val.Count);
+         for (var i = 0; i < val.Count; i++) {
+            var el = val[i]; // unfortunate struct copy
+            elementSerializer.WriteFull(writer, ref el);
+         }
+      }
+
+      public List<T> ReadFull(VoxReader reader) {
+         reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+         return ReadRaw(reader);
+      }
+
+      public List<T> ReadRaw(VoxReader reader) {
+         var len = reader.InnerReader.ReadInt32();
+         var res = new List<T>(len);
+         for (var i = 0; i < len; i++) {
+            res.Add(elementSerializer.ReadFull(reader));
+         }
+         return res;
+      }
+
+      public void ReadFullIntoRef(VoxReader reader, ref List<T> val)
+         => throw new NotSupportedException();
+
+      public void ReadRawIntoRef(VoxReader reader, ref List<T> val)
+         => throw new NotSupportedException();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.Dictionary, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen, VanityRedirectFromType = typeof(Dictionary<,>))]
+   public class RuntimePolymorphicDictionarySerializer<K, V> : IVoxSerializer<Dictionary<K, V>> {
+      private static class Constants {
+         public const int SimpleTypeId = (int)BuiltInVoxTypeIds.Dictionary;
+         public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+      }
+
+      private readonly IVoxSerializer<K> keySerializer;
+      private readonly IVoxSerializer<V> valueSerializer;
+
+      public RuntimePolymorphicDictionarySerializer(VoxContext vc) {
+         keySerializer = vc.SerializerContainer.GetSerializerForType<K>();
+         valueSerializer = vc.SerializerContainer.GetSerializerForType<V>();
+         FullTypeId = Arrays.Concat(Constants.SimpleTypeId, keySerializer.FullTypeId, valueSerializer.FullTypeId);
+         FullTypeIdBytes = Arrays.Concat(Constants.SimpleTypeIdBytes, keySerializer.FullTypeIdBytes, valueSerializer.FullTypeIdBytes);
+      }
+
+      public int SimpleTypeId => Constants.SimpleTypeId;
+      public int[] FullTypeId { get; }
+      public byte[] FullTypeIdBytes { get; }
+      public bool IsUpdatable => false;
+
+      public void WriteRawObject(VoxWriter writer, object val) {
+         var x = (Dictionary<K, V>)val;
+         WriteRaw(writer, ref x);
+      }
+
+      public object ReadRawObject(VoxReader reader) => ReadRaw(reader);
+
+      public void WriteFull(VoxWriter writer, ref Dictionary<K, V> val) {
+         writer.WriteTypeIdBytes(FullTypeIdBytes);
+         WriteRaw(writer, ref val);
+      }
+
+      public void WriteRaw(VoxWriter writer, ref Dictionary<K, V> val) {
+         writer.InnerWriter.Write((int)val.Count);
+         foreach (var x in val) {
+            var key = x.Key;
+            var value = x.Value;
+            keySerializer.WriteFull(writer, ref key);
+            valueSerializer.WriteFull(writer, ref value);
+         }
+      }
+
+      public Dictionary<K, V> ReadFull(VoxReader reader) {
+         reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+         return ReadRaw(reader);
+      }
+
+      public Dictionary<K, V> ReadRaw(VoxReader reader) {
+         var len = reader.InnerReader.ReadInt32();
+         var res = new Dictionary<K, V>(len);
+         for (var i = 0; i < len; i++) {
+            var key = keySerializer.ReadFull(reader);
+            var value = valueSerializer.ReadFull(reader);
+            res.Add(key, value);
+         }
+         return res;
+      }
+
+      public void ReadFullIntoRef(VoxReader reader, ref Dictionary<K, V> val)
+         => throw new NotSupportedException();
+
+      public void ReadRawIntoRef(VoxReader reader, ref Dictionary<K, V> val)
          => throw new NotSupportedException();
    }
 

@@ -74,8 +74,16 @@ namespace Dargon.Commons {
          return res;
       }
 
+      public static T[] Concat<T>(T x1, T[] arr1, T[] arr2) {
+         var res = new T[1 + arr1.Length + arr2.Length];
+         res[0] = x1;
+         Array.Copy(arr1, 0, res, 1, arr1.Length);
+         Array.Copy(arr2, 0, res, 1 + arr1.Length, arr2.Length);
+         return res;
+      }
+
       public static T[] Concat<T>(T[] arr1, T[] arr2, T[] arr3) {
-         var res = new T[arr1.Length + arr2.Length];
+         var res = new T[arr1.Length + arr2.Length + arr3.Length];
          Array.Copy(arr1, res, arr1.Length);
          Array.Copy(arr2, 0, res, arr1.Length, arr2.Length);
          Array.Copy(arr3, 0, res, arr1.Length + arr2.Length, arr3.Length);
@@ -83,7 +91,7 @@ namespace Dargon.Commons {
       }
 
       public static T[] Concat<T>(T[] arr1, T[] arr2, T[] arr3, T[] arr4) {
-         var res = new T[arr1.Length + arr2.Length];
+         var res = new T[arr1.Length + arr2.Length + arr3.Length + arr4.Length];
          Array.Copy(arr1, res, arr1.Length);
          Array.Copy(arr2, 0, res, arr1.Length, arr2.Length);
          Array.Copy(arr3, 0, res, arr1.Length + arr2.Length, arr3.Length);
