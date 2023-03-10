@@ -372,6 +372,11 @@ writer.WriteRawType(self.NullType);
 writer.WritePolymorphic<Object>(self.PolymorphicType);
 
                                                                                                                                   }
+
+                                                                                                                                  {
+writer.WritePolymorphic<HodgepodgeMin>(self.Inner);
+
+                                                                                                                                  }
  }
                
 
@@ -590,6 +595,11 @@ var _voxvarname_tuple = (Item1: _voxvarname_tuple_item_0_res, Item2: _voxvarname
                                                                                                                                   {
 
                                                                                                                                      self.PolymorphicType = reader.ReadPolymorphic<Object>();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.Inner = reader.ReadPolymorphic<HodgepodgeMin>();
                                                                                                                                   }
  }
                   

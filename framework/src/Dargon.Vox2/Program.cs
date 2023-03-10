@@ -53,7 +53,9 @@ namespace Dargon.Vox2 {
             TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray = typeof(Dictionary<int, Dictionary<object, int>[][]>),
             NullType = null,
             PolymorphicType = typeof(Dictionary<int, HashSet<string>>),
-            // Inner = null,
+            Inner = new() {
+               Inner = null,
+            },
          };
 
          var voxForWriter = VoxContext.Create(new TestVoxTypes());
@@ -138,6 +140,8 @@ namespace Dargon.Vox2 {
          hodgepodgeOriginal.TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray.AssertEquals(rt.TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray);
          hodgepodgeOriginal.NullType.AssertEquals(rt.NullType);
          hodgepodgeOriginal.PolymorphicType.AssertEquals(rt.PolymorphicType);
+
+         rt.Inner.Inner.AssertIsNull();
 
          ms.Position.AssertEquals(writeLen);
 
@@ -659,7 +663,7 @@ namespace Dargon.Vox2 {
       [P] public object PolymorphicType { get; set; }
       
       // public Vector3 Vector3 { get; set; }
-      // public HodgepodgeMin Inner { get; set; }
+      [P] public HodgepodgeMin? Inner { get; set; } // recursive types must be declared polymorphic for now
 
       public static void XX(HodgepodgeMin x) {
          // x.Tuple.Item1;
