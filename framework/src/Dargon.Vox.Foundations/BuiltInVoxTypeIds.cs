@@ -30,6 +30,10 @@
       DateTime = -0x1E,
       TimeSpan = -0x1F,
 
+      Vector2 = -0x20,
+      Vector3 = -0x21,
+      Vector4 = -0x22,
+
       ValueTuple0 = -0x30,
       ValueTuple1 = -0x31,
       ValueTuple2 = -0x32,

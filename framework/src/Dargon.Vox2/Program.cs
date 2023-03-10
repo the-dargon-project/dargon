@@ -53,6 +53,14 @@ namespace Dargon.Vox2 {
             TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray = typeof(Dictionary<int, Dictionary<object, int>[][]>),
             NullType = null,
             PolymorphicType = typeof(Dictionary<int, HashSet<string>>),
+
+            Vector2 = new(1, 2),
+            Vector3 = new(1, 2, 3),
+            Vector4 = new(1, 2, 3, 4),
+
+            NullNullableVector2 = null,
+            NonNullNullableVector2 = new Vector2(1, 2),
+
             Inner = new() {
                Inner = null,
             },
@@ -140,7 +148,11 @@ namespace Dargon.Vox2 {
          hodgepodgeOriginal.TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray.AssertEquals(rt.TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray);
          hodgepodgeOriginal.NullType.AssertEquals(rt.NullType);
          hodgepodgeOriginal.PolymorphicType.AssertEquals(rt.PolymorphicType);
-
+         hodgepodgeOriginal.Vector2.AssertEquals(rt.Vector2);
+         hodgepodgeOriginal.Vector3.AssertEquals(rt.Vector3);
+         hodgepodgeOriginal.Vector4.AssertEquals(rt.Vector4);
+         hodgepodgeOriginal.NullNullableVector2.AssertIsNull();
+         hodgepodgeOriginal.NonNullNullableVector2.AssertEquals(rt.NonNullNullableVector2!.Value);
          rt.Inner.Inner.AssertIsNull();
 
          ms.Position.AssertEquals(writeLen);
@@ -588,6 +600,11 @@ namespace Dargon.Vox2 {
          [typeof(Type)] = typeof(TypeSerializer),
          [typeof(Object)] = typeof(ObjectThrowAlwaysSerializer),
          [typeof(Int32)] = typeof(Int32Serializer),
+         [typeof(Single)] = typeof(SingleSerializer),
+         [typeof(Double)] = typeof(DoubleSerializer),
+         [typeof(Vector2)] = typeof(Vector2Serializer),
+         [typeof(Vector3)] = typeof(Vector3Serializer),
+         [typeof(Vector4)] = typeof(Vector4Serializer),
          [typeof(Guid)] = typeof(GuidSerializer),
          [typeof(String)] = typeof(StringSerializer),
          [typeof(VoxTypePlaceholders.RuntimePolymorphicNull)] = typeof(RuntimePolymorphicNullSerializer),
@@ -662,7 +679,13 @@ namespace Dargon.Vox2 {
       public Type? NullType { get; set; }
       [P] public object PolymorphicType { get; set; }
       
-      // public Vector3 Vector3 { get; set; }
+      public Vector2 Vector2 { get; set; }
+      public Vector3 Vector3 { get; set; }
+      public Vector4 Vector4 { get; set; }
+
+      [P] public Vector2? NullNullableVector2 { get; set; }
+      [P] public Vector2? NonNullNullableVector2 { get; set; }
+
       [P] public HodgepodgeMin? Inner { get; set; } // recursive types must be declared polymorphic for now
 
       public static void XX(HodgepodgeMin x) {
@@ -702,8 +725,20 @@ namespace Dargon.Vox2 {
 
    [VoxType((int)BuiltInVoxTypeIds.Int32, RedirectToType = typeof(Int32), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
    public static partial class VoxGeneration_Int32 {
-      public static partial void Stub_WriteRaw_Int32(VoxWriter writer, int value) => writer.InnerWriter.Write(value);
+      public static partial void Stub_WriteRaw_Int32(VoxWriter writer, int value) => writer.InnerWriter.Write((int)value);
       public static partial int Stub_ReadRaw_Int32(VoxReader reader) => reader.InnerReader.ReadInt32();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.Float, RedirectToType = typeof(Single), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_Float {
+      public static partial void Stub_WriteRaw_Single(VoxWriter writer, float value) => writer.InnerWriter.Write((float)value);
+      public static partial float Stub_ReadRaw_Single(VoxReader reader) => reader.InnerReader.ReadSingle();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.Double, RedirectToType = typeof(Double), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_Double {
+      public static partial void Stub_WriteRaw_Double(VoxWriter writer, double value) => writer.InnerWriter.Write((double)value);
+      public static partial double Stub_ReadRaw_Double(VoxReader reader) => reader.InnerReader.ReadDouble();
    }
 
    [VoxType((int)BuiltInVoxTypeIds.String, RedirectToType = typeof(String), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
@@ -731,14 +766,18 @@ namespace Dargon.Vox2 {
 
    [VoxType((int)BuiltInVoxTypeIds.Type, RedirectToType = typeof(Type), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
    public static partial class VoxGeneration_Type {
-      public static partial void Stub_WriteRaw_Type(VoxWriter writer, Type value) {
-         writer.WriteFullType(value);
-      }
-
-      public static partial Type Stub_ReadRaw_Type(VoxReader reader) {
-         return reader.ReadFullType();
-      }
+      public static partial void Stub_WriteRaw_Type(VoxWriter writer, Type value) => writer.WriteFullType(value);
+      public static partial Type Stub_ReadRaw_Type(VoxReader reader) => reader.ReadFullType();
    }
+
+   [VoxType((int)BuiltInVoxTypeIds.Vector2, RedirectToType = typeof(Vector2))]
+   public static partial class VoxGeneration_Vector2 { }
+
+   [VoxType((int)BuiltInVoxTypeIds.Vector3, RedirectToType = typeof(Vector3))]
+   public static partial class VoxGeneration_Vector3 { }
+
+   [VoxType((int)BuiltInVoxTypeIds.Vector4, RedirectToType = typeof(Vector4))]
+   public static partial class VoxGeneration_Vector4 { }
 
    // public static class VoxReflectionCache_Helpers {
    //    public static byte[] Array1TypeIdBytes = ((int)BuiltInVoxTypeIds.Array1).ToVariableIntBytes();
