@@ -318,13 +318,14 @@ namespace Dargon.Vox.SourceGenerators {
             sb.AppendLine($"{ind}}}");
             return baseName;
          } else if (classification == TypeClassification.Enumerable) {
-            // We don't attempt to transmit the type of serialized collections; rather, we transmit the contained
-            // data and on deserialize create a collection instance that matches the field type (which might be concrete).
+            // As with the array field case, we don't attempt to transmit the type of serialized collections;
+            // rather, we transmit the contained data and on deserialize create a collection instance that
+            // matches the field type (which might be concrete).
             isPolymorphic.AssertEquals(false);
 
             baseName += "_arr";
             sb.AppendLine($"{ind}var {baseName}_count = reader.ReadRawInt32();");
-            sb.AppendLine($"{ind}var {baseName} = {baseName}_count == -1 ? null : new List<{targ0.ToDisplayString()}>({baseName}_count);");
+            sb.AppendLine($"{ind}var {baseName} = {baseName}_count == -1 ? null : new {t.ToDisplayString()}({baseName}_count);");
             sb.AppendLine($"{ind}for (var {baseName}_i = 0; {baseName}_i < {baseName}_count; {baseName}_i++) {{");
             {
                var elres = EmitRead(sb, ind + "   ", $"{baseName}_el", targ0, subpolyattr0);

@@ -15,6 +15,7 @@ namespace Dargon.Vox2 {
             Guid = new Guid(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
             IntArray = new int[] { 1, 2, 3 },
             IntList = new() { 21, 22, 23 },
+            IntHashSet = new() { 1, 2, 3, 4 },
             DictOfIntToArrayOfArrayOfDictOfStringToIntArray = new() {
                [123] = new Dictionary<object, int[]>[][] {
                   new Dictionary<object, int[]>[] {
@@ -33,6 +34,7 @@ namespace Dargon.Vox2 {
             PolymorphicString = "abc",
             PolymorphicIntArray = new int[] { 123, 456, 789 },
             PolymorphicIntList = new List<int> { 31, 32, 32 },
+            PolymorphicIntHashSet = new HashSet<int> { 1, 2, 3, 4 },
             PolymorphicIntToIntArrayDict = new Dictionary<int, int[]> {
                [420] = new[] { 81423, 17 },
             },
@@ -61,6 +63,11 @@ namespace Dargon.Vox2 {
             rt.IntList[i].AssertEquals(x);
          }
 
+         hodgepodgeOriginal.IntHashSet.Count.AssertEquals(rt.IntHashSet.Count);
+         foreach (var x in hodgepodgeOriginal.IntHashSet) {
+            rt.IntHashSet.Contains(x).AssertIsTrue();
+         }
+
          var dictOrig = hodgepodgeOriginal.DictOfIntToArrayOfArrayOfDictOfStringToIntArray;
          var dictRead = rt.DictOfIntToArrayOfArrayOfDictOfStringToIntArray;
          var codeOrig = dictOrig.ToCodegenDump();
@@ -78,9 +85,16 @@ namespace Dargon.Vox2 {
 
          var hoPIL = (List<int>)hodgepodgeOriginal.PolymorphicIntList;
          var rtPIL = (List<int>)rt.PolymorphicIntList;
-         hoPIA.Length.AssertEquals(rtPIL.Count);
+         hoPIL.Count.AssertEquals(rtPIL.Count);
          foreach (var (i, x) in hoPIL.Enumerate()) {
             rtPIL[i].AssertEquals(x);
+         }
+
+         var hoPIHS = (HashSet<int>)hodgepodgeOriginal.PolymorphicIntHashSet;
+         var rtPIHS = (HashSet<int>)rt.PolymorphicIntHashSet;
+         hoPIHS.Count.AssertEquals(rtPIHS.Count);
+         foreach (var x in hoPIHS) {
+            rtPIHS.Contains(x).AssertIsTrue();
          }
 
          var hoPIIAD = (Dictionary<int, int[]>)hodgepodgeOriginal.PolymorphicIntToIntArrayDict;
@@ -530,6 +544,7 @@ namespace Dargon.Vox2 {
          [typeof(String)] = typeof(StringSerializer),
          [typeof(VoxTypePlaceholders.RuntimePolymorphicArray1<>)] = typeof(RuntimePolymorphicArray1Serializer<>),
          [typeof(List<>)] = typeof(RuntimePolymorphicListSerializer<>),
+         [typeof(HashSet<>)] = typeof(RuntimePolymorphicHashSetSerializer<>),
          [typeof(Dictionary<,>)] = typeof(RuntimePolymorphicDictionarySerializer<,>),
       };
 
@@ -572,10 +587,12 @@ namespace Dargon.Vox2 {
       public Guid Guid { get; set; }
       public int[] IntArray { get; set; }
       public List<int> IntList { get; set; }
+      public HashSet<int> IntHashSet { get; set; }
       [D<N, D<P, N[]>[][]>] public Dictionary<int, Dictionary<object, int[]>[][]> DictOfIntToArrayOfArrayOfDictOfStringToIntArray { get; set; }
       [P] public object PolymorphicString { get; set; }
       [P] public object PolymorphicIntArray { get; set; }
       [P] public object PolymorphicIntList { get; set; }
+      [P] public object PolymorphicIntHashSet { get; set; }
       [P] public object PolymorphicIntToIntArrayDict { get; set; }
       // public Type Type { get; set; }
       // public (int, string) Tuple { get; set; }
@@ -806,6 +823,73 @@ namespace Dargon.Vox2 {
          => throw new NotSupportedException();
 
       public void ReadRawIntoRef(VoxReader reader, ref List<T> val)
+         => throw new NotSupportedException();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.HashSet, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen, VanityRedirectFromType = typeof(HashSet<>))]
+   public class RuntimePolymorphicHashSetSerializer<T> : IVoxSerializer<HashSet<T>> {
+      private static class Constants {
+         public const int SimpleTypeId = (int)BuiltInVoxTypeIds.HashSet;
+         public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+      }
+
+      private readonly IVoxSerializer<T> elementSerializer;
+
+      public RuntimePolymorphicHashSetSerializer(VoxContext vc) {
+         elementSerializer = vc.SerializerContainer.GetSerializerForType<T>();
+         FullTypeId = Arrays.Concat(Constants.SimpleTypeId, elementSerializer.FullTypeId);
+         FullTypeIdBytes = Arrays.Concat(Constants.SimpleTypeIdBytes, elementSerializer.FullTypeIdBytes);
+      }
+
+      public int SimpleTypeId => Constants.SimpleTypeId;
+      public int[] FullTypeId { get; }
+      public byte[] FullTypeIdBytes { get; }
+      public bool IsUpdatable => false;
+
+      public void WriteRawObject(VoxWriter writer, object val) {
+         var x = (HashSet<T>)val;
+         WriteRaw(writer, ref x);
+      }
+
+      public object ReadRawObject(VoxReader reader) => ReadRaw(reader);
+
+      public void WriteFull(VoxWriter writer, ref HashSet<T> val) {
+         writer.WriteTypeIdBytes(FullTypeIdBytes);
+         WriteRaw(writer, ref val);
+      }
+
+      public void WriteRaw(VoxWriter writer, ref HashSet<T> val) {
+         var count = val.Count;
+         writer.InnerWriter.Write((int)count);
+
+         var numObserved = 0;
+         foreach (var x in val) {
+            var el = x; // unfortunate struct copy
+            elementSerializer.WriteFull(writer, ref el);
+            numObserved++;
+         }
+
+         numObserved.AssertEquals(count);
+      }
+
+      public HashSet<T> ReadFull(VoxReader reader) {
+         reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+         return ReadRaw(reader);
+      }
+
+      public HashSet<T> ReadRaw(VoxReader reader) {
+         var len = reader.InnerReader.ReadInt32();
+         var res = new HashSet<T>(len);
+         for (var i = 0; i < len; i++) {
+            res.Add(elementSerializer.ReadFull(reader));
+         }
+         return res;
+      }
+
+      public void ReadFullIntoRef(VoxReader reader, ref HashSet<T> val)
+         => throw new NotSupportedException();
+
+      public void ReadRawIntoRef(VoxReader reader, ref HashSet<T> val)
          => throw new NotSupportedException();
    }
 

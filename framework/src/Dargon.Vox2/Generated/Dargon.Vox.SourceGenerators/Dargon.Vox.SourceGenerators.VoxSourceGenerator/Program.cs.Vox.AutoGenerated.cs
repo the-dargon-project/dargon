@@ -153,6 +153,15 @@ foreach (var _voxvarname_arr_el in _voxvarname_arr) {
                                                                                                                                   }
 
                                                                                                                                   {
+var _voxvarname_arr = self.IntHashSet;
+writer.WriteRawInt32(_voxvarname_arr.Count);
+foreach (var _voxvarname_arr_el in _voxvarname_arr) {
+   writer.WriteRawInt32(_voxvarname_arr_el);
+}
+
+                                                                                                                                  }
+
+                                                                                                                                  {
 var _voxvarname_dict = self.DictOfIntToArrayOfArrayOfDictOfStringToIntArray;
 writer.WriteRawInt32(_voxvarname_dict.Count);
 foreach (var _voxvarname_dict_kvp in _voxvarname_dict) {
@@ -191,6 +200,11 @@ writer.WritePolymorphic<Object>(self.PolymorphicIntArray);
 
                                                                                                                                   {
 writer.WritePolymorphic<Object>(self.PolymorphicIntList);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WritePolymorphic<Object>(self.PolymorphicIntHashSet);
 
                                                                                                                                   }
 
@@ -234,12 +248,22 @@ for (var _voxvarname_arr_i = 0; _voxvarname_arr_i < _voxvarname_arr_count; _voxv
 
                                                                                                                                   {
 var _voxvarname_arr_count = reader.ReadRawInt32();
-var _voxvarname_arr = _voxvarname_arr_count == -1 ? null : new List<int>(_voxvarname_arr_count);
+var _voxvarname_arr = _voxvarname_arr_count == -1 ? null : new System.Collections.Generic.List<int>(_voxvarname_arr_count);
 for (var _voxvarname_arr_i = 0; _voxvarname_arr_i < _voxvarname_arr_count; _voxvarname_arr_i++) {
    _voxvarname_arr.Add(reader.ReadRawInt32());
 }
 
                                                                                                                                      self.IntList = _voxvarname_arr;
+                                                                                                                                  }
+
+                                                                                                                                  {
+var _voxvarname_arr_count = reader.ReadRawInt32();
+var _voxvarname_arr = _voxvarname_arr_count == -1 ? null : new System.Collections.Generic.HashSet<int>(_voxvarname_arr_count);
+for (var _voxvarname_arr_i = 0; _voxvarname_arr_i < _voxvarname_arr_count; _voxvarname_arr_i++) {
+   _voxvarname_arr.Add(reader.ReadRawInt32());
+}
+
+                                                                                                                                     self.IntHashSet = _voxvarname_arr;
                                                                                                                                   }
 
                                                                                                                                   {
@@ -289,6 +313,11 @@ for (var _voxvarname_dict_i = 0; _voxvarname_dict_i < _voxvarname_dict_count; _v
                                                                                                                                   {
 
                                                                                                                                      self.PolymorphicIntList = reader.ReadPolymorphic<Object>();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.PolymorphicIntHashSet = reader.ReadPolymorphic<Object>();
                                                                                                                                   }
 
                                                                                                                                   {
@@ -521,4 +550,5 @@ public static partial Guid Stub_ReadRaw_Guid(VoxReader reader);
                                                                                                                         }
 /* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicArray1Serializer<T> */
 /* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicListSerializer<T> */
+/* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicHashSetSerializer<T> */
 /* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicDictionarySerializer<K, V> */
