@@ -121,7 +121,42 @@ writer.WriteRawString(self.s);
  }
                                                                                                                               public void WriteRaw(VoxWriter writer, ref HodgepodgeMin self) { 
                                                                                                                                   {
+writer.WriteRawSByte(self.Int8);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawInt16(self.Int16);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
 writer.WriteRawInt32(self.Int32);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawInt64(self.Int64);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawByte(self.UInt8);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawUInt16(self.UInt16);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawUInt32(self.UInt32);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawUInt64(self.UInt64);
 
                                                                                                                                   }
 
@@ -400,6 +435,21 @@ writer.WritePolymorphic<System.Numerics.Vector2?>(self.NonNullNullableVector2);
                                                                                                                                   }
 
                                                                                                                                   {
+writer.WriteRawDateTime(self.DateTime);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawDateTimeOffset(self.DateTimeOffset);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
+writer.WriteRawTimeSpan(self.TimeSpan);
+
+                                                                                                                                  }
+
+                                                                                                                                  {
 writer.WritePolymorphic<Dargon.Vox2.HodgepodgeMin?>(self.Inner);
 
                                                                                                                                   }
@@ -414,7 +464,42 @@ writer.WritePolymorphic<Dargon.Vox2.HodgepodgeMin?>(self.Inner);
 
                                                                                                                                   {
 
+                                                                                                                                     self.Int8 = reader.ReadRawSByte();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.Int16 = reader.ReadRawInt16();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
                                                                                                                                      self.Int32 = reader.ReadRawInt32();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.Int64 = reader.ReadRawInt64();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.UInt8 = reader.ReadRawByte();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.UInt16 = reader.ReadRawUInt16();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.UInt32 = reader.ReadRawUInt32();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.UInt64 = reader.ReadRawUInt64();
                                                                                                                                   }
 
                                                                                                                                   {
@@ -650,6 +735,21 @@ var _voxvarname_tuple = (Item1: _voxvarname_tuple_item_0_res, Item2: _voxvarname
 
                                                                                                                                   {
 
+                                                                                                                                     self.DateTime = reader.ReadRawDateTime();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.DateTimeOffset = reader.ReadRawDateTimeOffset();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
+                                                                                                                                     self.TimeSpan = reader.ReadRawTimeSpan();
+                                                                                                                                  }
+
+                                                                                                                                  {
+
                                                                                                                                      self.Inner = reader.ReadPolymorphic<Dargon.Vox2.HodgepodgeMin?>();
                                                                                                                                   }
  }
@@ -688,6 +788,130 @@ var _voxvarname_tuple = (Item1: _voxvarname_tuple_item_0_res, Item2: _voxvarname
 
                                                                                                                         namespace Dargon.Vox2 {
                
+
+                                                                                                                        }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class SByteVoxConstants {
+                                                                                                                              public const int SimpleTypeId = -19;
+                                                                                                                              public static SByteSerializer Serializer => SByteSerializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(SByteVoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_Int8))]
+                                                                                                                           public sealed partial class SByteSerializer : IVoxSerializer<SByte> {
+                                                                                                                              public static readonly SByteSerializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => SByteVoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { SByteVoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = SByteVoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref SByte self) { SByteSerializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref SByte self) { global::Dargon.Vox2.VoxGeneration_Int8.Stub_WriteRaw_SByte(writer, self);
+ }
+               
+
+                                                                                                                              public SByte ReadFull(VoxReader reader) { SByteSerializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public SByte ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_Int8.Stub_ReadRaw_SByte(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref SByte self) => throw new InvalidOperationException("Reading into SByte ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref SByte self) => throw new InvalidOperationException("Reading into SByte ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { SByte v = (SByte)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_SByteStatics {
+                                                                                                                              public static void WriteFullSByte(this VoxWriter writer, SByte value) { var copy = value; SByteSerializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawSByte(this VoxWriter writer, SByte value) { var copy = value; SByteSerializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static SByte ReadFullSByte(this VoxReader reader) => SByteSerializer.Instance.ReadFull(reader);
+                                                                                                                              public static SByte ReadRawSByte(this VoxReader reader) => SByteSerializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_Int8 {
+                                                                                                                              public static partial void Stub_WriteRaw_SByte(VoxWriter writer, SByte value);
+public static partial SByte Stub_ReadRaw_SByte(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class Int16VoxConstants {
+                                                                                                                              public const int SimpleTypeId = -20;
+                                                                                                                              public static Int16Serializer Serializer => Int16Serializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(Int16VoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_Int16))]
+                                                                                                                           public sealed partial class Int16Serializer : IVoxSerializer<Int16> {
+                                                                                                                              public static readonly Int16Serializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => Int16VoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { Int16VoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = Int16VoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref Int16 self) { Int16Serializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref Int16 self) { global::Dargon.Vox2.VoxGeneration_Int16.Stub_WriteRaw_Int16(writer, self);
+ }
+               
+
+                                                                                                                              public Int16 ReadFull(VoxReader reader) { Int16Serializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public Int16 ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_Int16.Stub_ReadRaw_Int16(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref Int16 self) => throw new InvalidOperationException("Reading into Int16 ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref Int16 self) => throw new InvalidOperationException("Reading into Int16 ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { Int16 v = (Int16)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_Int16Statics {
+                                                                                                                              public static void WriteFullInt16(this VoxWriter writer, Int16 value) { var copy = value; Int16Serializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawInt16(this VoxWriter writer, Int16 value) { var copy = value; Int16Serializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static Int16 ReadFullInt16(this VoxReader reader) => Int16Serializer.Instance.ReadFull(reader);
+                                                                                                                              public static Int16 ReadRawInt16(this VoxReader reader) => Int16Serializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_Int16 {
+                                                                                                                              public static partial void Stub_WriteRaw_Int16(VoxWriter writer, Int16 value);
+public static partial Int16 Stub_ReadRaw_Int16(VoxReader reader);
+                                                               
+                                                                                                                           }
 
                                                                                                                         }
 
@@ -748,6 +972,316 @@ var _voxvarname_tuple = (Item1: _voxvarname_tuple_item_0_res, Item2: _voxvarname
                                                                                                                            public static partial class VoxGeneration_Int32 {
                                                                                                                               public static partial void Stub_WriteRaw_Int32(VoxWriter writer, Int32 value);
 public static partial Int32 Stub_ReadRaw_Int32(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class Int64VoxConstants {
+                                                                                                                              public const int SimpleTypeId = -22;
+                                                                                                                              public static Int64Serializer Serializer => Int64Serializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(Int64VoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_Int64))]
+                                                                                                                           public sealed partial class Int64Serializer : IVoxSerializer<Int64> {
+                                                                                                                              public static readonly Int64Serializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => Int64VoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { Int64VoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = Int64VoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref Int64 self) { Int64Serializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref Int64 self) { global::Dargon.Vox2.VoxGeneration_Int64.Stub_WriteRaw_Int64(writer, self);
+ }
+               
+
+                                                                                                                              public Int64 ReadFull(VoxReader reader) { Int64Serializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public Int64 ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_Int64.Stub_ReadRaw_Int64(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref Int64 self) => throw new InvalidOperationException("Reading into Int64 ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref Int64 self) => throw new InvalidOperationException("Reading into Int64 ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { Int64 v = (Int64)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_Int64Statics {
+                                                                                                                              public static void WriteFullInt64(this VoxWriter writer, Int64 value) { var copy = value; Int64Serializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawInt64(this VoxWriter writer, Int64 value) { var copy = value; Int64Serializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static Int64 ReadFullInt64(this VoxReader reader) => Int64Serializer.Instance.ReadFull(reader);
+                                                                                                                              public static Int64 ReadRawInt64(this VoxReader reader) => Int64Serializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_Int64 {
+                                                                                                                              public static partial void Stub_WriteRaw_Int64(VoxWriter writer, Int64 value);
+public static partial Int64 Stub_ReadRaw_Int64(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class ByteVoxConstants {
+                                                                                                                              public const int SimpleTypeId = -23;
+                                                                                                                              public static ByteSerializer Serializer => ByteSerializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(ByteVoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_UInt8))]
+                                                                                                                           public sealed partial class ByteSerializer : IVoxSerializer<Byte> {
+                                                                                                                              public static readonly ByteSerializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => ByteVoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { ByteVoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = ByteVoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref Byte self) { ByteSerializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref Byte self) { global::Dargon.Vox2.VoxGeneration_UInt8.Stub_WriteRaw_Byte(writer, self);
+ }
+               
+
+                                                                                                                              public Byte ReadFull(VoxReader reader) { ByteSerializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public Byte ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_UInt8.Stub_ReadRaw_Byte(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref Byte self) => throw new InvalidOperationException("Reading into Byte ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref Byte self) => throw new InvalidOperationException("Reading into Byte ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { Byte v = (Byte)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_ByteStatics {
+                                                                                                                              public static void WriteFullByte(this VoxWriter writer, Byte value) { var copy = value; ByteSerializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawByte(this VoxWriter writer, Byte value) { var copy = value; ByteSerializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static Byte ReadFullByte(this VoxReader reader) => ByteSerializer.Instance.ReadFull(reader);
+                                                                                                                              public static Byte ReadRawByte(this VoxReader reader) => ByteSerializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_UInt8 {
+                                                                                                                              public static partial void Stub_WriteRaw_Byte(VoxWriter writer, Byte value);
+public static partial Byte Stub_ReadRaw_Byte(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class UInt16VoxConstants {
+                                                                                                                              public const int SimpleTypeId = -24;
+                                                                                                                              public static UInt16Serializer Serializer => UInt16Serializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(UInt16VoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_UInt16))]
+                                                                                                                           public sealed partial class UInt16Serializer : IVoxSerializer<UInt16> {
+                                                                                                                              public static readonly UInt16Serializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => UInt16VoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { UInt16VoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = UInt16VoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref UInt16 self) { UInt16Serializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref UInt16 self) { global::Dargon.Vox2.VoxGeneration_UInt16.Stub_WriteRaw_UInt16(writer, self);
+ }
+               
+
+                                                                                                                              public UInt16 ReadFull(VoxReader reader) { UInt16Serializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public UInt16 ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_UInt16.Stub_ReadRaw_UInt16(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref UInt16 self) => throw new InvalidOperationException("Reading into UInt16 ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref UInt16 self) => throw new InvalidOperationException("Reading into UInt16 ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { UInt16 v = (UInt16)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_UInt16Statics {
+                                                                                                                              public static void WriteFullUInt16(this VoxWriter writer, UInt16 value) { var copy = value; UInt16Serializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawUInt16(this VoxWriter writer, UInt16 value) { var copy = value; UInt16Serializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static UInt16 ReadFullUInt16(this VoxReader reader) => UInt16Serializer.Instance.ReadFull(reader);
+                                                                                                                              public static UInt16 ReadRawUInt16(this VoxReader reader) => UInt16Serializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_UInt16 {
+                                                                                                                              public static partial void Stub_WriteRaw_UInt16(VoxWriter writer, UInt16 value);
+public static partial UInt16 Stub_ReadRaw_UInt16(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class UInt32VoxConstants {
+                                                                                                                              public const int SimpleTypeId = -25;
+                                                                                                                              public static UInt32Serializer Serializer => UInt32Serializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(UInt32VoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_UInt32))]
+                                                                                                                           public sealed partial class UInt32Serializer : IVoxSerializer<UInt32> {
+                                                                                                                              public static readonly UInt32Serializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => UInt32VoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { UInt32VoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = UInt32VoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref UInt32 self) { UInt32Serializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref UInt32 self) { global::Dargon.Vox2.VoxGeneration_UInt32.Stub_WriteRaw_UInt32(writer, self);
+ }
+               
+
+                                                                                                                              public UInt32 ReadFull(VoxReader reader) { UInt32Serializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public UInt32 ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_UInt32.Stub_ReadRaw_UInt32(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref UInt32 self) => throw new InvalidOperationException("Reading into UInt32 ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref UInt32 self) => throw new InvalidOperationException("Reading into UInt32 ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { UInt32 v = (UInt32)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_UInt32Statics {
+                                                                                                                              public static void WriteFullUInt32(this VoxWriter writer, UInt32 value) { var copy = value; UInt32Serializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawUInt32(this VoxWriter writer, UInt32 value) { var copy = value; UInt32Serializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static UInt32 ReadFullUInt32(this VoxReader reader) => UInt32Serializer.Instance.ReadFull(reader);
+                                                                                                                              public static UInt32 ReadRawUInt32(this VoxReader reader) => UInt32Serializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_UInt32 {
+                                                                                                                              public static partial void Stub_WriteRaw_UInt32(VoxWriter writer, UInt32 value);
+public static partial UInt32 Stub_ReadRaw_UInt32(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class UInt64VoxConstants {
+                                                                                                                              public const int SimpleTypeId = -26;
+                                                                                                                              public static UInt64Serializer Serializer => UInt64Serializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(UInt64VoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_UInt64))]
+                                                                                                                           public sealed partial class UInt64Serializer : IVoxSerializer<UInt64> {
+                                                                                                                              public static readonly UInt64Serializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => UInt64VoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { UInt64VoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = UInt64VoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref UInt64 self) { UInt64Serializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref UInt64 self) { global::Dargon.Vox2.VoxGeneration_UInt64.Stub_WriteRaw_UInt64(writer, self);
+ }
+               
+
+                                                                                                                              public UInt64 ReadFull(VoxReader reader) { UInt64Serializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public UInt64 ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_UInt64.Stub_ReadRaw_UInt64(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref UInt64 self) => throw new InvalidOperationException("Reading into UInt64 ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref UInt64 self) => throw new InvalidOperationException("Reading into UInt64 ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { UInt64 v = (UInt64)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_UInt64Statics {
+                                                                                                                              public static void WriteFullUInt64(this VoxWriter writer, UInt64 value) { var copy = value; UInt64Serializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawUInt64(this VoxWriter writer, UInt64 value) { var copy = value; UInt64Serializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static UInt64 ReadFullUInt64(this VoxReader reader) => UInt64Serializer.Instance.ReadFull(reader);
+                                                                                                                              public static UInt64 ReadRawUInt64(this VoxReader reader) => UInt64Serializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_UInt64 {
+                                                                                                                              public static partial void Stub_WriteRaw_UInt64(VoxWriter writer, UInt64 value);
+public static partial UInt64 Stub_ReadRaw_UInt64(VoxReader reader);
                                                                
                                                                                                                            }
 
@@ -1001,68 +1535,6 @@ public static partial Guid Stub_ReadRaw_Guid(VoxReader reader);
 
                                                                                                                         }
 
-                                                                                                                        namespace System {
-                                                                                                                           /// <summary>Autogenerated</summary>
-                                                                                                                           public static class TypeVoxConstants {
-                                                                                                                              public const int SimpleTypeId = -2;
-                                                                                                                              public static TypeSerializer Serializer => TypeSerializer.Instance;
-                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
-                                                                                                                           }
-
-                                                                                                                           /// <summary>Autogenerated</summary>
-                                                                                                                           [VoxType(TypeVoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_Type))]
-                                                                                                                           public sealed partial class TypeSerializer : IVoxSerializer<Type> {
-                                                                                                                              public static readonly TypeSerializer Instance = new();
-
-                                                                                                                              public int SimpleTypeId => TypeVoxConstants.SimpleTypeId;
-                                                                                                                              public int[] FullTypeId { get; } = new[] { TypeVoxConstants.SimpleTypeId };
-                                                                                                                              public byte[] FullTypeIdBytes { get; } = TypeVoxConstants.SimpleTypeIdBytes;
-
-                                                                                                                              public bool IsUpdatable => false;
-
-                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
-                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
-                                                                                                                              public void WriteFull(VoxWriter writer, ref Type self) { TypeSerializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
- }
-                                                                                                                              public void WriteRaw(VoxWriter writer, ref Type self) { global::Dargon.Vox2.VoxGeneration_Type.Stub_WriteRaw_Type(writer, self);
- }
-               
-
-                                                                                                                              public Type ReadFull(VoxReader reader) { TypeSerializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
- }
-                                                                                                                              public Type ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_Type.Stub_ReadRaw_Type(reader);
- }
-                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref Type self) => throw new InvalidOperationException("Reading into Type ref is not supported.");
-                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref Type self) => throw new InvalidOperationException("Reading into Type ref is not supported.");
-                  
-
-                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { Type v = (Type)val; WriteRaw(writer, ref v); }
-                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
-                                                                                                                           }
-               
-
-
-                                                                                                                           /// <summary>Autogenerated</summary>
-                                                                                                                           public static class VoxGenerated_TypeStatics {
-                                                                                                                              public static void WriteFullType(this VoxWriter writer, Type value) { var copy = value; TypeSerializer.Instance.WriteFull(writer, ref value); }
-                                                                                                                              public static void WriteRawType(this VoxWriter writer, Type value) { var copy = value; TypeSerializer.Instance.WriteRaw(writer, ref value); }
-                                                                                                                              public static Type ReadFullType(this VoxReader reader) => TypeSerializer.Instance.ReadFull(reader);
-                                                                                                                              public static Type ReadRawType(this VoxReader reader) => TypeSerializer.Instance.ReadRaw(reader);
-                                                                                                                           }
-                                                                                                                        }
-
-                                                                                                                        namespace Dargon.Vox2 {
-               
-
-                                                                                                                           /// <summary>Autogenerated</summary>
-                                                                                                                           public static partial class VoxGeneration_Type {
-                                                                                                                              public static partial void Stub_WriteRaw_Type(VoxWriter writer, Type value);
-public static partial Type Stub_ReadRaw_Type(VoxReader reader);
-                                                               
-                                                                                                                           }
-
-                                                                                                                        }
-
                                                                                                                         namespace System.Numerics {
                                                                                                                            /// <summary>Autogenerated</summary>
                                                                                                                            public static class Vector2VoxConstants {
@@ -1311,8 +1783,257 @@ writer.WriteRawSingle(self.W);
                
 
                                                                                                                         }
-/* NoCodeGen flag specified for global::Dargon.Vox2.ObjectThrowAlwaysSerializer */
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class DateTimeVoxConstants {
+                                                                                                                              public const int SimpleTypeId = -42;
+                                                                                                                              public static DateTimeSerializer Serializer => DateTimeSerializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(DateTimeVoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_DateTime))]
+                                                                                                                           public sealed partial class DateTimeSerializer : IVoxSerializer<DateTime> {
+                                                                                                                              public static readonly DateTimeSerializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => DateTimeVoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { DateTimeVoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = DateTimeVoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref DateTime self) { DateTimeSerializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref DateTime self) { global::Dargon.Vox2.VoxGeneration_DateTime.Stub_WriteRaw_DateTime(writer, self);
+ }
+               
+
+                                                                                                                              public DateTime ReadFull(VoxReader reader) { DateTimeSerializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public DateTime ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_DateTime.Stub_ReadRaw_DateTime(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref DateTime self) => throw new InvalidOperationException("Reading into DateTime ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref DateTime self) => throw new InvalidOperationException("Reading into DateTime ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { DateTime v = (DateTime)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_DateTimeStatics {
+                                                                                                                              public static void WriteFullDateTime(this VoxWriter writer, DateTime value) { var copy = value; DateTimeSerializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawDateTime(this VoxWriter writer, DateTime value) { var copy = value; DateTimeSerializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static DateTime ReadFullDateTime(this VoxReader reader) => DateTimeSerializer.Instance.ReadFull(reader);
+                                                                                                                              public static DateTime ReadRawDateTime(this VoxReader reader) => DateTimeSerializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_DateTime {
+                                                                                                                              public static partial void Stub_WriteRaw_DateTime(VoxWriter writer, DateTime value);
+public static partial DateTime Stub_ReadRaw_DateTime(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class DateTimeOffsetVoxConstants {
+                                                                                                                              public const int SimpleTypeId = -43;
+                                                                                                                              public static DateTimeOffsetSerializer Serializer => DateTimeOffsetSerializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(DateTimeOffsetVoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_DateTimeOffset))]
+                                                                                                                           public sealed partial class DateTimeOffsetSerializer : IVoxSerializer<DateTimeOffset> {
+                                                                                                                              public static readonly DateTimeOffsetSerializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => DateTimeOffsetVoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { DateTimeOffsetVoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = DateTimeOffsetVoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref DateTimeOffset self) { DateTimeOffsetSerializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref DateTimeOffset self) { global::Dargon.Vox2.VoxGeneration_DateTimeOffset.Stub_WriteRaw_DateTimeOffset(writer, self);
+ }
+               
+
+                                                                                                                              public DateTimeOffset ReadFull(VoxReader reader) { DateTimeOffsetSerializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public DateTimeOffset ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_DateTimeOffset.Stub_ReadRaw_DateTimeOffset(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref DateTimeOffset self) => throw new InvalidOperationException("Reading into DateTimeOffset ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref DateTimeOffset self) => throw new InvalidOperationException("Reading into DateTimeOffset ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { DateTimeOffset v = (DateTimeOffset)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_DateTimeOffsetStatics {
+                                                                                                                              public static void WriteFullDateTimeOffset(this VoxWriter writer, DateTimeOffset value) { var copy = value; DateTimeOffsetSerializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawDateTimeOffset(this VoxWriter writer, DateTimeOffset value) { var copy = value; DateTimeOffsetSerializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static DateTimeOffset ReadFullDateTimeOffset(this VoxReader reader) => DateTimeOffsetSerializer.Instance.ReadFull(reader);
+                                                                                                                              public static DateTimeOffset ReadRawDateTimeOffset(this VoxReader reader) => DateTimeOffsetSerializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_DateTimeOffset {
+                                                                                                                              public static partial void Stub_WriteRaw_DateTimeOffset(VoxWriter writer, DateTimeOffset value);
+public static partial DateTimeOffset Stub_ReadRaw_DateTimeOffset(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class TimeSpanVoxConstants {
+                                                                                                                              public const int SimpleTypeId = -44;
+                                                                                                                              public static TimeSpanSerializer Serializer => TimeSpanSerializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(TimeSpanVoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_TimeSpan))]
+                                                                                                                           public sealed partial class TimeSpanSerializer : IVoxSerializer<TimeSpan> {
+                                                                                                                              public static readonly TimeSpanSerializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => TimeSpanVoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { TimeSpanVoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = TimeSpanVoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref TimeSpan self) { TimeSpanSerializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref TimeSpan self) { global::Dargon.Vox2.VoxGeneration_TimeSpan.Stub_WriteRaw_TimeSpan(writer, self);
+ }
+               
+
+                                                                                                                              public TimeSpan ReadFull(VoxReader reader) { TimeSpanSerializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public TimeSpan ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_TimeSpan.Stub_ReadRaw_TimeSpan(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref TimeSpan self) => throw new InvalidOperationException("Reading into TimeSpan ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref TimeSpan self) => throw new InvalidOperationException("Reading into TimeSpan ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { TimeSpan v = (TimeSpan)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_TimeSpanStatics {
+                                                                                                                              public static void WriteFullTimeSpan(this VoxWriter writer, TimeSpan value) { var copy = value; TimeSpanSerializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawTimeSpan(this VoxWriter writer, TimeSpan value) { var copy = value; TimeSpanSerializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static TimeSpan ReadFullTimeSpan(this VoxReader reader) => TimeSpanSerializer.Instance.ReadFull(reader);
+                                                                                                                              public static TimeSpan ReadRawTimeSpan(this VoxReader reader) => TimeSpanSerializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_TimeSpan {
+                                                                                                                              public static partial void Stub_WriteRaw_TimeSpan(VoxWriter writer, TimeSpan value);
+public static partial TimeSpan Stub_ReadRaw_TimeSpan(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
+
+                                                                                                                        namespace System {
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class TypeVoxConstants {
+                                                                                                                              public const int SimpleTypeId = -2;
+                                                                                                                              public static TypeSerializer Serializer => TypeSerializer.Instance;
+                                                                                                                              public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
+                                                                                                                           }
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           [VoxType(TypeVoxConstants.SimpleTypeId, VanityRedirectFromType = typeof(Dargon.Vox2.VoxGeneration_Type))]
+                                                                                                                           public sealed partial class TypeSerializer : IVoxSerializer<Type> {
+                                                                                                                              public static readonly TypeSerializer Instance = new();
+
+                                                                                                                              public int SimpleTypeId => TypeVoxConstants.SimpleTypeId;
+                                                                                                                              public int[] FullTypeId { get; } = new[] { TypeVoxConstants.SimpleTypeId };
+                                                                                                                              public byte[] FullTypeIdBytes { get; } = TypeVoxConstants.SimpleTypeIdBytes;
+
+                                                                                                                              public bool IsUpdatable => false;
+
+                                                                                                                              public void WriteTypeIdBytes(VoxWriter writer) => writer.WriteTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void AssertReadTypeId(VoxReader reader) => reader.AssertReadTypeIdBytes(FullTypeIdBytes);
+                                                                                                                              public void WriteFull(VoxWriter writer, ref Type self) { TypeSerializer.Instance.WriteTypeIdBytes(writer); WriteRaw(writer, ref self);
+ }
+                                                                                                                              public void WriteRaw(VoxWriter writer, ref Type self) { global::Dargon.Vox2.VoxGeneration_Type.Stub_WriteRaw_Type(writer, self);
+ }
+               
+
+                                                                                                                              public Type ReadFull(VoxReader reader) { TypeSerializer.Instance.AssertReadTypeId(reader); return ReadRaw(reader);
+ }
+                                                                                                                              public Type ReadRaw(VoxReader reader) { return global::Dargon.Vox2.VoxGeneration_Type.Stub_ReadRaw_Type(reader);
+ }
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref Type self) => throw new InvalidOperationException("Reading into Type ref is not supported.");
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref Type self) => throw new InvalidOperationException("Reading into Type ref is not supported.");
+                  
+
+                                                                                                                              void IVoxSerializer.WriteRawObject(VoxWriter writer, object val) { Type v = (Type)val; WriteRaw(writer, ref v); }
+                                                                                                                              object IVoxSerializer.ReadRawObject(VoxReader reader) => ReadRaw(reader);
+                                                                                                                           }
+               
+
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static class VoxGenerated_TypeStatics {
+                                                                                                                              public static void WriteFullType(this VoxWriter writer, Type value) { var copy = value; TypeSerializer.Instance.WriteFull(writer, ref value); }
+                                                                                                                              public static void WriteRawType(this VoxWriter writer, Type value) { var copy = value; TypeSerializer.Instance.WriteRaw(writer, ref value); }
+                                                                                                                              public static Type ReadFullType(this VoxReader reader) => TypeSerializer.Instance.ReadFull(reader);
+                                                                                                                              public static Type ReadRawType(this VoxReader reader) => TypeSerializer.Instance.ReadRaw(reader);
+                                                                                                                           }
+                                                                                                                        }
+
+                                                                                                                        namespace Dargon.Vox2 {
+               
+
+                                                                                                                           /// <summary>Autogenerated</summary>
+                                                                                                                           public static partial class VoxGeneration_Type {
+                                                                                                                              public static partial void Stub_WriteRaw_Type(VoxWriter writer, Type value);
+public static partial Type Stub_ReadRaw_Type(VoxReader reader);
+                                                               
+                                                                                                                           }
+
+                                                                                                                        }
 /* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicNullSerializer */
+/* NoCodeGen flag specified for global::Dargon.Vox2.VoidThrowAlwaysSerializer */
+/* NoCodeGen flag specified for global::Dargon.Vox2.ObjectThrowAlwaysSerializer */
 /* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicArray1Serializer<T> */
 /* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicListSerializer<T> */
 /* NoCodeGen flag specified for global::Dargon.Vox2.RuntimePolymorphicHashSetSerializer<T> */

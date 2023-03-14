@@ -27,12 +27,14 @@
       Float = -0x1B,
       Double = -0x1C,
       Guid = -0x1D,
-      DateTime = -0x1E,
-      TimeSpan = -0x1F,
 
       Vector2 = -0x20,
       Vector3 = -0x21,
       Vector4 = -0x22,
+
+      DateTime = -0x2A,
+      DateTimeOffset = -0x2B,
+      TimeSpan = -0x2C,
 
       ValueTuple0 = -0x30,
       ValueTuple1 = -0x31,

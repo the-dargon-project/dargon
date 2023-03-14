@@ -11,7 +11,16 @@ namespace Dargon.Vox2 {
          Console.WriteLine("Hello, World!");
 
          var hodgepodgeOriginal = new HodgepodgeMin {
-            Int32 = 10,
+            Int8 = 10,
+            Int16 = 1234,
+            Int32 = 213812912,
+            Int64 = long.MaxValue,
+
+            UInt8 = 213,
+            UInt16 = 51123,
+            UInt32 = 3123423432,
+            UInt64 = ulong.MaxValue,
+
             NullString = null,
             String = "Hello, World!",
             Guid = new Guid(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
@@ -61,6 +70,10 @@ namespace Dargon.Vox2 {
             NullNullableVector2 = null,
             NonNullNullableVector2 = new Vector2(1, 2),
 
+            DateTime = DateTime.Now,
+            DateTimeOffset = DateTimeOffset.Now,
+            TimeSpan = TimeSpan.FromSeconds(12345.678),
+
             Inner = new() {
                Inner = null,
             },
@@ -76,7 +89,14 @@ namespace Dargon.Vox2 {
          var voxForReader = VoxContext.Create(new TestVoxTypes());
          using var vr = voxForReader.CreateReader(ms);
          var rt = (HodgepodgeMin)vr.ReadPolymorphic();
+         hodgepodgeOriginal.Int8.AssertEquals(rt.Int8);
+         hodgepodgeOriginal.Int16.AssertEquals(rt.Int16);
          hodgepodgeOriginal.Int32.AssertEquals(rt.Int32);
+         hodgepodgeOriginal.Int64.AssertEquals(rt.Int64);
+         hodgepodgeOriginal.UInt8.AssertEquals(rt.UInt8);
+         hodgepodgeOriginal.UInt16.AssertEquals(rt.UInt16);
+         hodgepodgeOriginal.UInt32.AssertEquals(rt.UInt32);
+         hodgepodgeOriginal.UInt64.AssertEquals(rt.UInt64);
          hodgepodgeOriginal.NullString.AssertIsNull();
          hodgepodgeOriginal.String.AssertEquals(rt.String);
          hodgepodgeOriginal.Guid.AssertEquals(rt.Guid);
@@ -153,6 +173,11 @@ namespace Dargon.Vox2 {
          hodgepodgeOriginal.Vector4.AssertEquals(rt.Vector4);
          hodgepodgeOriginal.NullNullableVector2.AssertIsNull();
          hodgepodgeOriginal.NonNullNullableVector2.AssertEquals(rt.NonNullNullableVector2!.Value);
+
+         hodgepodgeOriginal.DateTime.AssertEquals(rt.DateTime);
+         hodgepodgeOriginal.DateTimeOffset.AssertEquals(rt.DateTimeOffset);
+         hodgepodgeOriginal.TimeSpan.AssertEquals(rt.TimeSpan);
+
          rt.Inner.Inner.AssertIsNull();
 
          ms.Position.AssertEquals(writeLen);
@@ -597,21 +622,35 @@ namespace Dargon.Vox2 {
       public override List<Type> AutoserializedTypes { get; } = new();
 
       public override Dictionary<Type, Type> TypeToCustomSerializers { get; } = new() {
+         [typeof(VoxTypePlaceholders.RuntimePolymorphicNull)] = typeof(RuntimePolymorphicNullSerializer),
          [typeof(Type)] = typeof(TypeSerializer),
          [typeof(Object)] = typeof(ObjectThrowAlwaysSerializer),
-         [typeof(Int32)] = typeof(Int32Serializer),
-         [typeof(Single)] = typeof(SingleSerializer),
-         [typeof(Double)] = typeof(DoubleSerializer),
-         [typeof(Vector2)] = typeof(Vector2Serializer),
-         [typeof(Vector3)] = typeof(Vector3Serializer),
-         [typeof(Vector4)] = typeof(Vector4Serializer),
-         [typeof(Guid)] = typeof(GuidSerializer),
          [typeof(String)] = typeof(StringSerializer),
-         [typeof(VoxTypePlaceholders.RuntimePolymorphicNull)] = typeof(RuntimePolymorphicNullSerializer),
+
          [typeof(VoxTypePlaceholders.RuntimePolymorphicArray1<>)] = typeof(RuntimePolymorphicArray1Serializer<>),
          [typeof(List<>)] = typeof(RuntimePolymorphicListSerializer<>),
          [typeof(HashSet<>)] = typeof(RuntimePolymorphicHashSetSerializer<>),
          [typeof(Dictionary<,>)] = typeof(RuntimePolymorphicDictionarySerializer<,>),
+
+         [typeof(SByte)] = typeof(SByteSerializer),
+         [typeof(Int16)] = typeof(Int16Serializer),
+         [typeof(Int32)] = typeof(Int32Serializer),
+         [typeof(Int64)] = typeof(Int64Serializer),
+         [typeof(Byte)] = typeof(ByteSerializer),
+         [typeof(UInt16)] = typeof(UInt16Serializer),
+         [typeof(UInt32)] = typeof(UInt32Serializer),
+         [typeof(UInt64)] = typeof(UInt64Serializer),
+         [typeof(Single)] = typeof(SingleSerializer),
+         [typeof(Double)] = typeof(DoubleSerializer),
+         [typeof(Guid)] = typeof(GuidSerializer),
+         
+         [typeof(Vector2)] = typeof(Vector2Serializer),
+         [typeof(Vector3)] = typeof(Vector3Serializer),
+         [typeof(Vector4)] = typeof(Vector4Serializer),
+         
+         [typeof(DateTime)] = typeof(DateTimeSerializer),
+         [typeof(DateTimeOffset)] = typeof(DateTimeOffsetSerializer),
+         [typeof(TimeSpan)] = typeof(TimeSpanSerializer),
       };
 
       public override List<Type> DependencyVoxTypes { get; } = new();
@@ -648,7 +687,16 @@ namespace Dargon.Vox2 {
    
    [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest1)]
    public partial class HodgepodgeMin {
+      public sbyte Int8 { get; set; }
+      public short Int16 { get; set; }
       public int Int32 { get; set; }
+      public long Int64 { get; set; }
+      
+      public byte UInt8 { get; set; }
+      public ushort UInt16 { get; set; }
+      public uint UInt32 { get; set; }
+      public ulong UInt64 { get; set; }
+
       public string? NullString { get; set; }
       public string String { get; set; }
       public Guid Guid { get; set; }
@@ -685,6 +733,10 @@ namespace Dargon.Vox2 {
 
       [P] public Vector2? NullNullableVector2 { get; set; }
       [P] public Vector2? NonNullNullableVector2 { get; set; }
+
+      public DateTime DateTime { get; set; }
+      public DateTimeOffset DateTimeOffset { get; set; }
+      public TimeSpan TimeSpan { get; set; }
 
       [P] public HodgepodgeMin? Inner { get; set; } // recursive types must be declared polymorphic for now
 
@@ -723,10 +775,52 @@ namespace Dargon.Vox2 {
       [P] public Animal Animal { get; set; }
    }
 
+   [VoxType((int)BuiltInVoxTypeIds.Int8, RedirectToType = typeof(SByte), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_Int8 {
+      public static partial void Stub_WriteRaw_SByte(VoxWriter writer, sbyte value) => writer.InnerWriter.Write((sbyte)value);
+      public static partial sbyte Stub_ReadRaw_SByte(VoxReader reader) => reader.InnerReader.ReadSByte();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.Int16, RedirectToType = typeof(Int16), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_Int16 {
+      public static partial void Stub_WriteRaw_Int16(VoxWriter writer, short value) => writer.InnerWriter.Write((short)value);
+      public static partial short Stub_ReadRaw_Int16(VoxReader reader) => reader.InnerReader.ReadInt16();
+   }
+
    [VoxType((int)BuiltInVoxTypeIds.Int32, RedirectToType = typeof(Int32), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
    public static partial class VoxGeneration_Int32 {
       public static partial void Stub_WriteRaw_Int32(VoxWriter writer, int value) => writer.InnerWriter.Write((int)value);
       public static partial int Stub_ReadRaw_Int32(VoxReader reader) => reader.InnerReader.ReadInt32();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.Int64, RedirectToType = typeof(Int64), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_Int64 {
+      public static partial void Stub_WriteRaw_Int64(VoxWriter writer, long value) => writer.InnerWriter.Write((long)value);
+      public static partial long Stub_ReadRaw_Int64(VoxReader reader) => reader.InnerReader.ReadInt64();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.UInt8, RedirectToType = typeof(Byte), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_UInt8 {
+      public static partial void Stub_WriteRaw_Byte(VoxWriter writer, byte value) => writer.InnerWriter.Write((byte)value);
+      public static partial byte Stub_ReadRaw_Byte(VoxReader reader) => reader.InnerReader.ReadByte();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.UInt16, RedirectToType = typeof(UInt16), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_UInt16 {
+      public static partial void Stub_WriteRaw_UInt16(VoxWriter writer, ushort value) => writer.InnerWriter.Write((ushort)value);
+      public static partial ushort Stub_ReadRaw_UInt16(VoxReader reader) => reader.InnerReader.ReadUInt16();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.UInt32, RedirectToType = typeof(UInt32), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_UInt32 {
+      public static partial void Stub_WriteRaw_UInt32(VoxWriter writer, uint value) => writer.InnerWriter.Write((uint)value);
+      public static partial uint Stub_ReadRaw_UInt32(VoxReader reader) => reader.InnerReader.ReadUInt32();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.UInt64, RedirectToType = typeof(UInt64), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_UInt64 {
+      public static partial void Stub_WriteRaw_UInt64(VoxWriter writer, ulong value) => writer.InnerWriter.Write((ulong)value);
+      public static partial ulong Stub_ReadRaw_UInt64(VoxReader reader) => reader.InnerReader.ReadUInt64();
    }
 
    [VoxType((int)BuiltInVoxTypeIds.Float, RedirectToType = typeof(Single), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
@@ -764,12 +858,6 @@ namespace Dargon.Vox2 {
       public static partial Guid Stub_ReadRaw_Guid(VoxReader reader) => reader.InnerReader.ReadGuid();
    }
 
-   [VoxType((int)BuiltInVoxTypeIds.Type, RedirectToType = typeof(Type), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
-   public static partial class VoxGeneration_Type {
-      public static partial void Stub_WriteRaw_Type(VoxWriter writer, Type value) => writer.WriteFullType(value);
-      public static partial Type Stub_ReadRaw_Type(VoxReader reader) => reader.ReadFullType();
-   }
-
    [VoxType((int)BuiltInVoxTypeIds.Vector2, RedirectToType = typeof(Vector2))]
    public static partial class VoxGeneration_Vector2 { }
 
@@ -778,6 +866,38 @@ namespace Dargon.Vox2 {
 
    [VoxType((int)BuiltInVoxTypeIds.Vector4, RedirectToType = typeof(Vector4))]
    public static partial class VoxGeneration_Vector4 { }
+
+   [VoxType((int)BuiltInVoxTypeIds.DateTime, RedirectToType = typeof(DateTime), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_DateTime {
+      public static partial void Stub_WriteRaw_DateTime(VoxWriter writer, DateTime value) => writer.InnerWriter.Write((long)value.ToBinary());
+      public static partial DateTime Stub_ReadRaw_DateTime(VoxReader reader) => DateTime.FromBinary(reader.InnerReader.ReadInt64());
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.DateTimeOffset, RedirectToType = typeof(DateTimeOffset), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_DateTimeOffset {
+      public static partial void Stub_WriteRaw_DateTimeOffset(VoxWriter writer, DateTimeOffset value) {
+         writer.WriteRawDateTime(value.DateTime);
+         writer.WriteRawInt16((short)(value.Offset.Ticks / TimeSpan.TicksPerMinute)); // always a round short
+      }
+
+      public static partial DateTimeOffset Stub_ReadRaw_DateTimeOffset(VoxReader reader) {
+         var dt = reader.ReadRawDateTime();
+         var offset = reader.ReadRawInt16();
+         return new DateTimeOffset(dt, TimeSpan.FromMinutes(offset));
+      }
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.TimeSpan, RedirectToType = typeof(TimeSpan), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_TimeSpan {
+      public static partial void Stub_WriteRaw_TimeSpan(VoxWriter writer, TimeSpan value) => writer.InnerWriter.Write((long)value.Ticks);
+      public static partial TimeSpan Stub_ReadRaw_TimeSpan(VoxReader reader) => TimeSpan.FromTicks(reader.InnerReader.ReadInt64());
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.Type, RedirectToType = typeof(Type), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]
+   public static partial class VoxGeneration_Type {
+      public static partial void Stub_WriteRaw_Type(VoxWriter writer, Type value) => writer.WriteFullType(value);
+      public static partial Type Stub_ReadRaw_Type(VoxReader reader) => reader.ReadFullType();
+   }
 
    // public static class VoxReflectionCache_Helpers {
    //    public static byte[] Array1TypeIdBytes = ((int)BuiltInVoxTypeIds.Array1).ToVariableIntBytes();
@@ -836,34 +956,7 @@ namespace Dargon.Vox2 {
    //    public static IVoxSerializer<T> GetSerializer() => serializer.AssertIsNotNull();
    // }
 
-   [VoxType((int)BuiltInVoxTypeIds.Object, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen)]
-   public class ObjectThrowAlwaysSerializer : IVoxSerializer<object> {
-      private static class Constants {
-         public const int SimpleTypeId = (int)BuiltInVoxTypeIds.Object;
-         public static readonly byte[] SimpleTypeIdBytes = SimpleTypeId.ToVariableIntBytes();
-      }
-
-      public ObjectThrowAlwaysSerializer() {
-         FullTypeId = new[] { Constants.SimpleTypeId };
-         FullTypeIdBytes = Constants.SimpleTypeIdBytes;
-      }
-
-      public int SimpleTypeId => Constants.SimpleTypeId;
-      public int[] FullTypeId { get; }
-      public byte[] FullTypeIdBytes { get; }
-      public bool IsUpdatable => false;
-
-      public void WriteRawObject(VoxWriter writer, object val) => throw new InvalidOperationException();
-      public object ReadRawObject(VoxReader reader) => throw new InvalidOperationException();
-      public void WriteFull(VoxWriter writer, ref object val) => throw new InvalidOperationException();
-      public void WriteRaw(VoxWriter writer, ref object val) => throw new InvalidOperationException();
-      public object ReadFull(VoxReader reader) => throw new InvalidOperationException();
-      public object ReadRaw(VoxReader reader) => throw new InvalidOperationException();
-      public void ReadFullIntoRef(VoxReader reader, ref object val) => throw new InvalidOperationException();
-      public void ReadRawIntoRef(VoxReader reader, ref object val) => throw new InvalidOperationException();
-   }
-
-   [VoxType((int)BuiltInVoxTypeIds.Null, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen)]
+   [VoxType((int)BuiltInVoxTypeIds.Null, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen, VanityRedirectFromType = typeof(VoxTypePlaceholders.RuntimePolymorphicNull))]
    public class RuntimePolymorphicNullSerializer : IVoxSerializer<object> {
       private static class Constants {
          public const int SimpleTypeId = (int)BuiltInVoxTypeIds.Null;
@@ -910,6 +1003,38 @@ namespace Dargon.Vox2 {
 
       public void ReadRawIntoRef(VoxReader reader, ref object val)
          => throw new NotSupportedException();
+   }
+
+   public class ThrowawaySerializerBase : IVoxSerializer<object> {
+      public ThrowawaySerializerBase(BuiltInVoxTypeIds tid) {
+         SimpleTypeId = (int)tid;
+         FullTypeId = new[] { (int)tid };
+         FullTypeIdBytes = ((int)tid).ToVariableIntBytes();
+      }
+
+      public int SimpleTypeId { get; }
+      public int[] FullTypeId { get; }
+      public byte[] FullTypeIdBytes { get; }
+      public bool IsUpdatable => false;
+
+      public void WriteRawObject(VoxWriter writer, object val) => throw new InvalidOperationException();
+      public object ReadRawObject(VoxReader reader) => throw new InvalidOperationException();
+      public void WriteFull(VoxWriter writer, ref object val) => throw new InvalidOperationException();
+      public void WriteRaw(VoxWriter writer, ref object val) => throw new InvalidOperationException();
+      public object ReadFull(VoxReader reader) => throw new InvalidOperationException();
+      public object ReadRaw(VoxReader reader) => throw new InvalidOperationException();
+      public void ReadFullIntoRef(VoxReader reader, ref object val) => throw new InvalidOperationException();
+      public void ReadRawIntoRef(VoxReader reader, ref object val) => throw new InvalidOperationException();
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.Void, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen, VanityRedirectFromType = typeof(void))]
+   public class VoidThrowAlwaysSerializer : ThrowawaySerializerBase {
+      public VoidThrowAlwaysSerializer() : base(BuiltInVoxTypeIds.Void) { }
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.Object, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen, VanityRedirectFromType = typeof(object))]
+   public class ObjectThrowAlwaysSerializer : ThrowawaySerializerBase {
+      public ObjectThrowAlwaysSerializer() : base(BuiltInVoxTypeIds.Object) { }
    }
 
    [VoxType((int)BuiltInVoxTypeIds.Array1, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen, VanityRedirectFromType = typeof(Array))]
