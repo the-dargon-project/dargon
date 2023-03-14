@@ -182,10 +182,20 @@ namespace Dargon.Vox2 {
 
          ms.Position.AssertEquals(writeLen);
 
-         // rt.i.AssertEquals(10);
-         // rt.s.AssertEquals("Hello, World!");
-
-         // vw.WriteFull(new HodgepodgeMin());
+         ms.Position = 0;
+         var hpso = new HodgepodgeStructMin {
+            I32 = 123,
+            Inner = new() {
+               DateTime = DateTime.Now,
+            },
+         };
+         vw.WritePolymorphic(hpso);
+         writeLen = ms.Position;
+         ms.Position = 0;
+         var hpsr = (HodgepodgeStructMin)vr.ReadPolymorphic();
+         hpso.I32.AssertEquals(hpsr.I32);
+         hpso.Inner.DateTime.AssertEquals(hpsr.Inner.DateTime);
+         ms.Position.AssertEquals(writeLen);
       }
    }
 
@@ -660,6 +670,8 @@ namespace Dargon.Vox2 {
       public override List<Type> AutoserializedTypes { get; } = new() {
          typeof(SimpleTestType),
          typeof(HodgepodgeMin),
+         typeof(HodgepodgeStructMin),
+         typeof(HodgepodgeStructMin2),
       };
       public override Dictionary<Type, Type> TypeToCustomSerializers { get; } = new() { };
       public override List<Type> DependencyVoxTypes { get; } = new() { typeof(CoreVoxTypes) };
@@ -743,6 +755,17 @@ namespace Dargon.Vox2 {
       public static void XX(HodgepodgeMin x) {
          // x.Tuple.Item1;
       }
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest2)]
+   public partial struct HodgepodgeStructMin {
+      public int I32;
+      public HodgepodgeStructMin2 Inner;
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest3)]
+   public partial struct HodgepodgeStructMin2 {
+      public DateTime DateTime;
    }
 
    public class HodgepodgeDto {
