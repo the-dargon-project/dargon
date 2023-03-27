@@ -1,11 +1,12 @@
 ﻿using System;
-using Dargon.Vox;
+using Dargon.Courier.Vox;
+using Dargon.Vox2;
 
 namespace Dargon.Courier.ServiceTier.Vox {
    /// <summary>
    /// Remote Method Invocation Request Data Transfer Object
    /// </summary>
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.RmiRequestDto)]
    public class RmiRequestDto {
       public Guid InvocationId { get; set; }
       public Guid ServiceId { get; set; }
@@ -17,7 +18,7 @@ namespace Dargon.Courier.ServiceTier.Vox {
    /// <summary>
    /// Remote Method Invocation Response Data Transfer Object
    /// </summary>
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.RmiResponseDto)]
    public class RmiResponseDto {
       public Guid InvocationId { get; set; }
       public object ReturnValue { get; set; }

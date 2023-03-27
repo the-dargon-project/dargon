@@ -21,12 +21,14 @@ using Dargon.Courier.ServiceTier.Vox;
 using Dargon.Courier.TransportTier;
 using Dargon.Ryu;
 using Dargon.Ryu.Modules;
+using Dargon.Vox2;
 using NLog;
 
 namespace Dargon.Courier {
    public class CourierBuilder {
       private readonly ConcurrentSet<ITransportFactory> transportFactories = new ConcurrentSet<ITransportFactory>();
       private readonly IRyuContainer parentContainer;
+      private VoxContext voxContext;
       private SynchronizationContext earlyIoSynchronizationContext;
       private SynchronizationContext lateIoSynchronizationContext;
       private IGatekeeper gatekeeper;
@@ -34,6 +36,11 @@ namespace Dargon.Courier {
 
       private CourierBuilder(IRyuContainer parentContainer) {
          this.parentContainer = parentContainer;
+      }
+
+      public CourierBuilder UseVoxContext(VoxContext voxContext) {
+         this.voxContext = voxContext;
+         return this;
       }
 
       public CourierBuilder UseTransport(ITransportFactory transportFactory) {
@@ -64,7 +71,11 @@ namespace Dargon.Courier {
             LateNetworkIO = lateIoSynchronizationContext ?? DefaultThreadPoolSynchronizationContext.Instance,
          };
          var courierContainer = await courierContainerFactory.CreateAsync(
-            transportFactories, courierSynchronizationContexts, gatekeeper, forceId);
+            voxContext.AssertIsNotNull(),
+            courierSynchronizationContexts,
+            gatekeeper,
+            transportFactories,
+            forceId);
          return courierContainer.GetOrThrow<CourierFacade>();
       }
 
@@ -80,6 +91,8 @@ namespace Dargon.Courier {
    public class CourierSynchronizationContexts {
       /// <summary>
       /// Synchronization Context used for ??
+      ///
+      /// Likely a "don't care" synchronization context. So far it seems to be used at initialization.
       /// </summary>
       public required SynchronizationContext CourierDefault__;
 
@@ -105,7 +118,7 @@ namespace Dargon.Courier {
          this.root = root;
       }
 
-      public async Task<IRyuContainer> CreateAsync(IReadOnlySet<ITransportFactory> transportFactories, CourierSynchronizationContexts synchronizationContexts, IGatekeeper gatekeeper, Guid? forceId = null) {
+      public async Task<IRyuContainer> CreateAsync(VoxContext vox, CourierSynchronizationContexts synchronizationContexts, IGatekeeper gatekeeper, IReadOnlySet<ITransportFactory> transportFactories, Guid? forceId = null) {
          transportFactories.AssertIsNotNull();
          synchronizationContexts.AssertIsNotNull();
          gatekeeper.AssertIsNotNull();
@@ -184,6 +197,7 @@ namespace Dargon.Courier {
 
          // Courier Facade
          var facade = new CourierFacade(transports, container) {
+            VoxContext = vox,
             SynchronizationContexts = synchronizationContexts,
             Gatekeeper = gatekeeper,
             AuditService = auditService,

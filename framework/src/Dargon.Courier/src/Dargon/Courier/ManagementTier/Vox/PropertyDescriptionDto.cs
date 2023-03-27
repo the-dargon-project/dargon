@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using Dargon.Vox;
+using Dargon.Courier.Vox;
+using Dargon.Vox2;
 
 namespace Dargon.Courier.ManagementTier.Vox {
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.PropertyDescriptionDto)]
    public class PropertyDescriptionDto {
       public string Name { get; set; }
       public Type Type { get; set; }

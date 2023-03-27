@@ -2,13 +2,14 @@ using System;
 using System.Collections.Concurrent;
 using System.Net;
 using Dargon.Commons.Exceptions;
-using Dargon.Vox;
+using Dargon.Courier.Vox;
+using Dargon.Vox2;
 
 namespace Dargon.Courier {
    /// <summary>
    /// Immutable state representing the local node's identity in a courier network.
    /// </summary>
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.Identity)]
    public class Identity {
       public Identity() { }
 

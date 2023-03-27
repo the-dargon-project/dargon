@@ -1,8 +1,8 @@
-﻿using Dargon.Vox;
+﻿using Dargon.Vox2;
 using System;
 
 namespace Dargon.Courier.Vox {
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.MessageDto)]
    public class MessageDto {
       public Guid SenderId { get; set; }
       public Guid ReceiverId { get; set; }

@@ -1,8 +1,9 @@
 ﻿using Dargon.Courier.PeeringTier;
-using Dargon.Vox;
+using Dargon.Courier.Vox;
+using Dargon.Vox2;
 
 namespace Dargon.Courier.TransportTier.Udp.Vox {
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.AnnouncementDto)]
    public class AnnouncementDto {
       public WhoamiDto WhoAmI { get; set; }
    }

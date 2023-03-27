@@ -47,7 +47,7 @@ namespace Dargon.Courier.StateReplicationTier {
          }
 
          public PrimaryStateView CreatePrimaryStateView(TState state, Guid topicId, StateLock stateLock) {
-            using (courierSynchronizationContexts.CourierDefault.ActivateTemporarily()) {
+            using (courierSynchronizationContexts.CourierDefault__.ActivateTemporarily()) {
                var statePublisher = new StatePublisher(publisher, ops, topicId, stateLock);
                var primaryStateView = new PrimaryStateView(state, ops, statePublisher, stateLock);
                statePublisher.InitializeAsync(primaryStateView, stateLock).Forget();
@@ -59,7 +59,7 @@ namespace Dargon.Courier.StateReplicationTier {
          }
 
          public ReplicaStateView CreateReplicaStateView(TState state, PeerContext peer, Guid topicId) {
-            using (courierSynchronizationContexts.CourierDefault.ActivateTemporarily()) {
+            using (courierSynchronizationContexts.CourierDefault__.ActivateTemporarily()) {
                var stateUpdateProcessor = new StateUpdateProcessor<TState, TSnapshot, TDelta>(
                   state,
                   ops);
@@ -76,7 +76,7 @@ namespace Dargon.Courier.StateReplicationTier {
          }
 
          public async Task<ReplicaStateView> CreateReplicaStateViewAndWaitForInitialStateAsync(TState state, PeerContext peer, Guid topicId) {
-            await courierSynchronizationContexts.CourierDefault.YieldToAsync();
+            await courierSynchronizationContexts.CourierDefault__.YieldToAsync();
             var rsv = CreateReplicaStateView(state, peer, topicId);
             await rsv.WaitForAndProcessInitialStateUpdateAsync();
             return rsv;

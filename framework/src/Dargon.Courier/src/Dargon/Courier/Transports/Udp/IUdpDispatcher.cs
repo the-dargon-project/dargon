@@ -213,7 +213,7 @@ namespace Dargon.Courier.TransportTier.Udp {
          announcementsReceivedCounter.Increment();
 
          try {
-            gatekeeper.ValidateClientIdentity(x.WhoAmI);
+            gatekeeper.ValidateWhoAmI(x.WhoAmI);
          } catch (Exception) {
             return;
          }

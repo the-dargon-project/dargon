@@ -3,10 +3,12 @@ using System.Reflection;
 using System.Text;
 using Dargon.Commons;
 using Dargon.Courier.ServiceTier.Vox;
-using Dargon.Vox;
+using Dargon.Courier.Vox;
+using Dargon.Vox2;
 
 namespace Dargon.Courier.ServiceTier.Client {
-   public class RemoteException : Exception, ISerializableType {
+   [VoxType((int)CourierVoxTypeIds.RemoteException, Flags = VoxTypeFlags.StubRaw)]
+   public class RemoteException : Exception {
       public RemoteException() { }
       private RemoteException(string message) : base(message) { }
 
@@ -22,12 +24,12 @@ namespace Dargon.Courier.ServiceTier.Client {
          return new RemoteException(sb.ToString());
       }
 
-      public void Serialize(IBodyWriter writer) {
-         writer.Write(Message);
-      }
-
-      public void Deserialize(IBodyReader reader) {
-         GetType().GetField("_message", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, reader.Read<string>());
-      }
+      // public void Serialize(IBodyWriter writer) {
+      //    writer.Write(Message);
+      // }
+      //
+      // public void Deserialize(IBodyReader reader) {
+      //    GetType().GetField("_message", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, reader.Read<string>());
+      // }
    }
 }

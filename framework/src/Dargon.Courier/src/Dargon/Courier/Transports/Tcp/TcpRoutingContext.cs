@@ -71,27 +71,29 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             var shutdownToken = shutdownCancellationTokenSource.Token;
             var readRemoteHandshakeTask = payloadUtils.ReadPayloadAsync(ns, shutdownToken);
             var sendLocalHandshakeTask = payloadUtils.WritePayloadAsync(ns, new HandshakeDto {
-               Identity = localIdentity, 
-               AdditionalParameters = configuration.AdditionalHandshakeParameters
+               WhoAmI = new() {
+                  Identity = localIdentity,
+                  AdditionalParameters = configuration.AdditionalHandshakeParameters
+               },
             }, writerLock, shutdownToken);
             await Task.WhenAny( // WhenAny yields the first complete task. Await that task via Unwrap to validate timeout didn't happen.
                new CancellationTokenSource(TimeSpan.FromSeconds(3)).Token.AsTask(),
                Task.WhenAll(readRemoteHandshakeTask, sendLocalHandshakeTask)).Unwrap();
 
             var remoteHandshake = (HandshakeDto)await readRemoteHandshakeTask;
-            remoteIdentity = remoteHandshake.Identity.AssertIsNotNull();
+            remoteIdentity = remoteHandshake.WhoAmI.Identity.AssertIsNotNull();
 
             // Prior to the gatekeeper line, the remote identity can be forged.
             // Past the gatekeeper line, the remote identity is validated.
-            gatekeeper.ValidateClientHandshake(remoteHandshake);
+            gatekeeper.ValidateWhoAmI(remoteHandshake.WhoAmI);
 
             tcpRoutingContextContainer.AssociateRemoteIdentityOrThrow(remoteIdentity.Id, this);
             routingTable.Register(remoteIdentity.Id, this);
 
             peerContext = peerTable.GetOrAdd(remoteIdentity.Id);
             CourierAmbientPeerContext.CurrentContext.AssertIsNull();
-            var session = peerContext.GetSession().UseAsImplicitAsyncLocalContext();
-            gatekeeper.LoadSessionState(remoteHandshake, session);
+            var session = peerContext.GetSession().AssertIsNotNull().UseAsImplicitAsyncLocalContext();
+            gatekeeper.LoadSessionState(remoteHandshake.WhoAmI, session);
 
             peerContext.HandleInboundPeerIdentityUpdate(remoteIdentity);
 

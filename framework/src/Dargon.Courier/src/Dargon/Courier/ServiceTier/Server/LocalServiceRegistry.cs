@@ -2,7 +2,6 @@
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Exceptions;
 using Dargon.Courier.ServiceTier.Vox;
-using Dargon.Vox.Utilities;
 using NLog;
 using System;
 using System.Diagnostics;

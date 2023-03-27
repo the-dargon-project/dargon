@@ -11,7 +11,7 @@ namespace Dargon.Courier.AccessControlTier {
       /// From this point onward, we can assume the identity can be trusted.
       /// The handshake might an access token, a refresh token, raw creds, etc.
       /// </summary>
-      public void ValidateClientIdentity(WhoamiDto whoami);
+      public void ValidateWhoAmI(WhoamiDto whoami);
 
       /// <summary>
       /// After we've validated the handshake, load the given session object.
@@ -38,7 +38,7 @@ namespace Dargon.Courier.AccessControlTier {
    public class PermitAllGatekeeper : IGatekeeper {
       public void ValidateClientHandshake(HandshakeDto handshake) { }
       public void LoadSessionState(HandshakeDto handshake, CourierAmbientPeerContext courierAmbientPeerContext) { }
-      public void ValidateClientIdentity(WhoamiDto whoami) {
+      public void ValidateWhoAmI(WhoamiDto whoami) {
          throw new System.NotImplementedException();
       }
 

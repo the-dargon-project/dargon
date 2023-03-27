@@ -9,6 +9,7 @@ using Dargon.Courier.TransportTier.Tcp.Server;
 using System.Net;
 using System.Threading.Tasks;
 using Dargon.Courier.AccessControlTier;
+using Dargon.Vox2;
 
 namespace Dargon.Courier.TransportTier.Tcp {
    public class TcpTransportConnectionFailureEventArgs {
@@ -61,12 +62,12 @@ namespace Dargon.Courier.TransportTier.Tcp {
          this.configuration = configuration;
       }
 
-      public ITransport Create(MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService, IGatekeeper gatekeeper) {
+      public ITransport Create(VoxContext vox, MobOperations mobOperations, Identity identity, RoutingTable routingTable, PeerTable peerTable, InboundMessageDispatcher inboundMessageDispatcher, AuditService auditService, IGatekeeper gatekeeper) {
          var inboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kInboundBytes);
          var outboundBytesAggregator = auditService.GetAggregator<double>(DataSetNames.kOutboundBytes);
 
          var tcpRoutingContextContainer = new TcpRoutingContextContainer();
-         var payloadUtils = new PayloadUtils(inboundBytesAggregator, outboundBytesAggregator);
+         var payloadUtils = new PayloadUtils(vox, inboundBytesAggregator, outboundBytesAggregator);
          var transport = new TcpTransport(configuration, identity, routingTable, peerTable, inboundMessageDispatcher, tcpRoutingContextContainer, payloadUtils, gatekeeper);
          transport.Initialize();
          mobOperations.RegisterMob(Guid.NewGuid(), new TcpDebugMob(tcpRoutingContextContainer));

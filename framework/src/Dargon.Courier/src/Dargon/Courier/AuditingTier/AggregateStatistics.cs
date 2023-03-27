@@ -1,7 +1,8 @@
-using Dargon.Vox;
+using Dargon.Courier.Vox;
+using Dargon.Vox2;
 
 namespace Dargon.Courier.AuditingTier {
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.AggregateStatistics)]
    public class AggregateStatistics<T> {
       public T Sum { get; set; }
       public T Min { get; set; }

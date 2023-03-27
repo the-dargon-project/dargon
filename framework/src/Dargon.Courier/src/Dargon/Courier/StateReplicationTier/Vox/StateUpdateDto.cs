@@ -1,7 +1,8 @@
-﻿using Dargon.Vox;
+﻿using Dargon.Courier.Vox;
+using Dargon.Vox2;
 
 namespace Dargon.Courier.StateReplicationTier.Vox {
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.StateTierBaseId)]
    public class StateUpdateDto {
       public const int kSnapshotDeltaSeq = 0;
 

@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using Dargon.Vox;
+using Dargon.Courier.Vox;
+using Dargon.Vox2;
 
 namespace Dargon.Courier.ManagementTier {
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.MethodDescriptionDto)]
    public class MethodDescriptionDto {
       public string Name { get; set; }
       public IReadOnlyList<ParameterDescriptionDto> Parameters { get; set; }

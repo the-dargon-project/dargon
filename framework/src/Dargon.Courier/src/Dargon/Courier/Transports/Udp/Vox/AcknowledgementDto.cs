@@ -1,8 +1,9 @@
 ﻿using System;
-using Dargon.Vox;
+using Dargon.Courier.Vox;
+using Dargon.Vox2;
 
 namespace Dargon.Courier.TransportTier.Udp.Vox {
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.AcknowledgementDto)]
    public class AcknowledgementDto {
       public Guid MessageId { get; set; }
 

@@ -1,9 +1,9 @@
 ﻿using Dargon.Courier.Vox;
-using Dargon.Vox;
+using Dargon.Vox2;
 using System;
 
 namespace Dargon.Courier.TransportTier.Udp.Vox {
-   [AutoSerializable]
+   [VoxType((int)CourierVoxTypeIds.PacketDto)]
    public class PacketDto {
       public Guid Id { get; set; }
       public Guid SenderId { get; set; }

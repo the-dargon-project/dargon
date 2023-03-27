@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Dargon.Vox;
+﻿using Dargon.Courier.Vox;
+using Dargon.Vox2;
+using System;
 
 namespace Dargon.Courier.TransportTier.Udp.Vox {
-   public class MultiPartChunkDto : ISerializableType {
+   [VoxType((int)CourierVoxTypeIds.MultiPartChunkDto, Flags = VoxTypeFlags.StubRaw)]
+   public partial class MultiPartChunkDto {
       public Guid MultiPartMessageId { get; set; }
       public int ChunkIndex { get; set; }
       public int ChunkCount { get; set; }
@@ -13,20 +12,24 @@ namespace Dargon.Courier.TransportTier.Udp.Vox {
       public int BodyOffset { get; set; }
       public int BodyLength { get; set; }
 
-      public void Serialize(IBodyWriter writer) {
-         writer.Write(MultiPartMessageId);
-         writer.Write(ChunkIndex);
-         writer.Write(ChunkCount);
-         writer.Write(Body, BodyOffset, BodyLength);
-      }
-
-      public void Deserialize(IBodyReader reader) {
-         MultiPartMessageId = reader.Read<Guid>();
-         ChunkIndex = reader.Read<int>();
-         ChunkCount = reader.Read<int>();
-         Body = reader.Read<byte[]>();
-         BodyOffset = 0;
-         BodyLength = Body.Length;
-      }
+      // public static partial void Stub_WriteRaw_MultiPartChunkDto(VoxWriter writer, MultiPartChunkDto x) {
+      //    writer.WriteRawGuid(x.MultiPartMessageId);
+      //    writer.WriteRawInt32(x.ChunkIndex);
+      //    writer.WriteRawInt32(x.ChunkCount);
+      //    writer.WriteRawInt32(x.BodyLength);
+      //    writer.InnerWriter.Write(x.Body, x.BodyOffset, x.BodyLength);
+      // }
+      //
+      // public static partial MultiPartChunkDto Stub_ReadRaw_MultiPartChunkDto(VoxReader reader) {
+      //    var res = new MultiPartChunkDto();
+      //    res.MultiPartMessageId = reader.ReadRawGuid();
+      //    res.ChunkIndex = reader.ReadRawInt32();
+      //    
+      //    var bodyLength = reader.ReadRawInt32();
+      //    res.Body = reader.InnerReader.ReadBytes(bodyLength);
+      //    res.BodyOffset = 0;
+      //    res.BodyLength = bodyLength;
+      //    return res;
+      // }
    }
 }

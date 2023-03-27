@@ -16,6 +16,7 @@ using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.TransportTier;
 using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Ryu;
+using Dargon.Vox2;
 
 namespace Dargon.Courier {
    public class CourierFacade {
@@ -30,6 +31,7 @@ namespace Dargon.Courier {
       public IReadOnlySet<ITransport> Transports => transports;
       public IRyuContainer Container => container;
 
+      public required VoxContext VoxContext { get; init; }
       public required CourierSynchronizationContexts SynchronizationContexts { get; init; }
       public required IGatekeeper Gatekeeper { get; init; }
       public required AuditService AuditService { get; init; }
@@ -54,7 +56,7 @@ namespace Dargon.Courier {
       public required PubSubClient PubSubClient { get; init; }
 
       public async Task<ITransport> AddTransportAsync(ITransportFactory transportFactory) {
-         var transport = transportFactory.Create(MobOperations, Identity, RoutingTable, PeerTable, InboundMessageDispatcher, AuditService, Gatekeeper);
+         var transport = transportFactory.Create(VoxContext, MobOperations, Identity, RoutingTable, PeerTable, InboundMessageDispatcher, AuditService, Gatekeeper);
          transports.TryAdd(transport);
          return transport;
       }

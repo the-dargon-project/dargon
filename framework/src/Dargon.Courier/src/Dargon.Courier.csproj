@@ -19,8 +19,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Dargon\Courier\Transports\Udp\**" />
+    <EmbeddedResource Remove="Dargon\Courier\Transports\Udp\**" />
+    <None Remove="Dargon\Courier\Transports\Udp\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Castle.Core" Version="4.4.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="NLog" Version="5.1.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,7 +36,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Dargon.Commons\src\Dargon.Commons.csproj" />
-    <ProjectReference Include="..\..\Dargon.Vox\src\Dargon.Vox\Dargon.Vox.csproj" />
+    <ProjectReference Include="..\..\Dargon.Ryu\src\Dargon.Ryu.csproj" />
+    <ProjectReference Include="..\..\Dargon.Vox.SourceGenerators\Dargon.Vox.SourceGenerators.csproj" />
+    <ProjectReference Include="..\..\Dargon.Vox2\Dargon.Vox2.csproj" />
   </ItemGroup>
 
 </Project>
