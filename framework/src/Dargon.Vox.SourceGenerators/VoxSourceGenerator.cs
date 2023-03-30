@@ -4,11 +4,19 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace Dargon.Vox.SourceGenerators {
+   public static class VSGErrors {
+      public static string Category = "Vox";
+
+      public static string EnumsMustBeViaRedirectToType = "VOX001";
+      public static string EnumsMustBeViaRedirectToTypeMessageTitle(string enumName) => $"Enum '{enumName}' cannot have VoxTypeAttribute. Use a redirect class instead!";
+   }
+
    [Generator]
    public class VoxSourceGenerator : ISourceGenerator {
       public void Initialize(GeneratorInitializationContext context) {
@@ -46,7 +54,7 @@ namespace Dargon.Vox.SourceGenerators {
             VoxTypeAttributeType = AllNamedTypes.First(t => t.Name == "VoxTypeAttribute");
 
             SyntaxTreeToTypeAndVoxTypeAttribute =
-               AllNamedTypes.Where(t => t.TypeKind == TypeKind.Class || t.TypeKind == TypeKind.Struct)
+               AllNamedTypes.Where(t => t.TypeKind == TypeKind.Class || t.TypeKind == TypeKind.Struct || t.TypeKind == TypeKind.Enum)
                             .SelectPairValue(t => RoslynUtils.FindAnyAttributeOrDefault(t, AllVoxTypeAttributes))
                             .Where(kvp => kvp.Value != null)
                             .Where(kvp => kvp.Value.ApplicationSyntaxReference != null) // null if from dependency project
@@ -186,6 +194,13 @@ namespace Dargon.Vox.SourceGenerators {
          return serializerName;
       }
 
+      private string KindToKeyword(TypeKind kind) {
+         if (kind == TypeKind.Enum) return "enum";
+         else if (kind == TypeKind.Struct) return "struct";
+         else if (kind == TypeKind.Class) return "class";
+         else throw new NotImplementedException($"Unhandled kind {kind}");
+      }
+
       public void X(GeneratorExecutionContext context) {
          allUsingImports.Add("System");
          allUsingImports.Add("System.Numerics");
@@ -198,13 +213,26 @@ namespace Dargon.Vox.SourceGenerators {
             HandleBeginNewTypeProcess();
 
             var typeIsStatic = type.IsStatic;
-            var typeIsStruct = type.TypeKind == TypeKind.Struct;
-            var typeKindStr = typeIsStruct ? "struct" : "class";
-            var typeFullName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var typeKindStr = KindToKeyword(type.TypeKind);
 
             if (!SymbolEqualityComparer.Default.Equals(typeAttr.AttributeClass, types.VoxTypeAttributeType)) {
                throw new Exception($"Expected {typeAttr.AttributeClass} to be {types.VoxTypeAttributeType}");
             }
+
+
+            // nvm enums are ok, just can't use as autoserialized
+            // if (type.TypeKind == TypeKind.Enum) {
+            //    context.ReportDiagnostic(Diagnostic.Create(
+            //       new DiagnosticDescriptor(
+            //          VSGErrors.EnumsMustBeViaRedirectToType,
+            //          VSGErrors.EnumsMustBeViaRedirectToTypeMessageTitle(type.Name),
+            //          VSGErrors.EnumsMustBeViaRedirectToTypeMessageTitle(type.Name),
+            //          VSGErrors.Category,
+            //          DiagnosticSeverity.Error,
+            //          isEnabledByDefault: true),
+            //       typeAttr.ApplicationSyntaxReference.GetSyntax().GetLocation()));
+            //    continue;
+            // }
 
             int typeId = (int)typeAttr.ConstructorArguments[0].Value;
             int flags = 0;
@@ -216,20 +244,22 @@ namespace Dargon.Vox.SourceGenerators {
                   flags = (int)narg.Value.Value;
                }
             }
+            
+            var typeFullName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
             var fullTargetTypeName = targetType.ToDisplayString();
 
-            var genericArgsStr = type.IsGenericType
-               ? $"<{string.Join(", ", type.TypeParameters.Select(x => x.ToDisplayString()))}>"
+            var genericArgsStr = targetType.IsGenericType
+               ? $"<{string.Join(", ", targetType.TypeParameters.Select(x => x.ToDisplayString()))}>"
                : "";
 
-            var genericArgsUnboundStr = type.IsGenericType
-               ? $"<{string.Join(",", type.TypeParameters.Select(x => ""))}>"
+            var genericArgsUnboundStr = targetType.IsGenericType
+               ? $"<{string.Join(",", targetType.TypeParameters.Select(x => ""))}>"
                : "";
 
             var genericArgsConstraintsSb = new StringBuilder();
             var dependencySerializerTypeIdsSb = new StringBuilder();
-            foreach (var tp in type.TypeParameters) {
+            foreach (var tp in targetType.TypeParameters) {
                var constraintParts = new List<string>();
                if (tp.HasValueTypeConstraint) constraintParts.Add("struct");
                if (tp.HasNotNullConstraint) constraintParts.Add("notnull");
@@ -252,7 +282,10 @@ namespace Dargon.Vox.SourceGenerators {
 
             var genericArgsConstraints = genericArgsConstraintsSb.Length == 0 ? "" : (Environment.NewLine + genericArgsConstraintsSb.ToString().Trim());
 
+            var targetTypeKindStr = KindToKeyword(targetType.TypeKind);
             var targetIsStruct = targetType.TypeKind == TypeKind.Struct;
+            var targetIsEnum = targetType.TypeKind == TypeKind.Enum;
+            var targetEnumBackingTypeName = targetIsEnum ? ((INamedTypeSymbol)targetType).EnumUnderlyingType.Name : null;
             var stubFull = (flags & 1 /* VoxTypeFlags.StubFull */) != 0;
             var stubRaw = (flags & 2 /* VoxTypeFlags.StubRaw */) != 0;
             var targetIsUpdatable = (flags & 4 /* VoxTypeFlags.NonUpdatable */) == 0;
@@ -261,6 +294,11 @@ namespace Dargon.Vox.SourceGenerators {
             if (targetIsNoCodeGen) {
                sb.AppendLine($"/* NoCodeGen flag specified for {typeFullName} */");
                continue;
+            }
+
+            if (targetIsEnum) {
+               // default for enums
+               targetIsUpdatable = false;
             }
 
             var refIfTargetIsStruct = targetIsStruct ? "ref " : "";
@@ -309,12 +347,24 @@ namespace Dargon.Vox.SourceGenerators {
                   stubDefs.AppendLine($"public static partial {targetType.Name} Stub_ReadRaw_{targetType.Name}(VoxReader reader);");
                }
             } else {
-               if (targetIsUpdatable) {
+               if (targetIsEnum) {
+                  targetEnumBackingTypeName.AssertIsNotNull();
+                  readRawSb.AppendLine($@"
+                                                                                                                                  {{
+                                                                                                                                       /* this is an enum */
+                                                                                                                                       return ({fullTargetTypeName})reader.ReadRaw{targetEnumBackingTypeName}();
+                                                                                                                                  }}");
+                  writeRawSb.AppendLine($@"
+                                                                                                                                  {{
+                                                                                                                                       /* this is an enum */
+                                                                                                                                       writer.WriteRaw{targetEnumBackingTypeName}(({targetEnumBackingTypeName})self);
+                                                                                                                                  }}");
+               } else if (targetIsUpdatable) {
                   if (!targetIsStruct) {
                      readRawSb.AppendLine($"if (self == null) throw new ArgumentNullException(nameof({targetType.Name}{genericArgsStr}));");
                   }
                } else {
-                  readRawSb.AppendLine($"var self = new {targetType.Name}();");
+                  readRawSb.AppendLine($"var self = new {targetType.Name}{genericArgsStr}();");
                }
 
                // this gets auto-property fields too. In a future C# lang version they'll expose property backing
@@ -342,7 +392,7 @@ namespace Dargon.Vox.SourceGenerators {
                                                                                                                                   }}");
                }
 
-               if (!targetIsUpdatable) {
+               if (!targetIsUpdatable && !targetIsEnum) {
                   readRawSb.AppendLine($"return self;");
                }
             }
@@ -399,10 +449,10 @@ namespace Dargon.Vox.SourceGenerators {
                   ");
             } else {
                sb.AppendLine($@"
-                                                                                                                              public {targetType.Name} ReadFull(VoxReader reader) {{ {readFullSb} }}
-                                                                                                                              public {targetType.Name} ReadRaw(VoxReader reader) {{ {readRawSb} }}
-                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref {targetType.Name} self) => throw new InvalidOperationException({dq}Reading into {targetType.Name} ref is not supported.{dq});
-                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref {targetType.Name} self) => throw new InvalidOperationException({dq}Reading into {targetType.Name} ref is not supported.{dq});
+                                                                                                                              public {targetType.Name}{genericArgsStr} ReadFull(VoxReader reader) {{ {readFullSb} }}
+                                                                                                                              public {targetType.Name}{genericArgsStr} ReadRaw(VoxReader reader) {{ {readRawSb} }}
+                                                                                                                              public void ReadFullIntoRef(VoxReader reader, ref {targetType.Name}{genericArgsStr} self) => throw new InvalidOperationException({dq}Reading into {targetType.Name} ref is not supported.{dq});
+                                                                                                                              public void ReadRawIntoRef(VoxReader reader, ref {targetType.Name}{genericArgsStr} self) => throw new InvalidOperationException({dq}Reading into {targetType.Name} ref is not supported.{dq});
                   ");
             }
 
@@ -412,39 +462,41 @@ namespace Dargon.Vox.SourceGenerators {
                                                                                                                            }}
                ");
 
-            if (ReferenceEquals(type, targetType)) {
+            if (ReferenceEquals(type, targetType) && !targetIsEnum) {
                sb.AppendLine($@"
                                                                                                                            /// <summary>Autogenerated</summary>
                                                                                                                            [VoxInternalsAutoSerializedTypeInfoAttribute(GenericSerializerTypeDefinition = typeof({targetType.Name}Serializer{genericArgsUnboundStr}))]
                                                                                                                            public partial {typeKindStr} {targetType.Name}{genericArgsStr} /* : IVoxCustomType<{fullTargetTypeName}>{genericArgsConstraints} */ {{
-                                                                                                                              private static {targetType.Name}Serializer{genericArgsStr} GetSerializerInstance(VoxContext vox) => {targetType.Name}Serializer{genericArgsStr}.GetInstance(vox.SerializerContainer);
-                                                                                                                              // public {targetType.Name}Serializer{genericArgsStr} Serializer => {targetType.Name}Serializer{genericArgsStr}.Instance;
-                                                                                                                              // IVoxSerializer IVoxCustomType.Serializer => Serializer;
-                                                                                                                              // IVoxSerializer<{fullTargetTypeName}> IVoxCustomType<{fullTargetTypeName}>.Serializer => Serializer;
-
-                                                                                                                              public void WriteFullInto(VoxWriter writer) {{ var copy = this; GetSerializerInstance(writer.Context).WriteFull(writer, ref copy); }}
-                                                                                                                              public void WriteRawInto(VoxWriter writer) {{ var copy = this; GetSerializerInstance(writer.Context).WriteRaw(writer, ref copy); }}
-                  ");
-
-               if (targetIsUpdatable) {
-                  var copyToThisIfStruct = targetIsStruct && targetIsUpdatable ? " this = copy;" : "";
-                  sb.AppendLine($@"
-                                                                                                                              public void ReadFullFrom(VoxReader reader) {{ var copy = this; GetSerializerInstance(reader.Context).ReadFullIntoRef(reader, ref copy);{copyToThisIfStruct} }}
-                                                                                                                              public void ReadRawFrom(VoxReader reader) {{ var copy = this; GetSerializerInstance(reader.Context).ReadRawIntoRef(reader, ref copy);{copyToThisIfStruct} }}
-                     ");
-               }
-
-               sb.AppendLine($@"
+                                                                                                                              /* can't put more here because of enums */
                                                                                                                            }}");
             }
             sb.AppendLine($@"
 
                                                                                                                            /// <summary>Autogenerated</summary>
                                                                                                                            public static class VoxGenerated_{targetType.Name}Statics {{
-                                                                                                                              public static void WriteFull{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxWriter writer, {fullTargetTypeName} value) {{ var copy = value; {targetType.Name}Serializer{genericArgsStr}.GetInstance(writer.Context).WriteFull(writer, ref value); }}
-                                                                                                                              public static void WriteRaw{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxWriter writer, {fullTargetTypeName} value) {{ var copy = value; {targetType.Name}Serializer{genericArgsStr}.GetInstance(writer.Context).WriteRaw(writer, ref value); }}
-                                                                                                                              public static {targetType.Name}{genericArgsStr} ReadFull{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxReader reader) => {targetType.Name}Serializer{genericArgsStr}.GetInstance(reader.Context).ReadFull(reader);
-                                                                                                                              public static {targetType.Name}{genericArgsStr} ReadRaw{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxReader reader) => {targetType.Name}Serializer{genericArgsStr}.GetInstance(reader.Context).ReadRaw(reader);
+                                                                                                                              internal static {targetType.Name}Serializer{genericArgsStr} GetSerializerInstance{genericArgsStr}{genericArgsConstraints}(VoxContext vox) => {targetType.Name}Serializer{genericArgsStr}.GetInstance(vox.SerializerContainer);
+
+                                                                                                                              public static void WriteFull{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxWriter writer, {fullTargetTypeName} value) {{ var copy = value; GetSerializerInstance{genericArgsStr}(writer.Context).WriteFull(writer, ref value); }}
+                                                                                                                              public static void WriteRaw{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxWriter writer, {fullTargetTypeName} value) {{ var copy = value; GetSerializerInstance{genericArgsStr}(writer.Context).WriteRaw(writer, ref value); }}
+                                                                                                                              public static {targetType.Name}{genericArgsStr} ReadFull{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxReader reader) => GetSerializerInstance{genericArgsStr}(reader.Context).ReadFull(reader);
+                                                                                                                              public static {targetType.Name}{genericArgsStr} ReadRaw{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxReader reader) => GetSerializerInstance{genericArgsStr}(reader.Context).ReadRaw(reader);
+            ");
+
+            sb.AppendLine($@"
+                                                                                                                              public static void WriteFullInto{genericArgsStr}{genericArgsConstraints}(this {targetType.Name}{genericArgsStr} self, VoxWriter writer) {{ var copy = self; GetSerializerInstance{genericArgsStr}(writer.Context).WriteFull(writer, ref copy); }}
+                                                                                                                              public static void WriteRawInto{genericArgsStr}{genericArgsConstraints}(this {targetType.Name}{genericArgsStr} self, VoxWriter writer) {{ var copy = self; GetSerializerInstance{genericArgsStr}(writer.Context).WriteRaw(writer, ref copy); }}
+            ");
+
+            if (targetIsUpdatable) {
+               var copyToSelfIfStruct = targetIsStruct ? " self = copy;" : "";
+               sb.AppendLine($@"
+                                                                                                                              public static void ReadFullFrom{genericArgsStr}{genericArgsConstraints}({refIfTargetIsStruct} this {targetType.Name}{genericArgsStr} self, VoxReader reader) {{ var copy = self; GetSerializerInstance{genericArgsStr}(reader.Context).ReadFullIntoRef(reader, ref copy);{copyToSelfIfStruct} }}
+                                                                                                                              public static void ReadRawFrom{genericArgsStr}{genericArgsConstraints}({refIfTargetIsStruct} this {targetType.Name}{genericArgsStr} self, VoxReader reader) {{ var copy = self; GetSerializerInstance{genericArgsStr}(reader.Context).ReadRawIntoRef(reader, ref copy);{copyToSelfIfStruct} }}
+               ");
+            }
+
+            sb.AppendLine($@"
+
                                                                                                                            }}
                                                                                                                         }}
 
@@ -455,7 +507,7 @@ namespace Dargon.Vox.SourceGenerators {
                sb.AppendLine($@"
                                                                                                                            /// <summary>Autogenerated</summary>
                                                                                                                            public {(typeIsStatic ? "static" : "/* nonstatic */")} partial {typeKindStr} {type.Name} {{
-                                                                                                                              {stubDefs}                                                               
+                                                                                                                              { stubDefs}                                                               
                                                                                                                            }}");
             }
 
@@ -536,7 +588,7 @@ namespace Dargon.Vox.SourceGenerators {
          }
          sb.AppendLine($"{ind}}}");
          return baseName;
-      } else if (classification == TypeClassification.Enumerable) {
+      } else if (classification == TypeClassification.Sequence) {
          // As with the array field case, we don't attempt to transmit the type of serialized collections;
          // rather, we transmit the contained data and on deserialize create a collection instance that
          // matches the field type (which might be concrete).
@@ -592,6 +644,9 @@ namespace Dargon.Vox.SourceGenerators {
          var tupleBody = string.Join(", ", tupleItems);
          sb.AppendLine($"{ind}var {baseName} = ({tupleBody});");
          return baseName;
+      } else if (classification == TypeClassification.Enum) {
+         var underlyingType = ((INamedTypeSymbol)t).EnumUnderlyingType.Name; // e.g. Int8, Int16, UInt16, Int64
+         return $"({t.ToDisplayString()})reader.ReadRaw{underlyingType}();";
       }
 
       throw new NotImplementedException();
@@ -636,7 +691,7 @@ namespace Dargon.Vox.SourceGenerators {
          }
          sb.AppendLine($"{ind}   }}");
          sb.AppendLine($"{ind}}}");
-      } else if (classification == TypeClassification.Enumerable) {
+      } else if (classification == TypeClassification.Sequence) {
          // We don't attempt to transmit the type of serialized collections; rather, we transmit the contained
          // data and on deserialize create a collection instance that matches the field type (which might be concrete).
          isPolymorphic.AssertEquals(false);
@@ -679,6 +734,9 @@ namespace Dargon.Vox.SourceGenerators {
             var elementName = tupleElement.IsExplicitlyNamedTupleElement ? tupleElement.Name : $"Item{i + 1}";
             EmitWrite(sb, ind + "   ", $"{baseName}_item_{i}", $"{baseName}.{elementName}", tupleElement.Type, elementPolymorphismAttr);
          }
+      } else if (classification == TypeClassification.Enum) {
+         var underlyingType = ((INamedTypeSymbol)t).EnumUnderlyingType.Name; // e.g. Int8, Int16, UInt16, Int64
+         sb.AppendLine($"{ind}writer.WriteRaw{underlyingType}(({underlyingType})({sourceExpression}));");
       } else {
          throw new NotImplementedException();
       }
@@ -688,9 +746,10 @@ namespace Dargon.Vox.SourceGenerators {
    public enum TypeClassification {
          Regular,
          Array,
-         Enumerable,
+         Sequence,
          DictLike,
          TupleLike,
+         Enum,
       }
 
       private TypeClassification ClassifyType(ITypeSymbol t, out ITypeSymbol targ0, out ITypeSymbol targ1) {
@@ -698,6 +757,11 @@ namespace Dargon.Vox.SourceGenerators {
             targ0 = ats.ElementType;
             targ1 = null;
             return TypeClassification.Array;
+         }
+
+         if (t.TypeKind == TypeKind.Enum) {
+            targ0 = targ1 = null;
+            return TypeClassification.Enum;
          }
 
          if (t.Name == "String") {
@@ -724,7 +788,7 @@ namespace Dargon.Vox.SourceGenerators {
             }
          }
 
-         return targ0 != null ? TypeClassification.Enumerable : TypeClassification.Regular;
+         return targ0 != null ? TypeClassification.Sequence : TypeClassification.Regular;
       }
 
       private string BuildArrayNewString(ITypeSymbol elType, string indexExpr) {

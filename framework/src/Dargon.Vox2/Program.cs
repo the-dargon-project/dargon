@@ -66,6 +66,7 @@ namespace Dargon.Vox2 {
             TypeInt = typeof(int),
             TypeIntArray = typeof(int[]),
             TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray = typeof(Dictionary<int, Dictionary<object, int>[][]>),
+            TypeStringSplitOptions = typeof(StringSplitOptions),
             NullType = null,
             PolymorphicType = typeof(Dictionary<int, HashSet<string>>),
 
@@ -116,6 +117,10 @@ namespace Dargon.Vox2 {
                V1 = new List<bool> { false, true, true, true, false },
                V2 = new List<bool> { false, true, true, true, false, true, false },
             },
+
+            StringSplitOptions_None = StringSplitOptions.None,
+            StringSplitOptions_RemoveEmptyEntries = StringSplitOptions.RemoveEmptyEntries,
+            PolymorphicStringSplitOptions = StringSplitOptions.TrimEntries,
          };
 
          var voxForWriter = VoxContext.Create(new TestVoxTypes());
@@ -210,6 +215,7 @@ namespace Dargon.Vox2 {
          hodgepodgeOriginal.Tuple.AssertEquals(rt.Tuple);
          hodgepodgeOriginal.TypeInt.AssertEquals(rt.TypeInt);
          hodgepodgeOriginal.TypeIntArray.AssertEquals(rt.TypeIntArray);
+         hodgepodgeOriginal.TypeStringSplitOptions.AssertEquals(rt.TypeStringSplitOptions);
          hodgepodgeOriginal.TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray.AssertEquals(rt.TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray);
          hodgepodgeOriginal.NullType.AssertEquals(rt.NullType);
          hodgepodgeOriginal.PolymorphicType.AssertEquals(rt.PolymorphicType);
@@ -241,6 +247,10 @@ namespace Dargon.Vox2 {
          ((GenericBox<List<int>>)hodgepodgeOriginal.PolymorphicIntListBox).V2.ToCodegenDump().AssertEquals(((GenericBox<List<int>>)rt.PolymorphicIntListBox).V2.ToCodegenDump());
          ((GenericBox<List<bool>>)hodgepodgeOriginal.PolymorphicBoolListBox).V1.ToCodegenDump().AssertEquals(((GenericBox<List<bool>>)rt.PolymorphicBoolListBox).V1.ToCodegenDump());
          ((GenericBox<List<bool>>)hodgepodgeOriginal.PolymorphicBoolListBox).V2.ToCodegenDump().AssertEquals(((GenericBox<List<bool>>)rt.PolymorphicBoolListBox).V2.ToCodegenDump());
+
+         hodgepodgeOriginal.StringSplitOptions_None.AssertEquals(rt.StringSplitOptions_None);
+         hodgepodgeOriginal.StringSplitOptions_RemoveEmptyEntries.AssertEquals(rt.StringSplitOptions_RemoveEmptyEntries);
+         hodgepodgeOriginal.PolymorphicStringSplitOptions.AssertEquals(rt.PolymorphicStringSplitOptions);
 
          ms.Position.AssertEquals(writeLen);
 
@@ -561,7 +571,13 @@ namespace Dargon.Vox2 {
          var polymorphicSerializer = new PolymorphicSerializerImpl(trieContainer, serializerContainer);
          res.PolymorphicSerializer = polymorphicSerializer;
 
+         var seenVoxTypes = new HashSet<VoxTypes>();
+
          void Visit(VoxTypes vt) {
+            if (!seenVoxTypes.Add(vt)) {
+               return;
+            }
+
             var typeToSerializer = new Dictionary<Type, Type>(vt.TypeToCustomSerializers);
             foreach (var t in vt.AutoserializedTypes) {
                var attr = t.GetAttributeOrNull<VoxInternalsAutoSerializedTypeInfoAttribute>().AssertIsNotNull();
@@ -623,7 +639,6 @@ namespace Dargon.Vox2 {
             foreach (var t in vt.DependencyVoxTypes) {
                Visit((VoxTypes)Activator.CreateInstance(t)!);
             }
-
          }
 
          Visit(voxTypes);
@@ -841,6 +856,10 @@ namespace Dargon.Vox2 {
       public abstract Dictionary<Type, Type> TypeToCustomSerializers { get; } // Type to Serializer
       public virtual Dictionary<Type, Type> TypeIdAliasedSerializers { get; } = new(); // Serializer to Type
       public abstract List<Type> DependencyVoxTypes { get; }
+
+      public override int GetHashCode() => GetType().GetHashCode();
+      public override bool Equals(object other) => Equals((VoxTypes)other);
+      public bool Equals(VoxTypes other) => GetType() == other.GetType();
    }
 
    public class CoreVoxTypes : VoxTypes {
@@ -897,7 +916,9 @@ namespace Dargon.Vox2 {
          typeof(GenericBox<>),
          typeof(GenericStructBox<>),
       };
-      public override Dictionary<Type, Type> TypeToCustomSerializers { get; } = new() { };
+      public override Dictionary<Type, Type> TypeToCustomSerializers { get; } = new() {
+         [typeof(StringSplitOptions)] = typeof(StringSplitOptionsSerializer),
+      };
       public override List<Type> DependencyVoxTypes { get; } = new() { typeof(CoreVoxTypes) };
    }
 
@@ -964,6 +985,7 @@ namespace Dargon.Vox2 {
       public Type TypeInt { get; set; }
       public Type TypeIntArray { get; set; }
       public Type TypeDictOfIntToArrayOfArrayOfDictOfObjectToIntArray { get; set; }
+      public Type TypeStringSplitOptions { get; set; }
 
       public Type? NullType { get; set; }
       [P] public object PolymorphicType { get; set; }
@@ -993,6 +1015,11 @@ namespace Dargon.Vox2 {
 
       public GenericStructBox<int> IntStructBox;
       public GenericStructBox<List<int>> IntListStructBox;
+
+      public StringSplitOptions StringSplitOptions_None;
+      public StringSplitOptions StringSplitOptions_RemoveEmptyEntries;
+
+      [P] public object PolymorphicStringSplitOptions;
 
       public static void XX(HodgepodgeMin x) {
          // x.Tuple.Item1;
@@ -1292,6 +1319,9 @@ namespace Dargon.Vox2 {
       public static partial void Stub_WriteRaw_Type(VoxWriter writer, Type value) => writer.WriteFullType(value);
       public static partial Type Stub_ReadRaw_Type(VoxReader reader) => reader.ReadFullType();
    }
+
+   [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest6, RedirectToType = typeof(StringSplitOptions))]
+   public static partial class VoxGeneration_StringSplitOptions { }
 
    // public static class VoxReflectionCache_Helpers {
    //    public static byte[] Array1TypeIdBytes = ((int)BuiltInVoxTypeIds.Array1).ToVariableIntBytes();

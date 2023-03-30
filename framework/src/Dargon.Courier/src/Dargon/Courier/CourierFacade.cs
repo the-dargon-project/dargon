@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dargon.Commons.AsyncAwait;
 using Dargon.Commons.Collections;
 using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.AuditingTier;
@@ -56,6 +57,7 @@ namespace Dargon.Courier {
       public required PubSubClient PubSubClient { get; init; }
 
       public async Task<ITransport> AddTransportAsync(ITransportFactory transportFactory) {
+         await SynchronizationContexts.CourierDefault__.YieldToAsync();
          var transport = transportFactory.Create(VoxContext, MobOperations, Identity, RoutingTable, PeerTable, InboundMessageDispatcher, AuditService, Gatekeeper);
          transports.TryAdd(transport);
          return transport;

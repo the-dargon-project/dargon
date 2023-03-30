@@ -11,7 +11,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+#if ENABLE_UDP
 using Dargon.Courier.TransportTier.Udp;
+#endif
 
 namespace dummy_management_object_server {
    [Guid("E6867903-3222-40ED-94BB-3C2C0FDB891B")]
@@ -44,7 +46,9 @@ namespace dummy_management_object_server {
    public static class Program {
       public static void Main() {
          var courierFacade = CourierBuilder.Create()
+#if ENABLE_UDP
                                            .UseUdpTransport()
+#endif
                                            .UseTcpServerTransport(21337)
                                            .BuildAsync().Result;
          var testMob = new TestMob();

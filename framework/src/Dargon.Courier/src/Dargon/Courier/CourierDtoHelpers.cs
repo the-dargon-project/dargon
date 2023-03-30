@@ -1,3 +1,4 @@
+using Dargon.Commons;
 using Dargon.Commons.Templating;
 using Dargon.Courier.PeeringTier;
 
@@ -12,6 +13,12 @@ namespace Dargon.Courier {
 
       public static TDto GetFromIdentity(Identity identity) {
          return (TDto)identity.DeclaredProperties[default(TString_Key).Value];
+      }
+
+      public static TDto SetNewForIdentity(Identity identity, TDto value) {
+         identity.DeclaredProperties.ContainsKey(default(TString_Key).Value).AssertIsFalse();
+         identity.DeclaredProperties[default(TString_Key).Value] = value;
+         return value;
       }
    }
 }

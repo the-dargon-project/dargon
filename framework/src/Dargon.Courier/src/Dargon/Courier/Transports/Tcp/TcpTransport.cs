@@ -99,8 +99,9 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                }
 
                await Task.Delay(kConnectionRetryIntervalMillis).ConfigureAwait(false);
-            } catch (ObjectDisposedException) {
+            } catch (ObjectDisposedException e) {
                // socket disposed
+               logger.Debug(e, $"In {nameof(RunServerAsync)} hit an ODE");
             }
          }
          logger.Debug("Leaving RunServerAsync");

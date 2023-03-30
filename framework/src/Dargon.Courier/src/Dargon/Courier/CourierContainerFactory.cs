@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
 using Dargon.Commons;
+using Dargon.Commons.AsyncAwait;
 using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Collections;
 using Dargon.Courier.AccessControlTier;
@@ -65,6 +66,11 @@ namespace Dargon.Courier {
       }
 
       public async Task<CourierFacade> BuildAsync() {
+         // current thread might be the main game thread, which might block until this task completes.
+         // we need to consider the main game thread as exclusively taken, so immediately jump to thread pool
+         // before continuing (to ensure no continuations run on main thread)
+         await DefaultThreadPoolSynchronizationContext.Instance.YieldToAsync();
+
          var vox = voxContext ?? VoxContextFactory.Create(new CourierVoxTypes());
          var courierContainerFactory = new CourierContainerFactory(parentContainer);
          var courierSynchronizationContexts = new CourierSynchronizationContexts {
@@ -121,6 +127,8 @@ namespace Dargon.Courier {
       }
 
       public async Task<IRyuContainer> CreateAsync(VoxContext vox, CourierSynchronizationContexts synchronizationContexts, IGatekeeper gatekeeper, IReadOnlySet<ITransportFactory> transportFactories, Guid? forceId = null) {
+         await synchronizationContexts.CourierDefault__.YieldToAsync();
+
          transportFactories.AssertIsNotNull();
          synchronizationContexts.AssertIsNotNull();
          gatekeeper.AssertIsNotNull();
