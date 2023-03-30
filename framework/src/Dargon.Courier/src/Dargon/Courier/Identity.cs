@@ -10,14 +10,14 @@ namespace Dargon.Courier {
    /// Immutable state representing the local node's identity in a courier network.
    /// </summary>
    [VoxType((int)CourierVoxTypeIds.Identity)]
-   public class Identity {
+   public partial class Identity {
       public Identity() { }
 
       public Identity(Guid id) {
          Id = id;
       }
 
-      public Guid Id { get; private set; }
+      public Guid Id { get; /* setter is for serialization */ internal set; }
       public string VanityName { get; set; }
       /// <summary>
       /// Remotely-owned & declared properties; can change in response to heartbeats.
@@ -26,7 +26,7 @@ namespace Dargon.Courier {
       /// Validated by gatekeeper when submitted, currently only submitted when we
       /// start a connection session, so validated with client handshake.
       /// </summary>
-      public ConcurrentDictionary<string, object> DeclaredProperties { get; set; } = new();
+      [D<N, P>] public ConcurrentDictionary<string, object> DeclaredProperties { get; set; } = new();
 
       public bool Matches(Guid id, IdentityMatchingScope matchingScope) {
          bool result = false;

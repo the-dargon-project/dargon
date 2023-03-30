@@ -91,7 +91,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             routingTable.Register(remoteIdentity.Id, this);
 
             peerContext = peerTable.GetOrAdd(remoteIdentity.Id);
-            CourierAmbientPeerContext.CurrentContext.AssertIsNull();
+            CourierAmbientPeerContext.AssertThreadAndAsyncLocalStateAreNotInitialized();
             var session = peerContext.GetSession().AssertIsNotNull().UseAsImplicitAsyncLocalContext();
             gatekeeper.LoadSessionState(remoteHandshake.WhoAmI, session);
 
@@ -230,7 +230,7 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             }
 
             // Console.BackgroundColor = guids.IndexOf(localIdentity.Id) == 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkCyan;
-            logger.Log(levelElseTraceOpt ?? LogLevel.Trace, $"[{localIdentity.Id.ToString("n")[..6]} / {(remoteIdentity?.Id.ToString("n"))[..6]}] {message}");
+            logger.Log(levelElseTraceOpt ?? LogLevel.Trace, $"[{localIdentity.Id.ToString("n")[..6]} / {remoteIdentity?.Id.ToString("n").Substring(0, 6)}] {message}");
             logger.Factory.Flush();
             // Console.BackgroundColor = ConsoleColor.Black;
          }

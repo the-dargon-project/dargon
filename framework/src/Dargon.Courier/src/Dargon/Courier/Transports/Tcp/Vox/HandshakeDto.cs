@@ -4,7 +4,7 @@ using Dargon.Vox2;
 
 namespace Dargon.Courier.TransportTier.Tcp.Vox {
    [VoxType((int)CourierVoxTypeIds.HandshakeDto)]
-   public class HandshakeDto {
+   public partial class HandshakeDto {
       public WhoamiDto WhoAmI { get; set; }
    }
 }

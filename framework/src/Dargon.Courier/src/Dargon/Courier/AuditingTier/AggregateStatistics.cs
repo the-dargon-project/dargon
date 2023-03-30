@@ -3,7 +3,7 @@ using Dargon.Vox2;
 
 namespace Dargon.Courier.AuditingTier {
    [VoxType((int)CourierVoxTypeIds.AggregateStatistics)]
-   public class AggregateStatistics<T> {
+   public partial class AggregateStatistics<T> {
       public T Sum { get; set; }
       public T Min { get; set; }
       public T Max { get; set; }

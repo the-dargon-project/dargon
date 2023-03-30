@@ -19,6 +19,7 @@ using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.ServiceTier.Vox;
 using Dargon.Courier.TransportTier;
+using Dargon.Courier.Vox;
 using Dargon.Ryu;
 using Dargon.Ryu.Modules;
 using Dargon.Vox2;
@@ -64,6 +65,7 @@ namespace Dargon.Courier {
       }
 
       public async Task<CourierFacade> BuildAsync() {
+         var vox = voxContext ?? VoxContextFactory.Create(new CourierVoxTypes());
          var courierContainerFactory = new CourierContainerFactory(parentContainer);
          var courierSynchronizationContexts = new CourierSynchronizationContexts {
             CourierDefault__ = DefaultThreadPoolSynchronizationContext.Instance,
@@ -71,7 +73,7 @@ namespace Dargon.Courier {
             LateNetworkIO = lateIoSynchronizationContext ?? DefaultThreadPoolSynchronizationContext.Instance,
          };
          var courierContainer = await courierContainerFactory.CreateAsync(
-            voxContext.AssertIsNotNull(),
+            vox,
             courierSynchronizationContexts,
             gatekeeper,
             transportFactories,

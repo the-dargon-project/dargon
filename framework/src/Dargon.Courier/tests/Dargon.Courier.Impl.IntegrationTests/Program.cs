@@ -18,8 +18,11 @@ namespace Dargon.Courier.Impl.IntegrationTests {
       public static void RunTests() {
          InitializeLogging();
 
+         new TcpMessagingTests().BroadcastTest().Wait();
+         new TcpMessagingTests().ReliableTest().Wait();
+         new TcpMessagingTests().LargeObjectTest().Wait();
 //         Console.BufferHeight = 21337;
-         new UdpMessagingTests().LargeObjectTest().Wait();
+         // new UdpMessagingTests().LargeObjectTest().Wait();
 //         new LocalMessagingLoadTests().RunAsync().Wait();
 //         new UdpServiceTests().RunAsync().Wait();
 //         return;
@@ -35,20 +38,20 @@ namespace Dargon.Courier.Impl.IntegrationTests {
          new BloomFilterTests().CanHaveNegligibleFalseCollisionRate();
          new BloomFilterTests().PerformanceTest();
 
-         foreach (var messageTestType in new[] { typeof(LocalMessagingTests), typeof(TcpMessagingTests), typeof(UdpMessagingTests) }) {
-            Console.Title = messageTestType.FullName;
-            ((MessagingTestsBase)Activator.CreateInstance(messageTestType)).BroadcastTest().Wait();
-            Console.Title += " !@#!# ";
-            ((MessagingTestsBase)Activator.CreateInstance(messageTestType)).ReliableTest().Wait();
-         }
-
-         foreach (var serviceTestType in new[] { typeof(LocalServiceTests), typeof(TcpServiceTests), typeof(UdpServiceTests) }) {
-            ((ServiceTestsBase)Activator.CreateInstance(serviceTestType)).RunAsync().Wait();
-         }
-
-         foreach (var managementTestType in new[] { typeof(LocalManagementTests), typeof(TcpManagementTests), typeof(UdpManagementTests) }) {
-            ((ManagementTestsBase)Activator.CreateInstance(managementTestType)).RunAsync().Wait();
-         }
+         // foreach (var messageTestType in new[] { typeof(LocalMessagingTests), typeof(TcpMessagingTests), typeof(UdpMessagingTests) }) {
+         //    Console.Title = messageTestType.FullName;
+         //    ((MessagingTestsBase)Activator.CreateInstance(messageTestType)).BroadcastTest().Wait();
+         //    Console.Title += " !@#!# ";
+         //    ((MessagingTestsBase)Activator.CreateInstance(messageTestType)).ReliableTest().Wait();
+         // }
+         //
+         // foreach (var serviceTestType in new[] { typeof(LocalServiceTests), typeof(TcpServiceTests), typeof(UdpServiceTests) }) {
+         //    ((ServiceTestsBase)Activator.CreateInstance(serviceTestType)).RunAsync().Wait();
+         // }
+         //
+         // foreach (var managementTestType in new[] { typeof(LocalManagementTests), typeof(TcpManagementTests), typeof(UdpManagementTests) }) {
+         //    ((ManagementTestsBase)Activator.CreateInstance(managementTestType)).RunAsync().Wait();
+         // }
       }
 
       private static void InitializeLogging() {

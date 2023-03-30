@@ -89,7 +89,12 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
                }
             } catch (SocketException e) {
                if (firstError) {
-                  logger.Error(e, $"First socket error in {nameof(RunServerAsync)}");
+                  if (shutdownCancellationTokenSource.IsCancellationRequested) {
+                     logger.Debug(e, $"First socket error, but cancellation is requested so not an error state in {nameof(RunServerAsync)}");
+                  } else {
+                     logger.Error(e, $"First socket error in {nameof(RunServerAsync)}");
+                  }
+
                   firstError = false;
                }
 

@@ -4,7 +4,7 @@ using Dargon.Vox2;
 
 namespace Dargon.Courier.ManagementTier {
    [VoxType((int)CourierVoxTypeIds.ManagementObjectIdentifierDto)]
-   public class ManagementObjectIdentifierDto {
+   public partial class ManagementObjectIdentifierDto {
       public Guid Id { get; set; }
       public string FullName { get; set; }
    }

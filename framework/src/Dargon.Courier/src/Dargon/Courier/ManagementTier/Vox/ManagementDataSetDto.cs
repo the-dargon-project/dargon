@@ -3,7 +3,7 @@ using Dargon.Vox2;
 
 namespace Dargon.Courier.ManagementTier.Vox {
    [VoxType((int)CourierVoxTypeIds.ManagementDataSetDto)]
-   public class ManagementDataSetDto<T> {
+   public partial class ManagementDataSetDto<T> {
       public DataPoint<T>[] DataPoints { get; set; }
    }
 }

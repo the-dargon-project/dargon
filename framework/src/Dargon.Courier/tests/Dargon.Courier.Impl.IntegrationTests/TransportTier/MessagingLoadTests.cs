@@ -1,7 +1,9 @@
 ﻿using Dargon.Commons;
 using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Courier.TransportTier.Test;
+#if !DISABLE_UDP
 using Dargon.Courier.TransportTier.Udp;
+#endif
 using NMockito;
 using System;
 using System.Collections.Generic;
@@ -92,6 +94,7 @@ namespace Dargon.Courier.TransportTier {
       }
    }
 
+#if !DISABLE_UDP
    public class UdpMessagingLoadTests : MessagingLoadTestsBase {
       public UdpMessagingLoadTests() {
          Go(async () => {
@@ -127,4 +130,5 @@ namespace Dargon.Courier.TransportTier {
          Setup(courierFacades);
       }
    }
+#endif
 }

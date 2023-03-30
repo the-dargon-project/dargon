@@ -78,6 +78,11 @@ namespace Dargon.Commons {
          return ref state;
       }
 
+      public static void AssertThreadAndAsyncLocalStateAreNotInitialized() {
+         Store<StructOf<TContext>>.s_tlsState.IsInitialized.AssertIsFalse();
+         Store<StructOf<TContext>>.s_alsState.Value.AssertIsNull();
+      }
+
       public static void AssertThreadOrAsyncLocalStateIsInitialized() {
          GetState().IsInitialized.AssertIsTrue($"{nameof(ThreadLocalContext<TContext>)} has yet to be initialized.");
       }

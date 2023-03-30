@@ -5,19 +5,23 @@ namespace Dargon.Vox2 {
 
    public class VoxInternalBaseAttribute : Attribute { }
 
-   public interface IVoxCustomType {
-      IVoxSerializer Serializer { get; }
-
-      void WriteFullInto(VoxWriter writer);
-      void WriteRawInto(VoxWriter writer);
-
-      void ReadFullFrom(VoxReader reader);
-      void ReadRawFrom(VoxReader reader);
+   public class VoxInternalsAutoSerializedTypeInfoAttribute : Attribute {
+      public Type GenericSerializerTypeDefinition { get; set; }
    }
 
-   public interface IVoxCustomType<TSelf> : IVoxCustomType {
-      new IVoxSerializer<TSelf> Serializer { get; }
-   }
+   // public interface IVoxCustomType {
+   //    IVoxSerializer Serializer { get; }
+   //
+   //    void WriteFullInto(VoxWriter writer);
+   //    void WriteRawInto(VoxWriter writer);
+   //
+   //    void ReadFullFrom(VoxReader reader);
+   //    void ReadRawFrom(VoxReader reader);
+   // }
+
+   // public interface IVoxCustomType<TSelf> : IVoxCustomType {
+   //    new IVoxSerializer<TSelf> Serializer { get; }
+   // }
 
    [Flags]
    public enum VoxTypeFlags : int {
@@ -29,7 +33,7 @@ namespace Dargon.Vox2 {
       NoCodeGen = 16,
    }
 
-   [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+   [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum, AllowMultiple = true, Inherited = false)]
    public sealed class VoxTypeAttribute : VoxInternalBaseAttribute {
       public VoxTypeAttribute(int Id) {
          this.Id = Id;

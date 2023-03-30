@@ -4,7 +4,7 @@ using System;
 
 namespace Dargon.Courier.ManagementTier {
    [VoxType((int)CourierVoxTypeIds.ParameterDescriptionDto)]
-   public class ParameterDescriptionDto {
+   public partial class ParameterDescriptionDto {
       public string Name { get; set; }
       public Type Type { get; set; }
    }

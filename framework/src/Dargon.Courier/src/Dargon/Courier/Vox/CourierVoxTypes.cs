@@ -16,27 +16,6 @@ using Dargon.Commons;
 //using Dargon.Courier.Transports.Udp.Vox;
 
 namespace Dargon.Courier.Vox {
-   [AttributeUsage(AttributeTargets.Field)]
-   public class TypeAttribute : Attribute {
-      public TypeAttribute(Type dtoType, Type serializerType = null) {
-         DtoType = dtoType;
-         SerializerType = serializerType;
-      }
-
-      public Type DtoType { get; }
-      public Type SerializerType { get; }
-   }
-
-   [AttributeUsage(AttributeTargets.Field)]
-   public class TypeAttribute<TDtoType> : TypeAttribute {
-      public TypeAttribute() : base(typeof(TDtoType), null) { }
-   }
-
-   [AttributeUsage(AttributeTargets.Field)]
-   public class TypeAttribute<TDtoType, TSerializerType> : TypeAttribute {
-      public TypeAttribute() : base(typeof(TDtoType), typeof(TSerializerType)) { }
-   }
-
    public enum CourierVoxTypeIds : int {
       // Courier Core (starts at 1 - note can't use 0 as that's TNull in Vox).
       [Type<MessageDto>] MessageDto = 1,
@@ -82,33 +61,6 @@ namespace Dargon.Courier.Vox {
       // StateTier
       StateTierBaseId = 60,
       [Type<StateUpdateDto>] StateUpdateDto = StateTierBaseId + 0,
-   }
-
-   public abstract class VoxAutoTypes<TTypeIds> : VoxTypes {
-      private readonly List<Type> autoserializedTypes = new();
-      private readonly Dictionary<Type, Type> typeToCustomSerializers = new();
-
-      public VoxAutoTypes() {
-         var tEnum = typeof(TTypeIds);
-         tEnum.IsEnum.AssertIsTrue();
-
-         var enumMembers = tEnum.GetMembers(BindingFlags.Public | BindingFlags.Static);
-         foreach (var member in enumMembers) {
-            foreach (var attr in member.GetCustomAttributes(true)) {
-               if (attr is TypeAttribute ta) {
-                  var dt = ta.DtoType;
-                  if (ta.SerializerType is { } st) {
-                     typeToCustomSerializers.Add(dt, st);
-                  } else {
-                     autoserializedTypes.Add(dt);
-                  }
-               }
-            }
-         }
-      }
-
-      public override List<Type> AutoserializedTypes => autoserializedTypes;
-      public override Dictionary<Type, Type> TypeToCustomSerializers => typeToCustomSerializers;
    }
 
    public class CourierVoxTypes : VoxAutoTypes<CourierVoxTypeIds> {

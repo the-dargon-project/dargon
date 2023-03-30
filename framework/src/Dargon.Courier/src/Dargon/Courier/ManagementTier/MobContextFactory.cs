@@ -142,7 +142,7 @@ namespace Dargon.Courier.ManagementTier {
             methodDescriptions.Add(
                new MethodDescriptionDto {
                   Name = method.Name,
-                  Parameters = method.GetParameters().Map(
+                  Parameters = method.GetParameters().MapList(
                      p => new ParameterDescriptionDto { Name = p.Name, Type = p.ParameterType }),
                   ReturnType = returnType
                });

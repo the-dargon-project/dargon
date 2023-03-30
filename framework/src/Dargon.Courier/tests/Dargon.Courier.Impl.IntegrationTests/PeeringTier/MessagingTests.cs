@@ -11,9 +11,10 @@ using Dargon.Commons.AsyncPrimitives;
 using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Courier.TransportTier.Test;
+#if !DISABLE_UDP
 using Dargon.Courier.TransportTier.Udp;
+#endif
 using Dargon.Courier.Vox;
-using Dargon.Vox;
 using NLog;
 using NMockito;
 using Xunit;
@@ -26,7 +27,7 @@ namespace Dargon.Courier.PeeringTier {
       private CourierFacade receiverFacade;
 
       public MessagingTestsBase() {
-         VoxGlobals.Serializer.ImportTypes(new CourierVoxTypes());
+         //VoxGlobals.Serializer.ImportTypes(new CourierVoxTypes());
       }
 
       public void Setup(CourierFacade senderFacade, CourierFacade receiverFacade) {
@@ -165,6 +166,7 @@ namespace Dargon.Courier.PeeringTier {
       }
    }
 
+#if !DISABLE_UDP
    public class UdpMessagingTests : MessagingTestsBase {
       public UdpMessagingTests() {
          var senderFacade = CourierBuilder.Create()
@@ -187,6 +189,7 @@ namespace Dargon.Courier.PeeringTier {
          Setup(senderFacade, receiverFacade);
       }
    }
+#endif
 
    public class TcpMessagingTests : MessagingTestsBase {
       public TcpMessagingTests() {

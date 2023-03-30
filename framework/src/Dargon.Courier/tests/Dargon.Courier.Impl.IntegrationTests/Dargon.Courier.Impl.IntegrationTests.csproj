@@ -12,6 +12,8 @@
     <StartupObject>Dargon.Courier.Impl.IntegrationTests.Program</StartupObject>
 
     <RootNamespace>Dargon.Courier</RootNamespace>
+
+    <DefineConstants>$(DefineConstants);DISABLE_UDP</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

@@ -93,9 +93,20 @@ namespace Dargon.Vox2 {
       }
 
       public static byte[] ToVariableIntBytes(this int i) {
-         using(var ms = new MemoryStream(5))
+         using (var ms = new MemoryStream(5))
          using (var bw = new BinaryWriter(ms)) {
             bw.WriteVariableInt(i);
+            return ms.ToArray();
+         }
+      }
+      
+      public static byte[] ToVariableIntBytes(this int[] arr) {
+         using (var ms = new MemoryStream(5))
+         using (var bw = new BinaryWriter(ms)) {
+            foreach (var x in arr) {
+               bw.WriteVariableInt(x);
+            }
+
             return ms.ToArray();
          }
       }

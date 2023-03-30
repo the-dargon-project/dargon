@@ -5,7 +5,7 @@ using Dargon.Vox2;
 namespace Dargon.Courier.PeeringTier;
 
 [VoxType((int)CourierVoxTypeIds.WhoamiDto)]
-public class WhoamiDto {
+public partial class WhoamiDto {
    public Identity Identity { get; set; }
-   public Dictionary<string, object> AdditionalParameters { get; set; }
+   [D<N, P>] public Dictionary<string, object> AdditionalParameters { get; set; }
 }

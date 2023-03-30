@@ -1,7 +1,6 @@
 ﻿using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Pooling;
 using Dargon.Courier.AuditingTier;
-using Dargon.Vox;
 using System;
 using System.IO;
 using System.Net.Sockets;

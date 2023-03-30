@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Diagnostics;
+using System.Numerics;
 using System.Text;
 using Dargon.Commons;
 using Dargon.Commons.Collections;
@@ -11,6 +12,11 @@ namespace Dargon.Vox2 {
          Console.WriteLine("Hello, World!");
 
          var hodgepodgeOriginal = new HodgepodgeMin {
+            True = true,
+            False = false,
+            PolymorphicTrue = true,
+            PolymorphicFalse = false,
+
             Int8 = 10,
             Int16 = 1234,
             Int32 = 213812912,
@@ -77,6 +83,39 @@ namespace Dargon.Vox2 {
             Inner = new() {
                Inner = null,
             },
+
+            IntBox = new GenericBox<int> {
+               V1 = 123,
+               V2 = 234,
+            },
+            BoolBox = new GenericBox<bool> {
+               V1 = false,
+               V2 = true,
+            },
+            IntListBox = new GenericBox<List<int>> {
+               V1 = new List<int> { 1, 2, 3 },
+               V2 = new List<int> { 2, 3, 4, 5, 6 },
+            },
+            BoolListBox = new GenericBox<List<bool>> {
+               V1 = new List<bool> { false, true, false, true },
+               V2 = new List<bool> { false, true, false, true, false, true },
+            },
+            PolymorphicIntBox = new GenericBox<int> {
+               V1 = 123,
+               V2 = 234,
+            },
+            PolymorphicBoolBox = new GenericBox<bool> {
+               V1 = true,
+               V2 = false,
+            },
+            PolymorphicIntListBox = new GenericBox<List<int>> {
+               V1 = new List<int> { 1, 2, 3 },
+               V2 = new List<int> { 2, 3, 4, 5, 6 },
+            },
+            PolymorphicBoolListBox = new GenericBox<List<bool>> {
+               V1 = new List<bool> { false, true, true, true, false },
+               V2 = new List<bool> { false, true, true, true, false, true, false },
+            },
          };
 
          var voxForWriter = VoxContext.Create(new TestVoxTypes());
@@ -89,6 +128,12 @@ namespace Dargon.Vox2 {
          var voxForReader = VoxContext.Create(new TestVoxTypes());
          using var vr = voxForReader.CreateReader(ms);
          var rt = (HodgepodgeMin)vr.ReadPolymorphic();
+
+         hodgepodgeOriginal.True.AssertEquals(rt.True);
+         hodgepodgeOriginal.False.AssertEquals(rt.False);
+         hodgepodgeOriginal.PolymorphicTrue.AssertEquals(rt.PolymorphicTrue);
+         hodgepodgeOriginal.PolymorphicFalse.AssertEquals(rt.PolymorphicFalse);
+
          hodgepodgeOriginal.Int8.AssertEquals(rt.Int8);
          hodgepodgeOriginal.Int16.AssertEquals(rt.Int16);
          hodgepodgeOriginal.Int32.AssertEquals(rt.Int32);
@@ -180,6 +225,23 @@ namespace Dargon.Vox2 {
 
          rt.Inner.Inner.AssertIsNull();
 
+         hodgepodgeOriginal.IntBox.V1.AssertEquals(rt.IntBox.V1);
+         hodgepodgeOriginal.IntBox.V2.AssertEquals(rt.IntBox.V2);
+         hodgepodgeOriginal.BoolBox.V1.AssertEquals(rt.BoolBox.V1);
+         hodgepodgeOriginal.BoolBox.V2.AssertEquals(rt.BoolBox.V2);
+         hodgepodgeOriginal.IntListBox.V1.Count.AssertEquals(rt.IntListBox.V1.Count);
+         hodgepodgeOriginal.IntListBox.V2.Count.AssertEquals(rt.IntListBox.V2.Count);
+         hodgepodgeOriginal.BoolListBox.V1.ToCodegenDump().AssertEquals(rt.BoolListBox.V1.ToCodegenDump());
+         hodgepodgeOriginal.BoolListBox.V2.ToCodegenDump().AssertEquals(rt.BoolListBox.V2.ToCodegenDump());
+         ((GenericBox<int>)hodgepodgeOriginal.PolymorphicIntBox).V1.AssertEquals(((GenericBox<int>)rt.PolymorphicIntBox).V1);
+         ((GenericBox<int>)hodgepodgeOriginal.PolymorphicIntBox).V2.AssertEquals(((GenericBox<int>)rt.PolymorphicIntBox).V2);
+         ((GenericBox<bool>)hodgepodgeOriginal.PolymorphicBoolBox).V1.AssertEquals(((GenericBox<bool>)rt.PolymorphicBoolBox).V1);
+         ((GenericBox<bool>)hodgepodgeOriginal.PolymorphicBoolBox).V2.AssertEquals(((GenericBox<bool>)rt.PolymorphicBoolBox).V2);
+         ((GenericBox<List<int>>)hodgepodgeOriginal.PolymorphicIntListBox).V1.ToCodegenDump().AssertEquals(((GenericBox<List<int>>)rt.PolymorphicIntListBox).V1.ToCodegenDump());
+         ((GenericBox<List<int>>)hodgepodgeOriginal.PolymorphicIntListBox).V2.ToCodegenDump().AssertEquals(((GenericBox<List<int>>)rt.PolymorphicIntListBox).V2.ToCodegenDump());
+         ((GenericBox<List<bool>>)hodgepodgeOriginal.PolymorphicBoolListBox).V1.ToCodegenDump().AssertEquals(((GenericBox<List<bool>>)rt.PolymorphicBoolListBox).V1.ToCodegenDump());
+         ((GenericBox<List<bool>>)hodgepodgeOriginal.PolymorphicBoolListBox).V2.ToCodegenDump().AssertEquals(((GenericBox<List<bool>>)rt.PolymorphicBoolListBox).V2.ToCodegenDump());
+
          ms.Position.AssertEquals(writeLen);
 
          ms.Position = 0;
@@ -196,6 +258,128 @@ namespace Dargon.Vox2 {
          hpso.I32.AssertEquals(hpsr.I32);
          hpso.Inner.DateTime.AssertEquals(hpsr.Inner.DateTime);
          ms.Position.AssertEquals(writeLen);
+      }
+   }
+   public interface IPolymorphicSerializer {
+      Type ReadFullType(VoxReader reader);
+      T ReadPolymorphicFull<T>(VoxReader reader);
+
+      void WriteFullType(VoxWriter writer, Type type);
+      void WritePolymorphicFull<T>(VoxWriter writer, ref T x);
+   }
+
+   public interface IVoxSerializer {
+      int SimpleTypeId { get; }
+      int[] FullTypeId { get; }
+      byte[] FullTypeIdBytes { get; }
+
+      bool IsUpdatable { get; }
+
+      void WriteRawObject(VoxWriter writer, object val);
+      object ReadRawObject(VoxReader reader);
+   }
+
+   public interface IVoxSerializer<T> : IVoxSerializer {
+      void WriteFull(VoxWriter writer, ref T val);
+      void WriteRaw(VoxWriter writer, ref T val);
+
+      T ReadFull(VoxReader reader);
+      T ReadRaw(VoxReader reader);
+
+      void ReadFullIntoRef(VoxReader reader, ref T val);
+      void ReadRawIntoRef(VoxReader reader, ref T val);
+   }
+
+   public class VoxWriter : IDisposable {
+      private BinaryWriter bw;
+      private VoxContext voxContext;
+
+      public VoxWriter(Stream s, VoxContext voxContext, bool leaveOpen = true) : this(new BinaryWriter(s, Encoding.UTF8, leaveOpen), voxContext) { }
+
+      public VoxWriter(BinaryWriter bw, VoxContext voxContext) {
+         this.bw = bw;
+         this.voxContext = voxContext;
+      }
+
+      public VoxContext Context => voxContext;
+
+      public BinaryWriter InnerWriter
+      {
+         get
+         {
+            if (bw == null) throw new ObjectDisposedException(nameof(VoxWriter));
+            return bw;
+         }
+      }
+
+      public void WriteTypeIdBytes(byte[] data) => InnerWriter.Write(data);
+
+      public void WriteRawBytes(byte[] data) => InnerWriter.Write(data);
+
+      public void WriteFullType(Type type) {
+         voxContext.PolymorphicSerializer.WriteFullType(this, type);
+      }
+
+      public void WritePolymorphic<T>(T inst) {
+         // if (typeof(T).IsValueType) throw new ArgumentException($"{typeof(T).FullName} is a value type.");
+         voxContext.PolymorphicSerializer.WritePolymorphicFull(this, ref inst);
+      }
+
+      public void Dispose() {
+         bw?.Dispose();
+         bw = null;
+      }
+   }
+
+   public class VoxReader : IDisposable {
+      private BinaryReader br;
+      private VoxContext voxContext;
+
+      public VoxReader(Stream s, VoxContext voxContext, bool leaveOpen = true) : this(new BinaryReader(s, Encoding.UTF8, leaveOpen), voxContext) { }
+
+      public VoxReader(BinaryReader br, VoxContext voxContext) {
+         this.br = br;
+         this.voxContext = voxContext;
+      }
+      
+      public VoxContext Context => voxContext;
+
+      public BinaryReader InnerReader
+      {
+         get
+         {
+            if (br == null) throw new ObjectDisposedException(nameof(VoxReader));
+            return br;
+         }
+      }
+
+      public int ReadSimpleTypeId() => InnerReader.ReadVariableInt();
+
+      public void AssertReadTypeIdBytes(byte[] bs) => AssertReadRawBytes(bs);
+
+      public void AssertReadRawBytes(byte[] bs) {
+         for (var i = 0; i < bs.Length; i++) {
+            var x = InnerReader.ReadByte();
+            if (x != bs[i]) {
+               throw new Exception("Byte sequence mismatch!");
+            }
+         }
+      }
+
+      public Type ReadFullType() {
+         return voxContext.PolymorphicSerializer.ReadFullType(this);
+      }
+
+      public object ReadPolymorphic() => ReadPolymorphic<object>();
+
+      public T ReadPolymorphic<T>() {
+         // if (typeof(T).IsValueType) throw new ArgumentException($"{typeof(T).FullName} is a value type.");
+         return voxContext.PolymorphicSerializer.ReadPolymorphicFull<T>(this);
+      }
+
+      public void Dispose() {
+         br?.Dispose();
+         br = null;
       }
    }
 
@@ -305,6 +489,10 @@ namespace Dargon.Vox2 {
          }
       }
 
+      public void ImportTypeIdAliasedContext(VoxTypeContext c) {
+         simpleTypeIdToTrieRootContext.Add(c.SimpleTypeId, c);
+      }
+
       public VoxTypeContext GetTrieRootContextOfSimpleTypeId(int simpleTypeId) => simpleTypeIdToTrieRootContext[simpleTypeId];
       public VoxTypeContext GetTrieRootContextOfSimpleType(Type type) => simpleTypeToTrieRootContext[type];
 
@@ -353,6 +541,18 @@ namespace Dargon.Vox2 {
       }
    }
 
+   public class ZZ {
+      public const int X = 10;
+   }
+
+   public class ZXZ : ZZ {
+      public const int X = 23;
+
+      public void Z() {
+         var y = X;
+      }
+   }
+
    public static class VoxContextFactory {
       public static VoxContext Create(VoxTypes voxTypes) {
          var res = new VoxContext { VoxTypes = voxTypes };
@@ -364,8 +564,20 @@ namespace Dargon.Vox2 {
          void Visit(VoxTypes vt) {
             var typeToSerializer = new Dictionary<Type, Type>(vt.TypeToCustomSerializers);
             foreach (var t in vt.AutoserializedTypes) {
-               typeToSerializer.Add(
-                  t, ((IVoxCustomType)Activator.CreateInstance(t)!).Serializer.GetType());
+               var attr = t.GetAttributeOrNull<VoxInternalsAutoSerializedTypeInfoAttribute>().AssertIsNotNull();
+               var serializerType = attr.GenericSerializerTypeDefinition.AssertIsNotNull();
+               typeToSerializer.Add(t, serializerType);
+            }
+
+            foreach (var (tseri, t) in vt.TypeIdAliasedSerializers) {
+               var seri = (IVoxSerializer)Activator.CreateInstance(tseri);
+               var vtc = new VoxTypeContext(seri.SimpleTypeId, null) {
+                  SerializerCacheOrNull = seri,
+                  SerializerType = tseri,
+                  Internal_Type_GenericArguments_Cache = Array.Empty<Type>(),
+               };
+               vtc.LateInitializeTerminalNode(t, t, Type.EmptyTypes);
+               trieContainer.ImportTypeIdAliasedContext(vtc);
             }
 
             foreach (var (type, tSerializer) in typeToSerializer) {
@@ -541,13 +753,15 @@ namespace Dargon.Vox2 {
    }
 
    public class VoxContext {
+      internal VoxContext() {}
+
       public VoxTypes VoxTypes { get; set; }
       public VoxTypeTrieContainer TrieContainer { get; set; }
       public IPolymorphicSerializer PolymorphicSerializer { get; set; }
       public VoxSerializerContainer SerializerContainer { get; set; }
 
-      public VoxWriter CreateWriter(Stream s, bool leaveOpen = true) => new(s, PolymorphicSerializer, leaveOpen);
-      public VoxReader CreateReader(Stream s, bool leaveOpen = true) => new(s, PolymorphicSerializer, leaveOpen);
+      public VoxWriter CreateWriter(Stream s, bool leaveOpen = true) => new(s, this, leaveOpen);
+      public VoxReader CreateReader(Stream s, bool leaveOpen = true) => new(s, this, leaveOpen);
 
       public static VoxContext Create(VoxTypes voxTypes) => VoxContextFactory.Create(voxTypes);
    }
@@ -624,7 +838,8 @@ namespace Dargon.Vox2 {
    /// </summary>
    public abstract class VoxTypes {
       public abstract List<Type> AutoserializedTypes { get; }
-      public abstract Dictionary<Type, Type> TypeToCustomSerializers { get; }
+      public abstract Dictionary<Type, Type> TypeToCustomSerializers { get; } // Type to Serializer
+      public virtual Dictionary<Type, Type> TypeIdAliasedSerializers { get; } = new(); // Serializer to Type
       public abstract List<Type> DependencyVoxTypes { get; }
    }
 
@@ -641,6 +856,8 @@ namespace Dargon.Vox2 {
          [typeof(List<>)] = typeof(RuntimePolymorphicListSerializer<>),
          [typeof(HashSet<>)] = typeof(RuntimePolymorphicHashSetSerializer<>),
          [typeof(Dictionary<,>)] = typeof(RuntimePolymorphicDictionarySerializer<,>),
+
+         [typeof(bool)] = typeof(BoolVoxSerializer),
 
          [typeof(SByte)] = typeof(SByteSerializer),
          [typeof(Int16)] = typeof(Int16Serializer),
@@ -663,6 +880,11 @@ namespace Dargon.Vox2 {
          [typeof(TimeSpan)] = typeof(TimeSpanSerializer),
       };
 
+      public override Dictionary<Type, Type> TypeIdAliasedSerializers { get; } = new() {
+         [typeof(BoolTrueVoxSerializer)] = typeof(bool),
+         [typeof(BoolFalseVoxSerializer)] = typeof(bool),
+      };
+
       public override List<Type> DependencyVoxTypes { get; } = new();
    }
 
@@ -672,6 +894,8 @@ namespace Dargon.Vox2 {
          typeof(HodgepodgeMin),
          typeof(HodgepodgeStructMin),
          typeof(HodgepodgeStructMin2),
+         typeof(GenericBox<>),
+         typeof(GenericStructBox<>),
       };
       public override Dictionary<Type, Type> TypeToCustomSerializers { get; } = new() { };
       public override List<Type> DependencyVoxTypes { get; } = new() { typeof(CoreVoxTypes) };
@@ -699,6 +923,11 @@ namespace Dargon.Vox2 {
    
    [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest1)]
    public partial class HodgepodgeMin {
+      public bool True { get; set; }
+      public bool False { get; set; }
+      [P] public object PolymorphicTrue { get; set; }
+      [P] public object PolymorphicFalse { get; set; }
+
       public sbyte Int8 { get; set; }
       public short Int16 { get; set; }
       public int Int32 { get; set; }
@@ -752,6 +981,19 @@ namespace Dargon.Vox2 {
 
       [P] public HodgepodgeMin? Inner { get; set; } // recursive types must be declared polymorphic for now
 
+      [P] public GenericBox<int> IntBox;
+      [P] public GenericBox<bool> BoolBox;
+      [P] public GenericBox<List<int>> IntListBox;
+      [P] public GenericBox<List<bool>> BoolListBox;
+
+      [P] public object PolymorphicIntBox;
+      [P] public object PolymorphicBoolBox;
+      [P] public object PolymorphicIntListBox;
+      [P] public object PolymorphicBoolListBox;
+
+      public GenericStructBox<int> IntStructBox;
+      public GenericStructBox<List<int>> IntListStructBox;
+
       public static void XX(HodgepodgeMin x) {
          // x.Tuple.Item1;
       }
@@ -766,6 +1008,17 @@ namespace Dargon.Vox2 {
    [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest3)]
    public partial struct HodgepodgeStructMin2 {
       public DateTime DateTime;
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest4)]
+   public partial class GenericBox<T> {
+      public T V1;
+      public T V2 { get; set; }
+   }
+
+   [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest5)]
+   public partial struct GenericStructBox<T> {
+      public T V1;
    }
 
    public class HodgepodgeDto {
@@ -796,6 +1049,124 @@ namespace Dargon.Vox2 {
       public Vector3 ValueType;
       [N<N, N<N, (N, P)>>] public Dictionary<int, Dictionary<string, (Dog, Animal)>> MixedPolymorphicTest { get; set; }
       [P] public Animal Animal { get; set; }
+      public GenericBox<int> GenericBoxOfInt { get; set; }
+   }
+
+   // handles the case of serializing a bool
+   [VoxType(BoolVoxSerializer.kSimpleTypeId, Flags = VoxTypeFlags.NoCodeGen, RedirectToType = typeof(bool))]
+   public class BoolVoxSerializer : IVoxSerializer<bool> {
+      public const int kSimpleTypeId = (int)BuiltInVoxTypeIds.Bool;
+      public const int kTrueTypeId = (int)BuiltInVoxTypeIds.BoolTrue;
+      public const int kFalseTypeId = (int)BuiltInVoxTypeIds.BoolFalse;
+
+      private static readonly byte[] trueTypeIdBytes = kTrueTypeId.ToVariableIntBytes();
+      private static readonly byte[] falseTypeIdBytes = kFalseTypeId.ToVariableIntBytes();
+
+      static BoolVoxSerializer() {
+         trueTypeIdBytes.Length.AssertEquals(1);
+         falseTypeIdBytes.Length.AssertEquals(1);
+      }
+
+      public static readonly BoolVoxSerializer Instance = new BoolVoxSerializer();
+
+      public int SimpleTypeId { get; } = kSimpleTypeId;
+      public int[] FullTypeId { get; } = new[] { kSimpleTypeId };
+      public byte[] FullTypeIdBytes { get; } = kSimpleTypeId.ToVariableIntBytes();
+      public bool IsUpdatable => false;
+
+      public void WriteRawObject(VoxWriter writer, object val) {
+         var x = (bool)val;
+         WriteRaw(writer, ref x);
+      }
+
+      public object ReadRawObject(VoxReader reader) => ReadRaw(reader);
+
+      public void WriteFull(VoxWriter writer, ref bool val) => WriteRaw(writer, ref val);
+
+      public void WriteRaw(VoxWriter writer, ref bool val)
+         => writer.WriteTypeIdBytes(val ? trueTypeIdBytes : falseTypeIdBytes);
+
+      public bool ReadFull(VoxReader reader) {
+         var b = reader.InnerReader.ReadByte();
+         if (b == trueTypeIdBytes[0]) return true;
+         if (b == falseTypeIdBytes[0]) return false;
+         throw new Exception($"?? Bool decode failed, unexpected {b}");
+      }
+
+      public bool ReadRaw(VoxReader reader) => ReadFull(reader);
+      public void ReadFullIntoRef(VoxReader reader, ref bool val) => val = ReadFull(reader);
+      public void ReadRawIntoRef(VoxReader reader, ref bool val) => val = ReadFull(reader);
+   }
+
+   /// <summary>
+   /// Handles the case of reading a true
+   /// </summary>
+   public class BoolTrueVoxSerializer : IVoxSerializer<bool> {
+      private const int kTrueTypeId = (int)BuiltInVoxTypeIds.BoolTrue;
+
+      public int SimpleTypeId { get; } = kTrueTypeId;
+      public int[] FullTypeId { get; } = new[] { kTrueTypeId };
+      public byte[] FullTypeIdBytes { get; } = kTrueTypeId.ToVariableIntBytes();
+      public bool IsUpdatable => false;
+
+      public void WriteRawObject(VoxWriter writer, object val) { }
+      public object ReadRawObject(VoxReader reader) => true;
+
+      public void WriteFull(VoxWriter writer, ref bool val) {
+         val.AssertIsTrue();
+         writer.WriteTypeIdBytes(FullTypeIdBytes);
+      }
+
+      public void WriteRaw(VoxWriter writer, ref bool val) { }
+
+      public bool ReadFull(VoxReader reader) {
+         reader.AssertReadRawBytes(FullTypeIdBytes);
+         return true;
+      }
+
+      public bool ReadRaw(VoxReader reader) => true;
+
+      public void ReadFullIntoRef(VoxReader reader, ref bool val) => val = ReadFull(reader);
+      public void ReadRawIntoRef(VoxReader reader, ref bool val) => val = ReadRaw(reader);
+   }
+
+   /// <summary>
+   /// Handles the case of reading a false
+   /// </summary>
+   public class BoolFalseVoxSerializer : IVoxSerializer<bool> {
+      private const int kFalseTypeId = (int)BuiltInVoxTypeIds.BoolFalse;
+
+      public int SimpleTypeId { get; } = kFalseTypeId;
+      public int[] FullTypeId { get; } = new[] { kFalseTypeId };
+      public byte[] FullTypeIdBytes { get; } = kFalseTypeId.ToVariableIntBytes();
+      public bool IsUpdatable => false;
+
+      public void WriteRawObject(VoxWriter writer, object val) { }
+      public object ReadRawObject(VoxReader reader) => false;
+
+      public void WriteFull(VoxWriter writer, ref bool val) {
+         val.AssertIsTrue();
+         writer.WriteTypeIdBytes(FullTypeIdBytes);
+      }
+
+      public void WriteRaw(VoxWriter writer, ref bool val) { }
+
+      public bool ReadFull(VoxReader reader) {
+         reader.AssertReadRawBytes(FullTypeIdBytes);
+         return false;
+      }
+
+      public bool ReadRaw(VoxReader reader) => false;
+
+      public void ReadFullIntoRef(VoxReader reader, ref bool val) => val = ReadFull(reader);
+      public void ReadRawIntoRef(VoxReader reader, ref bool val) => val = ReadRaw(reader);
+   }
+
+   public static class BoolVoxExtensions {
+      public static void WriteRawBoolean(this VoxWriter writer, bool b) => BoolVoxSerializer.Instance.WriteRaw(writer, ref b);
+      public static void WriteFullBoolean(this VoxWriter writer, bool b) => BoolVoxSerializer.Instance.WriteFull(writer, ref b);
+      public static bool ReadRawBoolean(this VoxReader reader) => BoolVoxSerializer.Instance.ReadRaw(reader);
+      public static bool ReadFullBoolean(this VoxReader reader) => BoolVoxSerializer.Instance.ReadFull(reader);
    }
 
    [VoxType((int)BuiltInVoxTypeIds.Int8, RedirectToType = typeof(SByte), Flags = VoxTypeFlags.StubRaw | VoxTypeFlags.NonUpdatable)]

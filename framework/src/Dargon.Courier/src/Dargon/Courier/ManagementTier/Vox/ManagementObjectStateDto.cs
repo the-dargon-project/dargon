@@ -5,9 +5,9 @@ using Dargon.Vox2;
 
 namespace Dargon.Courier.ManagementTier {
    [VoxType((int)CourierVoxTypeIds.ManagementObjectStateDto)]
-   public class ManagementObjectStateDto {
-      public IReadOnlyList<MethodDescriptionDto> Methods { get; set; }
-      public IReadOnlyList<PropertyDescriptionDto> Properties { get; set; }
-      public IReadOnlyList<DataSetDescriptionDto> DataSets { get; set; }
+   public partial class ManagementObjectStateDto {
+      public List<MethodDescriptionDto> Methods { get; set; }
+      public List<PropertyDescriptionDto> Properties { get; set; }
+      public List<DataSetDescriptionDto> DataSets { get; set; }
    }
 }

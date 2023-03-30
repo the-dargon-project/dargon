@@ -38,14 +38,8 @@ namespace Dargon.Courier.AccessControlTier {
    public class PermitAllGatekeeper : IGatekeeper {
       public void ValidateClientHandshake(HandshakeDto handshake) { }
       public void LoadSessionState(HandshakeDto handshake, CourierAmbientPeerContext courierAmbientPeerContext) { }
-      public void ValidateWhoAmI(WhoamiDto whoami) {
-         throw new System.NotImplementedException();
-      }
-
-      public void LoadSessionState(WhoamiDto whoami, CourierAmbientPeerContext courierAmbientPeerContext) {
-         throw new System.NotImplementedException();
-      }
-
+      public void ValidateWhoAmI(WhoamiDto whoami) { }
+      public void LoadSessionState(WhoamiDto whoami, CourierAmbientPeerContext courierAmbientPeerContext) { }
       public void ValidateInboundMessageEvent<T>(IInboundMessageEvent<T> ime) { }
       public void ValidateServiceRequest(IInboundMessageEvent<RmiRequestDto> req, object service, MethodInfo method, object[] args) { }
    }

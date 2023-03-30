@@ -3,7 +3,9 @@ using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Courier.TransportTier.Test;
+#if !DISABLE_UDP
 using Dargon.Courier.TransportTier.Udp;
+#endif
 using Dargon.Ryu;
 using NMockito;
 using System;
@@ -13,7 +15,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.Vox;
-using Dargon.Vox;
 using NMockito.Expectations;
 using Xunit;
 
@@ -23,7 +24,7 @@ namespace Dargon.Courier.ServiceTier {
       private CourierFacade serverFacade;
 
       public ServiceTestsBase() {
-         VoxGlobals.Serializer.ImportTypes(new CourierVoxTypes());
+         //VoxGlobals.Serializer.ImportTypes(new CourierVoxTypes());
       }
 
       public void Setup(CourierFacade clientFacade, CourierFacade serverfacade) {
@@ -108,6 +109,7 @@ namespace Dargon.Courier.ServiceTier {
       }
    }
 
+#if !DISABLE_UDP
    public class UdpServiceTests : ServiceTestsBase {
       public UdpServiceTests() {
          var clientFacade = CourierBuilder.Create()
@@ -129,6 +131,7 @@ namespace Dargon.Courier.ServiceTier {
          Setup(clientFacade, serverFacade);
       }
    }
+#endif
 
    public class TcpServiceTests : ServiceTestsBase {
       public TcpServiceTests() {

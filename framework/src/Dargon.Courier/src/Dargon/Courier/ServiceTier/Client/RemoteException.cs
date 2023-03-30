@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using System.Text;
 using Dargon.Commons;
 using Dargon.Courier.ServiceTier.Vox;
@@ -8,8 +7,9 @@ using Dargon.Vox2;
 
 namespace Dargon.Courier.ServiceTier.Client {
    [VoxType((int)CourierVoxTypeIds.RemoteException, Flags = VoxTypeFlags.StubRaw)]
-   public class RemoteException : Exception {
+   public partial class RemoteException : Exception {
       public RemoteException() { }
+
       private RemoteException(string message) : base(message) { }
 
       public static RemoteException Create(Exception exception, RmiRequestDto body) {
@@ -22,6 +22,13 @@ namespace Dargon.Courier.ServiceTier.Client {
          sb.AppendLine(exception.ToString());
          sb.AppendLine();
          return new RemoteException(sb.ToString());
+      }
+
+      public static partial void Stub_WriteRaw_RemoteException(VoxWriter vw, RemoteException x) {
+         vw.WriteRawString(x.Message);
+      }
+      public static partial void Stub_ReadRawIntoRef_RemoteException(VoxReader vr, ref RemoteException x) {
+         x = new RemoteException(vr.ReadRawString());
       }
 
       // public void Serialize(IBodyWriter writer) {

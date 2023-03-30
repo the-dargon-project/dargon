@@ -20,9 +20,17 @@
 
   <ItemGroup>
     <Compile Remove="Dargon\Courier\Transports\Udp\**" />
+    <Compile Remove="Generated\**" />
     <EmbeddedResource Remove="Dargon\Courier\Transports\Udp\**" />
+    <EmbeddedResource Remove="Generated\**" />
     <None Remove="Dargon\Courier\Transports\Udp\**" />
+    <None Remove="Generated\**" />
   </ItemGroup>
+   
+   <PropertyGroup>
+      <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+      <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Castle.Core" Version="4.4.1" />
@@ -37,7 +45,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Dargon.Commons\src\Dargon.Commons.csproj" />
     <ProjectReference Include="..\..\Dargon.Ryu\src\Dargon.Ryu.csproj" />
-    <ProjectReference Include="..\..\Dargon.Vox.SourceGenerators\Dargon.Vox.SourceGenerators.csproj" />
+    <ProjectReference Include="..\..\Dargon.Vox.SourceGenerators\Dargon.Vox.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\..\Dargon.Vox2\Dargon.Vox2.csproj" />
   </ItemGroup>
 

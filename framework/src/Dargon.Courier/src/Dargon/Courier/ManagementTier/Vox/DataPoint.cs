@@ -4,7 +4,7 @@ using System;
 
 namespace Dargon.Courier.ManagementTier.Vox {
    [VoxType((int)CourierVoxTypeIds.DataPoint)]
-   public class DataPoint<T> {
+   public partial class DataPoint<T> {
       public DateTime Time { get; set; }
       public T Value { get; set; }
    }

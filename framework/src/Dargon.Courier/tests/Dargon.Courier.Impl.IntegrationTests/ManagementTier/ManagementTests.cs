@@ -7,8 +7,10 @@ using Dargon.Courier.AccessControlTier;
 using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Courier.TransportTier.Tcp.Management;
 using Dargon.Courier.TransportTier.Test;
+#if !DISABLE_UDP
 using Dargon.Courier.TransportTier.Udp;
 using Dargon.Courier.TransportTier.Udp.Management;
+#endif
 using Dargon.Ryu;
 using NMockito;
 using Xunit;
@@ -29,7 +31,12 @@ namespace Dargon.Courier.ManagementTier {
             var managementObjectService = courierFacade.ManagementObjectService;
 
             var mobIdentifierDtos = managementObjectService.EnumerateManagementObjects()
-                                                           .Where(x => !x.FullName.ContainsAny(new[] { nameof(UdpDebugMob), nameof(TcpDebugMob) }))
+                                                           .Where(x => !x.FullName.ContainsAny(new[] {
+#if !DISABLE_UDP
+                                                              nameof(UdpDebugMob),
+#endif
+                                                              nameof(TcpDebugMob)
+                                                           }))
                                                            .ToList();
             AssertEquals(1, mobIdentifierDtos.Count);
             AssertEquals(Guid.Parse(kTestMobGuid), mobIdentifierDtos[0].Id);
@@ -69,6 +76,7 @@ namespace Dargon.Courier.ManagementTier {
       }
    }
 
+#if !DISABLE_UDP
    public class UdpManagementTests : ManagementTestsBase {
       public UdpManagementTests() {
          var courierContainer = CourierBuilder.Create()
@@ -79,6 +87,7 @@ namespace Dargon.Courier.ManagementTier {
          Setup(courierContainer);
       }
    }
+#endif
 
    public class TcpManagementTests : ManagementTestsBase {
       public TcpManagementTests() {
