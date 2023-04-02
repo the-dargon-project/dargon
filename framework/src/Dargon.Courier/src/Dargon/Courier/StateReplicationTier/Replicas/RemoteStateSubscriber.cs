@@ -69,7 +69,7 @@ namespace Dargon.Courier.StateReplicationTier.Replicas {
 
       public bool HasLoadedInitialState => initialStateSnapshotLoadedLatch.IsSignalled;
 
-      public bool HasInboundUpdates => queuedSnapshotUpdates.Count > 0;
+      public bool HasInboundUpdates => queuedSnapshotUpdates.Count > 0 || queuedDeltaUpdates.Count > 0;
 
       public async Task WaitForAndProcessInitialStateUpdateAsync() {
          await initialStateSnapshotQueuedLatch.WaitAsync();
@@ -123,6 +123,7 @@ namespace Dargon.Courier.StateReplicationTier.Replicas {
                ops.LoadSnapshot(state, (TSnapshot)updateToApply.Payload);
             } else {
                ops.TryApplyDelta(state, (TDelta)updateToApply.Payload).AssertIsTrue();
+               lastAppliedSeqInEpoch = updateToApply.DeltaSeq;
             }
 
             version++;

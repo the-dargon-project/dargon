@@ -35,10 +35,11 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
          var success = ops.TryApplyDelta(state, delta);
 
          if (success) {
+            version++;
+
             // immediately queues but doesn't await network sends
             // out-of-order arrivals will be handled by the seq number.
             publisher.QueueDeltaPublishAsync(delta).Forget();
-
             Updated?.Invoke();
          }
 

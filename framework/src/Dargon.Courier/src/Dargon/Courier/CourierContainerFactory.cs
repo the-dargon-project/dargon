@@ -101,6 +101,7 @@ namespace Dargon.Courier {
       /// Synchronization Context used for ??
       ///
       /// Likely a "don't care" synchronization context. So far it seems to be used at initialization.
+      /// The other common use case is from a synchronous invocation from the main thread
       /// </summary>
       public required SynchronizationContext CourierDefault__;
 

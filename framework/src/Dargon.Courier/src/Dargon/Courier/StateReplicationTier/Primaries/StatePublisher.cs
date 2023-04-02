@@ -16,6 +16,7 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       where TDelta : class, IStateDelta
       where TOperations : IStateDeltaOperations<TState, TSnapshot, TDelta> {
       private const object kCreateCatchupSnapshotDtoMarker = null;
+      private readonly CourierSynchronizationContexts synchronizationContexts;
       private readonly Publisher publisher;
       private readonly TOperations ops;
       private readonly Guid topicId;
@@ -27,7 +28,8 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       private int snapshotEpoch = 0;
       private int deltaSeq = 0;
 
-      public StatePublisher(Publisher publisher, TOperations ops, Guid topicId) {
+      public StatePublisher(CourierSynchronizationContexts synchronizationContexts, Publisher publisher, TOperations ops, Guid topicId) {
+         this.synchronizationContexts = synchronizationContexts;
          this.publisher = publisher;
          this.ops = ops;
          this.topicId = topicId;
@@ -44,7 +46,7 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
             outboundChannel.WriteAsync(captureSnapshot).Forget(); // immediately queues (await would be for dequeue)
          }
 
-         this.publishLoopTask = RunPublishLoopAsync();
+         this.publishLoopTask = RunPublishLoopAsync().Forgettable();
       }
 
       public async Task ShutdownAsync() {
@@ -91,6 +93,7 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       /// </summary>
       /// <returns>A task which contains a task that is completed when the publish event is dequeued but not yet processed</returns>
       public async Task<Task> QueueSnapshotPublishAsync(TSnapshot snapshot) {
+         await synchronizationContexts.CourierDefault__.YieldToAsync();
          using var mut = await sync.LockAsync();
          return outboundChannel.WriteAsync(snapshot); // queues but does not wait for dequeue
       }
@@ -100,6 +103,7 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       /// </summary>
       /// <returns>A task which contains a task that is completed when the publish event is dequeued but not yet processed</returns>
       public async Task<Task> QueueDeltaPublishAsync(TDelta delta) {
+         await synchronizationContexts.CourierDefault__.YieldToAsync();
          using var mut = await sync.LockAsync();
          return outboundChannel.WriteAsync(delta.AssertIsNotNull()); // queues but does not wait for dequeue
       }
@@ -115,6 +119,8 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
       /// * We are inside that lock
       /// </summary>
       public async Task<StateUpdateDto> CreateOutOfBandCatchupSnapshotUpdateAsync(TSnapshot upToDateSnapshot) {
+         await synchronizationContexts.CourierDefault__.YieldToAsync();
+
          // queue a null to the outbound channel and wait for it to be dequeued, at which point
          // we know we've processed all outbound delta/snapshot writes and snapshotEpoch/deltaSeq
          // have caught up.

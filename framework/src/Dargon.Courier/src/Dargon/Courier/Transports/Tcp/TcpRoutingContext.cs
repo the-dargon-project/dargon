@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if ENABLE_LOGGING
+#endif
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -45,7 +47,9 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       private volatile bool isShutdown = false;
 
       public TcpRoutingContext(TcpTransportConfiguration configuration, TcpRoutingContextContainer tcpRoutingContextContainer, Socket client, InboundMessageDispatcher inboundMessageDispatcher, Identity localIdentity, RoutingTable routingTable, PeerTable peerTable, PayloadUtils payloadUtils, IGatekeeper gatekeeper) {
+#if ENABLE_LOGGING
          logger.Debug($"Constructing TcpRoutingContext for client {client.RemoteEndPoint}, localId: {localIdentity}");
+#endif
 
          this.configuration = configuration;
          this.tcpRoutingContextContainer = tcpRoutingContextContainer;
@@ -60,10 +64,14 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       }
 
       public async Task RunAsync() {
+#if ENABLE_LOGGING
          Log($"Entered RunAsync.");
+#endif
          runAsyncInnerTask = RunAsyncHelper();
          await runAsyncInnerTask;
+#if ENABLE_LOGGING
          Log($"Left RunAsync.");
+#endif
       }
 
       private async Task RunAsyncHelper() {
@@ -124,7 +132,9 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       }
 
       private async Task RunReaderAsync(CancellationToken token) {
+#if ENABLE_LOGGING
          Log($"Entered RunReaderAsync.");
+#endif
          try {
             while (!isShutdown) {
                var payload = await payloadUtils.ReadPayloadAsync(ns, token);
@@ -141,8 +151,9 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
          } catch (Exception e) {
             Log($"RunReaderAsync threw {e}", LogLevel.Error);
          }
-
+#if ENABLE_LOGGING
          Log($"Exiting RunReaderAsync.");
+#endif
          ShutdownAsync().Forget();
       }
 
@@ -152,17 +163,25 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             while (!isShutdown) {
                await outboundMessageSignal.WaitAsync(token);
                Go(async () => {
+#if ENABLE_LOGGING
                   Log($"Entered message writer task.");
+#endif
                   MessageDto message;
                   if (!outboundMessageQueue.TryDequeue(out message)) {
                      throw new InvalidStateException();
                   }
 
+#if ENABLE_LOGGING
                   Log($"Writing message {message} destination {message.ReceiverId.ToString("n").Substring(0, 6)}.");
+#endif
                   await payloadUtils.WritePayloadAsync(ns, message, writerLock, token);
+#if ENABLE_LOGGING
                   Log($"Wrote message {message} destination {message.ReceiverId.ToString("n").Substring(0, 6)}.");
-                  sendCompletionLatchByMessage[message].SetOrThrow();;
+#endif
+                  sendCompletionLatchByMessage[message].SetOrThrow();
+#if ENABLE_LOGGING
                   Log($"Exiting message writer task.");
+#endif
                }).Forget();
             }
          } catch (ObjectDisposedException) when (isShutdown) {
@@ -175,7 +194,9 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
             Log($"runWriterAsync threw {e}", LogLevel.Error);
          }
 
+#if ENABLE_LOGGING
          Log($"exiting runWriterAsync", LogLevel.Debug);
+#endif
          ShutdownAsync().Forget();
       }
 
@@ -194,9 +215,11 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       }
 
       private Task SendHelperAsync(Guid destination, MessageDto message) {
+#if ENABLE_LOGGING
          Log(
             $"Sending to {destination.ToString("n").Substring(0, 6)} message {message}. " + Environment.NewLine +
             $"clientIdentity matches destination: {remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)}");
+#endif
          if (remoteIdentity == null || !remoteIdentity.Matches(destination, IdentityMatchingScope.Broadcast)) {
             return Task.CompletedTask;
          }
@@ -212,11 +235,15 @@ namespace Dargon.Courier.TransportTier.Tcp.Server {
       }
 
       private async Task SendHelperWaitForCompletionLatchAndCleanupAsync(Guid destination, MessageDto message, AsyncLatch completionLatch) {
+#if ENABLE_LOGGING
          Log($"Awaiting completion for send to {destination.ToString("n").Substring(0, 6)} message {message}.");
+#endif
          await completionLatch.WaitAsync().ConfigureAwait(false);
          sendCompletionLatchByMessage.RemoveOrThrow(message, completionLatch);
 
+#if ENABLE_LOGGING
          Log($"Completed send to {destination.ToString("n").Substring(0, 6)} message {message}.");
+#endif
       }
 
       private static object aLock = new object();

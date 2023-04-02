@@ -15,6 +15,9 @@ namespace Dargon.Commons.AsyncPrimitives {
 
       public bool IsSignalled => Interlocked2.Read(ref state) == kStateSignalled;
 
+      private Task taskCache = null;
+      public Task Task => taskCache ??= WaitAsync(); // cache as an optimization, not as an expectation. Race.
+
       public Task WaitAsync(CancellationToken token = default(CancellationToken)) {
          if (!token.CanBeCanceled) {
             return tcs.Task;

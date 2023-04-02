@@ -10,8 +10,9 @@ namespace Dargon.Commons {
          }).Noop();
       }
 
-      public static async Task Forgettable(this Task task) {
-         await task.ConfigureAwait(false);
+      public static Task Forgettable(this Task task) {
+         task.Forget();
+         return task;
       }
 
       public static async Task Tap(this Task self, Action func) {
