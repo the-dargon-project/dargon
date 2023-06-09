@@ -1,5 +1,3 @@
 ﻿namespace Dargon.Courier.StateReplicationTier.States {
-   public interface IStateSnapshot {
-      int GetHashCode();
-   }
+   public interface IStateSnapshot { }
 }
