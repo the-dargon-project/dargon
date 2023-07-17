@@ -270,6 +270,7 @@ namespace Dargon.Vox2 {
          ms.Position.AssertEquals(writeLen);
       }
    }
+
    public interface IPolymorphicSerializer {
       Type ReadFullType(VoxReader reader);
       T ReadPolymorphicFull<T>(VoxReader reader);
@@ -1429,8 +1430,8 @@ namespace Dargon.Vox2 {
          => throw new NotSupportedException();
    }
 
-   public class ThrowawaySerializerBase : IVoxSerializer<object> {
-      public ThrowawaySerializerBase(BuiltInVoxTypeIds tid) {
+   public class ThrowawaySerializerBase<T> : IVoxSerializer<T> {
+      public ThrowawaySerializerBase(int tid) {
          SimpleTypeId = (int)tid;
          FullTypeId = new[] { (int)tid };
          FullTypeIdBytes = ((int)tid).ToVariableIntBytes();
@@ -1443,22 +1444,22 @@ namespace Dargon.Vox2 {
 
       public void WriteRawObject(VoxWriter writer, object val) => throw new InvalidOperationException();
       public object ReadRawObject(VoxReader reader) => throw new InvalidOperationException();
-      public void WriteFull(VoxWriter writer, ref object val) => throw new InvalidOperationException();
-      public void WriteRaw(VoxWriter writer, ref object val) => throw new InvalidOperationException();
-      public object ReadFull(VoxReader reader) => throw new InvalidOperationException();
-      public object ReadRaw(VoxReader reader) => throw new InvalidOperationException();
-      public void ReadFullIntoRef(VoxReader reader, ref object val) => throw new InvalidOperationException();
-      public void ReadRawIntoRef(VoxReader reader, ref object val) => throw new InvalidOperationException();
+      public void WriteFull(VoxWriter writer, ref T val) => throw new InvalidOperationException();
+      public void WriteRaw(VoxWriter writer, ref T val) => throw new InvalidOperationException();
+      public T ReadFull(VoxReader reader) => throw new InvalidOperationException();
+      public T ReadRaw(VoxReader reader) => throw new InvalidOperationException();
+      public void ReadFullIntoRef(VoxReader reader, ref T val) => throw new InvalidOperationException();
+      public void ReadRawIntoRef(VoxReader reader, ref T val) => throw new InvalidOperationException();
    }
 
    [VoxType((int)BuiltInVoxTypeIds.Void, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen, VanityRedirectFromType = typeof(void))]
-   public class VoidThrowAlwaysSerializer : ThrowawaySerializerBase {
-      public VoidThrowAlwaysSerializer() : base(BuiltInVoxTypeIds.Void) { }
+   public class VoidThrowAlwaysSerializer : ThrowawaySerializerBase<object> {
+      public VoidThrowAlwaysSerializer() : base((int)BuiltInVoxTypeIds.Void) { }
    }
 
    [VoxType((int)BuiltInVoxTypeIds.Object, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen, VanityRedirectFromType = typeof(object))]
-   public class ObjectThrowAlwaysSerializer : ThrowawaySerializerBase {
-      public ObjectThrowAlwaysSerializer() : base(BuiltInVoxTypeIds.Object) { }
+   public class ObjectThrowAlwaysSerializer : ThrowawaySerializerBase<object> {
+      public ObjectThrowAlwaysSerializer() : base((int)BuiltInVoxTypeIds.Object) { }
    }
 
    [VoxType((int)BuiltInVoxTypeIds.Array1, Flags = VoxTypeFlags.NonUpdatable | VoxTypeFlags.NoCodeGen, VanityRedirectFromType = typeof(Array))]

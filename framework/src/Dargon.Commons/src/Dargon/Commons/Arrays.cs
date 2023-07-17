@@ -37,13 +37,17 @@ namespace Dargon.Commons {
          return arr;
       }
 
-      public static T[] Clone<T>(this T[] arr) => arr.Clone(0, arr.Length);
+      public static T[] Clone<T>(this T[] arr) => Clone(arr, 0, arr.Length);
 
       public static T[] Clone<T>(this T[] arr, int offset, int length) {
          var res = new T[length];
          Array.Copy(arr, offset, res, 0, length);
          return res;
       }
+
+      // since Clone() is already defined
+      public static T[] ShallowCloneArray<T>(this T[] arr) => Clone(arr);
+      public static T[] ShallowCloneArray<T>(this T[] arr, int offset, int length) => Clone(arr, offset, length);
 
       public static T[] ReuseOrAllocateArrayOfCapacity<T>(ref T[] arr, int capacity) {
          if (arr == null || arr.Length < capacity) {
