@@ -18,6 +18,15 @@ namespace Dargon.Commons {
          (BindingFlags.CreateInstance).FastHasFlag(BindingFlags.IgnoreCase).AssertIsFalse();
       }
 
+      public static long ToByte<T>(this T val) where T : struct, Enum {
+         var szT = Unsafe.SizeOf<T>();
+         if (szT == 1) {
+            return Unsafe.As<T, byte>(ref val);
+         } else {
+            throw new NotSupportedException();
+         }
+      }
+
       public static long ToInt64<T>(this T val) where T : struct, Enum {
          var szT = Unsafe.SizeOf<T>();
          if (szT == 1) {
@@ -28,6 +37,25 @@ namespace Dargon.Commons {
             return Unsafe.As<T, int>(ref val);
          } else if (szT == 8) {
             return Unsafe.As<T, long>(ref val);
+         } else {
+            throw new NotSupportedException();
+         }
+      }
+
+      public static T ToEnum<T>(this byte val) where T : struct, Enum {
+         var szT = Unsafe.SizeOf<T>();
+         if (szT == 1) {
+            var v = (byte)val;
+            return Unsafe.As<byte, T>(ref v);
+         } else if (szT == 2) {
+            var v = (short)val;
+            return Unsafe.As<short, T>(ref v);
+         } else if (szT == 4) {
+            var v = (int)val;
+            return Unsafe.As<int, T>(ref v);
+         } else if (szT == 8) {
+            var v = (long)val;
+            return Unsafe.As<long, T>(ref v);
          } else {
             throw new NotSupportedException();
          }
@@ -45,7 +73,7 @@ namespace Dargon.Commons {
             var v = (int)val;
             return Unsafe.As<int, T>(ref v);
          } else if (szT == 8) {
-            var v = val;
+            var v = (long)val;
             return Unsafe.As<long, T>(ref v);
          } else {
             throw new NotSupportedException();
