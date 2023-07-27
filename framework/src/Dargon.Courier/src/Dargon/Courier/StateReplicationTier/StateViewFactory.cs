@@ -18,8 +18,8 @@ namespace Dargon.Courier.StateReplicationTier {
       public CourierFacade Courier { get; set; }
    }
 
-   public class StateBase<TState, TSnapshot, TDelta, TOperations> : IState
-      where TState : class, IState
+   public class StateBase<TState, TSnapshot, TDelta, TOperations> : ThreadLocalContext<TState>, IState
+      where TState : ThreadLocalContext<TState>, IState
       where TSnapshot : IStateSnapshot
       where TDelta : class, IStateDelta
       where TOperations : IStateDeltaOperations<TState, TSnapshot, TDelta> {

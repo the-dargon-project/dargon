@@ -32,26 +32,30 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
 
       public TState State {
          get {
-            if (predictions.Count == 0) {
-               return baseStateView.State;
-            }
-
-            return RecomputePredictedStateIfBaseChanged();
+            ProcessUpdates();
+            return predictedState;
          }
       }
 
-      private TState RecomputePredictedStateIfBaseChanged() {
+      public void ProcessUpdates() {
          if (lastBaseStateViewVersion == baseStateView.Version) {
-            return predictedState;
+            return;
          }
 
-         var newPredictedState = ops.CloneState(baseStateView.State);
+         if (predictedState == null) {
+            predictedState = ops.CloneState(baseStateView.State);
+            lastBaseStateViewVersion = baseStateView.Version;
+            return;
+         }
+
+         ops.Copy(baseStateView.State, predictedState);
+         
          var newPredictionsListBuilder = predictions.GetDefaultOfType();
          for (var i = 0; i < predictions.Count; i++) {
             var prediction = predictions[i];
-            var flags = prediction.TryBuildDelta(newPredictedState, out var delta);
+            var flags = prediction.TryBuildDelta(predictedState, out var delta);
             if (delta != null) {
-               ops.TryApplyDelta(newPredictedState, delta).AssertIsTrue();
+               ops.TryApplyDelta(predictedState, delta).AssertIsTrue();
             }
 
             var hasDropFlag = flags.FastHasAnyFlag(PredictionResultFlags.__InternalAnyDropFlagMask);
@@ -78,13 +82,12 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
             preallocatedPredictionsAlternateList.Clear();
          }
 
-         predictedState = newPredictedState;
          Updated?.Invoke();
-         return predictedState;
+         lastBaseStateViewVersion = baseStateView.Version;
       }
 
       public bool AddPrediction(IPredictionDeltaSource<TState, TDelta> prediction) {
-         RecomputePredictedStateIfBaseChanged().AssertReferenceEquals(predictedState);
+         ProcessUpdates();
          var res = prediction.TryBuildDelta(predictedState, out var delta);
          if ((res & PredictionResultFlags.DropSelf) != 0) {
             // prediction immediately dropped

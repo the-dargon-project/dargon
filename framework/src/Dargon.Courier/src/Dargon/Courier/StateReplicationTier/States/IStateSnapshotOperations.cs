@@ -10,5 +10,6 @@
 
       public TSnapshot CaptureSnapshot(TState state);
       public void LoadSnapshot(TState state, TSnapshot snapshot);
+      public void Copy(TState src, TState dest);
    }
 }
