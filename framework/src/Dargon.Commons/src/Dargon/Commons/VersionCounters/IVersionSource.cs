@@ -42,20 +42,20 @@ namespace Dargon.Commons.VersionCounters {
    }
 
    public static class PollingBackedVersionSource {
-      public static PollingBackedVersionSource<T> Create<T>(Func<T> funcThreadSafe) where T : IEquatable<T>
+      public static PollingBackedVersionSource<T> Create<T>(Func<T> funcThreadSafe) where T : struct, IEquatable<T>
          => new(funcThreadSafe);
    }
 
    [ThreadSafe]
-   public class PollingBackedVersionSource<T> : IVersionSource where T : IEquatable<T> {
+   public class PollingBackedVersionSource<T> : IVersionSource where T : struct, IEquatable<T> {
       private readonly Func<T> funcThreadSafe;
       private readonly ReaderWriterLockSlim rwls = new ReaderWriterLockSlim();
-      private T lastValue;
+      private T? lastValue;
       private int version;
 
       public PollingBackedVersionSource(Func<T> funcThreadSafe) {
          this.funcThreadSafe = funcThreadSafe;
-         this.lastValue = funcThreadSafe();
+         this.lastValue = null;
       }
 
       public int Version => ComputeVersion();
@@ -96,5 +96,15 @@ namespace Dargon.Commons.VersionCounters {
             return res;
          }
       }
+   }
+
+   public class LambdaVersionSource : IVersionSource {
+      private readonly Func<int> versionFunc;
+
+      public LambdaVersionSource(Func<int> versionFunc) {
+         this.versionFunc = versionFunc;
+      }
+
+      public int Version => versionFunc();
    }
 }
