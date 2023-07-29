@@ -33,14 +33,15 @@ namespace Dargon.Ryu.Internals {
             var ctor = type.GetRyuConstructorOrThrow();
             var parameters = ctor.GetParameters();
 
+            var bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+            var dependencyFields = type.GetTypeInfo()
+                                       .GetFields(bindingFlags)
+                                       .Where(f => f.HasAttribute<DependencyAttribute>())
+                                       .ToArray();
+
             var fieldsToInject = new List<(FieldInfo field, object val)>();
             if (type.HasAttribute<InjectRequiredFields>()) {
-               var bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-               var fieldsToInitialize = type.GetTypeInfo()
-                                            .GetFields(bindingFlags)
-                                            .Where(f => f.HasAttribute<DependencyAttribute>())
-                                            .ToArray();
-               foreach (var field in fieldsToInitialize) {
+               foreach (var field in dependencyFields) {
                   if (!field.IsInitOnly) {
                      throw new BadInputException($"[Dependency] Field {field.Name} of {type.FullName} was not marked InitOnly (readonly)!");
                   } else if (field.FieldType.GetTypeInfo().IsValueType) {
@@ -49,6 +50,8 @@ namespace Dargon.Ryu.Internals {
 
                   fieldsToInject.Add((field, ryu.GetOrActivate(field.FieldType)));
                }
+            } else if (dependencyFields.Length > 0) {
+               throw new RyuInjectRequiredFieldsAttributeNotSpecifiedException(type);
             }
 
             // inject fields prior to ctor. Whether this works is actually technically iffy,
