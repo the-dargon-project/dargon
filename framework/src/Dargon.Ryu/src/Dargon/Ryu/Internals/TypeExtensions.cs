@@ -27,7 +27,8 @@ namespace Dargon.Ryu.Internals {
       }
 
       private static bool FilterRyuConstructor(ConstructorInfo constructor) {
-         return constructor.HasAttribute<RyuConstructorAttribute>();
+         return constructor.HasAttribute<RyuConstructorAttribute>() &&
+                !constructor.HasAttribute<RyuIgnoreConstructorAttribute>();
       }
    }
 }

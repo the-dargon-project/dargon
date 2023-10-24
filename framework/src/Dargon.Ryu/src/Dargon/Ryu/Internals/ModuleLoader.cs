@@ -15,11 +15,15 @@ namespace Dargon.Ryu.Internals {
    public class ModuleLoader : IModuleLoader {
       public IReadOnlyList<IRyuModule> LoadModules(RyuConfiguration configuration, IReadOnlySet<Assembly> assemblies) {
          var modules = new List<IRyuModule>();
-         foreach (var assembly in assemblies) {
-            var moduleTypes = assembly.GetTypes().Where(IsLoadableRyuModuleType);
-            var moduleInstances = moduleTypes.Select(System.Activator.CreateInstance);
-            modules.AddRange(moduleInstances.Cast<IRyuModule>().Where(m => m.IsAutomaticLoadEnabled()));
+         
+         if (configuration.EnableAlwaysLoadModuleSearch) {
+            foreach (var assembly in assemblies) {
+               var moduleTypes = assembly.GetTypes().Where(IsLoadableRyuModuleType);
+               var moduleInstances = moduleTypes.Select(System.Activator.CreateInstance);
+               modules.AddRange(moduleInstances.Cast<IRyuModule>().Where(m => m.IsAutomaticLoadEnabled()));
+            }
          }
+
          modules.AddRange(configuration.AdditionalModules);
          return modules;
       }

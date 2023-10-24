@@ -92,11 +92,27 @@ namespace Dargon.Ryu {
          container.SetMultiple(i6, i7, i8, i9, i10);
       }
 
-      public static IRyuContainer CreateChildContainer(this IRyuContainer container, RyuModule[] modules) {
-         var c = container.CreateChildContainer();
-         var moduleImporter = c.GetOrThrow<IRyuFacade>().ModuleImporter;
-         moduleImporter.ImportModules((RyuContainer)container, modules);
+      public static IRyuContainer Create(this RyuFactory factory, RyuConfiguration configuration, IRyuModule[] modules) {
+         var c = factory.Create(configuration);
+         c.ImportModules(modules);
          return c;
+      }
+
+      public static IRyuContainer Create(this RyuFactory factory, IRyuModule[] modules) {
+         var c = factory.Create();
+         c.ImportModules(modules);
+         return c;
+      }
+
+      public static IRyuContainer CreateChildContainer(this IRyuContainer container, IRyuModule[] modules) {
+         var c = container.CreateChildContainer();
+         c.ImportModules(modules);
+         return c;
+      }
+
+      public static void ImportModules(this IRyuContainer container, IRyuModule[] modules) {
+         var moduleImporter = container.GetOrThrow<IRyuFacade>().ModuleImporter;
+         moduleImporter.ImportModules((RyuContainer)container, modules);
       }
    }
 }

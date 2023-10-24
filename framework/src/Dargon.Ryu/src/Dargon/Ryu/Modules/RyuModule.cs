@@ -31,7 +31,7 @@ namespace Dargon.Ryu.Modules {
       public virtual string Name => GetType().FullName;
       private readonly Dictionary<Type, RyuType> typeInfoByType = new Dictionary<Type, RyuType>();
       public IReadOnlyDictionary<Type, RyuType> TypeInfoByType => typeInfoByType;
-      public abstract RyuModuleFlags Flags { get; }
+      public virtual RyuModuleFlags Flags => RyuModuleFlags.Default;
 
       public RyuFluentOptions Optional => new RyuFluentOptions { Module = this, Flags = RyuTypeFlags.None };
       public RyuFluentOptions Required => new RyuFluentOptions { Module = this, Flags = RyuTypeFlags.Required };
@@ -97,7 +97,7 @@ namespace Dargon.Ryu.Modules {
          if (isSingleton) {
             this.Implements().Singleton(types);
          } else {
-            this.Implements().Singleton(types);
+            this.Implements().Transient(types);
          }
          return this;
       }
