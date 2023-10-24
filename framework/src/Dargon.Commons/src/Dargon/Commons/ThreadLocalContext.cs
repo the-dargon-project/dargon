@@ -27,6 +27,14 @@ namespace Dargon.Commons {
          return WithContextScope((TContext)this);
       }
 
+      public PopContextOnDispose PushForScopeAsImplicitThreadLocalContextIfUninitialized() {
+         return WithContextScopeAndImplicitThreadLocalContextIfUninitialized((TContext)this);
+      }
+
+      public PopContextOnDispose PushForScopeAsImplicitAsyncLocalContextIfUninitialized() {
+         return WithContextScopeAndImplicitAsyncLocalContextIfUninitialized((TContext)this);
+      }
+
       private static class Store<TUnique> where TUnique : struct {
          [ThreadStatic] public static State_t s_tlsState;
          public static AsyncLocal<Box<State_t>> s_alsState = new();
@@ -34,6 +42,8 @@ namespace Dargon.Commons {
          public class Box<T> {
             public T Value;
          }
+
+         public static bool IsInitialized => s_tlsState.IsInitialized || (s_alsState.Value?.Value.IsInitialized ?? false);
 
          public static ref State_t GetStateRef(bool? preferTlsElseAls) {
             if (s_alsState.Value is { } alsBox) {
@@ -69,6 +79,8 @@ namespace Dargon.Commons {
          Store<StructOf<TContext>>.s_alsState.Value = null;
          Store<StructOf<TContext>>.s_tlsState = default;
       }
+
+      private static bool IsStateInitialized => Store<StructOf<TContext>>.IsInitialized;
 
       private static ref Store<StructOf<TContext>>.State_t GetState(bool? preferTlsElseAls = null) => ref Store<StructOf<TContext>>.GetStateRef(preferTlsElseAls); 
       
@@ -110,11 +122,11 @@ namespace Dargon.Commons {
          return GetState().ContextStack.Peek();
       }
 
-      public static void UseImplicitThreadLocalContext(TContext ctx) => UseImplicitContext(ctx, true);
+      public static void UseImplicitThreadLocalContext(TContext ctx) => HighLevelInitializeStateWithContext(ctx, true, true);
 
-      public static void UseImplicitAsyncLocalContext(TContext ctx) => UseImplicitContext(ctx, false);
+      public static void UseImplicitAsyncLocalContext(TContext ctx) => HighLevelInitializeStateWithContext(ctx, false, true);
 
-      private static void UseImplicitContext(TContext ctx, bool preferThreadElseAsyncLocalContext) {
+      private static void HighLevelInitializeStateWithContext(TContext ctx, bool preferThreadElseAsyncLocalContext, bool useImplicitContext) {
          ref var state = ref GetState(preferThreadElseAsyncLocalContext);
          
          if (state.IsInitialized) {
@@ -125,7 +137,7 @@ namespace Dargon.Commons {
 
          state.ContextStack.Count.AssertEquals(0);
          state.ContextStack.Push(ctx);
-         state.UseImplicitContext = true;
+         state.UseImplicitContext = useImplicitContext;
       }
 
       public static void PushContext(TContext ctx) {
@@ -138,14 +150,37 @@ namespace Dargon.Commons {
             throw new InvalidStateException($"Attempted to ${nameof(PopContext)} prior to TLS init!?");
          }
 
-         // can't pop an empty stack.
+         // if popping to an empty stack, then uninitialize the thread-local state.
+         // this is ideally only possible via WithContextScopeAndImplicitThreadLocalContextIfUninitialized
          var minInitialStackSize = state.UseImplicitContext ? 2 : 1;
          state.ContextStack.Count.AssertIsGreaterThanOrEqualTo(minInitialStackSize);
          state.ContextStack.Pop();
+
+         if (!state.UseImplicitContext && state.ContextStack.Count == 0) {
+            UninitializeState();
+         }
       }
 
       public static PopContextOnDispose WithContextScope(TContext context) {
          PushContext(context);
+         return new PopContextOnDispose();
+      }
+
+      public static PopContextOnDispose WithContextScopeAndImplicitThreadLocalContextIfUninitialized(TContext ctx) {
+         if (IsStateInitialized) {
+            PushContext(ctx);
+         } else {
+            HighLevelInitializeStateWithContext(ctx, true, false);
+         }
+         return new PopContextOnDispose();
+      }
+
+      public static PopContextOnDispose WithContextScopeAndImplicitAsyncLocalContextIfUninitialized(TContext ctx) {
+         if (IsStateInitialized) {
+            PushContext(ctx);
+         } else {
+            HighLevelInitializeStateWithContext(ctx, false, false);
+         }
          return new PopContextOnDispose();
       }
 
