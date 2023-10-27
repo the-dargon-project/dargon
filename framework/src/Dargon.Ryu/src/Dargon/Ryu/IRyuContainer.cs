@@ -21,6 +21,15 @@ namespace Dargon.Ryu {
       object ActivateUntracked(Type type);
 
       /// <summary>
+      /// Instantiates an object of the given type. This object will NOT be
+      /// associated with the container!
+      ///
+      /// Uses the additional dependencies for the creation of the object,
+      /// though such dependencies also aren't stored in the container.
+      /// </summary>
+      object ActivateUntracked(Type type, Dictionary<Type, object> additionalDependencies);
+
+      /// <summary>
       /// Finds all objects in the container of type extending, or equating
       /// to the given type.
       /// </summary>

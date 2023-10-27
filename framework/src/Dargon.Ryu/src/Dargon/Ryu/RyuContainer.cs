@@ -70,6 +70,16 @@ namespace Dargon.Ryu {
          return result;
       }
 
+      public object ActivateUntracked(Type type, Dictionary<Type, object> additionalDependencies) {
+         if (additionalDependencies.Count == 0) {
+            return ActivateUntracked(type);
+         }
+
+         return activator.ActivateDefaultType(
+            new TransientActivationRyuContainer(this, additionalDependencies),
+            type);
+      }
+
       public IEnumerable<object> Find(Type queryType) {
          var result = Enumerable.Empty<object>();
 
@@ -79,7 +89,9 @@ namespace Dargon.Ryu {
 
          HashSet<RyuType> implementors;
          if (implementorsByType.TryGetValue(queryType, out implementors)) {
-            implementors.ForEach(x => GetOrActivate(x.Type));
+            foreach (var x in implementors) {
+               GetOrActivate(x.Type);
+            }
          }
 
          HashSet<object> instances;
@@ -117,6 +129,51 @@ namespace Dargon.Ryu {
                   x => kvp.Value.ForEach(v => existing.Add(v))
                   ));
          }
+      }
+   }
+
+   /// <summary>
+   /// A temporary Ryu container used for injecting arguments
+   /// when activating a transient instance.
+   /// </summary>
+   internal class TransientActivationRyuContainer : IRyuContainer {
+      private readonly IRyuContainer parent;
+      private readonly Dictionary<Type, object> storage;
+
+      public TransientActivationRyuContainer(IRyuContainer parent, Dictionary<Type, object> storage) {
+         this.parent = parent;
+         this.storage = storage;
+      }
+
+      public bool TryGet(Type type, out object value) {
+         return storage.TryGetValue(type, out value) ||
+                parent.TryGet(type, out value);
+      }
+
+      public object GetOrActivate(Type type) {
+         return storage.TryGetValue(type, out var value)
+            ? value
+            : parent.GetOrActivate(type);
+      }
+
+      public object ActivateUntracked(Type type) {
+         throw new NotSupportedException();
+      }
+
+      public object ActivateUntracked(Type type, Dictionary<Type, object> additionalDependencies) {
+         throw new NotSupportedException();
+      }
+
+      public IEnumerable<object> Find(Type queryType) {
+         throw new NotSupportedException();
+      }
+
+      public void Set(Type type, object instance) {
+         throw new NotSupportedException();
+      }
+
+      public IRyuContainer CreateChildContainer() {
+         throw new NotSupportedException();
       }
    }
 }

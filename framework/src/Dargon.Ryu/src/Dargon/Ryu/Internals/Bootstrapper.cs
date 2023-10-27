@@ -26,6 +26,7 @@ namespace Dargon.Ryu.Internals {
          var assemblies = configuration.EnableAlwaysLoadModuleSearch ? assemblyLoader.LoadAssembliesFromNeighboringDirectories() : new HashSet<Assembly>();
          var modules = moduleLoader.LoadModules(configuration, assemblies);
          var container = new RyuContainer(configuration.ParentContainerOpt, activator);
+         container.Initialize();
          moduleImporter.ImportModules(container, modules);
          return container;
       }

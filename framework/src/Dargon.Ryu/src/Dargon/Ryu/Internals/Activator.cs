@@ -34,10 +34,9 @@ namespace Dargon.Ryu.Internals {
             var parameters = ctor.GetParameters();
 
             var bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-            var dependencyFields = type.GetTypeInfo()
-                                       .GetFields(bindingFlags)
-                                       .Where(f => f.HasAttribute<DependencyAttribute>())
-                                       .ToArray();
+            var dependencyFields = ReflectionCache.OfType(type)
+                                                  .Fields
+                                                  .FilterTo(f => f.HasAttribute<DependencyAttribute>());
 
             var fieldsToInject = new List<(FieldInfo field, object val)>();
             if (type.HasAttribute<InjectRequiredFields>()) {
