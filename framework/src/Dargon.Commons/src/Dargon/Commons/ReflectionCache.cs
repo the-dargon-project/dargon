@@ -27,7 +27,10 @@ namespace Dargon.Commons {
       private ReflectionCache(Type type) {
          Type = type;
          Name = Type.Name;
-         Members = type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+         BaseType = type.BaseType;
+
+         var declaredMembers = type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+         Members = BaseType == null ? declaredMembers : Arrays.Concat(OfType(BaseType).Members, declaredMembers);
          Fields = Members.MapFilterToNotNull(m => m as FieldInfo);
          InstanceFields = Fields.FilterTo(f => !f.IsStatic);
          PublicInstanceFields = InstanceFields.FilterTo(f => f.IsPublic);
@@ -40,6 +43,7 @@ namespace Dargon.Commons {
 
       public readonly Type Type;
       public readonly string Name;
+      public readonly Type BaseType;
       public readonly MemberInfo[] Members;
 
       public readonly FieldInfo[] Fields;
