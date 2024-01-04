@@ -4,9 +4,8 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
 using System.Text;
+using Dargon.Commons;
 using Microsoft.CodeAnalysis;
 
 namespace Dargon.Vox.SourceGenerators {
@@ -32,10 +31,10 @@ namespace Dargon.Vox.SourceGenerators {
             // See 
             context.ReportDiagnostic(Diagnostic.Create(
                new DiagnosticDescriptor(
-                  "SI0000",
+                  "VOX000",
                   $"An exception was thrown by {nameof(VoxSourceGenerator)}",
                   $"An exception was thrown by {nameof(VoxSourceGenerator)}: '{e}'",
-                  "StrongInject",
+                  "Vox",
                   DiagnosticSeverity.Error,
                   isEnabledByDefault: true),
                Location.None,
@@ -45,11 +44,11 @@ namespace Dargon.Vox.SourceGenerators {
 
       public class KnownTypes {
          public KnownTypes(GeneratorExecutionContext context) {
-            AllNamedTypes = EnumerateNamedTypeSymbols(context.Compilation.GlobalNamespace).ToList();
+            AllNamedTypes = RoslynUtils.EnumerateNamedTypeSymbols(context.Compilation.GlobalNamespace).ToList();
             VoxInternalBaseDummyType = AllNamedTypes.First(t => t.Name == "VoxInternalBaseDummyType");
             VoxInternalBaseAttribute = AllNamedTypes.First(t => t.Name == "VoxInternalBaseAttribute");
-            AllVoxTypeAttributes = FilterTypeDescendentsAndSelf(AllNamedTypes, VoxInternalBaseAttribute);
-            AllVoxDummyTypes = FilterTypeDescendentsAndSelf(AllNamedTypes, VoxInternalBaseDummyType);
+            AllVoxTypeAttributes = RoslynUtils.FilterTypeDescendentsAndSelf(AllNamedTypes, VoxInternalBaseAttribute);
+            AllVoxDummyTypes = RoslynUtils.FilterTypeDescendentsAndSelf(AllNamedTypes, VoxInternalBaseDummyType);
             AllVoxAnnotationTypes = AllVoxTypeAttributes.Concat(AllVoxDummyTypes).ToList();
             VoxTypeAttributeType = AllNamedTypes.First(t => t.Name == "VoxTypeAttribute");
 
@@ -73,45 +72,6 @@ namespace Dargon.Vox.SourceGenerators {
          public INamedTypeSymbol VoxTypeAttributeType { get; }
          public List<KeyValuePair<SyntaxTree, List<KeyValuePair<INamedTypeSymbol, AttributeData>>>> SyntaxTreeToTypeAndVoxTypeAttribute { get; }
 
-         private List<INamedTypeSymbol> EnumerateNamedTypeSymbols(INamespaceOrTypeSymbol searchStart) {
-            var res = new List<INamedTypeSymbol>();
-            void Inner(INamespaceOrTypeSymbol cur) {
-               if (cur is INamedTypeSymbol nts) {
-                  res.Add(nts);
-
-                  foreach (var x in nts.GetTypeMembers()) {
-                     Inner(x);
-                  }
-               }
-
-               if (cur is INamespaceSymbol ns) {
-                  foreach (var x in ns.GetNamespaceMembers()) {
-                     Inner(x);
-                  }
-                  foreach (var x in ns.GetTypeMembers()) {
-                     Inner(x);
-                  }
-               }
-            }
-
-            Inner(searchStart);
-            return res;
-         }
-
-         private List<INamedTypeSymbol> FilterTypeDescendentsAndSelf(List<INamedTypeSymbol> haystack, INamedTypeSymbol baseType) {
-            baseType.TypeKind.AssertEquals(TypeKind.Class);
-
-            var res = new List<INamedTypeSymbol> { baseType };
-            foreach (var t in haystack) {
-               for (var current = t; current != null; current = current.BaseType) {
-                  if (SymbolEqualityComparer.Default.Equals(current.BaseType, baseType)) {
-                     res.Add(t);
-                  }
-               }
-            }
-
-            return res;
-         }
       }
 
       private void ExecuteInternal(GeneratorExecutionContext context) {
@@ -121,39 +81,6 @@ namespace Dargon.Vox.SourceGenerators {
             new VoxTypePartialSourceEmitter(types, syntaxTree, entries).X(context);
          }
       }
-   }
-
-   public static class RoslynUtils {
-      public static AttributeData FindAnyAttributeOrDefault(ISymbol t, List<INamedTypeSymbol> searchCandidates) {
-         foreach (var attr in t.GetAttributes()) {
-            var attrc = attr.AttributeClass;
-            if (attrc.IsGenericType) {
-               attrc = attrc.OriginalDefinition;
-            }
-            foreach (var candidate in searchCandidates) {
-               if (SymbolEqualityComparer.Default.Equals(attrc, candidate)) {
-                  return attr;
-               }
-            }
-         }
-
-         return null;
-      }
-   }
-
-   public static class Extensions {
-      public static T AssertEquals<T>(this T a, T b) {
-         if (!a.Equals(b)) throw new Exception($"{a} != {b}");
-         return a;
-      }
-      public static T AssertIsNotNull<T>(this T a) where T : class {
-         if (a == null) throw new Exception($"Expected non-null instance of `{typeof(T).FullName}`.");
-         return a;
-      }
-
-      public static IEnumerable<KeyValuePair<T, TProj>> SelectPairValue<T, TProj>(this IEnumerable<T> e, Func<T, TProj> proj) => e.Select(x => new KeyValuePair<T, TProj>(x, proj(x)));
-      public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> source, out TKey Key, out TValue Value) => (Key, Value) = (source.Key, source.Value);
-      public static void Deconstruct<TKey, TValue>(this IGrouping<TKey, TValue> source, out TKey Key, out IEnumerable<TValue> Value) => (Key, Value) = (source.Key, source);
    }
 
    public class VoxTypePartialSourceEmitter {
