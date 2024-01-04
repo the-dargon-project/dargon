@@ -16,7 +16,7 @@ public class Lease<T> {
    public void AddRef(int count) => Interlocked.Increment(ref ReferenceCount);
    public void AddRefs(int count) => Interlocked.Add(ref ReferenceCount, count);
    public void Release() {
-      if (Interlocked2.PreDecrement(ref ReferenceCount) == 0) {
+      if (InterlockedMin.PreDecrement(ref ReferenceCount) == 0) {
          Pool.ReturnObject(this);
       }
    }

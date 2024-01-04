@@ -4,10 +4,10 @@ using System.Collections.Generic;
 
 namespace Dargon.Commons.Collections {
    public class AddOnlyOrderedHashSet<T> : IList<T>, IReadOnlyList<T> {
-      private readonly ExposedArrayList<T> list;
+      private readonly ExposedArrayListMin<T> list;
       private readonly Dictionary<T, int> dict;
 
-      public ExposedArrayList<T> List => list;
+      public ExposedArrayListMin<T> List => list;
       public int Count => list.Count;
       public T this[int idx] { get => list[idx]; set => throw new NotImplementedException(); }
 
@@ -16,11 +16,11 @@ namespace Dargon.Commons.Collections {
       public AddOnlyOrderedHashSet(int capacity) : this(EqualityComparer<T>.Default) { }
 
       public AddOnlyOrderedHashSet(IEqualityComparer<T> equalityComparer) {
-         list = new ExposedArrayList<T>();
+         list = new ExposedArrayListMin<T>();
          dict = new Dictionary<T, int>(equalityComparer);
       }
       public AddOnlyOrderedHashSet(int capacity, IEqualityComparer<T> equalityComparer) {
-         list = new ExposedArrayList<T>(capacity);
+         list = new ExposedArrayListMin<T>(capacity);
          dict = new Dictionary<T, int>(capacity, equalityComparer);
       }
 

@@ -56,7 +56,7 @@ namespace Dargon.Commons.Templating {
 
       private static class Inner<T> {
          // ReSharper disable once StaticMemberInGenericType
-         public static TypeId Value { get; } = new(Interlocked2.PostIncrement(ref next));
+         public static TypeId Value { get; } = new(InterlockedMin.PostIncrement(ref next));
       }
    }
 

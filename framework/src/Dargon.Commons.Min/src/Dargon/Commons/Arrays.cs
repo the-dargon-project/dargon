@@ -4,8 +4,11 @@ using System.IO;
 namespace Dargon.Commons {
    public static class Arrays {
       public static T[] Create<T>(int count, T elementInitializer) {
+         // Downgrade from .net8 to .netstandard2.0: result.AsSpan().Fill(elementInitializer);
          var result = new T[count];
-         result.AsSpan().Fill(elementInitializer);
+         for (var i = 0; i < result.Length; i++) {
+            result[i] = elementInitializer;
+         }
          return result;
       }
 
