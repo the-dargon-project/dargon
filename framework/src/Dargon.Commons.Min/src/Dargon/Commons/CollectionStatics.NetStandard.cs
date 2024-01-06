@@ -708,7 +708,7 @@ namespace Dargon.Commons {
          return (IReadOnlyList<T>)list;
       }
 
-#if !NETCOREAPP
+#if !NETCOREAPP && !NETSTANDARD
       public static HashSet<T> ToHashSet<T>(this IEnumerable<T> e) => new HashSet<T>(e);
 #endif
 

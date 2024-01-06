@@ -1,38 +1,12 @@
-﻿using System;
+﻿using Dargon.Commons.Collections;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
-using Dargon.Commons.Collections;
+using System.Threading.Tasks;
 
 namespace Dargon.Commons.Utilities {
-   /// <summary>
-   /// All synchronization methods, including disposal, contain a full memory barrier.
-   /// This object gracefully handles double disposal.
-   /// </summary>
-   public struct LockGuard : IDisposable {
-      private readonly object lockObj;
-      private readonly bool lockWasTaken;
-      private bool isDisposed;
-
-      public LockGuard(object lockObj) {
-         this.lockObj = lockObj;
-         this.lockWasTaken = false;
-         this.isDisposed = false;
-         Monitor.Enter(lockObj, ref lockWasTaken);
-      }
-
-      public void Dispose() {
-         if (isDisposed) {
-            return;
-         }
-
-         isDisposed = true;
-
-         if (lockWasTaken) {
-            Monitor.Exit(lockObj);
-         }
-      }
-   }
-
    /// <summary>
    /// All synchronization methods, including disposal, contain a full memory barrier.
    /// This object gracefully handles double disposal.
@@ -61,15 +35,6 @@ namespace Dargon.Commons.Utilities {
             rwl.ExitReadLock();
          }
       }
-   }
-
-   public enum GuardState {
-      UpgradeableReader,
-      UpgradedWriter,
-      SimpleReader,
-      Free,
-      Intermediate_ReaderToUpgradable,
-      Intermediate_ReaderToWriter,
    }
 
    public ref struct ScopedRWLSUpgradableReaderGuard {
@@ -189,8 +154,10 @@ namespace Dargon.Commons.Utilities {
          }
       }
 
-      private unsafe ref GuardState GuardStateRefUnsafe {
-         get {
+      private unsafe ref GuardState GuardStateRefUnsafe
+      {
+         get
+         {
             fixed (GuardState* pState = &state) {
                return ref *pState;
             }
@@ -308,10 +275,6 @@ namespace Dargon.Commons.Utilities {
       }
    }
 
-   public static class LockGuardExtensions {
-      public static LockGuard CreateLockGuard(this object o) => new(o);
-   }
-
    public static class RWLSExtensions {
       public static RWLSReaderGuard CreateReaderGuard(this ReaderWriterLockSlim rwls) => new(rwls);
       public static RWLSUpgradableReaderGuard CreateUpgradableReaderGuard(this ReaderWriterLockSlim rwls) => new(rwls);
@@ -320,7 +283,7 @@ namespace Dargon.Commons.Utilities {
 
       public static bool TryGetValueWithDoubleCheckedLock<TKey, TValue>(this Dictionary<TKey, TValue> d, TKey key, out TValue value, ScopedRWLSUpgradableReaderGuard guard) {
          guard.IsSimpleReader.AssertIsTrue();
-         
+
          if (d.TryGetValue(key, out value)) {
             return true;
          }
@@ -341,5 +304,14 @@ namespace Dargon.Commons.Utilities {
 
          return d.TryGetValue(key, out value);
       }
+   }
+
+   public enum GuardState {
+      UpgradeableReader,
+      UpgradedWriter,
+      SimpleReader,
+      Free,
+      Intermediate_ReaderToUpgradable,
+      Intermediate_ReaderToWriter,
    }
 }

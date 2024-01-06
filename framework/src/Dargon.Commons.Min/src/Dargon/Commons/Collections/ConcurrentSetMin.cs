@@ -7,40 +7,40 @@ using Dargon.Commons;
 using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons.Collections {
-   public class ConcurrentSet<T> : IReadOnlySet<T>, IReadOnlyCollection<T> {
+   public class ConcurrentSetMin<T> : IReadOnlyCollection<T> { // IReadOnlySet<T>
       ConcurrentDictionary<T, byte> storage;
 
-      public ConcurrentSet()
+      public ConcurrentSetMin()
       {
          storage = new ConcurrentDictionary<T, byte>();
       }
 
-      public ConcurrentSet(IEnumerable<T> collection)
+      public ConcurrentSetMin(IEnumerable<T> collection)
       {
          storage = new ConcurrentDictionary<T, byte>(collection.Select(_ => new KeyValuePair<T, byte>(_, 0)));
       }
 
-      public ConcurrentSet(IEqualityComparer<T> comparer)
+      public ConcurrentSetMin(IEqualityComparer<T> comparer)
       {
          storage = new ConcurrentDictionary<T, byte>(comparer);
       }
 
-      public ConcurrentSet(IEnumerable<T> collection, IEqualityComparer<T> comparer)
+      public ConcurrentSetMin(IEnumerable<T> collection, IEqualityComparer<T> comparer)
       {
          storage = new ConcurrentDictionary<T, byte>(collection.Select(_ => new KeyValuePair<T, byte>(_, 0)), comparer);
       }
 
-      public ConcurrentSet(int concurrencyLevel, int capacity)
+      public ConcurrentSetMin(int concurrencyLevel, int capacity)
       {
          storage = new ConcurrentDictionary<T, byte>(concurrencyLevel, capacity);
       }
 
-      public ConcurrentSet(int concurrencyLevel, IEnumerable<T> collection, IEqualityComparer<T> comparer)
+      public ConcurrentSetMin(int concurrencyLevel, IEnumerable<T> collection, IEqualityComparer<T> comparer)
       {
          storage = new ConcurrentDictionary<T, byte>(concurrencyLevel, collection.Select(_ => new KeyValuePair<T, byte>(_, 0)), comparer);
       }
 
-      public ConcurrentSet(int concurrencyLevel, int capacity, IEqualityComparer<T> comparer)
+      public ConcurrentSetMin(int concurrencyLevel, int capacity, IEqualityComparer<T> comparer)
       {
          storage = new ConcurrentDictionary<T, byte>(concurrencyLevel, capacity, comparer);
       }
