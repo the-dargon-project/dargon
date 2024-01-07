@@ -73,8 +73,8 @@ namespace Dargon.Commons.Scheduler {
       }
 
       public Task EnqueueAndAwaitAsync(TJobData data) {
-         var tcs = new TaskCompletionSource();
-         EnqueueWithCallback(data, tcs.SetResult);
+         var tcs = new TaskCompletionSource<bool>();
+         EnqueueWithCallback(data, () => tcs.SetResult(false));
          return tcs.Task;
       }
 

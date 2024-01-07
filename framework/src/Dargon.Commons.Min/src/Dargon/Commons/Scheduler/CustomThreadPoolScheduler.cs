@@ -33,7 +33,7 @@ namespace Dargon.Commons.Scheduler {
             i => threadFactory.Create(WorkerThreadStart, $"{name}_{i}")
                               .Tap(t => t.Start())
          ).ToList();
-         workerThreadIds = workerThreads.Map(t => t.ManagedThreadId).ToHashSet();
+         workerThreadIds = new(workerThreads.Map(t => t.ManagedThreadId));
       }
 
       public bool IsCurrentThreadInPool => workerThreadIds.Contains(Thread.CurrentThread.ManagedThreadId);
@@ -53,7 +53,7 @@ namespace Dargon.Commons.Scheduler {
          }
       }
 
-      public void Shutdown() { }
+      public void Shutdown() => shutdownLatch.TrySet();
 
       public void Schedule(Action<object> work, object state, Action callback) {
          workQueue.Enqueue((st => {

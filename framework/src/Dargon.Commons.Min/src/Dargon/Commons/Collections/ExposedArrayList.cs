@@ -147,6 +147,13 @@ namespace Dargon.Commons.Collections {
          }
       }
 
+      public void Reverse() {
+         var mid = size / 2;
+         for (int i = 0, j = size - 1; i < mid; i++, j--) {
+            (store[i], store[j]) = (store[j], store[i]);
+         }
+      }
+
       public ref T this[int i] {
          get {
 #if ENABLE_INDEXER_RANGE_CHECK

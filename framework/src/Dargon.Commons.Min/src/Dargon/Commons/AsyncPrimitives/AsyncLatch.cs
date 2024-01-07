@@ -13,7 +13,7 @@ namespace Dargon.Commons.AsyncPrimitives {
       private const int kStateSignalled = 1;
       private int state = kStateUnsignalled;
 
-      public bool IsSignalled => Interlocked2.Read(ref state) == kStateSignalled;
+      public bool IsSignalled => InterlockedMin.Read(ref state) == kStateSignalled;
 
       private Task taskCache = null;
       public Task Task => taskCache ??= WaitAsync(); // cache as an optimization, not as an expectation. Race.
