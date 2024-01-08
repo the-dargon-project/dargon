@@ -8,8 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Dargon.Commons.Min\src\Dargon.Commons.Min.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
-    <ProjectReference Include="..\Dargon.Commons.SourceGeneratorHelpers\Dargon.Commons.SourceGeneratorHelpers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Dargon.Vox.SourceGenerators\Dargon.Vox.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	  
     <ProjectReference Include="..\Dargon.Commons\src\Dargon.Commons.csproj" />
