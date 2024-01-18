@@ -180,6 +180,7 @@ namespace Dargon.Commons.Collections {
 #endif
 
          public T Current => this.current;
+         public ref T RefCurrent => ref list[index - 1];
 
          object IEnumerator.Current
          {
