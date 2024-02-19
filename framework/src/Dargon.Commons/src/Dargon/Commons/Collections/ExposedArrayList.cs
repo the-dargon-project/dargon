@@ -247,6 +247,10 @@ namespace Dargon.Commons.Collections {
 
       public MappedExposedArrayListView<T, U> CreateMappedView<U>(Func<T, U> mapper, Action<ExposedArrayList<T>, U> adderOpt = null)
          => new(this, mapper, adderOpt == null ? null : u => adderOpt.Invoke(this, u));
+
+      // Shorthand for GetEnumerator for StructLinq
+      public Enumerator _ => GetEnumerator();
+      public (Enumerator, T) __ => (GetEnumerator(), default);
    }
 
    public class MappedExposedArrayListView<T, U> : IEnumerable<U> {
@@ -265,8 +269,8 @@ namespace Dargon.Commons.Collections {
       public void Add(U item) => adderOpt(item);
       public void Clear() => inner.Clear();
 
-      public StructLinqMap<T, ExposedArrayList<T>.Enumerator, U> GetEnumerator() => StructLinq<T>.Map(inner.GetEnumerator(), mapper);
-      IEnumerator<U> IEnumerable<U>.GetEnumerator() => GetEnumerator();
-      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+      public StructLinq2<U, StructLinqMap<T, ExposedArrayList<T>.Enumerator, U>> GetEnumerator() => inner.SL().Map(mapper);
+      IEnumerator<U> IEnumerable<U>.GetEnumerator() => GetEnumerator()._;
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator()._;
    }
 }

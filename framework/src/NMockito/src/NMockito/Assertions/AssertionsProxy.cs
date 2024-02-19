@@ -17,7 +17,7 @@ namespace NMockito.Assertions {
       public void AssertEquals<T>(T expected, T actual) {
          void Test(bool eq) {
             if (!eq) {
-               throw new EqualException(expected, actual);
+               throw EqualException.ForMismatchedValues(expected, actual);
             }
          }
 
@@ -30,7 +30,7 @@ namespace NMockito.Assertions {
          void Test(bool eq) {
             if (eq) {
                // WTF xUnit takes string expected/actuals here?
-               throw new NotEqualException(expected?.ToString() ?? "[null]", actual?.ToString() ?? "[null]");
+               throw NotEqualException.ForEqualValues(expected?.ToString() ?? "[null]", actual?.ToString() ?? "[null]");
             }
          }
 

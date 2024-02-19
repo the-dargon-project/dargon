@@ -22,9 +22,9 @@ namespace NMockito.Fluent {
 
       public void AssertThrown<TException>() where TException : Exception {
          if (lastException == null) {
-            throw new ThrowsException(typeof(TException));
+            throw ThrowsException.ForNoException(typeof(TException));
          } else if (lastException.GetType() != typeof(TException)) {
-            throw new ThrowsException(typeof(TException), lastException);
+            throw ThrowsException.ForIncorrectExceptionType(typeof(TException), lastException);
          }
       }
    }

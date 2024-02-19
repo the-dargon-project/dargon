@@ -158,7 +158,7 @@ namespace Dargon.Commons {
 
          if (visitDepth == 0) {
             Emit(".");
-            Emit(nameof(Instances.Tee));
+            Emit(nameof(Instances.Tap));
             Emit("(");
             Emit("()");
             Emit("=>");

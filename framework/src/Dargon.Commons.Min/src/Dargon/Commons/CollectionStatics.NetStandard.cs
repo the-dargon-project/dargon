@@ -314,6 +314,17 @@ namespace Dargon.Commons {
          return result;
       }
 
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static U[] FlatMapDict<K, V, U>(this Dictionary<K, V> dict, Func<K, V, int, U> projector) {
+         var result = new U[dict.Count];
+         var i = 0;
+         foreach (var x in dict) {
+            result[i] = projector(x.Key, x.Value, i);
+            i++;
+         }
+         return result;
+      }
+
       public static U[] MapFilterToNotNull<T, U>(this IReadOnlyList<T> arr, Func<T, U> projector) where U : class {
          var result = new List<U>();
          foreach (var x in arr) {
@@ -426,7 +437,9 @@ namespace Dargon.Commons {
          return result.ToArray();
       }
 
+#if !NETSTANDARD
       public static IEnumerable<Tuple<T, U>> Zip<T, U>(this IEnumerable<T> e1, IEnumerable<U> e2) => e1.Zip(e2, Tuple.Create);
+#endif
 
       public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> action) {
          if (enumerable.GetType().IsArray) {

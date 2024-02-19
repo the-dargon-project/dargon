@@ -68,12 +68,28 @@ namespace Dargon.Commons.Templating {
       private struct DummyNamespace {}
    }
 
+   public interface ITemplateNint {
+      public nint Value { get; }
+   }
+
+   public interface ITemplateNUint {
+      public nuint Value { get; }
+   }
+
    public interface ITemplateInt64 {
       public long Value { get; }
    }
 
-   public struct TInt64_10_000 : ITemplateInt64 {
-      public long Value => 10000;
+   public struct TZero : ITemplateNUint, ITemplateNint, ITemplateInt64 {
+      nuint ITemplateNUint.Value => 0;
+      nint ITemplateNint.Value => 0;
+      long ITemplateInt64.Value => 0;
+   }
+
+   public struct T10_000 : ITemplateNUint, ITemplateNint, ITemplateInt64 {
+      nuint ITemplateNUint.Value => 10000;
+      nint ITemplateNint.Value => 10000;
+      long ITemplateInt64.Value => 10000;
    }
 
    public struct TInt64_10_000_000_000 : ITemplateInt64 {
@@ -117,5 +133,14 @@ namespace Dargon.Commons.Templating {
       public int MinValue => int.MinValue;
       
       public int MaxValue => int.MaxValue;
+   }
+
+   public interface ITemplateCast<TSource, TDestination> {
+      TDestination Cast(TSource x);
+   }
+
+   public interface ITemplateBidirectionalCast<T1, T2> {
+      T1 Cast(T2 x);
+      T2 Cast(T1 x);
    }
 }

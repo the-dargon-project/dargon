@@ -42,7 +42,7 @@ namespace Dargon.Commons.Collections {
          this.list = new ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>(source.list);
       }
 
-      private bool TryFindIndex(TKey key, out int index) {
+      public bool TryFindIndex(TKey key, out int index) {
          for (var i = 0; i < list.Count; i++) {
             if (keyEqualityComparer.Equals(key, list.store[i].Key)) {
                index = i;
@@ -97,10 +97,10 @@ namespace Dargon.Commons.Collections {
 
       public ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>.Enumerator GetEnumerator() => list.GetEnumerator();
 
-      IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() 
-         => StructLinq<ExposedKeyValuePair<TKey, TValue>>.Map(
-            list.GetEnumerator(),
-            kvp => new KeyValuePair<TKey, TValue>(kvp.Key, kvp.Value));
+      IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
+         => list.SL()
+                .Map(kvp => new KeyValuePair<TKey, TValue>(kvp.Key, kvp.Value))
+                .GetEnumerator();
 
       IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -224,9 +224,9 @@ namespace Dargon.Commons.Collections {
       public ref TKey this[int index] => ref dict.list[index].Key;
       TKey IReadOnlyList<TKey>.this[int index] => dict.list[index].Key;
 
-      public StructLinqMap<ExposedKeyValuePair<TKey, TValue>, ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>.Enumerator, TKey> GetEnumerator() => dict.GetEnumerator().SL(default(ExposedKeyValuePair<TKey, TValue>)).Map(x => x.Key);
-      IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => GetEnumerator();
-      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+      public StructLinq2<TKey, StructLinqMap<ExposedKeyValuePair<TKey, TValue>, ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>.Enumerator, TKey>> GetEnumerator() => dict.GetEnumerator().SL(default(ExposedKeyValuePair<TKey, TValue>)).Map(x => x.Key);
+      IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => GetEnumerator().inner;
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator().inner;
 
       public void Add(TKey item) => throw new NotSupportedException();
       public void Clear() => throw new NotSupportedException();
@@ -254,9 +254,9 @@ namespace Dargon.Commons.Collections {
       public ref TValue this[int index] => ref dict.list[index].Value;
       TValue IReadOnlyList<TValue>.this[int index] => dict.list[index].Value;
 
-      public StructLinqMap<ExposedKeyValuePair<TKey, TValue>, ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>.Enumerator, TValue> GetEnumerator() => dict.GetEnumerator().SL(default(ExposedKeyValuePair<TKey, TValue>)).Map(x => x.Value);
-      IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => GetEnumerator();
-      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+      public StructLinq2<TValue, StructLinqMap<ExposedKeyValuePair<TKey, TValue>, ExposedArrayList<ExposedKeyValuePair<TKey, TValue>>.Enumerator, TValue>> GetEnumerator() => dict.GetEnumerator().SL(default(ExposedKeyValuePair<TKey, TValue>)).Map(x => x.Value);
+      IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => GetEnumerator().inner;
+      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator().inner;
 
       public void Add(TValue item) => throw new NotSupportedException();
       public void Clear() => throw new NotSupportedException();

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Dargon.Commons.Collections {
    public struct EnumeratorToEnumerableAdapter<TItem, TEnumerator> : IEnumerable<TItem> where TEnumerator : struct, IEnumerator<TItem> {
@@ -43,6 +44,12 @@ namespace Dargon.Commons.Collections {
    public static class EnumeratorToEnumerableAdapter<TItem> {
       public static EnumeratorToEnumerableAdapter<TItem, TEnumerator> Create<TEnumerator>(TEnumerator enumerator) where TEnumerator : struct, IEnumerator<TItem> {
          return new EnumeratorToEnumerableAdapter<TItem, TEnumerator>(enumerator);
+      }
+   }
+
+   public static class EnumeratorToEnumerableAdapter {
+      public static EnumeratorToEnumerableAdapter<TItem, TEnumerator> Create<TEnumerator, TItem>((TEnumerator, TItem) x) where TEnumerator : struct, IEnumerator<TItem> {
+         return EnumeratorToEnumerableAdapter<TItem>.Create(x.Item1);
       }
    }
 }

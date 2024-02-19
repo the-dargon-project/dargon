@@ -96,6 +96,11 @@ namespace Dargon.Commons {
          return self;
       }
 
+      public static T Tap<T, Context>(this T self, Context context, Action<T, Context> func) {
+         func(self, context);
+         return self;
+      }
+
       public static T[] TapEach<T>(this T[] self, Action<T> func) {
          foreach (var x in self) {
             func(x);
@@ -112,21 +117,17 @@ namespace Dargon.Commons {
          return self;
       }
 
-      public static T Tee<T>(this T self, Action cb) {
-         cb();
-         return self;
-      }
+      public static U Tee<T, U>(this T self, Func<T, U> cb) => cb(self);
+      
+      public static U Tee<T, Context, U>(this T self, Context context, Func<T, Context, U> cb) => cb(self, context);
 
-      public static T Tee<T>(this T self, Action<T> cb) {
-         cb(self);
-         return self;
-      }
+      public static U Then<T, U>(this T self, Func<T, U> func) => func(self);
 
-      public static U Then<T, U>(this T self, Func<T, U> func) {
-         return func(self);
-      }
+      public static U Then<T, Context, U>(this T self, Context context, Func<T, Context, U> func) => func(self, context);
 
       public static U Pipe<T, U>(this T self, Func<T, U> cb) => cb(self);
+
+      public static U Pipe<T, Context, U>(this T self, Context context, Func<T, Context, U> func) => func(self, context);
 
       public static T If<T>(this T self, bool cond) => self.IfElse(cond, default);
 
