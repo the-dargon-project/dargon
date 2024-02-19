@@ -28,6 +28,22 @@ namespace Dargon.Commons {
          return result;
       }
 
+      public static T[] Create<T, U>(int count, U context, Func<U, T> elementInitializer) {
+         var result = new T[count];
+         for (var i = 0; i < result.Length; i++) {
+            result[i] = elementInitializer(context);
+         }
+         return result;
+      }
+
+      public static T[] Create<T, U>(int count, U context, Func<int, U, T> elementInitializer) {
+         var result = new T[count];
+         for (var i = 0; i < result.Length; i++) {
+            result[i] = elementInitializer(i, context);
+         }
+         return result;
+      }
+
       /// <summary>
       /// Fisher-Yates shuffle
       /// </summary>
