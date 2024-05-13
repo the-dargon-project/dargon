@@ -1,51 +1,45 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.AsyncAwait;
 using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Channels;
-using Dargon.Commons.Utilities;
 using Dargon.Courier.PubSubTier.Publishers;
 using Dargon.Courier.StateReplicationTier.States;
 using Dargon.Courier.StateReplicationTier.Vox;
 
 namespace Dargon.Courier.StateReplicationTier.Primaries {
-   public class StatePublisher<TState, TSnapshot, TDelta, TOperations> 
+   public class StatePublisher<TState, TSnapshot, TDelta> 
       where TState : class, IState 
       where TSnapshot : IStateSnapshot 
-      where TDelta : class, IStateDelta
-      where TOperations : IStateDeltaOperations<TState, TSnapshot, TDelta> {
+      where TDelta : class, IStateDelta {
       private const object kCreateCatchupSnapshotDtoMarker = null;
       private readonly CourierSynchronizationContexts synchronizationContexts;
       private readonly Publisher publisher;
-      private readonly TOperations ops;
       private readonly Guid topicId;
-      private readonly Channel<object> outboundChannel;
+      private readonly Channel<(object, ReplicationVersion, int)> outboundChannel;
       private readonly AsyncLatch shutdownLatch = new AsyncLatch();
-      private readonly AsyncLock sync = new AsyncLock();
-      private IStateView<TState> stateView;
+      private IStateView<TState, TSnapshot, TDelta> stateView;
       private Task publishLoopTask;
-      private int snapshotEpoch = 0;
-      private int deltaSeq = 0;
 
-      public StatePublisher(CourierSynchronizationContexts synchronizationContexts, Publisher publisher, TOperations ops, Guid topicId) {
+      public StatePublisher(CourierSynchronizationContexts synchronizationContexts, Publisher publisher, Guid topicId) {
          this.synchronizationContexts = synchronizationContexts;
          this.publisher = publisher;
-         this.ops = ops;
          this.topicId = topicId;
-         this.outboundChannel = ChannelFactory.Blocking<object>();
+         this.outboundChannel = ChannelFactory.Blocking<(object, ReplicationVersion, int)>();
       }
 
-      public async Task InitializeAsync(IStateView<TState> stateView, StateLock stateLock) {
+      public async Task InitializeAsync(IStateView<TState, TSnapshot, TDelta> stateView) {
          this.stateView = stateView;
-         
+
+         stateView.DeltaApplied += HandleDeltaApplied;
+         stateView.SnapshotLoaded += HandleSnapshotLoaded;
+
+         var capture = await stateView.CaptureSnapshotWithInfoAsync();
+         HandleSnapshotLoaded(new(capture.Snapshot, capture.ReplicationVersion, capture.LocalVersion));
+
          await publisher.CreateLocalTopicAsync(topicId);
-
-         await using (await stateLock.CreateReaderGuardAsync()) {
-            var captureSnapshot = ops.CaptureSnapshot(stateView.State);
-            outboundChannel.WriteAsync(captureSnapshot).Forget(); // immediately queues (await would be for dequeue)
-         }
-
          this.publishLoopTask = RunPublishLoopAsync().Forgettable();
       }
 
@@ -56,69 +50,37 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
          publishLoopTask = null;
       }
 
+      private void HandleDeltaApplied(in StateViewDeltaAppliedEventArgs<TDelta> e) {
+         var what = (e.Delta, e.ReplicationVersion, e.LocalVersion);
+         outboundChannel.WriteAsync(what).Forget();
+      }
+
+      private void HandleSnapshotLoaded(in StateViewSnapshotLoadedEventArgs<TSnapshot> e) {
+         var what = (e.Snapshot, e.ReplicationVersion, e.LocalVersion);
+         outboundChannel.WriteAsync(what).Forget(); // immediately queues (await would be for dequeue)
+      }
+
       private async Task RunPublishLoopAsync() {
+         await synchronizationContexts.CourierDefault__.YieldToAsync();
+
          while (!shutdownLatch.IsSignalled) {
-            var o = await outboundChannel.ReadAsync();
+            var (o, ver, localVersion) = await outboundChannel.ReadAsync();
 
             if (o == kCreateCatchupSnapshotDtoMarker) {
                continue;
             }
 
-            using var mut = await sync.LockAsync();
-            if (o is TSnapshot) {
-               snapshotEpoch++;
-               deltaSeq = 0;
-               await publisher.PublishToLocalTopicAsync(topicId, new StateUpdateDto {
-                  IsSnapshot = true,
-                  IsOutOfBand = false,
-                  SnapshotEpoch = snapshotEpoch,
-                  DeltaSeq = deltaSeq,
-                  Payload = o,
-               });
-            } else {
-               deltaSeq++;
-               await publisher.PublishToLocalTopicAsync(topicId, new StateUpdateDto {
-                  IsSnapshot = false,
-                  IsOutOfBand = false,
-                  SnapshotEpoch = snapshotEpoch,
-                  DeltaSeq = deltaSeq,
-                  Payload = o,
-               });
-            }
+            await publisher.PublishToLocalTopicAsync(topicId, new StateUpdateDto {
+               IsSnapshot = o is TSnapshot,
+               IsOutOfBand = false,
+               Version = ver,
+               Payload = o,
+               VanityTotalSeq = localVersion,
+            });
          }
       }
 
-      /// <summary>
-      /// Immediately writes a snapshot to the publish queue.
-      /// </summary>
-      /// <returns>A task which contains a task that is completed when the publish event is dequeued but not yet processed</returns>
-      public async Task<Task> QueueSnapshotPublishAsync(TSnapshot snapshot) {
-         await synchronizationContexts.CourierDefault__.YieldToAsync();
-         using var mut = await sync.LockAsync();
-         return outboundChannel.WriteAsync(snapshot); // queues but does not wait for dequeue
-      }
-
-      /// <summary>
-      /// Immediately writes a delta to the publish queue
-      /// </summary>
-      /// <returns>A task which contains a task that is completed when the publish event is dequeued but not yet processed</returns>
-      public async Task<Task> QueueDeltaPublishAsync(TDelta delta) {
-         await synchronizationContexts.CourierDefault__.YieldToAsync();
-         using var mut = await sync.LockAsync();
-         return outboundChannel.WriteAsync(delta.AssertIsNotNull()); // queues but does not wait for dequeue
-      }
-
-      /// <summary>
-      /// Creates a <seealso cref="StateUpdateDto"/> with the given up-to-date snapshot
-      /// and timestamped with the current snapshot epoch and delta seqnum.
-      ///
-      /// This dto can be used to get other clients up-to-date.
-      ///
-      /// This must only be invoked when:
-      /// * The state is locked (either with an exclusive write or for reading)
-      /// * We are inside that lock
-      /// </summary>
-      public async Task<StateUpdateDto> CreateOutOfBandCatchupSnapshotUpdateAsync(TSnapshot upToDateSnapshot) {
+      public async Task<StateUpdateDto> CreateOutOfBandCatchupSnapshotUpdateAsync() {
          await synchronizationContexts.CourierDefault__.YieldToAsync();
 
          // queue a null to the outbound channel and wait for it to be dequeued, at which point
@@ -127,24 +89,17 @@ namespace Dargon.Courier.StateReplicationTier.Primaries {
          //
          // since this method should only be called when we have exclusive access to state or it can
          // only be read to, we know there will be no deltas applied during this call; state cannot change.
-         await outboundChannel.WriteAsync(kCreateCatchupSnapshotDtoMarker);
+         await outboundChannel.WriteAsync((kCreateCatchupSnapshotDtoMarker, default, default));
 
-         // lock sync for barrier to access deltaseq/snapshotepoch.
-         using var mut = await sync.LockAsync();
+         var capture = await stateView.CaptureSnapshotWithInfoAsync();
 
          return new StateUpdateDto {
             IsSnapshot = true,
             IsOutOfBand = true,
-            SnapshotEpoch = snapshotEpoch,
-            DeltaSeq = deltaSeq,
-            Payload = upToDateSnapshot,
+            Version = capture.ReplicationVersion,
+            Payload = capture.Snapshot,
+            VanityTotalSeq = capture.LocalVersion,
          };
       }
-   }
-
-   public class StateLock {
-      public readonly AsyncReaderWriterLock Lock = new AsyncReaderWriterLock();
-      public Task<AsyncReaderWriterLock.Guard> CreateReaderGuardAsync() => Lock.CreateReaderGuardAsync();
-      public Task<AsyncReaderWriterLock.Guard> CreateWriterGuardAsync() => Lock.CreateWriterGuardAsync();
    }
 }

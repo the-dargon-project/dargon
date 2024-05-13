@@ -493,10 +493,14 @@ namespace Dargon.Vox2 {
       private readonly CopyOnAddDictionary<Type, VoxTypeTrieNode> completeTypeToNodeCache = new();
 
       public void ImportTypeContext(VoxTypeContext c) {
-         simpleTypeToTrieRootContext.Add(c.SimpleType, c);
-         simpleTypeIdToTrieRootContext.Add(c.SimpleTypeId, c);
-         if (c.CompleteTypeOrNull is { } ct) {
-            completeTypeToNodeCache.AddOrThrow(ct, c);
+         try {
+            simpleTypeToTrieRootContext.Add(c.SimpleType, c);
+            simpleTypeIdToTrieRootContext.Add(c.SimpleTypeId, c);
+            if (c.CompleteTypeOrNull is { } ct) {
+               completeTypeToNodeCache.AddOrThrow(ct, c);
+            }
+         } catch (Exception e) {
+            throw new VoxTypeImportException(c, e);
          }
       }
 
@@ -551,6 +555,9 @@ namespace Dargon.Vox2 {
          return current;
       }
    }
+
+   public class VoxTypeImportException(VoxTypeContext VoxTypeContext, Exception InnerException)
+      : Exception($"Failed to import {VoxTypeContext.SimpleType} ({VoxTypeContext.SimpleTypeId}) with serializer {VoxTypeContext.SerializerType}", InnerException);
 
    public class ZZ {
       public const int X = 10;

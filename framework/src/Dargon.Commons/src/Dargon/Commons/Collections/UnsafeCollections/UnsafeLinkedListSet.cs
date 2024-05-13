@@ -1,6 +1,6 @@
 ﻿using Dargon.Commons.Templating;
 
-namespace Dargon.Commons.Collections;
+namespace Dargon.Commons.Collections.UnsafeCollections;
 
 public unsafe class UnsafeLinkedListSet {
    private IntrusiveStore* pHead;

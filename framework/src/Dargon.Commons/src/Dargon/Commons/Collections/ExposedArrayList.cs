@@ -236,6 +236,11 @@ namespace Dargon.Commons.Collections {
          }
       }
 
+      public void SetCapacity(int val) {
+         Arrays.ReuseOrAllocateArrayOfCapacity(ref store, val);
+         size = Math.Min(size, val);
+      }
+
       public T[] ShrinkStore() {
          if (store.Length == Count) return store;
          store = ToArray();

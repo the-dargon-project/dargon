@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 using Dargon.Commons;
+using Dargon.Courier.StateReplicationTier.Primaries;
 //using Dargon.Courier.Transports.Udp.Vox;
 
 namespace Dargon.Courier.Vox {
@@ -60,7 +61,9 @@ namespace Dargon.Courier.Vox {
 
       // StateTier
       StateTierBaseId = 60,
-      [Type<StateUpdateDto>] StateUpdateDto = StateTierBaseId + 0,
+      [Type<ReplicationVersion>] ReplicationVersion = StateTierBaseId + 0,
+      [Type<StateUpdateDto>] StateUpdateDto = StateTierBaseId + 1,
+
    }
 
    public class CourierVoxTypes : VoxAutoTypes<CourierVoxTypeIds> {

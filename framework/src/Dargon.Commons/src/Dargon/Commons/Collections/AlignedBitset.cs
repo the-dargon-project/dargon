@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using Dargon.Commons.Templating;
 
 namespace Dargon.Commons.Collections;
@@ -27,10 +29,16 @@ public class BitList {
          return (el & bit) != 0;
       }
       set {
+         ValidateIndex(index);
+
          var bit = 1ul << (index & 0b11_1111);
          ref var el = ref store[index >> 6];
          el = (el & ~bit) | (value ? bit : 0);
       }
+   }
+
+   public void Clear(bool value) {
+      Array.Fill(store, value ? ulong.MaxValue : 0);
    }
 
    private void ValidateIndex(int index) {
@@ -40,6 +48,35 @@ public class BitList {
       index.AssertIsGreaterThanOrEqualTo(0);
       index.AssertIsLessThan(bitCount);
    }
+
+   /**
+   public struct IndexEnumerator : IEnumerator<int> {
+      private readonly ulong[] store;
+      private readonly int offset;
+      private readonly int currentIndex;
+      private readonly ulong currentValue;
+
+      public IndexEnumerator(BitList l) {
+         store = l.store;
+         count = l.bitCount;
+      }
+
+      public bool MoveNext() {
+         throw new NotImplementedException();
+      }
+
+      public void Reset() {
+      }
+
+      public int Current { get; }
+
+      object IEnumerator.Current => Current;
+
+      public void Dispose() {
+         throw new NotImplementedException();
+      }
+   }
+   */
 }
 
 public class AlignedBitset {

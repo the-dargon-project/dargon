@@ -20,6 +20,10 @@ namespace Dargon.Commons.AsyncPrimitives {
 
       public bool TryTake() {
          var spinner = new SpinWait();
+         return TryTakeInternal(ref spinner);
+      }
+
+      private bool TryTakeInternal(ref SpinWait spinner) {
          while (true) {
             var capturedCounter = Interlocked.CompareExchange(ref counter, 0, 0);
             if (capturedCounter > 0) {
@@ -31,6 +35,14 @@ namespace Dargon.Commons.AsyncPrimitives {
                return false;
             }
             spinner.SpinOnce();
+         }
+      }
+
+      public void Wait(CancellationToken cancellationToken = default(CancellationToken)) {
+         var spinner = new SpinWait();
+         while (!TryTakeInternal(ref spinner)) {
+            spinner.SpinOnce();
+            cancellationToken.ThrowIfCancellationRequested();
          }
       }
 

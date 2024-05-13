@@ -18,6 +18,10 @@ namespace Dargon.Commons.AsyncPrimitives {
       private Task taskCache = null;
       public Task Task => taskCache ??= WaitAsync(); // cache as an optimization, not as an expectation. Race.
 
+      public void Wait(CancellationToken token = default) {
+         tcs.Task.Wait(token);
+      }
+
       public Task WaitAsync(CancellationToken token = default(CancellationToken)) {
          if (!token.CanBeCanceled) {
             return tcs.Task;

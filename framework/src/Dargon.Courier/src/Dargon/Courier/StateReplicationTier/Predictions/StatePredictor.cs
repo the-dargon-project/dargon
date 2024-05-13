@@ -1,40 +1,31 @@
 ﻿using System;
 using Dargon.Commons;
 using Dargon.Commons.Collections;
-using Dargon.Commons.Utilities;
 using Dargon.Courier.StateReplicationTier.Primaries;
 using Dargon.Courier.StateReplicationTier.States;
 
 namespace Dargon.Courier.StateReplicationTier.Predictions {
-   public abstract class PredictionStateView<TState, TSnapshot, TDelta, TOperations> : IStateView<TState>
-      where TState : class, IState
-      where TSnapshot : IStateSnapshot
-      where TDelta : class, IStateDelta
-      where TOperations : IStateDeltaOperations<TState, TSnapshot, TDelta> {
+   public class StatePredictor<TState, TSnapshot, TDelta> where TState : class, IState where TSnapshot : IStateSnapshot where TDelta : class, IStateDelta {
       private const int kInvalidatedBaseStateViewVersion = int.MinValue;
+      
+      private readonly IStateView<TState, TSnapshot, TDelta> baseStateView;
+      private readonly IStateView<TState, TSnapshot, TDelta> predictionStateView;
 
-      private readonly IStateView<TState> baseStateView;
-      private readonly TOperations ops;
       private ExposedArrayList<IPredictionDeltaSource<TState, TDelta>> predictions = new();
       private ExposedArrayList<IPredictionDeltaSource<TState, TDelta>> preallocatedPredictionsAlternateList = new();
-      private int versionOffset = 0;
       private int lastBaseStateViewVersion = kInvalidatedBaseStateViewVersion;
-      private TState predictedState;
 
-      public PredictionStateView(IStateView<TState> baseStateView, TOperations ops) {
+      private ReplicationVersion replicationVersion;
+
+      public StatePredictor(IStateView<TState, TSnapshot, TDelta> baseStateView, IStateView<TState, TSnapshot, TDelta> predictionStateView) {
          this.baseStateView = baseStateView;
-         this.ops = ops;
+         this.predictionStateView = predictionStateView;
       }
 
-      public bool IsReady => baseStateView.IsReady;
-      public int Version => baseStateView.Version + versionOffset;
-      public event StateViewUpdatedEvent Updated;
-
-      public TState State {
-         get {
-            ProcessUpdates();
-            return predictedState;
-         }
+      public SyncStateGuard<TState> ProcessUpdatesAndKeepWriterLock() {
+         var psvGuard = predictionStateView.LockStateForWrite();
+         ProcessUpdates();
+         return psvGuard;
       }
 
       public void ProcessUpdates() {
@@ -42,20 +33,18 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
             return;
          }
 
-         if (predictedState == null) {
-            predictedState = ops.CloneState(baseStateView.State);
-            lastBaseStateViewVersion = baseStateView.Version;
-            return;
-         }
+         using var bsvGuard = baseStateView.LockStateForRead();
+         using var psvGuard = predictionStateView.LockStateForWrite();
+         predictionStateView.Copy(bsvGuard.State, IncrementReplicationVersion());
+         bsvGuard.Dispose();
 
-         ops.Copy(baseStateView.State, predictedState);
-         
+         var predictedState = psvGuard.State;
          var newPredictionsListBuilder = predictions.GetDefaultOfType();
          for (var i = 0; i < predictions.Count; i++) {
             var prediction = predictions[i];
             var flags = prediction.TryBuildDelta(predictedState, out var delta);
             if (delta != null) {
-               ops.TryApplyDelta(predictedState, delta).AssertIsTrue();
+               predictionStateView.TryApplyDelta(delta).AssertIsTrue();
             }
 
             var hasDropFlag = flags.FastHasAnyFlag(PredictionResultFlags.__InternalAnyDropFlagMask);
@@ -82,26 +71,29 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
             preallocatedPredictionsAlternateList.Clear();
          }
 
-         Updated?.Invoke();
          lastBaseStateViewVersion = baseStateView.Version;
       }
 
       public bool AddPrediction(IPredictionDeltaSource<TState, TDelta> prediction) {
-         ProcessUpdates();
+         using var psvGuard = ProcessUpdatesAndKeepWriterLock();
+
+         var predictedState = psvGuard.State;
          var res = prediction.TryBuildDelta(predictedState, out var delta);
          if ((res & PredictionResultFlags.DropSelf) != 0) {
             // prediction immediately dropped
             return false;
          }
 
-         ops.TryApplyDelta(predictedState, delta).AssertIsTrue();
+         predictionStateView.TryApplyDelta(delta).AssertIsTrue();
+         IncrementReplicationVersion();
+
          predictions.Add(prediction);
-         versionOffset++;
-         Updated?.Invoke();
          return true;
       }
 
       public bool RemovePrediction(IPredictionDeltaSource<TState, TDelta> prediction) {
+         using var psvGuard = predictionStateView.LockStateForWrite();
+
          var success = predictions.Remove(prediction);
          if (success) {
             Invalidate();
@@ -116,8 +108,15 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
       /// </summary>
       public void Invalidate() {
          lastBaseStateViewVersion = kInvalidatedBaseStateViewVersion;
-         versionOffset++;
-         Updated?.Invoke();
+      }
+
+      private ReplicationVersion IncrementReplicationVersion() {
+         replicationVersion.Seq++;
+         if (replicationVersion.Seq == int.MaxValue) {
+            replicationVersion.Epoch++;
+            replicationVersion.Seq = 0;
+         }
+         return replicationVersion;
       }
    }
 }

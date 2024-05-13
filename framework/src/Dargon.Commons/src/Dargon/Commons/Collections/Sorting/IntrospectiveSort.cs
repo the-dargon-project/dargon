@@ -9,6 +9,8 @@ namespace Dargon.Commons.Collections.Sorting {
    /// https://github.com/dotnet/runtime/blob/f58fde50376479ad3ba1339d37df816f90bff287/src/libraries/System.Private.CoreLib/src/System/Array.cs
    /// </summary>
    public static class IntrospectiveSort {
+      public const int IntrosortSizeThreshold = 16;
+
       /// <summary>
       /// Sorts an array of <paramref name="indices"/> referring to the contents of <paramref name="items"/>, which itself
       /// is not mutated.
@@ -54,8 +56,6 @@ namespace Dargon.Commons.Collections.Sorting {
          // This is the threshold where Introspective sort switches to Insertion sort.
          // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
          // Large value types may benefit from a smaller number.
-         internal const int IntrosortSizeThreshold = 16;
-
          private readonly TKey[] keys;
          private readonly TItem[] items;
          public TKeyComparer Comparer;

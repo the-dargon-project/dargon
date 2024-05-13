@@ -135,6 +135,18 @@ namespace Dargon.Commons.Templating {
       public int MaxValue => int.MaxValue;
    }
 
+   public interface ITemplateFunc<in T0, out TResult> {
+      TResult Invoke(T0 arg0);
+   }
+
+   public interface ITemplatePredicate<T0> {
+      bool Invoke(in T0 arg0);
+   }
+
+   public readonly struct IsGreaterThanOrEqualTo(int n) : ITemplatePredicate<int> {
+      public bool Invoke(in int arg0) => arg0 >= n;
+   }
+
    public interface ITemplateCast<TSource, TDestination> {
       TDestination Cast(TSource x);
    }
@@ -142,5 +154,67 @@ namespace Dargon.Commons.Templating {
    public interface ITemplateBidirectionalCast<T1, T2> {
       T1 Cast(T2 x);
       T2 Cast(T1 x);
+   }
+
+   public interface ITemplateComparer<in T> : IComparer<T> {
+      /// <returns>0 on equality, lt 0 if x lt y, gt 0 if x gt y</returns>
+      new int Compare(T x, T y);
+   }
+
+   /// <summary>
+   /// Sometimes, lt/gt can be implemented faster than CompareTo
+   /// For example, CompareTo of integers might have a lt and gt branch,
+   /// whereas lt/gt implementations alone would have no branch.
+   /// </summary>
+   /// <typeparam name="T"></typeparam>
+   public interface IFastComparer<in T> {
+      /// <returns>x gt y</returns>
+      bool GreaterThan(T x, T y);
+
+      /// <returns>x lt y</returns>
+      bool LessThan(T x, T y);
+
+      /// <returns>x lt y</returns>
+      bool Equals(T x, T y);
+   }
+
+   public static class FastComparerExtensions {
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static bool IsGreaterThan<T, TComparer>(this T x, T y, in TComparer comparer) where TComparer : struct, IFastComparer<T> {
+         ref var cmp = ref Unsafe.AsRef(comparer);
+         return cmp.GreaterThan(x, y);
+      }
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public static bool IsLessThan<T, TComparer>(this T x, T y, in TComparer comparer) where TComparer : struct, IFastComparer<T> {
+         ref var cmp = ref Unsafe.AsRef(comparer);
+         return cmp.LessThan(x, y);
+      }
+   }
+
+   public struct Int64Comparer : IComparer<long> {
+      public int Compare(long x, long y) => x.CompareTo(y);
+   }
+
+   public struct Int32FastComparer : IFastComparer<int> {
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public bool GreaterThan(int x, int y) => x > y;
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public bool LessThan(int x, int y) => x < y;
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public bool Equals(int x, int y) => x == y;
+   }
+
+   public struct Int64FastComparer : IFastComparer<long> {
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public bool GreaterThan(long x, long y) => x > y;
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public bool LessThan(long x, long y) => x < y;
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      public bool Equals(long x, long y) => x == y;
    }
 }

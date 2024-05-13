@@ -4,8 +4,11 @@ using System.Threading.Tasks;
 
 namespace Dargon.Commons.AsyncPrimitives {
    public class AsyncLock {
+      private struct ALS2_t;
+
       private readonly AsyncSemaphore semaphore = new AsyncSemaphore(1);
-      private readonly AsyncLocal<int> alsLockDepth = new();
+      // ReSharper disable once InconsistentNaming
+      private abstract class alsLockDepth : GlobalAsyncLocal2_t<int, DargonAls2Namespace_t, ALS2_t>;
 
       public int DebugLockDepth => alsLockDepth.Value;
 
@@ -42,6 +45,14 @@ namespace Dargon.Commons.AsyncPrimitives {
                // need to free our lock
                throw;
             }
+         }
+         return new Guard(this);
+      }
+
+      public Guard Lock(CancellationToken cancellationToken = default(CancellationToken)) {
+         alsLockDepth.Value++;
+         if (alsLockDepth.Value == 1) {
+            semaphore.Wait(cancellationToken);
          }
          return new Guard(this);
       }

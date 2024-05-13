@@ -18,8 +18,4 @@ namespace Dargon.Commons.Utilities {
          return res;
       }
    }
-
-   public static class ProfilerBlock {
-
-   }
 }

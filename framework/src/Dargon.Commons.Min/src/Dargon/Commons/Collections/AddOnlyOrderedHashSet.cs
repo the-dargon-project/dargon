@@ -13,7 +13,7 @@ namespace Dargon.Commons.Collections {
 
       public AddOnlyOrderedHashSet() : this(EqualityComparer<T>.Default) { }
 
-      public AddOnlyOrderedHashSet(int capacity) : this(EqualityComparer<T>.Default) { }
+      public AddOnlyOrderedHashSet(int capacity) : this(capacity, EqualityComparer<T>.Default) { }
 
       public AddOnlyOrderedHashSet(IEqualityComparer<T> equalityComparer) {
          list = new ExposedArrayListMin<T>();
@@ -29,10 +29,12 @@ namespace Dargon.Commons.Collections {
       }
 
       public bool TryAdd(T val, out int index) {
-         if (dict.TryGetValue(val, out index)) return false;
-         dict[val] = index = list.Count;
+         index = dict.GetOrAdd(val, list.Count);
+         if (index != list.Count) return false;
+
          list.Add(val);
          return true;
+
       }
 
       public void Clear() {

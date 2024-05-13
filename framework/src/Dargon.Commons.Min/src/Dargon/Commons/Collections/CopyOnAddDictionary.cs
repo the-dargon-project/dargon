@@ -122,6 +122,24 @@ namespace Dargon.Commons.Collections {
          }
       }
 
+      public bool TryRemove(K key, out V existing) {
+         V result;
+         if (!_innerDict.TryGetValue(key, out existing)) {
+            return false;
+         } else {
+            lock (_updateLock) {
+               if (!_innerDict.TryGetValue(key, out existing)) {
+                  return false;
+               } else {
+                  var clone = new Dictionary<K, V>(_innerDict, _comparer);
+                  clone.Remove(key);
+                  _innerDict = clone;
+                  return true;
+               }
+            }
+         }
+      }
+
       public class DuplicateKeyException : Exception {
          public DuplicateKeyException(K key, V a, V b) : base(GetMessage(key, a, b)) { }
 

@@ -19,9 +19,11 @@ namespace Dargon.Vox2 {
 
    public class P<T1, T2> : VoxInternalBaseDummyType { }
 
+   /// <summary>Polymorphic</summary>
    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
    public class PAttribute : VoxInternalBaseAttribute { }
 
+   /// <summary>Non-Polymorphic</summary>
    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
    public class NAttribute : VoxInternalBaseAttribute { }
 

@@ -7,6 +7,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
+#nullable disable
+
 namespace Dargon.Commons.Collections {
    /// <summary>
    /// A MultiValueDictionary can be viewed as a <see cref="IDictionary" /> that allows multiple 
@@ -778,7 +780,7 @@ namespace Dargon.Commons.Collections {
 
          InnerCollectionView collection;
          var success = dictionary.TryGetValue(key, out collection);
-         value = collection.collection;
+         value = collection != null ? collection.collection : default;
          return success;
       }
 

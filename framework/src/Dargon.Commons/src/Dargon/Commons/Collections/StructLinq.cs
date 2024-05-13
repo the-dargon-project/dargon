@@ -747,7 +747,7 @@ public struct StructLinqRangeGenerator : IEnumerator<int>, IEnumerable<int> {
       this.initialValue = initial;
       this.finalValue = final;
       this.increment = increment;
-      this.currentValue = initial;
+      this.currentValue = initial - increment;
    }
 
    public bool MoveNext() {
@@ -758,7 +758,7 @@ public struct StructLinqRangeGenerator : IEnumerator<int>, IEnumerable<int> {
    }
 
    public void Reset() {
-      this.currentValue = initialValue;
+      this.currentValue = initialValue - increment;
    }
 
    public int Current => currentValue;

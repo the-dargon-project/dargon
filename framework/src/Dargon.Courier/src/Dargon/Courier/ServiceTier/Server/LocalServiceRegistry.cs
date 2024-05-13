@@ -46,6 +46,9 @@ namespace Dargon.Courier.ServiceTier.Server {
          }
       }
 
+      public void UnregisterService(Guid id) {
+      }
+
       public async Task HandleInvocationRequestAsync(IInboundMessageEvent<RmiRequestDto> e) {
          Trace.Assert(e.Message.ReceiverId == identity.Id);
          

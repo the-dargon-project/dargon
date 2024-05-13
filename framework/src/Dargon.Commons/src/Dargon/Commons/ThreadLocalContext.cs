@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
+using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Exceptions;
 
 namespace Dargon.Commons {
@@ -35,9 +34,11 @@ namespace Dargon.Commons {
          return WithContextScopeAndImplicitAsyncLocalContextIfUninitialized((TContext)this);
       }
 
+      private struct ALS2_t;
+
       private static class Store<TUnique> where TUnique : struct {
          [ThreadStatic] public static State_t s_tlsState;
-         public static AsyncLocal<Box<State_t>> s_alsState = new();
+         public abstract class s_alsState : GlobalAsyncLocal2_t<Box<State_t>, DargonAls2Namespace_t, ALS2_t>;
 
          public class Box<T> {
             public T Value;
