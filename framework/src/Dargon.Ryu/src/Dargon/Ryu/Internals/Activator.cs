@@ -26,6 +26,11 @@ namespace Dargon.Ryu.Internals {
 
       public object ActivateDefaultType(IRyuContainer ryu, Type type) {
          try {
+            // throw if we find a DoNotAutoActivate attribute
+            if (type.HasAttribute<RyuDoNotAutoActivate>()) {
+               throw new InvalidOperationException($"The given type has a {nameof(RyuDoNotAutoActivate)} attribute, so it cannot be auto-activated.");
+            }
+            
             // create an uninitialized, empty object
             var instance = FormatterServices.GetUninitializedObject(type);
 
