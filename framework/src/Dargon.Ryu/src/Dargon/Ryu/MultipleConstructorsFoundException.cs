@@ -1,4 +1,5 @@
 using System;
+using Dargon.Ryu.Attributes;
 
 namespace Dargon.Ryu {
    public class MultipleConstructorsFoundException : Exception {

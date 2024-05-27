@@ -1,6 +1,6 @@
 using System;
 
-namespace Dargon.Ryu {
+namespace Dargon.Ryu.Attributes {
    [AttributeUsage(AttributeTargets.Constructor)]
    public class RyuConstructorAttribute : Attribute { }
 

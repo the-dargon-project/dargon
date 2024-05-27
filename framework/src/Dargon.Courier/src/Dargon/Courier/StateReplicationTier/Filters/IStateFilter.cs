@@ -3,7 +3,10 @@ using Dargon.Commons;
 using Dargon.Courier.StateReplicationTier.States;
 
 namespace Dargon.Courier.StateReplicationTier.Filters {
-   public struct StateFilterArg<TState, TDelta> where TState : class, IState where TDelta : class, IStateDelta {
+   public struct StateFilterArg<TState, TSnapshot, TDelta>
+      where TState : class, IState
+      where TSnapshot : IStateSnapshot
+      where TDelta : class, IStateDelta {
       public TState Baseline { get; init; }
       public TState Replica { get; init; }
       public TDelta Delta { get; set; }
@@ -14,8 +17,8 @@ namespace Dargon.Courier.StateReplicationTier.Filters {
       where TSnapshot : IStateSnapshot
       where TDelta : class, IStateDelta {
       void Reconcile(TState baseline, TState replica);
-      void PreFilterDelta(ref StateFilterArg<TState, TDelta> args);
-      void PostFilterDelta(ref StateFilterArg<TState, TDelta> args);
+      void PreFilterDelta(ref StateFilterArg<TState, TSnapshot, TDelta> args);
+      void PostFilterDelta(ref StateFilterArg<TState, TSnapshot, TDelta> args);
    }
 
    public interface IStateFilterPipeline { }
@@ -50,7 +53,7 @@ namespace Dargon.Courier.StateReplicationTier.Filters {
          using var srcGuard = src.LockStateForRead();
          using var dstGuard = dst.LockStateForWrite();
          var originalDelta = e.Delta;
-         var args = new StateFilterArg<TState, TDelta> {
+         var args = new StateFilterArg<TState, TSnapshot, TDelta> {
             Baseline = srcGuard.State,
             Replica = dstGuard.State,
             Delta = originalDelta,

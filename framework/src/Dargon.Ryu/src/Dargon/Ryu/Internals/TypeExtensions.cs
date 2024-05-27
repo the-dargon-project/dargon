@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using Dargon.Ryu.Attributes;
 
 namespace Dargon.Ryu.Internals {
    public static class TypeExtensions {

@@ -9,14 +9,17 @@ using Dargon.Courier.PubSubTier.Publishers;
 using Dargon.Courier.PubSubTier.Subscribers;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Server;
+using Dargon.Courier.StateReplicationTier.Filters;
 using Dargon.Courier.StateReplicationTier.Predictions;
 using Dargon.Courier.StateReplicationTier.Primaries;
 using Dargon.Courier.StateReplicationTier.Replicas;
 using Dargon.Courier.StateReplicationTier.States;
 using Dargon.Ryu;
+using Dargon.Ryu.Attributes;
 
 namespace Dargon.Courier.StateReplicationTier.Utils;
 
+[RyuDoNotAutoActivate]
 public class ViewFactoryIocDependencies {
    public CourierFacade Courier { get; set; }
 }
@@ -85,6 +88,12 @@ public class StateBase<TState, TSnapshot, TDelta, TOperations> : /* ThreadLocalC
          var predictionView = CreateStateView(ops.CreateState());
          var predictor = new StatePredictor<TState, TSnapshot, TDelta>(baseView, predictionView);
          return new Predictor(predictionView, predictor);
+      }
+
+      public StateFilterPipeline CreateFilterPipeline(StateView src, StateView dst, IStateFilter filter) {
+         var res = new StateFilterPipeline(src, dst, filter);
+         res.Initialize();
+         return res;
       }
    }
 
@@ -162,4 +171,9 @@ public class StateBase<TState, TSnapshot, TDelta, TOperations> : /* ThreadLocalC
          return predictionView.LockStateForReadAsync();
       }
    }
+
+   public interface IStateFilter : IStateFilter<TState, TSnapshot, TDelta>;
+
+   public class StateFilterPipeline(StateView src, StateView dst, IStateFilter filter)
+      : StateFilterPipeline<TState, TSnapshot, TDelta>(src, dst, filter);
 }
