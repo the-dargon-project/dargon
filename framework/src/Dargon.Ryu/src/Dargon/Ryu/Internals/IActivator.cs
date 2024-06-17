@@ -6,7 +6,7 @@ using Dargon.Ryu.Modules;
 
 namespace Dargon.Ryu.Internals {
    public interface IActivator {
-      object ActivateRyuType(IRyuContainer ryu, RyuType type);
-      object ActivateDefaultType(IRyuContainer ryu, Type type);
+      Task<object> ActivateRyuTypeAsync(IRyuContainerInternal ryu, RyuType type, ActivationKind activationKind);
+      Task<object> ActivateDefaultTypeAsync(IRyuContainerInternal ryu, Type type, ActivationKind activationKind);
    }
 }

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dargon.Commons.AsyncAwait;
 using Dargon.Commons.Collections;
@@ -15,11 +13,12 @@ using Dargon.Courier.RoutingTier;
 using Dargon.Courier.ServiceTier.Client;
 using Dargon.Courier.ServiceTier.Server;
 using Dargon.Courier.TransportTier;
-using Dargon.Courier.TransportTier.Tcp;
 using Dargon.Ryu;
+using Dargon.Ryu.Attributes;
 using Dargon.Vox2;
 
 namespace Dargon.Courier {
+   [RyuDoNotAutoActivate]
    public class CourierFacade {
       private readonly ConcurrentSet<ITransport> transports;
       private readonly IRyuContainer container;

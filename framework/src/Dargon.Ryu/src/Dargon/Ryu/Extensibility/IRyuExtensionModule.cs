@@ -12,7 +12,7 @@ namespace Dargon.Ryu.Extensibility {
       void PreConstruction(IRyuExtensionArguments args);
       void PostConstruction(IRyuExtensionArguments args);
 
-      void PreInitialization(IRyuExtensionArguments args);
-      void PostInitialization(IRyuExtensionArguments args);
+      //void PreInitialization(IRyuExtensionArguments args);
+      //void PostInitialization(IRyuExtensionArguments args);
    }
 }

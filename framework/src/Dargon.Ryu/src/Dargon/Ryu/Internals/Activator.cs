@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 using Dargon.Commons.Exceptions;
 using Dargon.Ryu.Attributes;
 using Dargon.Ryu.Logging;
@@ -18,13 +19,20 @@ namespace Dargon.Ryu.Internals {
          this.logger = logger;
       }
 
-      public object ActivateRyuType(IRyuContainer ryu, RyuType type) {
-         var inst = type.Activator?.Invoke(ryu) ?? ActivateDefaultType(ryu, type.Type);
+      public async Task<object> ActivateRyuTypeAsync(IRyuContainerInternal ryu, RyuType type, ActivationKind activationKind) {
+         object inst;
+         if (type.ActivatorAsync is {} activatorAsync) {
+            inst = await activatorAsync(ryu.__A);
+         } else if (type.ActivatorSync is { } activatorSync) {
+            inst = activatorSync(ryu.__A);
+         } else {
+            inst = await ActivateDefaultTypeAsync(ryu, type.Type, activationKind);
+         }
          type.HandleOnActivated(inst);
          return inst;
       }
 
-      public object ActivateDefaultType(IRyuContainer ryu, Type type) {
+      public async Task<object> ActivateDefaultTypeAsync(IRyuContainerInternal ryu, Type type, ActivationKind activationKind) {
          try {
             // throw if we find a DoNotAutoActivate attribute
             if (type.HasAttribute<RyuDoNotAutoActivate>()) {
@@ -43,7 +51,7 @@ namespace Dargon.Ryu.Internals {
                                                   .Fields
                                                   .FilterTo(f => f.HasAttribute<DependencyAttribute>());
 
-            var fieldsToInject = new List<(FieldInfo field, object val)>();
+            var fieldsToInject = new List<(FieldInfo field, Task<object> valTask)>();
             if (type.HasAttribute<InjectRequiredFields>()) {
                foreach (var field in dependencyFields) {
                   if (!field.IsInitOnly) {
@@ -52,7 +60,8 @@ namespace Dargon.Ryu.Internals {
                      throw new BadInputException($"[Dependency] Field {field.Name} of {type.FullName} is of a value type, which cannot be injected.");
                   }
 
-                  fieldsToInject.Add((field, ryu.GetOrActivate(field.FieldType)));
+                  var fvTask = ryu.GetOrActivateAsync(field.FieldType, ActivationKind.DefaultActivatorDependency);
+                  fieldsToInject.Add((field, fvTask));
                }
             } else if (dependencyFields.Length > 0) {
                throw new RyuInjectRequiredFieldsAttributeNotSpecifiedException(type);
@@ -73,21 +82,22 @@ namespace Dargon.Ryu.Internals {
             // No `= null` allowed.
             //
             // The other big caveat: You cannot inject an IRyuFacade like this.
-            foreach (var (field, val) in fieldsToInject) {
-               field.SetValue(instance, val);
+            foreach (var (field, valTask) in fieldsToInject) {
+               field.SetValue(instance, await valTask);
             }
 
             // invoke constructor after injecting fields
-            var arguments = parameters.Map(p => ryu.GetOrActivate(p.ParameterType));
+            var arguments = await parameters.MapParallelAsync(p => ryu.GetOrActivateAsync(p.ParameterType, activationKind));
             ctor.Invoke(instance, arguments);
 
             // inject fields after invoking ctor
-            foreach (var (field, val) in fieldsToInject) {
+            foreach (var (field, valTask) in fieldsToInject) {
                var readResult = field.GetValue(instance);
-               if (readResult != val) {
-                  logger.FieldModifiedByConstructorAfterInjection(field, val, readResult);
+               var valResult = await valTask;
+               if (readResult != valResult) {
+                  logger.FieldModifiedByConstructorAfterInjection(field, valResult, readResult);
                }
-               field.SetValue(instance, val);
+               field.SetValue(instance, valResult);
             }
 
             return instance;

@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Dargon.Ryu.Internals {
    public interface IBootstrapper {
       /// <summary>
       /// Initializes the container with the provided Ryu Configuration
       /// </summary>
-      IRyuContainer Bootstrap(RyuConfiguration configuration);
+      Task<IRyuContainer> BootstrapAsync(RyuConfiguration configuration);
    }
 
    public class Bootstrapper : IBootstrapper {
@@ -22,12 +23,13 @@ namespace Dargon.Ryu.Internals {
          this.moduleImporter = moduleImporter;
       }
 
-      public IRyuContainer Bootstrap(RyuConfiguration configuration) {
+      public async Task<IRyuContainer> BootstrapAsync(RyuConfiguration configuration) {
          var assemblies = configuration.EnableAlwaysLoadModuleSearch ? assemblyLoader.LoadAssembliesFromNeighboringDirectories() : new HashSet<Assembly>();
          var modules = moduleLoader.LoadModules(configuration, assemblies);
          var container = new RyuContainer(configuration.ParentContainerOpt, activator);
+         container.Name = configuration.Name ?? container.Name;
          container.Initialize();
-         moduleImporter.ImportModules(container, modules);
+         await moduleImporter.ImportModulesAsync(container, modules);
          return container;
       }
    }

@@ -72,9 +72,5 @@ namespace Dargon.Vox.Ryu {
             throw new NotImplementedException("Vox doesn't support ITypeSerializer yet.");
          }
       }
-
-      public void PreInitialization(IRyuExtensionArguments args) { }
-
-      public void PostInitialization(IRyuExtensionArguments args) { }
    }
 }

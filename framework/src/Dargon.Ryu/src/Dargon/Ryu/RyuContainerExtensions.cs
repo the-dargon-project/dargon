@@ -1,29 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Dargon.Ryu.Modules;
 
 namespace Dargon.Ryu {
    public static class RyuContainerExtensions {
-      public static T GetOrActivate<T>(this IRyuContainer container) {
-         return (T)container.GetOrActivate(typeof(T));
-      }
+      [Obsolete]
+      public static T GetOrActivate<T>(this IRyuContainer container) => (T)container.GetOrActivate(typeof(T));
+      public static async Task<T> GetOrActivateAsync<T>(this IRyuContainer container) => (T)await container.GetOrActivateAsync(typeof(T));
+      public static async Task<T> GetOrActivateAsync<T>(this IRyuContainerForUserActivator container) => (T)await container.GetOrActivateAsync(typeof(T));
 
-      public static T Create<T>(this IRyuContainer container) {
-         return (T)container.ActivateUntracked(typeof(T));
-      }
+      [Obsolete]
+      public static T ActivateUntracked<T>(this IRyuContainer container) => (T)container.ActivateUntracked(typeof(T));
 
+      [Obsolete]
       public static T GetOrDefault<T>(this IRyuContainer container) {
          T result;
          container.TryGet<T>(out result);
          return result;
       }
 
-      public static T GetOrThrow<T>(this IRyuContainer container) {
-         return (T)container.GetOrThrow(typeof(T));
-      }
+      [Obsolete]
+      public static T GetOrThrow<T>(this IRyuContainer container) => (T)container.GetOrThrow(typeof(T));
 
+      [Obsolete]
       public static object GetOrThrow(this IRyuContainer container, Type type) {
          object result;
          if (!container.TryGet(type, out result)) {
@@ -32,6 +34,27 @@ namespace Dargon.Ryu {
          return result;
       }
 
+      public static async Task<T> GetOrThrowAsync<T>(this IRyuContainer container) => (T)await container.GetOrThrowAsync(typeof(T));
+
+      public static async Task<object> GetOrThrowAsync(this IRyuContainer container, Type type) {
+         var tgv = await container.TryGetAsync(type);
+         if (!tgv.Exists) {
+            throw new RyuGetException(type, null);
+         }
+         return tgv.Value;
+      }
+
+      public static async Task<T> GetOrThrowAsync<T>(this IRyuContainerForUserActivator container) => (T)await container.GetOrThrowAsync(typeof(T));
+
+      public static async Task<object> GetOrThrowAsync(this IRyuContainerForUserActivator container, Type type) {
+         var tgv = await container.TryGetAsync(type);
+         if (!tgv.Exists) {
+            throw new RyuGetException(type, null);
+         }
+         return tgv.Value;
+      }
+
+      [Obsolete]
       public static bool TryGet<T>(this IRyuContainer container, out T value) {
          object output;
          var result = container.TryGet(typeof(T), out output);
@@ -39,6 +62,7 @@ namespace Dargon.Ryu {
          return result;
       }
 
+      [Obsolete]
       public static IEnumerable<T> Find<T>(this IRyuContainer container) {
          return container.Find(typeof(T)).Cast<T>();
       }
@@ -92,27 +116,28 @@ namespace Dargon.Ryu {
          container.SetMultiple(i6, i7, i8, i9, i10);
       }
 
-      public static IRyuContainer Create(this RyuFactory factory, RyuConfiguration configuration, IRyuModule[] modules) {
+      public static async Task<IRyuContainer> CreateAsync(this RyuFactory factory, RyuConfiguration configuration, IRyuModule[] modules) {
          var c = factory.Create(configuration);
-         c.ImportModules(modules);
+         await c.ImportModulesAsync(modules);
          return c;
       }
 
-      public static IRyuContainer Create(this RyuFactory factory, IRyuModule[] modules) {
-         var c = factory.Create();
-         c.ImportModules(modules);
+      public static async Task<IRyuContainer> CreateAsync(this RyuFactory factory, string name, IRyuModule[] modules) {
+         var c = factory.Create(name);
+         await c.ImportModulesAsync(modules);
          return c;
       }
 
-      public static IRyuContainer CreateChildContainer(this IRyuContainer container, IRyuModule[] modules) {
-         var c = container.CreateChildContainer();
-         c.ImportModules(modules);
+      public static async Task<IRyuContainer> CreateChildContainerAsync(this IRyuContainer container, string name, IRyuModule[] modules = null) {
+         var c = container.CreateChildContainer(name);
+         c.Name = name;
+         await c.ImportModulesAsync(modules ?? []);
          return c;
       }
 
-      public static void ImportModules(this IRyuContainer container, IRyuModule[] modules) {
+      public static async Task ImportModulesAsync(this IRyuContainer container, IRyuModule[] modules) {
          var moduleImporter = container.GetOrThrow<IRyuFacade>().ModuleImporter;
-         moduleImporter.ImportModules((RyuContainer)container, modules);
+         await moduleImporter.ImportModulesAsync((RyuContainer)container, modules);
       }
    }
 }

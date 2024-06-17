@@ -25,7 +25,7 @@ namespace Dargon.Ryu {
       public object ActivateUntracked(Type type) => container.ActivateUntracked(type);
       public IEnumerable<object> Find(Type queryType) => container.Find(queryType);
       public void Set(Type type, object instance) => container.Set(type, instance);
-      public IRyuContainer CreateChildContainer() => container.CreateChildContainer();
+      public IRyuContainer CreateChildContainer(string name) => container.CreateChildContainer(name);
 
       public IActivator Activator => activator;
 

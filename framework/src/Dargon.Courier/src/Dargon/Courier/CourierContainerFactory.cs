@@ -84,11 +84,11 @@ namespace Dargon.Courier {
             gatekeeper,
             transportFactories,
             forceId);
-         return courierContainer.GetOrThrow<CourierFacade>();
+         return await courierContainer.GetOrThrowAsync<CourierFacade>();
       }
 
       public static CourierBuilder Create() {
-         return Create(new RyuFactory().Create());
+         return Create(new RyuFactory().Create("Root-Level Courier Container"));
       }
 
       public static CourierBuilder Create(IRyuContainer container) {
@@ -134,7 +134,7 @@ namespace Dargon.Courier {
          synchronizationContexts.AssertIsNotNull();
          gatekeeper.AssertIsNotNull();
 
-         var container = root.CreateChildContainer();
+         var container = root.CreateChildContainer($"Courier Container ({nameof(CourierContainerFactory)})");
          container.Set(synchronizationContexts);
 
          var proxyGenerator = container.GetOrDefault<ProxyGenerator>() ?? new ProxyGenerator();
@@ -263,7 +263,7 @@ namespace Dargon.Courier {
       }
 
       private void OptionalSingleton<T>(Func<CourierFacade, T> cb) {
-         Optional.Singleton(ryu => cb(ryu.GetOrActivate<CourierFacade>()));
+         Optional.Singleton<T>(async ryu => cb(await ryu.GetOrActivateAsync<CourierFacade>()));
       }
    }
 }

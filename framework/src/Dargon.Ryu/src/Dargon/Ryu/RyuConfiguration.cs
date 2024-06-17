@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 namespace Dargon.Ryu {
    public class RyuConfiguration {
+      public required string Name { get; set; }
+
       public bool EnableAlwaysLoadModuleSearch { get; set; }
 
       public IRyuContainer ParentContainerOpt { get; set; }
