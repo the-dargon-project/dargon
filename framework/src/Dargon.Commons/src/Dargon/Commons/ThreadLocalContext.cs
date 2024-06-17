@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using Dargon.Commons.AsyncPrimitives;
 using Dargon.Commons.Exceptions;
+using Dargon.Commons.Utilities;
 
 namespace Dargon.Commons {
    public class ThreadLocalContext<TContext> where TContext : ThreadLocalContext<TContext> {
@@ -39,10 +41,6 @@ namespace Dargon.Commons {
       private static class Store<TUnique> where TUnique : struct {
          [ThreadStatic] public static State_t s_tlsState;
          public abstract class s_alsState : GlobalAsyncLocal2_t<Box<State_t>, DargonAls2Namespace_t, ALS2_t>;
-
-         public class Box<T> {
-            public T Value;
-         }
 
          public static bool IsInitialized => s_tlsState.IsInitialized || (s_alsState.Value?.Value.IsInitialized ?? false);
 
@@ -83,8 +81,8 @@ namespace Dargon.Commons {
 
       private static bool IsStateInitialized => Store<StructOf<TContext>>.IsInitialized;
 
-      private static ref Store<StructOf<TContext>>.State_t GetState(bool? preferTlsElseAls = null) => ref Store<StructOf<TContext>>.GetStateRef(preferTlsElseAls); 
-      
+      private static ref Store<StructOf<TContext>>.State_t GetState(bool? preferTlsElseAls = null) => ref Store<StructOf<TContext>>.GetStateRef(preferTlsElseAls);
+
       private static ref Store<StructOf<TContext>>.State_t GetAlreadyInitializedState() {
          ref var state = ref Store<StructOf<TContext>>.GetStateRef(null);
          state.IsInitialized.AssertIsTrue($"Invoke {nameof(InitializeThreadLocalState)} or {nameof(InitializeAsyncLocalState)} first!");
@@ -101,7 +99,7 @@ namespace Dargon.Commons {
       }
 
       public static void InitializeThreadLocalState() => InitializeStateInternal(true);
-      
+
       public static void InitializeAsyncLocalState() => InitializeStateInternal(false);
 
       private static void InitializeStateInternal(bool preferThreadElseAsyncLocalState) {
@@ -117,7 +115,7 @@ namespace Dargon.Commons {
       }
 
       public static TContext CurrentContext => GetCurrentContext();
-      
+
       private static TContext GetCurrentContext() {
          AssertThreadOrAsyncLocalStateIsInitialized();
          return GetState().ContextStack.Peek();
@@ -129,7 +127,7 @@ namespace Dargon.Commons {
 
       private static void HighLevelInitializeStateWithContext(TContext ctx, bool preferThreadElseAsyncLocalContext, bool useImplicitContext) {
          ref var state = ref GetState(preferThreadElseAsyncLocalContext);
-         
+
          if (state.IsInitialized) {
             throw new InvalidStateException($"{nameof(UseImplicitThreadLocalContext)} must be invoked prior to the first context push. Prior init at: ${state.InitializeStateStackTrace}");
          }
