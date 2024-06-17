@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using Dargon.Commons.AsyncAwait;
 
 namespace Dargon.Commons.AsyncPrimitives {
    public class SingleThreadedSynchronizationContext : SynchronizationContext {
@@ -114,6 +115,31 @@ namespace Dargon.Commons.AsyncPrimitives {
          public object State;
          public AutoResetEvent WaitEvent;
          public bool IsInvokeImmediatelyContext => WaitEvent != null;
+      }
+
+      public static SingleThreadedSynchronizationContext Create() => new();
+
+      public static void CreateActivateAndRunTaskToCompletion(Func<SingleThreadedSynchronizationContext, Task> func) => CreateActivateAndRunTaskToCompletionInternal(Create, func);
+
+      protected static void CreateActivateAndRunTaskToCompletionInternal<TSelf>(Func<TSelf> create, Func<TSelf, Task> func) where TSelf : SingleThreadedSynchronizationContext {
+         var mainSynchronizationContext = create();
+         
+         using var _ = mainSynchronizationContext.ActivateTemporarily();
+         var task = Task.Run(async () => {
+            await mainSynchronizationContext.YieldToAsync();
+            await func(mainSynchronizationContext);
+         });
+
+         while (!task.IsCompleted) {
+            mainSynchronizationContext.ProcessTaskQueueTilEmpty();
+            if (!task.IsCompleted) {
+               mainSynchronizationContext.WaitForAvailableWork();
+            }
+         }
+
+         if (task.IsFaulted) {
+            Console.WriteLine(nameof(SingleThreadedSynchronizationContext) + ": " + task.Exception);
+         }
       }
    }
 }
