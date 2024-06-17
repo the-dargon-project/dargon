@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Dargon.Commons.Collections;
 using Dargon.Commons.Exceptions;
 
@@ -286,6 +287,30 @@ namespace Dargon.Commons {
             result[i] = projector(arr[i]);
          }
          return result;
+      }
+
+      public static async Task<U[]> MapSequentialAsync<T, U>(this IReadOnlyList<T> arr, Func<T, Task<U>> projector) {
+         var result = new U[arr.Count];
+         for (var i = 0; i < result.Length; i++) {
+            result[i] = await projector(arr[i]);
+         }
+         return result;
+      }
+
+      public static async Task<U[]> MapSequentialAsync<T, U>(this IReadOnlyList<T> arr, Func<T, int, Task<U>> projector) {
+         var result = new U[arr.Count];
+         for (var i = 0; i < result.Length; i++) {
+            result[i] = await projector(arr[i], i);
+         }
+         return result;
+      }
+
+      public static async Task<U[]> MapParallelAsync<T, U>(this IReadOnlyList<T> arr, Func<T, Task<U>> projector) {
+         return await Task.WhenAll(arr.Map(projector));
+      }
+
+      public static async Task<U[]> MapParallelAsync<T, U>(this IReadOnlyList<T> arr, Func<T, int, Task<U>> projector) {
+         return await Task.WhenAll(arr.Map(projector));
       }
 
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
