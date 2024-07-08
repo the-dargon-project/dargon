@@ -125,9 +125,29 @@ public class StateView<TState, TSnapshot, TDelta, TOperations> : IStateView<TSta
       return new(snapshot, replicationVersion, localVersion);
    }
 
-   public SyncStateGuard<TState> LockStateForRead() => new(arwl.CreateReaderGuard(), getState);
-   public SyncStateGuard<TState> LockStateForWrite() => new(arwl.CreateWriterGuard(), getState);
-   public Task<AsyncStateGuard<TState>> LockStateForReadAsync() => WrapAsyncGuard(arwl.CreateReaderGuardAsync());
-   public Task<AsyncStateGuard<TState>> LockStateForWriteAsync() => WrapAsyncGuard(arwl.CreateWriterGuardAsync());
+   public SyncStateGuard<TState> LockStateForRead() => LockStateForRead(out _);
+   public SyncStateGuard<TState> LockStateForRead(out TState state) {
+      state = this.state;
+      return new SyncStateGuard<TState>(arwl.CreateReaderGuard(), getState);
+   }
+
+   public SyncStateGuard<TState> LockStateForWrite() => LockStateForWrite(out _);
+   public SyncStateGuard<TState> LockStateForWrite(out TState state) {
+      state = this.state;
+      return new SyncStateGuard<TState>(arwl.CreateWriterGuard(), getState);
+   }
+
+   public Task<AsyncStateGuard<TState>> LockStateForReadAsync() => LockStateForReadAsync(out _);
+   public Task<AsyncStateGuard<TState>> LockStateForReadAsync(out TState state) {
+      state = this.state;
+      return WrapAsyncGuard(arwl.CreateReaderGuardAsync());
+   }
+
+   public Task<AsyncStateGuard<TState>> LockStateForWriteAsync() => LockStateForWriteAsync(out _);
+   public Task<AsyncStateGuard<TState>> LockStateForWriteAsync(out TState state) {
+      state = this.state;
+      return WrapAsyncGuard(arwl.CreateWriterGuardAsync());
+   }
+
    private async Task<AsyncStateGuard<TState>> WrapAsyncGuard(Task<AsyncReaderWriterLock.AsyncGuard> t) => new(await t, getState);
 }

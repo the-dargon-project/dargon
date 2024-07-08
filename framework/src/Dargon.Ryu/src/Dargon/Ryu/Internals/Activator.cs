@@ -38,8 +38,11 @@ namespace Dargon.Ryu.Internals {
             if (type.HasAttribute<RyuDoNotAutoActivate>()) {
                throw new InvalidOperationException($"The given type has a {nameof(RyuDoNotAutoActivate)} attribute, so it cannot be auto-activated.");
             }
-            
+
             // create an uninitialized, empty object
+            // RuntimeHelpers.GetUninitializedObject also exists on .NET Core, but
+            // FormatterServices works for both framework & core (and proxies to the
+            // same method on .NET Core)
             var instance = FormatterServices.GetUninitializedObject(type);
 
             // find the ryu constructor

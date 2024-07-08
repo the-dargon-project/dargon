@@ -4,20 +4,21 @@ using Dargon.Commons.Collections;
 using Dargon.Courier.StateReplicationTier.Primaries;
 using Dargon.Courier.StateReplicationTier.States;
 
-namespace Dargon.Courier.StateReplicationTier.Predictions {
-   public class StatePredictor<TState, TSnapshot, TDelta> where TState : class, IState where TSnapshot : IStateSnapshot where TDelta : class, IStateDelta {
+namespace Dargon.Courier.StateReplicationTier.Predictions
+{
+    public class StatePredictorCore<TState, TSnapshot, TDelta> where TState : class, IState where TSnapshot : IStateSnapshot where TDelta : class, IStateDelta {
       private const int kInvalidatedBaseStateViewVersion = int.MinValue;
       
       private readonly IStateView<TState, TSnapshot, TDelta> baseStateView;
       private readonly IStateView<TState, TSnapshot, TDelta> predictionStateView;
 
-      private ExposedArrayList<IPredictionDeltaSource<TState, TDelta>> predictions = new();
-      private ExposedArrayList<IPredictionDeltaSource<TState, TDelta>> preallocatedPredictionsAlternateList = new();
+      private ExposedArrayList<IProposal<TState, TDelta>> predictions = new();
+      private ExposedArrayList<IProposal<TState, TDelta>> preallocatedPredictionsAlternateList = new();
       private int lastBaseStateViewVersion = kInvalidatedBaseStateViewVersion;
 
       private ReplicationVersion replicationVersion;
 
-      public StatePredictor(IStateView<TState, TSnapshot, TDelta> baseStateView, IStateView<TState, TSnapshot, TDelta> predictionStateView) {
+      public StatePredictorCore(IStateView<TState, TSnapshot, TDelta> baseStateView, IStateView<TState, TSnapshot, TDelta> predictionStateView) {
          this.baseStateView = baseStateView;
          this.predictionStateView = predictionStateView;
       }
@@ -47,19 +48,19 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
                predictionStateView.TryApplyDelta(delta).AssertIsTrue();
             }
 
-            var hasDropFlag = flags.FastHasAnyFlag(PredictionResultFlags.__InternalAnyDropFlagMask);
+            var hasDropFlag = flags.FastHasAnyFlag(Result.__InternalAnyDropFlagMask);
             if (hasDropFlag && newPredictionsListBuilder == null) {
                newPredictionsListBuilder = preallocatedPredictionsAlternateList;
                newPredictionsListBuilder.Count.AssertEquals(0);
                newPredictionsListBuilder.AddRange(predictions.store, 0, i);
             }
 
-            if (newPredictionsListBuilder != null && !flags.FastHasFlag(PredictionResultFlags.DropSelf)) {
+            if (newPredictionsListBuilder != null && !flags.FastHasFlag(Result.DropSelf)) {
                newPredictionsListBuilder.Add(prediction);
             }
 
-            if (flags.FastHasFlag(PredictionResultFlags.IgnoreSuccessors)) {
-               if (!flags.FastHasFlag(PredictionResultFlags.DropSuccessors)) {
+            if (flags.FastHasFlag(Result.IgnoreSuccessors)) {
+               if (!flags.FastHasFlag(Result.DropSuccessors)) {
                   newPredictionsListBuilder!.AddRange(predictions.store.AsSpan(i + 1));
                }
                break;
@@ -74,12 +75,12 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
          lastBaseStateViewVersion = baseStateView.Version;
       }
 
-      public bool AddPrediction(IPredictionDeltaSource<TState, TDelta> prediction) {
+      public bool AddPrediction(IProposal<TState, TDelta> prediction) {
          using var psvGuard = ProcessUpdatesAndKeepWriterLock();
 
          var predictedState = psvGuard.State;
          var res = prediction.TryBuildDelta(predictedState, out var delta);
-         if ((res & PredictionResultFlags.DropSelf) != 0) {
+         if ((res & Result.DropSelf) != 0) {
             // prediction immediately dropped
             return false;
          }
@@ -91,7 +92,7 @@ namespace Dargon.Courier.StateReplicationTier.Predictions {
          return true;
       }
 
-      public bool RemovePrediction(IPredictionDeltaSource<TState, TDelta> prediction) {
+      public bool RemovePrediction(IProposal<TState, TDelta> prediction) {
          using var psvGuard = predictionStateView.LockStateForWrite();
 
          var success = predictions.Remove(prediction);

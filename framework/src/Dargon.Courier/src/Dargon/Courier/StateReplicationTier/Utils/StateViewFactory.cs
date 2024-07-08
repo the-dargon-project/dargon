@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.AsyncAwait;
@@ -13,8 +12,8 @@ using Dargon.Courier.StateReplicationTier.Filters;
 using Dargon.Courier.StateReplicationTier.Predictions;
 using Dargon.Courier.StateReplicationTier.Primaries;
 using Dargon.Courier.StateReplicationTier.Replicas;
+using Dargon.Courier.StateReplicationTier.Shared;
 using Dargon.Courier.StateReplicationTier.States;
-using Dargon.Ryu;
 using Dargon.Ryu.Attributes;
 
 namespace Dargon.Courier.StateReplicationTier.Utils;
@@ -24,26 +23,31 @@ public class ViewFactoryIocDependencies {
    public CourierFacade Courier { get; set; }
 }
 
-public class StateBase<TState, TSnapshot, TDelta, TOperations> : /* ThreadLocalContext<TState>, */ IState
+/// <summary>
+/// StateBase refers to state, snapshot, and delta but not a concrete Operations, because
+/// StateBase is intended to be in the Schema namespace which doesn't necessarily have access to game logic.
+/// </summary>
+public class StateBase<TState, TSnapshot, TDelta> : /* ThreadLocalContext<TState>, */ IState
    where TState : /*ThreadLocalContext<TState>, */ class, IState
    where TSnapshot : IStateSnapshot
-   where TDelta : class, IStateDelta
-   where TOperations : IStateDeltaOperations<TState, TSnapshot, TDelta> {
+   where TDelta : class, IStateDelta {
+   
+   public interface IOperations : IStateDeltaOperations<TState, TSnapshot, TDelta>;
 
    public class ViewFactory {
       private readonly CourierSynchronizationContexts courierSynchronizationContexts;
-      private readonly TOperations ops;
+      private readonly IOperations ops;
       private readonly LocalServiceRegistry localServiceRegistry;
       private readonly RemoteServiceProxyContainer remoteServiceProxyContainer;
       private readonly Publisher publisher;
       private readonly Subscriber subscriber;
 
       [RyuConstructor]
-      public ViewFactory(ViewFactoryIocDependencies deps, TOperations ops) : this(deps.Courier, ops) { }
+      public ViewFactory(ViewFactoryIocDependencies deps, IOperations ops) : this(deps.Courier, ops) { }
 
-      public ViewFactory(CourierFacade courier, TOperations ops) : this(courier.SynchronizationContexts, ops, courier.LocalServiceRegistry, courier.RemoteServiceProxyContainer, courier.Publisher, courier.Subscriber) { }
+      public ViewFactory(CourierFacade courier, IOperations ops) : this(courier.SynchronizationContexts, ops, courier.LocalServiceRegistry, courier.RemoteServiceProxyContainer, courier.Publisher, courier.Subscriber) { }
 
-      public ViewFactory(CourierSynchronizationContexts courierSynchronizationContexts, TOperations ops, LocalServiceRegistry localServiceRegistry, RemoteServiceProxyContainer remoteServiceProxyContainer, Publisher publisher, Subscriber subscriber) {
+      public ViewFactory(CourierSynchronizationContexts courierSynchronizationContexts, IOperations ops, LocalServiceRegistry localServiceRegistry, RemoteServiceProxyContainer remoteServiceProxyContainer, Publisher publisher, Subscriber subscriber) {
          this.courierSynchronizationContexts = courierSynchronizationContexts;
          this.ops = ops;
          this.localServiceRegistry = localServiceRegistry;
@@ -86,7 +90,7 @@ public class StateBase<TState, TSnapshot, TDelta, TOperations> : /* ThreadLocalC
 
       public Predictor CreatePredictor(StateView baseView) {
          var predictionView = CreateStateView(ops.CreateState());
-         var predictor = new StatePredictor<TState, TSnapshot, TDelta>(baseView, predictionView);
+         var predictor = new StatePredictorCore<TState, TSnapshot, TDelta>(baseView, predictionView);
          return new Predictor(predictionView, predictor);
       }
 
@@ -97,12 +101,12 @@ public class StateBase<TState, TSnapshot, TDelta, TOperations> : /* ThreadLocalC
       }
    }
 
-   public class StateView : StateView<TState, TSnapshot, TDelta, TOperations> {
-      public StateView(TState state, TOperations ops) : base(state, ops) { }
+   public class StateView : StateView<TState, TSnapshot, TDelta, IOperations> {
+      public StateView(TState state, IOperations ops) : base(state, ops) { }
    }
 
    public class PrimaryStateView : StateView {
-      public PrimaryStateView(TState state, TOperations ops) : base(state, ops) { }
+      public PrimaryStateView(TState state, IOperations ops) : base(state, ops) { }
    }
 
    public class PublisherContext : IDisposable {
@@ -111,7 +115,7 @@ public class StateBase<TState, TSnapshot, TDelta, TOperations> : /* ThreadLocalC
       private readonly LocalServiceRegistry localServiceRegistry;
 
       private readonly StatePublisher<TState, TSnapshot, TDelta> statePublisher;
-      private readonly StateSnapshotProviderService<TState, TSnapshot, TDelta, TOperations> snapshotProviderService;
+      private readonly StateSnapshotProviderService<TState, TSnapshot, TDelta, IOperations> snapshotProviderService;
 
       public PublisherContext(StateView stateView, CourierSynchronizationContexts synchronizationContexts, Publisher publisher, Guid topicId, LocalServiceRegistry localServiceRegistry) {
          this.topicId = topicId;
@@ -150,25 +154,37 @@ public class StateBase<TState, TSnapshot, TDelta, TOperations> : /* ThreadLocalC
       }
    }
 
-   public class Predictor(StateView predictionView, StatePredictor<TState, TSnapshot, TDelta> predictor) {
-      public void ProcessUpdates() => predictor.ProcessUpdates();
+   public class Predictor(StateView view, StatePredictorCore<TState, TSnapshot, TDelta> inner) {
+      public StateView View => view;
 
-      public SyncStateGuard<TState> LockStateForRead() {
-         return predictionView.LockStateForRead();
-      }
+      public void ProcessUpdates() => inner.ProcessUpdates();
 
-      public Task<AsyncStateGuard<TState>> LockStateForReadAsync() {
-         return predictionView.LockStateForReadAsync();
-      }
+      // public SyncStateGuard<TState> LockStateForRead() {
+      //    return view.LockStateForRead();
+      // }
 
-      public SyncStateGuard<TState> ProcessUpdatesAndLockStateForRead() {
-         predictor.ProcessUpdates();
-         return predictionView.LockStateForRead();
-      }
+      public Task<AsyncStateGuard<TState>> LockStateForReadAsync() => view.LockStateForReadAsync();
+
+      //public Task<AsyncStateGuard<TState>> LockStateForReadAsync() => view.LockStateForWriteAsync();
+
+      // public SyncStateGuard<TState> ProcessUpdatesAndLockStateForRead() {
+      //    inner.ProcessUpdates();
+      //    return view.LockStateForRead();
+      // }
 
       public Task<AsyncStateGuard<TState>> ProcessUpdatesAndLockStateForReadAsync() {
-         predictor.ProcessUpdates();
-         return predictionView.LockStateForReadAsync();
+         inner.ProcessUpdates();
+         return view.LockStateForReadAsync();
+      }
+
+      public async Task<bool> AddPredictionAsync(IProposal<TState, TDelta> prediction) {
+         await using var _ = await view.LockStateForWriteAsync();
+         return inner.AddPrediction(prediction);
+      }
+
+      public async Task<bool> RemovePredictionAsync(IProposal<TState, TDelta> prediction) {
+         await using var _ = await view.LockStateForWriteAsync();
+         return inner.RemovePrediction(prediction);
       }
    }
 
@@ -176,4 +192,43 @@ public class StateBase<TState, TSnapshot, TDelta, TOperations> : /* ThreadLocalC
 
    public class StateFilterPipeline(StateView src, StateView dst, IStateFilter filter)
       : StateFilterPipeline<TState, TSnapshot, TDelta>(src, dst, filter);
+
+   public interface IProposal : IProposal<TState, TDelta>;
+
+   public interface IProposer : IProposer<TState, TSnapshot, TDelta, IProposal>;
+
+   public class ProposalIngest : IProposer {
+      private readonly PrimaryStateView primary;
+
+      private readonly Predictor predictor;
+      private readonly IProposer remote;
+
+      public ProposalIngest(PrimaryStateView primary) {
+         this.primary = primary;
+      }
+
+      public ProposalIngest(Predictor predictor, IProposer remote) {
+         this.predictor = predictor;
+         this.remote = remote;
+      }
+
+      public async Task<bool> TryApplyAsync(IProposal proposal) {
+         if (primary != null) {
+            await using var guard = await primary.LockStateForWriteAsync();
+            var res = proposal.TryBuildDelta(guard.State, out var delta);
+            if ((res & Result.DropSelf) != 0) {
+               return false;
+            }
+            
+            return await primary.TryApplyDeltaAsync(delta);
+         } else {
+            var ok = await predictor.AddPredictionAsync(proposal);
+            ok = await remote.TryApplyAsync(proposal);
+            if (!ok) {
+               await predictor.RemovePredictionAsync(proposal);
+            }
+            return ok;
+         }
+      }
+   }
 }
