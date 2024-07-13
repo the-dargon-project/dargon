@@ -118,9 +118,43 @@ namespace Dargon.Vox2 {
                V2 = new List<bool> { false, true, true, true, false, true, false },
             },
 
+            IntStructBox = new GenericStructBox<int> { V1 = 1234 },
+            IntListStructBox = new GenericStructBox<List<int>> {
+               V1 = new List<int> { 123, 456, 789 },
+            },
+            NullIntListStructBox = default,
+
             StringSplitOptions_None = StringSplitOptions.None,
             StringSplitOptions_RemoveEmptyEntries = StringSplitOptions.RemoveEmptyEntries,
             PolymorphicStringSplitOptions = StringSplitOptions.TrimEntries,
+
+            InnerClassBox2 = new TestParent.GenericBox2<int, string> {
+               V1 = 123,
+               V2 = 234,
+               V3 = "asdf",
+               V4 = "qwer",
+            },
+
+            InnerClassBox3 = new TestParent.GenericBox3<bool, int, string> {
+               V1 = false,
+               V2 = true,
+               V3 = 123,
+               V4 = 234,
+               V5 = "asdf",
+               V6 = "qwer",
+            },
+
+            InnerClassBox4 = new TestParent.GenericBox4<bool, int, string> {
+               A = null,
+               B = new TestParent.GenericBox3<int, string, bool> {
+                  V1 = 123,
+                  V2 = 234,
+                  V3 = "eerq",
+                  V4 = "q14",
+                  V5 = false,
+                  V6 = true,
+               },
+            },
          };
 
          var voxForWriter = VoxContext.Create(new TestVoxTypes());
@@ -248,9 +282,33 @@ namespace Dargon.Vox2 {
          ((GenericBox<List<bool>>)hodgepodgeOriginal.PolymorphicBoolListBox).V1.ToCodegenDump().AssertEquals(((GenericBox<List<bool>>)rt.PolymorphicBoolListBox).V1.ToCodegenDump());
          ((GenericBox<List<bool>>)hodgepodgeOriginal.PolymorphicBoolListBox).V2.ToCodegenDump().AssertEquals(((GenericBox<List<bool>>)rt.PolymorphicBoolListBox).V2.ToCodegenDump());
 
+         hodgepodgeOriginal.IntStructBox.V1.AssertEquals(rt.IntStructBox.V1);
+         hodgepodgeOriginal.IntListStructBox.V1.ToCodegenDump().AssertEquals(rt.IntListStructBox.V1.ToCodegenDump());
+         hodgepodgeOriginal.NullIntListStructBox.V1.ToCodegenDump().AssertEquals(rt.NullIntListStructBox.V1.ToCodegenDump());
+
          hodgepodgeOriginal.StringSplitOptions_None.AssertEquals(rt.StringSplitOptions_None);
          hodgepodgeOriginal.StringSplitOptions_RemoveEmptyEntries.AssertEquals(rt.StringSplitOptions_RemoveEmptyEntries);
          hodgepodgeOriginal.PolymorphicStringSplitOptions.AssertEquals(rt.PolymorphicStringSplitOptions);
+
+         hodgepodgeOriginal.InnerClassBox2.V1.AssertEquals(rt.InnerClassBox2.V1);
+         hodgepodgeOriginal.InnerClassBox2.V2.AssertEquals(rt.InnerClassBox2.V2);
+         hodgepodgeOriginal.InnerClassBox2.V3.AssertEquals(rt.InnerClassBox2.V3);
+         hodgepodgeOriginal.InnerClassBox2.V4.AssertEquals(rt.InnerClassBox2.V4);
+
+         hodgepodgeOriginal.InnerClassBox3.V1.AssertEquals(rt.InnerClassBox3.V1);
+         hodgepodgeOriginal.InnerClassBox3.V2.AssertEquals(rt.InnerClassBox3.V2);
+         hodgepodgeOriginal.InnerClassBox3.V3.AssertEquals(rt.InnerClassBox3.V3);
+         hodgepodgeOriginal.InnerClassBox3.V4.AssertEquals(rt.InnerClassBox3.V4);
+         hodgepodgeOriginal.InnerClassBox3.V5.AssertEquals(rt.InnerClassBox3.V5);
+         hodgepodgeOriginal.InnerClassBox3.V6.AssertEquals(rt.InnerClassBox3.V6);
+
+         hodgepodgeOriginal.InnerClassBox4.A.AssertEquals(rt.InnerClassBox4.A).AssertIsNull();
+         hodgepodgeOriginal.InnerClassBox4.B.V1.AssertEquals(rt.InnerClassBox4.B.V1);
+         hodgepodgeOriginal.InnerClassBox4.B.V2.AssertEquals(rt.InnerClassBox4.B.V2);
+         hodgepodgeOriginal.InnerClassBox4.B.V3.AssertEquals(rt.InnerClassBox4.B.V3);
+         hodgepodgeOriginal.InnerClassBox4.B.V4.AssertEquals(rt.InnerClassBox4.B.V4);
+         hodgepodgeOriginal.InnerClassBox4.B.V5.AssertEquals(rt.InnerClassBox4.B.V5);
+         hodgepodgeOriginal.InnerClassBox4.B.V6.AssertEquals(rt.InnerClassBox4.B.V6);
 
          ms.Position.AssertEquals(writeLen);
 
@@ -558,18 +616,6 @@ namespace Dargon.Vox2 {
 
    public class VoxTypeImportException(VoxTypeContext VoxTypeContext, Exception InnerException)
       : Exception($"Failed to import {VoxTypeContext.SimpleType} ({VoxTypeContext.SimpleTypeId}) with serializer {VoxTypeContext.SerializerType}", InnerException);
-
-   public class ZZ {
-      public const int X = 10;
-   }
-
-   public class ZXZ : ZZ {
-      public const int X = 23;
-
-      public void Z() {
-         var y = X;
-      }
-   }
 
    public static class VoxContextFactory {
       public static VoxContext Create(VoxTypes voxTypes) {
@@ -923,6 +969,9 @@ namespace Dargon.Vox2 {
          typeof(HodgepodgeStructMin2),
          typeof(GenericBox<>),
          typeof(GenericStructBox<>),
+         typeof(TestParent.GenericBox2<,>),
+         typeof(TestParent.GenericBox3<,,>),
+         typeof(TestParent.GenericBox4<,,>),
       };
       public override Dictionary<Type, Type> TypeToCustomSerializers { get; } = new() {
          [typeof(StringSplitOptions)] = typeof(StringSplitOptionsSerializer),
@@ -1011,23 +1060,28 @@ namespace Dargon.Vox2 {
 
       [P] public HodgepodgeMin? Inner { get; set; } // recursive types must be declared polymorphic for now
 
-      [P] public GenericBox<int> IntBox;
-      [P] public GenericBox<bool> BoolBox;
-      [P] public GenericBox<List<int>> IntListBox;
-      [P] public GenericBox<List<bool>> BoolListBox;
+      [P] public GenericBox<int>? IntBox;
+      [P] public GenericBox<bool>? BoolBox;
+      [P] public GenericBox<List<int>>? IntListBox;
+      [P] public GenericBox<List<bool>>? BoolListBox;
 
-      [P] public object PolymorphicIntBox;
-      [P] public object PolymorphicBoolBox;
-      [P] public object PolymorphicIntListBox;
-      [P] public object PolymorphicBoolListBox;
+      [P] public object? PolymorphicIntBox;
+      [P] public object? PolymorphicBoolBox;
+      [P] public object? PolymorphicIntListBox;
+      [P] public object? PolymorphicBoolListBox;
 
       public GenericStructBox<int> IntStructBox;
       public GenericStructBox<List<int>> IntListStructBox;
+      public GenericStructBox<List<int>> NullIntListStructBox;
 
       public StringSplitOptions StringSplitOptions_None;
       public StringSplitOptions StringSplitOptions_RemoveEmptyEntries;
 
-      [P] public object PolymorphicStringSplitOptions;
+      [P] public object? PolymorphicStringSplitOptions;
+
+      [P] public TestParent.GenericBox2<int, string>? InnerClassBox2;
+      [P] public TestParent.GenericBox3<bool, int, string>? InnerClassBox3;
+      [P] public TestParent.GenericBox4<bool, int, string>? InnerClassBox4;
 
       public static void XX(HodgepodgeMin x) {
          // x.Tuple.Item1;
@@ -1054,6 +1108,26 @@ namespace Dargon.Vox2 {
    [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest5)]
    public partial struct GenericStructBox<T> {
       public T V1;
+   }
+
+   public static partial class TestParent {
+      [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest7)]
+      public partial class GenericBox2<T1, T2> : GenericBox<T1> {
+         public T2 V3;
+         public T2 V4 { get; set; }
+      }
+
+      [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest8)]
+      public partial class GenericBox3<T1, T2, T3> : GenericBox2<T1, T2> {
+         public T3 V5;
+         public T3 V6 { get; set; }
+      }
+
+      [VoxType((int)BuiltInVoxTypeIds.ReservedForInternalVoxTest9)]
+      public partial class GenericBox4<T1, T2, T3> {
+         [P] public GenericBox2<T2, T3>? A;
+         [N] public GenericBox3<T2, T3, T1> B;
+      }
    }
 
    public class HodgepodgeDto {

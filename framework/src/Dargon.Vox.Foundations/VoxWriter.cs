@@ -19,7 +19,12 @@ namespace Dargon.Vox2 {
 
    public class P<T1, T2> : VoxInternalBaseDummyType { }
 
-   /// <summary>Polymorphic</summary>
+   /// <summary>
+   /// Polymorphic
+   ///
+   /// Within a type, fields default to non-polymorphic.
+   /// To enable polymorphism (including null), they need to be annotated with [P]
+   /// </summary>
    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
    public class PAttribute : VoxInternalBaseAttribute { }
 

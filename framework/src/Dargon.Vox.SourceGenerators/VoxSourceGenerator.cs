@@ -110,7 +110,7 @@ namespace Dargon.Vox.SourceGenerators {
 
       private string GetDependencySerializerName(ITypeSymbol ts) {
          var ds = ts.ToDisplayString();
-         var name = ds.Replace(":", "_").Replace(".", "_").Replace("<", "1337").Replace(">", "1338").Replace(",", "_");
+         var name = ds.Replace(":", "_").Replace(".", "_").Replace("<", "1337").Replace(">", "1338").Replace(",", "_").Replace(" ", "");
          var serializerName = $"_dep_{name}";
          
          if (knownDependencySerializerNames.Add(serializerName)) {
@@ -209,6 +209,16 @@ namespace Dargon.Vox.SourceGenerators {
 
             var genericArgsConstraints = genericArgsConstraintsSb.Length == 0 ? "" : (Environment.NewLine + genericArgsConstraintsSb.ToString().Trim());
 
+            var classNesting = new List<INamedTypeSymbol> { targetType };
+            while (classNesting[classNesting.Count - 1].ContainingType is { } ct) {
+               classNesting.Add(ct);
+            }
+
+            var subclassHierarchy = new List<INamedTypeSymbol> { targetType };
+            while (subclassHierarchy[subclassHierarchy.Count - 1].BaseType is { } bt) {
+               subclassHierarchy.Add(bt);
+            }
+
             var targetTypeKindStr = KindToKeyword(targetType.TypeKind);
             var targetIsStruct = targetType.TypeKind == TypeKind.Struct;
             var targetIsEnum = targetType.TypeKind == TypeKind.Enum;
@@ -296,8 +306,11 @@ namespace Dargon.Vox.SourceGenerators {
 
                // this gets auto-property fields too. In a future C# lang version they'll expose property backing
                // fields too for getters/setters. Hopefully this'll work for that.
-               var fields = targetType.GetMembers().OfType<IFieldSymbol>();
-               foreach (var field in fields) {
+               var allFields = new List<IFieldSymbol>();
+               for (var i = subclassHierarchy.Count - 1; i >= 0; i--) {
+                  allFields.AddRange(subclassHierarchy[i].GetMembers().OfType<IFieldSymbol>());
+               }
+               foreach (var field in allFields) {
                   if (field.IsConst) continue;
                   if (field.IsStatic) continue;
 
@@ -329,13 +342,50 @@ namespace Dargon.Vox.SourceGenerators {
                fullTypeIdExpr = $"Arrays.Concat({fullTypeIdExpr}{dependencySerializerTypeIdsSb})";
             }
 
+            var typeContainerScopeStartSb = new StringBuilder();
+            typeContainerScopeStartSb.Append("namespace ");
+            typeContainerScopeStartSb.Append(targetType.ContainingNamespace.ToDisplayString());
+            typeContainerScopeStartSb.Append(" {");
+            
+            var typeContainerScopeEndSb = new StringBuilder();
+            typeContainerScopeEndSb.Append("}");
+
+            var typeContainerQualifierSb = new StringBuilder();
+            var typeContainerNamePrefixSb = new StringBuilder();
+
+            for (var i = classNesting.Count - 1; i >= 1; i--) {
+               var x = classNesting[i];
+               typeContainerScopeStartSb.Append(" public ");
+               typeContainerScopeStartSb.Append(x.IsStatic ? "static " : "");
+               typeContainerScopeStartSb.Append("partial ");
+               typeContainerScopeStartSb.Append(x.IsValueType ? "struct" : "class");
+               typeContainerScopeStartSb.Append(" ");
+               typeContainerScopeStartSb.Append(x.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));
+               typeContainerScopeStartSb.Append(" {");
+
+               typeContainerScopeEndSb.Append(" }");
+               
+               typeContainerQualifierSb.Append(x.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));
+               typeContainerQualifierSb.Append(".");
+
+               typeContainerNamePrefixSb.Append(x.Name);
+
+            }
+
+            var typeContainerScopeStart = typeContainerScopeStartSb.ToString();
+            var typeContainerScopeEnd = typeContainerScopeEndSb.ToString();
+            var typeContainerQualifier = typeContainerQualifierSb.ToString();
+            var typeContainerNamePrefix = typeContainerNamePrefixSb.ToString();
+
+            var extensionNamespace = classNesting[classNesting.Count - 1].ContainingNamespace.ToDisplayString();
+
             //                                                                                                       The below must work with strings, ints, vector3s, and hodgepodges.
             //                                                                                                       x.ReadFull/ReadRaw are optional.
             //                                                                                                       Within a serializer, write should invoke writer.WriteRaw{X}(x) if nonpolymorphic, else writer.WritePolymorphic(x)
             //                                                                                                       ... Cannot depend on interface calls on serializable, as builtins (e.g. int) don't implement the interface.
             //                                                                                                       Reader should invoke self.field = reader.ReadRaw{T}() if nonpolymorphic, else reader.ReadPolymorphic<T>()
             sb.AppendLine($@"
-                                                                                                                        namespace {targetType.ContainingNamespace.ToDisplayString()} {{
+                                                                                                                        {typeContainerScopeStart}
                                                                                                                            /// <summary>Autogenerated</summary>
                                                                                                                            [VoxType(kTypeId, VanityRedirectFromType = typeof({type.Name}{genericArgsUnboundStr}))]
                                                                                                                            public sealed partial class {targetType.Name}Serializer{genericArgsStr} : IVoxSerializer<{targetType.Name}{genericArgsStr}>{genericArgsConstraints} {{
@@ -398,27 +448,30 @@ namespace Dargon.Vox.SourceGenerators {
                                                                                                                            }}");
             }
             sb.AppendLine($@"
+                                                                                                                        {typeContainerScopeEnd}
+
+                                                                                                                        namespace {extensionNamespace} {{
 
                                                                                                                            /// <summary>Autogenerated</summary>
                                                                                                                            public static class VoxGenerated_{targetType.Name}Statics {{
-                                                                                                                              internal static {targetType.Name}Serializer{genericArgsStr} GetSerializerInstance{genericArgsStr}{genericArgsConstraints}(VoxContext vox) => {targetType.Name}Serializer{genericArgsStr}.GetInstance(vox.SerializerContainer);
+                                                                                                                              internal static {typeContainerQualifier}{targetType.Name}Serializer{genericArgsStr} GetSerializerInstance{genericArgsStr}{genericArgsConstraints}(VoxContext vox) => {typeContainerQualifier}{targetType.Name}Serializer{genericArgsStr}.GetInstance(vox.SerializerContainer);
 
-                                                                                                                              public static void WriteFull{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxWriter writer, {fullTargetTypeName} value) {{ var copy = value; GetSerializerInstance{genericArgsStr}(writer.Context).WriteFull(writer, ref value); }}
-                                                                                                                              public static void WriteRaw{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxWriter writer, {fullTargetTypeName} value) {{ var copy = value; GetSerializerInstance{genericArgsStr}(writer.Context).WriteRaw(writer, ref value); }}
-                                                                                                                              public static {targetType.Name}{genericArgsStr} ReadFull{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxReader reader) => GetSerializerInstance{genericArgsStr}(reader.Context).ReadFull(reader);
-                                                                                                                              public static {targetType.Name}{genericArgsStr} ReadRaw{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxReader reader) => GetSerializerInstance{genericArgsStr}(reader.Context).ReadRaw(reader);
+                                                                                                                              public static void WriteFull{typeContainerNamePrefix}{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxWriter writer, {fullTargetTypeName} value) {{ var copy = value; GetSerializerInstance{genericArgsStr}(writer.Context).WriteFull(writer, ref value); }}
+                                                                                                                              public static void WriteRaw{typeContainerNamePrefix}{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxWriter writer, {fullTargetTypeName} value) {{ var copy = value; GetSerializerInstance{genericArgsStr}(writer.Context).WriteRaw(writer, ref value); }}
+                                                                                                                              public static {typeContainerQualifier}{targetType.Name}{genericArgsStr} ReadFull{typeContainerNamePrefix}{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxReader reader) => GetSerializerInstance{genericArgsStr}(reader.Context).ReadFull(reader);
+                                                                                                                              public static {typeContainerQualifier}{targetType.Name}{genericArgsStr} ReadRaw{typeContainerNamePrefix}{targetType.Name}{genericArgsStr}{genericArgsConstraints}(this VoxReader reader) => GetSerializerInstance{genericArgsStr}(reader.Context).ReadRaw(reader);
             ");
 
             sb.AppendLine($@"
-                                                                                                                              public static void WriteFullInto{genericArgsStr}{genericArgsConstraints}(this {targetType.Name}{genericArgsStr} self, VoxWriter writer) {{ var copy = self; GetSerializerInstance{genericArgsStr}(writer.Context).WriteFull(writer, ref copy); }}
-                                                                                                                              public static void WriteRawInto{genericArgsStr}{genericArgsConstraints}(this {targetType.Name}{genericArgsStr} self, VoxWriter writer) {{ var copy = self; GetSerializerInstance{genericArgsStr}(writer.Context).WriteRaw(writer, ref copy); }}
+                                                                                                                              public static void WriteFullInto{genericArgsStr}{genericArgsConstraints}(this {typeContainerQualifier}{targetType.Name}{genericArgsStr} self, VoxWriter writer) {{ var copy = self; GetSerializerInstance{genericArgsStr}(writer.Context).WriteFull(writer, ref copy); }}
+                                                                                                                              public static void WriteRawInto{genericArgsStr}{genericArgsConstraints}(this {typeContainerQualifier}{targetType.Name}{genericArgsStr} self, VoxWriter writer) {{ var copy = self; GetSerializerInstance{genericArgsStr}(writer.Context).WriteRaw(writer, ref copy); }}
             ");
 
             if (targetIsUpdatable) {
                var copyToSelfIfStruct = targetIsStruct ? " self = copy;" : "";
                sb.AppendLine($@"
-                                                                                                                              public static void ReadFullFrom{genericArgsStr}{genericArgsConstraints}({refIfTargetIsStruct} this {targetType.Name}{genericArgsStr} self, VoxReader reader) {{ var copy = self; GetSerializerInstance{genericArgsStr}(reader.Context).ReadFullIntoRef(reader, ref copy);{copyToSelfIfStruct} }}
-                                                                                                                              public static void ReadRawFrom{genericArgsStr}{genericArgsConstraints}({refIfTargetIsStruct} this {targetType.Name}{genericArgsStr} self, VoxReader reader) {{ var copy = self; GetSerializerInstance{genericArgsStr}(reader.Context).ReadRawIntoRef(reader, ref copy);{copyToSelfIfStruct} }}
+                                                                                                                              public static void ReadFullFrom{genericArgsStr}{genericArgsConstraints}({refIfTargetIsStruct} this {typeContainerQualifier}{targetType.Name}{genericArgsStr} self, VoxReader reader) {{ var copy = self; GetSerializerInstance{genericArgsStr}(reader.Context).ReadFullIntoRef(reader, ref copy);{copyToSelfIfStruct} }}
+                                                                                                                              public static void ReadRawFrom{genericArgsStr}{genericArgsConstraints}({refIfTargetIsStruct} this {typeContainerQualifier}{targetType.Name}{genericArgsStr} self, VoxReader reader) {{ var copy = self; GetSerializerInstance{genericArgsStr}(reader.Context).ReadRawIntoRef(reader, ref copy);{copyToSelfIfStruct} }}
                ");
             }
 
@@ -427,6 +480,7 @@ namespace Dargon.Vox.SourceGenerators {
                                                                                                                            }}
                                                                                                                         }}
 
+                                                                                                                        // Stubs
                                                                                                                         namespace {type.ContainingNamespace.ToDisplayString()} {{
                ");
 

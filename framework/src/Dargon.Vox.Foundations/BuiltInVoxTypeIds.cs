@@ -70,5 +70,7 @@
       ReservedForInternalVoxTest5 = int.MinValue + 6,
       ReservedForInternalVoxTest6 = int.MinValue + 7,
       ReservedForInternalVoxTest7 = int.MinValue + 8,
+      ReservedForInternalVoxTest8 = int.MinValue + 9,
+      ReservedForInternalVoxTest9 = int.MinValue + 10,
    }
 }
