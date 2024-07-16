@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using Dargon.Commons.Collections;
@@ -50,7 +51,7 @@ namespace Dargon.Commons {
          } else if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)) {
             var keyProp = t.GetProperty("Key", BindingFlags.Public | BindingFlags.Instance);
             var key = keyProp.GetValue(x);
-            
+
             var valueProp = t.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance);
             var value = valueProp.GetValue(x);
             Emit("new");
@@ -59,6 +60,11 @@ namespace Dargon.Commons {
             Visit(key);
             Emit(",");
             Visit(value);
+            Emit(")");
+            return;
+         } else if (t == typeof(Guid)) {
+            Emit("new Guid(");
+            Visit(((Guid)(object)x).ToByteArray());
             Emit(")");
             return;
          }
@@ -117,7 +123,8 @@ namespace Dargon.Commons {
             var fields = t.GetFields(bindingFlags);
 
             var supported = properties.All(p => p.IsAutoProperty_Slow()) &&
-                            fields.All(f => f.IsPublic);
+                            fields.Where(f => !(f.Name.Contains("BackingField") && f.HasAttribute<CompilerGeneratedAttribute>()))
+                                  .All(f => f.IsPublic);
 
             if (!supported) {
                throw Assert.Fail("Unsupported for codegen serialization: " + t.ToString());
