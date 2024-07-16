@@ -1,22 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace />
-    <ApplicationIcon />
-    <OutputType>Exe</OutputType>
-    <StartupObject />
-  </PropertyGroup>
+   <PropertyGroup>
+      <TargetFramework>net9.0</TargetFramework>
+      <LangVersion>preview</LangVersion>
+      <RootNamespace />
+      <ApplicationIcon />
+      <OutputType>Exe</OutputType>
+      <StartupObject />
+   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-  </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+      <DebugType>pdbonly</DebugType>
+      <DebugSymbols>true</DebugSymbols>
+   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\framework\src\Dargon.Commons\src\Dargon.Commons.csproj" />
-    <ProjectReference Include="..\..\..\..\framework\src\Dargon.Courier\src\Dargon.Courier.csproj" />
-    <ProjectReference Include="..\..\..\..\framework\src\Dargon.Repl\src\Dargon.Repl.csproj" />
-  </ItemGroup>
+   <ItemGroup>
+      <ProjectReference Include="..\..\..\..\framework\src\Dargon.Commons\src\Dargon.Commons.csproj" />
+      <ProjectReference Include="..\..\..\..\framework\src\Dargon.Courier\src\Dargon.Courier.csproj" />
+      <ProjectReference Include="..\..\..\..\framework\src\Dargon.Repl\src\Dargon.Repl.csproj" />
+   </ItemGroup>
 
 </Project>
