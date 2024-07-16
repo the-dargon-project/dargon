@@ -110,7 +110,12 @@ namespace Dargon.Commons.Collections {
       public int Count => size;
       public bool IsReadOnly => false;
 
-      public int IndexOf(T item) => throw new NotSupportedException();
+      public int IndexOf(T item) {
+         for (var i = 0; i < size; i++) {
+            if (store[i].Equals(item)) return i;
+         }
+         return -1;
+      }
 
       public void Insert(int index, T item) => throw new NotSupportedException();
 
