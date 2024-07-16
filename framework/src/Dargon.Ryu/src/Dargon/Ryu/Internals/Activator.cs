@@ -43,13 +43,15 @@ namespace Dargon.Ryu.Internals {
             // RuntimeHelpers.GetUninitializedObject also exists on .NET Core, but
             // FormatterServices works for both framework & core (and proxies to the
             // same method on .NET Core)
+#pragma warning disable SYSLIB0050
             var instance = FormatterServices.GetUninitializedObject(type);
+#pragma warning restore SYSLIB0050
 
             // find the ryu constructor
             var ctor = type.GetRyuConstructorOrThrow();
             var parameters = ctor.GetParameters();
 
-            var bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+            //var bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
             var dependencyFields = ReflectionCache.OfType(type)
                                                   .Fields
                                                   .FilterTo(f => f.HasAttribute<DependencyAttribute>());
