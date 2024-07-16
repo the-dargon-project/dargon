@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.AsyncPrimitives;
@@ -82,7 +81,7 @@ public class StateView<TState, TSnapshot, TDelta, TOperations> : IStateView<TSta
       LoadSnapshotUnderLock(snapshot, newVersionOpt);
    }
 
-   private void ApplyReplicationVersionBump(ReplicationVersion? newVersionOpt = null) {
+   private void ApplyReplicationVersionEpochBump(ReplicationVersion? newVersionOpt = null) {
       if (newVersionOpt is { } newVersion) {
          (replicationVersion <= newVersion).AssertIsTrue();
          replicationVersion = newVersion;
@@ -95,7 +94,7 @@ public class StateView<TState, TSnapshot, TDelta, TOperations> : IStateView<TSta
 
    public void Copy(TState other, ReplicationVersion? newVersionOpt = null) {
       using var _ = arwl.CreateWriterGuard();
-      ApplyReplicationVersionBump(newVersionOpt);
+      ApplyReplicationVersionEpochBump(newVersionOpt);
       ops.Copy(other, state);
    }
 
@@ -105,7 +104,7 @@ public class StateView<TState, TSnapshot, TDelta, TOperations> : IStateView<TSta
    }
 
    private void LoadSnapshotUnderLock(TSnapshot snapshot, ReplicationVersion? newVersionOpt) {
-      ApplyReplicationVersionBump(newVersionOpt);
+      ApplyReplicationVersionEpochBump(newVersionOpt);
       ops.LoadSnapshot(state, snapshot);
       SnapshotLoaded?.Invoke(new(snapshot, replicationVersion, localVersion));
    }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Dargon.Commons;
 using Dargon.Commons.AsyncAwait;
@@ -14,7 +15,9 @@ using Dargon.Courier.StateReplicationTier.Primaries;
 using Dargon.Courier.StateReplicationTier.Replicas;
 using Dargon.Courier.StateReplicationTier.Shared;
 using Dargon.Courier.StateReplicationTier.States;
+using Dargon.Ryu;
 using Dargon.Ryu.Attributes;
+using Dargon.Ryu.Modules;
 
 namespace Dargon.Courier.StateReplicationTier.Utils;
 
@@ -31,7 +34,12 @@ public class StateBase<TState, TSnapshot, TDelta> : /* ThreadLocalContext<TState
    where TState : /*ThreadLocalContext<TState>, */ class, IState
    where TSnapshot : IStateSnapshot
    where TDelta : class, IStateDelta {
-   
+
+   public static void RegisterCommon<TOperations>(RyuModule m) where TOperations : IOperations {
+      m.Eventual.Singleton<ViewFactory>();
+      m.Eventual.Singleton<TOperations>().Implements<IOperations>();
+   }
+
    public interface IOperations : IStateDeltaOperations<TState, TSnapshot, TDelta>;
 
    public class ViewFactory {
@@ -90,14 +98,23 @@ public class StateBase<TState, TSnapshot, TDelta> : /* ThreadLocalContext<TState
 
       public Predictor CreatePredictor(StateView baseView) {
          var predictionView = CreateStateView(ops.CreateState());
-         var predictor = new StatePredictorCore<TState, TSnapshot, TDelta>(baseView, predictionView);
-         return new Predictor(predictionView, predictor);
+         var predictorCore = new StatePredictorCore<TState, TSnapshot, TDelta>(baseView, predictionView);
+         predictorCore.Initialize();
+         return new Predictor(predictionView, predictorCore);
       }
 
       public StateFilterPipeline CreateFilterPipeline(StateView src, StateView dst, IStateFilter filter) {
          var res = new StateFilterPipeline(src, dst, filter);
          res.Initialize();
          return res;
+      }
+
+      public ProposalIngest CreateProposalIngestForPrimary(PrimaryStateView primary) {
+         return new ProposalIngest(primary);
+      }
+
+      public ProposalIngest CreateProposalIngestWithPredictorAndRemote(Predictor predictor, IProposer remoteProposalIngest) {
+         return new ProposalIngest(predictor, remoteProposalIngest);
       }
    }
 
@@ -156,6 +173,7 @@ public class StateBase<TState, TSnapshot, TDelta> : /* ThreadLocalContext<TState
 
    public class Predictor(StateView view, StatePredictorCore<TState, TSnapshot, TDelta> inner) {
       public StateView View => view;
+      public (int PredictionCount, ReplicationVersion ReplicationVersion) CurrentPredictionCountAndVersion => inner.PredictionCountAndVersion;
 
       public void ProcessUpdates() => inner.ProcessUpdates();
 
@@ -177,9 +195,9 @@ public class StateBase<TState, TSnapshot, TDelta> : /* ThreadLocalContext<TState
          return view.LockStateForReadAsync();
       }
 
-      public async Task<bool> AddPredictionAsync(IProposal<TState, TDelta> prediction) {
-         await using var _ = await view.LockStateForWriteAsync();
-         return inner.AddPrediction(prediction);
+      public Task<bool> AddPredictionAsync(IProposal<TState, TDelta> prediction) {
+         // await using var _ = await view.LockStateForWriteAsync();
+         return Task.FromResult(inner.AddPrediction(prediction));
       }
 
       public async Task<bool> RemovePredictionAsync(IProposal<TState, TDelta> prediction) {
@@ -212,18 +230,28 @@ public class StateBase<TState, TSnapshot, TDelta> : /* ThreadLocalContext<TState
          this.remote = remote;
       }
 
-      public async Task<bool> TryApplyAsync(IProposal proposal) {
+      public Task<bool> TryApplyAsync(IProposal proposal) {
+         return TryApplyAsyncInner(proposal);
+      }
+
+      public async Task<bool> TryApplyAsyncInner(IProposal proposal) {
          if (primary != null) {
+            Console.WriteLine($"On Primary attempting to build delta for proposal {proposal}");
             await using var guard = await primary.LockStateForWriteAsync();
             var res = proposal.TryBuildDelta(guard.State, out var delta);
+            Console.WriteLine($"On Primary attempted to build delta for proposal {proposal} with result {res}");
             if ((res & Result.DropSelf) != 0) {
                return false;
             }
-            
+            Console.WriteLine($"On Primary attempting to apply proposal {proposal} delta.");
             return await primary.TryApplyDeltaAsync(delta);
          } else {
-            var ok = await predictor.AddPredictionAsync(proposal);
+            bool ok;
+            Console.WriteLine($"With predictor, attempting to add prediction for proposal {proposal}");
+            ok = await predictor.AddPredictionAsync(proposal);
+            Console.WriteLine($"With predictor, attempted to add prediction for proposal {proposal} with result {ok}");
             ok = await remote.TryApplyAsync(proposal);
+            Console.WriteLine($"With remote, attempted to apply proposal {proposal} with result {ok}");
             if (!ok) {
                await predictor.RemovePredictionAsync(proposal);
             }

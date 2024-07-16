@@ -10,7 +10,9 @@ public abstract class SimpleStateBase<TSelf> : StateBase<TSelf, TSelf, SimpleSta
    public abstract TSelf Clone();
    public abstract void LoadFrom(TSelf other);
 
-   public class Delta : IStateDelta { }
+   public class Delta : IStateDelta {
+      public Guid ProposalIdOpt { get; set; }
+   }
 
    public class Ops : IOperations {
       public TSelf CreateState() => new TSelf();

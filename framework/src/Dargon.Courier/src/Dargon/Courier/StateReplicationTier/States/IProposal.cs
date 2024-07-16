@@ -6,6 +6,9 @@ namespace Dargon.Courier.StateReplicationTier.States {
    public interface IProposal<TState, TDelta> : IProposal
       where TState: class, IState
       where TDelta : class, IStateDelta {
+
+      Guid ProposalId { get; }
+
       /// <summary>
       /// Builds a delta off the given state, which must be treated as immutable.
       ///
@@ -26,6 +29,7 @@ namespace Dargon.Courier.StateReplicationTier.States {
       /// and keep the prediction in the predictions list.
       /// </summary>
       Default = 0,
+      Ok = Default,
 
       /// <summary>
       /// Further predictions should not execute.
