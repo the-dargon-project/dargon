@@ -306,15 +306,25 @@ namespace Dargon.Vox.SourceGenerators {
 
                // this gets auto-property fields too. In a future C# lang version they'll expose property backing
                // fields too for getters/setters. Hopefully this'll work for that.
-               var allFields = new List<IFieldSymbol>();
+               var allFieldOrPropertySymbols = new List<ISymbol>();
                for (var i = subclassHierarchy.Count - 1; i >= 0; i--) {
-                  allFields.AddRange(subclassHierarchy[i].GetMembers().OfType<IFieldSymbol>());
+                  foreach (var m in subclassHierarchy[i].GetMembers()) {
+                     if (m is IFieldSymbol fs) {
+                        if (!fs.IsImplicitlyDeclared && !fs.IsConst) {
+                           allFieldOrPropertySymbols.Add(fs);
+                        }
+                     } else if (m is IPropertySymbol ps) {
+                        // indexer is technically a property
+                        // only serialize props with getter/setter.
+                        if (!ps.IsIndexer && ps.GetMethod != null && ps.SetMethod != null) {
+                           allFieldOrPropertySymbols.Add(ps);
+                        }
+                     }
+                  }
                }
-               foreach (var field in allFields) {
-                  if (field.IsConst) continue;
-                  if (field.IsStatic) continue;
+               foreach (var member in allFieldOrPropertySymbols) {
+                  if (member.IsStatic) continue;
 
-                  var member = field.AssociatedSymbol ?? field;
                   var memberType = member is IFieldSymbol fs ? fs.Type : ((IPropertySymbol)member).Type;
                   var memberAttr = RoslynUtils.FindAnyAttributeOrDefault(member, types.AllVoxAnnotationTypes);
 

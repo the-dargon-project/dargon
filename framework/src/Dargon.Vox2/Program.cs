@@ -835,6 +835,18 @@ namespace Dargon.Vox2 {
       public static VoxContext Create(VoxTypes voxTypes) => VoxContextFactory.Create(voxTypes);
    }
 
+   public static class VoxContextExtensions {
+      public static T RoundTrip<T>(this VoxContext vox, T val) {
+         using var ms = new MemoryStream();
+         using var w = vox.CreateWriter(ms);
+         w.WritePolymorphic(val);
+         ms.Position = 0;
+         
+         using var r = vox.CreateReader(ms);
+         return r.ReadPolymorphic<T>();
+      }
+   }
+
    /// <summary>
    /// As a micro-optimization, inherits TrieNode so the root
    /// node's access (in the nongeneric case) has 1 less indirection.
